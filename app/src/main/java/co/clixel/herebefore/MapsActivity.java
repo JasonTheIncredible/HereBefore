@@ -52,8 +52,7 @@ public class MapsActivity extends FragmentActivity implements
         setContentView(R.layout.activity_maps);
 
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
-        {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             checkUserLocationPermission();
         }
 
@@ -65,14 +64,24 @@ public class MapsActivity extends FragmentActivity implements
 
         Button circleButton = findViewById(R.id.button1);
         circleButton.setOnClickListener(this);
-
     }
 
-// Move onclick inside onmapready if possible
+    // Move onclick inside onmapready if possible
     // Make circle around current location on button press
-    public void onClick(View v){
-        // Need to update FuzedLocationApi in future
+    public void onClick(View v) {
+        // Need to update FusedLocationApi in future
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return;
+        }
         Location location = LocationServices.FusedLocationApi.getLastLocation(googleApiClient);
+
         LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
         Circle circle = mMap.addCircle(
                 new CircleOptions()
@@ -115,7 +124,8 @@ public class MapsActivity extends FragmentActivity implements
 
             @Override
             public void onCircleClick(Circle circle) {
-                startActivity(new Intent(MapsActivity.this, MainChat.class));
+                //startActivity(new Intent(MapsActivity.this, MainChat.class));
+                startActivity(new Intent(MapsActivity.this, ChatTest.class));
             }
         });
 
