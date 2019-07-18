@@ -16,7 +16,9 @@ public class ChatTest extends AppCompatActivity{
         setContentView(R.layout.signin);
         // Check if user is signed in (non-null) and update UI accordingly.
         FirebaseUser currentUser = mAuth.getCurrentUser();
-        //updateUI(currentUser);
+        updateUI(currentUser);
+
+
     }
 
 }
