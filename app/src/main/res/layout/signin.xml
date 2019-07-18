@@ -22,17 +22,15 @@
         android:inputType="textPassword" />
 
     <Button
-        android:id="@+id/signinButton"
+        android:id="@+id/signInButton"
         android:layout_width="match_parent"
         android:layout_height="65dp"
-        android:layout_above="@+id/logoutButton"
-        android:layout_below="@+id/password"
         android:layout_marginTop="25dp"
         android:layout_marginBottom="0dp"
         android:text="Sign in" />
 
     <Button
-        android:id="@+id/logoutButton"
+        android:id="@+id/logOutButton"
         android:layout_width="match_parent"
         android:layout_height="65dp"
         android:text="Log Out" />
