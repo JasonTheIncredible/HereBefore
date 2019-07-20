@@ -1,5 +1,6 @@
 package co.clixel.herebefore;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
@@ -10,11 +11,11 @@ import android.widget.Toast;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
-public class ChatTest extends AppCompatActivity{
+public class signIn extends AppCompatActivity{
 
     private FirebaseAuth mAuth;
     private EditText mEmail, mPassword;
-    private Button btnSignIn, btnLogOut;
+    private Button btnSignIn, btnLogOut, btnGoToCreateAccount;
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -23,22 +24,41 @@ public class ChatTest extends AppCompatActivity{
         mEmail = findViewById(R.id.emailAddress);
         mPassword = findViewById(R.id.password);
         btnSignIn = findViewById(R.id.signInButton);
+        btnGoToCreateAccount = findViewById(R.id.goToCreateAccountButton);
         btnLogOut = findViewById(R.id.logOutButton);
+        mAuth = FirebaseAuth.getInstance();
 
         //TODO: check if account exists. If not, make a toast message.
         //TODO: make button for creating account.
         btnSignIn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view){
-                String email = mEmail.getText().toString();
+                String email = mEmail.getText().toString().toLowerCase();
                 String pass = mPassword.getText().toString();
                 if(!email.equals("") && !pass.equals("")) {
+                    //TODO: add onCompleteListener
                     mAuth.signInWithEmailAndPassword(email,pass);
-                    toastMessage("Signing in...");
+                    toastMessage("Signing in...(unless this account doesn't exist)");
                     //TODO: move to chat once signed in.
+                    //TODO: check if email is valid
+                }if (email.equals("") && !pass.equals("")) {
+                    toastMessage("Email required");
+                    mEmail.requestFocus();
+                }if (pass.equals("") && !email.equals("")){
+                    toastMessage("Password required");
+                    mPassword.requestFocus();
+                }if (pass.equals("") && email.equals("")) {
+                    toastMessage("Please enter your email and password");
                 }else{
-                    toastMessage("Please fill in all the fields to continue.");
+                    toastMessage("Something went wrong");
                 }
+            }
+        });
+
+        btnGoToCreateAccount.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view){
+                startActivity(new Intent(signIn.this, signUp.class));
             }
         });
 
@@ -60,6 +80,7 @@ public class ChatTest extends AppCompatActivity{
             findViewById(R.id.logOutButton).setVisibility(View.VISIBLE);
         } else {
             findViewById(R.id.signInButton).setVisibility(View.VISIBLE);
+            findViewById(R.id.goToCreateAccountButton).setVisibility(View.VISIBLE);
             findViewById(R.id.logOutButton).setVisibility(View.GONE);
         }}
 
@@ -71,7 +92,6 @@ public class ChatTest extends AppCompatActivity{
         updateUI(currentUser);
     }
 
-    //add a toast to show when successfully signed in
     /**
      * * customizable toast
      * @param message

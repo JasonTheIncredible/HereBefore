@@ -5,7 +5,7 @@
     android:layout_height="match_parent">
 
     <EditText
-        android:id="@+id/emailAddress"
+        android:id="@+id/createEmailAddress"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="150dp"
@@ -14,7 +14,7 @@
         android:inputType="textPersonName" />
 
     <EditText
-        android:id="@+id/password"
+        android:id="@+id/createPassword"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:ems="10"
@@ -22,24 +22,11 @@
         android:inputType="textPassword" />
 
     <Button
-        android:id="@+id/signInButton"
+        android:id="@+id/createAccountButton"
         android:layout_width="match_parent"
         android:layout_height="65dp"
         android:layout_marginTop="25dp"
         android:layout_marginBottom="0dp"
-        android:text="Sign in" />
-
-    <Button
-        android:id="@+id/goToCreateAccountButton"
-        android:layout_width="match_parent"
-        android:layout_height="65dp"
-        android:layout_marginBottom="0dp"
         android:text="Create Account" />
-
-    <Button
-        android:id="@+id/logOutButton"
-        android:layout_width="match_parent"
-        android:layout_height="65dp"
-        android:text="Log Out" />
 
 </LinearLayout>
