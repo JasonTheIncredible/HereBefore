@@ -29,6 +29,11 @@ import com.google.android.gms.maps.model.Circle;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
 
 public class MapsActivity extends FragmentActivity implements
         OnMapReadyCallback,
@@ -41,6 +46,7 @@ public class MapsActivity extends FragmentActivity implements
     private GoogleApiClient googleApiClient;
     private Marker currentUserLocationMarker;
     private static final int Request_User_Location_Code = 99;
+    private DatabaseReference root = FirebaseDatabase.getInstance().getReference().getRoot();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -88,14 +94,14 @@ public class MapsActivity extends FragmentActivity implements
                         .strokeColor(Color.BLUE)
                         .fillColor(Color.argb(70, 50, 50, 100))
         );
-    }
 
-    //@Override
-    //public void onCircleClick(Circle circle) {
+        //@Override
+        //public void onCircleClick(Circle circle) {
         //startActivity(new Intent(MapsActivity.this, MainChat.class));
-    //    int strokeColor = circle.getStrokeColor() ^ 0x00ffffff;
-    //    circle.setStrokeColor(strokeColor);
-    //}
+        //    int strokeColor = circle.getStrokeColor() ^ 0x00ffffff;
+        //    circle.setStrokeColor(strokeColor);
+        //}
+    }
 
     /**
      * Manipulates the map once available.
@@ -114,6 +120,7 @@ public class MapsActivity extends FragmentActivity implements
             buildGoogleApiClient();
             mMap.setMyLocationEnabled(true);
         }
+        //TODO: extract all (visible) circle data and rebuild them when the map loads.
 
         // Does something when clicking on the circle
         mMap.setOnCircleClickListener(new GoogleMap.OnCircleClickListener() {
@@ -121,6 +128,8 @@ public class MapsActivity extends FragmentActivity implements
             @Override
             public void onCircleClick(Circle circle) {
                 //startActivity(new Intent(MapsActivity.this, MainChat.class));
+                DatabaseReference newFirebaseCircle = root.push();
+                newFirebaseCircle.setValue(circle);
                 startActivity(new Intent(MapsActivity.this, signIn.class));
             }
         });
