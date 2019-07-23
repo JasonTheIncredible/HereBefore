@@ -29,11 +29,13 @@ import com.google.android.gms.maps.model.Circle;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
+import com.google.firebase.database.ValueEventListener;
 
 public class MapsActivity extends FragmentActivity implements
         OnMapReadyCallback,
@@ -46,7 +48,6 @@ public class MapsActivity extends FragmentActivity implements
     private GoogleApiClient googleApiClient;
     private Marker currentUserLocationMarker;
     private static final int Request_User_Location_Code = 99;
-    private DatabaseReference root = FirebaseDatabase.getInstance().getReference().getRoot();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,6 +67,46 @@ public class MapsActivity extends FragmentActivity implements
 
         Button circleButton = findViewById(R.id.button1);
         circleButton.setOnClickListener(this);
+
+        /**
+         * This method will be invoked any time the data on the database changes.
+         * Additionally, it will be invoked as soon as we connect the listener, so that we can get an initial snapshot of the data on the database.
+         * @param dataSnapshot
+         */
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        DatabaseReference databaseReference = database.getReference();
+        databaseReference.child("circles").addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                // get all of the children at this level
+                Iterable<DataSnapshot> children = dataSnapshot.getChildren();
+
+                // shake hands with all of them.
+                for (DataSnapshot ds : children) {
+                    LatLng center = new LatLng ((Double) ds.child("center/latitude/").getValue(),(Double) ds.child("center/longitude/").getValue());
+                    boolean clickable = (boolean) ds.child("clickable").getValue();
+                    int fillColor = (int) (long) ds.child("fillColor").getValue();
+                    long radius = (long) ds.child("radius").getValue();
+                    int strokeColor = (int) (long) ds.child("strokeColor").getValue();
+                    float strokeWidth = (float) (long) ds.child("strokeWidth").getValue();
+                    mMap.addCircle(
+                            new CircleOptions()
+                                    .center(center)
+                                    .radius(radius)
+                                    .clickable(clickable)
+                                    .strokeWidth(strokeWidth)
+                                    .strokeColor(strokeColor)
+                                    .fillColor(fillColor)
+                    );
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        });
+
     }
 
     // Move onclick inside onmapready if possible
@@ -128,7 +169,7 @@ public class MapsActivity extends FragmentActivity implements
             @Override
             public void onCircleClick(Circle circle) {
                 //startActivity(new Intent(MapsActivity.this, MainChat.class));
-                DatabaseReference newFirebaseCircle = root.push();
+                DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("circles").push();
                 newFirebaseCircle.setValue(circle);
                 startActivity(new Intent(MapsActivity.this, signIn.class));
             }
