@@ -170,6 +170,7 @@ public class MapsActivity extends FragmentActivity implements
             public void onCircleClick(Circle circle) {
                 //startActivity(new Intent(MapsActivity.this, MainChat.class));
                 DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("circles").push();
+                //TODO: is the following line necessary?
                 newFirebaseCircle.setValue(circle);
                 startActivity(new Intent(MapsActivity.this, signIn.class));
             }
