@@ -1,0 +1,66 @@
+package co.clixel.herebefore;
+
+import android.content.Context;
+import android.support.annotation.NonNull;
+import android.support.v7.widget.RecyclerView;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
+
+import java.util.ArrayList;
+
+public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapter.ViewHolder> {
+
+    private static final String TAG = "RecyclerViewAdapter";
+
+    private ArrayList<String> mMessageUser = new ArrayList<>();
+    private ArrayList<String> mMessageTime = new ArrayList<>();
+    private ArrayList<String> mMessageText = new ArrayList<>();
+    private Context mContext;
+
+    public RecyclerViewAdapter(Context context, ArrayList<String> mMessageUser, ArrayList<String> mMessageTime, ArrayList<String> mMessageText) {
+        this.mContext = context;
+        this.mMessageUser = mMessageUser;
+        this.mMessageTime = mMessageTime;
+        this.mMessageText = mMessageText;
+    }
+
+    @NonNull
+    @Override
+    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.message, parent,false);
+        ViewHolder holder = new ViewHolder(view);
+        return holder;
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+        Log.d(TAG, "onBindViewHolder: called.");
+
+        //holder.messageUser.setText(mMessageUser.get(position));
+        //holder.messageTime.setText(mMessageTime.get(position));
+        holder.messageText.setText(mMessageText.get(position));
+    }
+
+    @Override
+    public int getItemCount() {
+        return mMessageText.size();
+    }
+
+    public class ViewHolder extends RecyclerView.ViewHolder{
+
+        TextView messageUser, messageTime, messageText;
+        RelativeLayout messageItem;
+        
+        public ViewHolder(@NonNull View itemView) {
+            super(itemView);
+            messageUser = itemView.findViewById(R.id.messageUser);
+            messageTime = itemView.findViewById(R.id.messageTime);
+            messageText = itemView.findViewById(R.id.messageText);
+            messageItem = itemView.findViewById(R.id.message);
+        }
+    }
+}

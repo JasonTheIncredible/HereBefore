@@ -1,5 +1,6 @@
 package co.clixel.herebefore;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
@@ -56,7 +57,7 @@ public class signUp extends AppCompatActivity {
                     public void onComplete(@NonNull Task<AuthResult> task) {
                         if(task.isSuccessful()){
                             toastMessage("Signed up");
-                            //TODO: move to chat once signed up.
+                            startActivity(new Intent(signUp.this, ChatTest.class));
                         }if(task.getException() != null){
                             Toast.makeText(getApplicationContext(), "User Authentication Failed: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
                         }else{

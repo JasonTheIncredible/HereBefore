@@ -29,6 +29,7 @@ import com.google.android.gms.maps.model.Circle;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
+import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
@@ -168,14 +169,18 @@ public class MapsActivity extends FragmentActivity implements
 
             @Override
             public void onCircleClick(Circle circle) {
-                //startActivity(new Intent(MapsActivity.this, MainChat.class));
                 DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("circles").push();
-                //TODO: is the following line necessary?
                 newFirebaseCircle.setValue(circle);
-                startActivity(new Intent(MapsActivity.this, signIn.class));
-            }
+                    // Checks if user is already signed in.
+                    if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+                        // User is signed in.
+                        startActivity(new Intent(MapsActivity.this, ChatTest.class));
+                    } else {
+                        // No user is signed in.
+                        startActivity(new Intent(MapsActivity.this, signIn.class));
+                    }
+                }
         });
-
     }
 
     private boolean checkUserLocationPermission()
