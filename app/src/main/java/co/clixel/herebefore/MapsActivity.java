@@ -66,7 +66,7 @@ public class MapsActivity extends FragmentActivity implements
                 .findFragmentById(R.id.activity_maps);
         mapFragment.getMapAsync(this);
 
-        Button circleButton = findViewById(R.id.button1);
+        Button circleButton = findViewById(R.id.createCircleButton);
         circleButton.setOnClickListener(this);
 
         /**
@@ -136,13 +136,8 @@ public class MapsActivity extends FragmentActivity implements
                         .strokeColor(Color.BLUE)
                         .fillColor(Color.argb(70, 50, 50, 100))
         );
-
-        //@Override
-        //public void onCircleClick(Circle circle) {
-        //startActivity(new Intent(MapsActivity.this, MainChat.class));
-        //    int strokeColor = circle.getStrokeColor() ^ 0x00ffffff;
-        //    circle.setStrokeColor(strokeColor);
-        //}
+        DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("circles").push();
+        newFirebaseCircle.setValue(circle);
     }
 
     /**
@@ -169,8 +164,6 @@ public class MapsActivity extends FragmentActivity implements
 
             @Override
             public void onCircleClick(Circle circle) {
-                DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("circles").push();
-                newFirebaseCircle.setValue(circle);
                     // Checks if user is already signed in.
                     if (FirebaseAuth.getInstance().getCurrentUser() != null) {
                         // User is signed in.
