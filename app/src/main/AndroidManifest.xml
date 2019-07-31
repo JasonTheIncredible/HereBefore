@@ -29,11 +29,6 @@
             android:value="@string/google_maps_key" />
 
         <activity
-            android:name=".MainChat"
-            android:label="@string/title_activity_maps">
-        </activity>
-
-        <activity
             android:name=".signIn"
             android:label="@string/title_activity_maps">
         </activity>

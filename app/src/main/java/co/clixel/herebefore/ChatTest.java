@@ -9,7 +9,6 @@ import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.View;
 import android.support.design.widget.FloatingActionButton;
-import android.view.WindowManager;
 import android.widget.EditText;
 
 import com.google.firebase.database.ChildEventListener;
@@ -122,7 +121,7 @@ public class ChatTest extends AppCompatActivity {
                             recyclerView.smoothScrollToPosition(
                                     recyclerView.getAdapter().getItemCount() - 1);
                         }
-                    }, 10);
+                    }, 100);
                 }
             }
         });

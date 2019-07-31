@@ -38,6 +38,8 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+import java.util.UUID;
+
 public class MapsActivity extends FragmentActivity implements
         OnMapReadyCallback,
         GoogleApiClient.ConnectionCallbacks,
@@ -84,12 +86,12 @@ public class MapsActivity extends FragmentActivity implements
 
                 // shake hands with all of them.
                 for (DataSnapshot ds : children) {
-                    LatLng center = new LatLng ((Double) ds.child("center/latitude/").getValue(),(Double) ds.child("center/longitude/").getValue());
-                    boolean clickable = (boolean) ds.child("clickable").getValue();
-                    int fillColor = (int) (long) ds.child("fillColor").getValue();
-                    long radius = (long) ds.child("radius").getValue();
-                    int strokeColor = (int) (long) ds.child("strokeColor").getValue();
-                    float strokeWidth = (float) (long) ds.child("strokeWidth").getValue();
+                    LatLng center = new LatLng ((Double) ds.child("circle/center/latitude/").getValue(),(Double) ds.child("circle/center/longitude/").getValue());
+                    boolean clickable = (boolean) ds.child("circle/clickable").getValue();
+                    int fillColor = (int) (long) ds.child("circle/fillColor").getValue();
+                    long radius = (long) ds.child("circle/radius").getValue();
+                    int strokeColor = (int) (long) ds.child("circle/strokeColor").getValue();
+                    float strokeWidth = (float) (long) ds.child("circle/strokeWidth").getValue();
                     mMap.addCircle(
                             new CircleOptions()
                                     .center(center)
@@ -126,6 +128,9 @@ public class MapsActivity extends FragmentActivity implements
         }
         Location location = LocationServices.FusedLocationApi.getLastLocation(googleApiClient);
 
+        // Generate a random string - to get rid of dashes, use uuid.replace("-", "")
+        String uuid = UUID.randomUUID().toString();
+
         LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
         Circle circle = mMap.addCircle(
                 new CircleOptions()
@@ -136,8 +141,14 @@ public class MapsActivity extends FragmentActivity implements
                         .strokeColor(Color.BLUE)
                         .fillColor(Color.argb(70, 50, 50, 100))
         );
+        CircleInformation circleInformation = new CircleInformation();
+        circleInformation.setCircle(circle);
+        circleInformation.setUuid(uuid);
         DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("circles").push();
-        newFirebaseCircle.setValue(circle);
+        newFirebaseCircle.setValue(circleInformation);
+        DatabaseReference newFirebaseChat = FirebaseDatabase.getInstance().getReference().child("messageThreads").push();
+        newFirebaseChat.child("uuid").setValue(uuid);
+
     }
 
     /**
@@ -168,6 +179,7 @@ public class MapsActivity extends FragmentActivity implements
                     if (FirebaseAuth.getInstance().getCurrentUser() != null) {
                         // User is signed in.
                         startActivity(new Intent(MapsActivity.this, ChatTest.class));
+
                     } else {
                         // No user is signed in.
                         startActivity(new Intent(MapsActivity.this, signIn.class));
