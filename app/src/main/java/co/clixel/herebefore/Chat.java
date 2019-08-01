@@ -46,18 +46,17 @@ public class Chat extends AppCompatActivity {
 
                 //TODO: Only update the thread with the newest input
 
-                // shake hands with all of them.
-                for (DataSnapshot ds : children) {
-                    String messageText = (String) ds.child("message").getValue();
-                    mText.add(messageText);
-                }
+                final Bundle extras = getIntent().getExtras();
+                final String circleID = extras.getString("circleID");
 
                 databaseReference.child("messageThreads").addChildEventListener(new ChildEventListener(){
                     @Override
-                    public void onChildAdded(DataSnapshot ds, String previousChildName) {
-                        String messageText = (String) ds.child("message").getValue();
-                        mText.add(messageText);
-                        initRecyclerView();
+                    public void onChildAdded(DataSnapshot ds, String children) {
+                        if (( ds.child("circleID").getValue() ).equals(circleID)) {
+                            String messageText = (String) ds.child("message").getValue();
+                            mText.add(messageText);
+                            initRecyclerView();
+                        }
                         // TODO: update the view with the newest message rather than initialize the whole recyclerView again?
                     }
 

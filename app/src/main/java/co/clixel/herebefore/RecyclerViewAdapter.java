@@ -16,9 +16,9 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
 
     private static final String TAG = "RecyclerViewAdapter";
 
-    private ArrayList<String> mMessageUser = new ArrayList<>();
-    private ArrayList<String> mMessageTime = new ArrayList<>();
-    private ArrayList<String> mMessageText = new ArrayList<>();
+    private ArrayList<String> mMessageUser;
+    private ArrayList<String> mMessageTime;
+    private ArrayList<String> mMessageText;
     private Context mContext;
 
     public RecyclerViewAdapter(Context context, ArrayList<String> mMessageUser, ArrayList<String> mMessageTime, ArrayList<String> mMessageText) {
@@ -39,7 +39,6 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Log.d(TAG, "onBindViewHolder: called.");
-
         //holder.messageUser.setText(mMessageUser.get(position));
         //holder.messageTime.setText(mMessageTime.get(position));
         holder.messageText.setText(mMessageText.get(position));
