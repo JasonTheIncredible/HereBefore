@@ -39,7 +39,7 @@
         </activity>
 
         <activity
-            android:name=".ChatTest"
+            android:name=".Chat"
             android:label="@string/title_activity_maps">
         </activity>
 

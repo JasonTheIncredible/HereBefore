@@ -62,7 +62,7 @@ public class signIn extends AppCompatActivity{
                     public void onComplete(@NonNull Task<AuthResult> task) {
                         if(task.isSuccessful()){
                             toastMessage("Signed in");
-                            startActivity(new Intent(signIn.this, ChatTest.class));
+                            startActivity(new Intent(signIn.this, Chat.class));
                         }if(task.getException() != null){
                             Toast.makeText(getApplicationContext(), "User Authentication Failed: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
                         }else{

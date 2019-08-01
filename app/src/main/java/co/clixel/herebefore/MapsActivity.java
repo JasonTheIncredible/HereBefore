@@ -29,16 +29,12 @@ import com.google.android.gms.maps.model.Circle;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
-import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
-
-import java.util.UUID;
 
 public class MapsActivity extends FragmentActivity implements
         OnMapReadyCallback,
@@ -49,7 +45,6 @@ public class MapsActivity extends FragmentActivity implements
 
     private GoogleMap mMap;
     private GoogleApiClient googleApiClient;
-    private Marker currentUserLocationMarker;
     private static final int Request_User_Location_Code = 99;
 
     @Override
@@ -89,10 +84,11 @@ public class MapsActivity extends FragmentActivity implements
                     LatLng center = new LatLng ((Double) ds.child("circle/center/latitude/").getValue(),(Double) ds.child("circle/center/longitude/").getValue());
                     boolean clickable = (boolean) ds.child("circle/clickable").getValue();
                     int fillColor = (int) (long) ds.child("circle/fillColor").getValue();
+                    Object id = ds.child("circle/id").getValue();
                     long radius = (long) ds.child("circle/radius").getValue();
                     int strokeColor = (int) (long) ds.child("circle/strokeColor").getValue();
                     float strokeWidth = (float) (long) ds.child("circle/strokeWidth").getValue();
-                    mMap.addCircle(
+                    Circle circle = mMap.addCircle(
                             new CircleOptions()
                                     .center(center)
                                     .radius(radius)
@@ -100,7 +96,7 @@ public class MapsActivity extends FragmentActivity implements
                                     .strokeWidth(strokeWidth)
                                     .strokeColor(strokeColor)
                                     .fillColor(fillColor)
-                    );
+                    ); circle.setTag(id);
                 }
             }
 
@@ -128,9 +124,6 @@ public class MapsActivity extends FragmentActivity implements
         }
         Location location = LocationServices.FusedLocationApi.getLastLocation(googleApiClient);
 
-        // Generate a random string - to get rid of dashes, use uuid.replace("-", "")
-        String uuid = UUID.randomUUID().toString();
-
         LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
         Circle circle = mMap.addCircle(
                 new CircleOptions()
@@ -143,12 +136,8 @@ public class MapsActivity extends FragmentActivity implements
         );
         CircleInformation circleInformation = new CircleInformation();
         circleInformation.setCircle(circle);
-        circleInformation.setUuid(uuid);
         DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("circles").push();
         newFirebaseCircle.setValue(circleInformation);
-        DatabaseReference newFirebaseChat = FirebaseDatabase.getInstance().getReference().child("messageThreads").push();
-        newFirebaseChat.child("uuid").setValue(uuid);
-
     }
 
     /**
@@ -178,10 +167,13 @@ public class MapsActivity extends FragmentActivity implements
                     // Checks if user is already signed in.
                     if (FirebaseAuth.getInstance().getCurrentUser() != null) {
                         // User is signed in.
-                        startActivity(new Intent(MapsActivity.this, ChatTest.class));
-
+                        String circleID = (String) circle.getTag();
+                        Intent Activity = new Intent(MapsActivity.this, Chat.class);
+                        Activity.putExtra("circleID", circleID);
+                        startActivity(Activity);
                     } else {
                         // No user is signed in.
+                        //TODO: Do the above here.
                         startActivity(new Intent(MapsActivity.this, signIn.class));
                     }
                 }

@@ -10,6 +10,7 @@ import android.util.Log;
 import android.view.View;
 import android.support.design.widget.FloatingActionButton;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
@@ -20,9 +21,9 @@ import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
 
-public class ChatTest extends AppCompatActivity {
+public class Chat extends AppCompatActivity {
 
-    private static final String TAG = "ChatTest";
+    private static final String TAG = "Chat";
     private EditText mInput;
     private ArrayList<String> mUser = new ArrayList<>();
     private ArrayList<String> mTime = new ArrayList<>();
@@ -93,14 +94,25 @@ public class ChatTest extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 String input = mInput.getText().toString();
-                if (input != ""){
-                    DatabaseReference newMessageThread = FirebaseDatabase.getInstance().getReference().child("messageThreads").push();
-                    newMessageThread.child("message").setValue(input);
+                Bundle extras = getIntent().getExtras();
+                if ((!input.equals("")) && (extras != null)){
+                    MessageInformation messageInformation = new MessageInformation();
+                    messageInformation.setMessage(input);
+                    String circleID = extras.getString("circleID");
+                    messageInformation.setCircleID(circleID);
+                    DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("messageThreads").push();
+                    newMessage.setValue(messageInformation);
                     mInput.getText().clear();
+                }else {
+                    toastMessage("Something went wrong. Please try again later.");
                 }
             }
         });
 
+    }
+
+    private void toastMessage(String message){
+        Toast.makeText(this,message, Toast.LENGTH_SHORT).show();
     }
 
     private void initRecyclerView(){
