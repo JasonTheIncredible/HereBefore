@@ -40,7 +40,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Log.d(TAG, "onBindViewHolder: called.");
         //holder.messageUser.setText(mMessageUser.get(position));
-        //holder.messageTime.setText(mMessageTime.get(position));
+        holder.messageTime.setText(mMessageTime.get(position));
         holder.messageText.setText(mMessageText.get(position));
     }
 

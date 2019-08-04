@@ -17,9 +17,14 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ServerValue;
 import com.google.firebase.database.ValueEventListener;
 
+import java.text.DateFormat;
 import java.util.ArrayList;
+import java.util.Date;
+
+import static java.text.DateFormat.getDateTimeInstance;
 
 public class Chat extends AppCompatActivity {
 
@@ -54,7 +59,13 @@ public class Chat extends AppCompatActivity {
                     public void onChildAdded(DataSnapshot ds, String children) {
                         if (( ds.child("circleID").getValue() ).equals(circleID)) {
                             String messageText = (String) ds.child("message").getValue();
+                            Long serverDate = (Long) ds.child("date").getValue();
+                            DateFormat dateFormat = getDateTimeInstance();
+                            Date netDate = (new Date(serverDate));
+                            String messageTime = dateFormat.format(netDate);
+                            //TODO: change this formatting and move it to the middle in the view.
                             mText.add(messageText);
+                            mTime.add(messageTime);
                             initRecyclerView();
                         }
                         // TODO: update the view with the newest message rather than initialize the whole recyclerView again?
@@ -97,6 +108,8 @@ public class Chat extends AppCompatActivity {
                 if ((!input.equals("")) && (extras != null)){
                     MessageInformation messageInformation = new MessageInformation();
                     messageInformation.setMessage(input);
+                    Object date = ServerValue.TIMESTAMP;
+                    messageInformation.setDate(date);
                     String circleID = extras.getString("circleID");
                     messageInformation.setCircleID(circleID);
                     DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("messageThreads").push();
