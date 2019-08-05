@@ -23,6 +23,7 @@ import com.google.firebase.database.ValueEventListener;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Locale;
 
 import static java.text.DateFormat.getDateTimeInstance;
 
@@ -60,7 +61,7 @@ public class Chat extends AppCompatActivity {
                         if (( ds.child("circleID").getValue() ).equals(circleID)) {
                             String messageText = (String) ds.child("message").getValue();
                             Long serverDate = (Long) ds.child("date").getValue();
-                            DateFormat dateFormat = getDateTimeInstance();
+                            DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
                             Date netDate = (new Date(serverDate));
                             String messageTime = dateFormat.format(netDate);
                             //TODO: change this formatting and move it to the middle in the view.

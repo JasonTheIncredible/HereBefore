@@ -1,6 +1,7 @@
 package co.clixel.herebefore;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -42,6 +43,18 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
         //holder.messageUser.setText(mMessageUser.get(position));
         holder.messageTime.setText(mMessageTime.get(position));
         holder.messageText.setText(mMessageText.get(position));
+
+        if(position %2 == 1)
+        {
+            holder.itemView.setBackgroundColor(Color.parseColor("#FFFFFF"));
+            //  holder.imageView.setBackgroundColor(Color.parseColor("#FFFFFF"));
+        }
+        else
+        {
+            holder.itemView.setBackgroundColor(Color.parseColor("#FFFAF8FD"));
+            //  holder.imageView.setBackgroundColor(Color.parseColor("#FFFAF8FD"));
+        }
+
     }
 
     @Override
