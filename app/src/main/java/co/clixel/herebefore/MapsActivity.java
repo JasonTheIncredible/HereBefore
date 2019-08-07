@@ -1,39 +1,52 @@
 package co.clixel.herebefore;
 
 import android.Manifest;
+import android.app.AlertDialog;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.location.Criteria;
 import android.location.Location;
-import android.os.Build;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.FragmentActivity;
+import android.location.LocationListener;
+import android.location.LocationManager;
+import android.os.Looper;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.core.app.ActivityCompat;
+import androidx.fragment.app.FragmentActivity;
 import android.os.Bundle;
-import android.support.v4.content.ContextCompat;
+import androidx.core.content.ContextCompat;
 import android.view.View;
 import android.widget.Button;
-import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.LocationSettingsRequest;
+import com.google.android.gms.location.SettingsClient;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.Circle;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+
+import static com.google.android.gms.location.LocationServices.getFusedLocationProviderClient;
 
 public class MapsActivity extends FragmentActivity implements
         OnMapReadyCallback,
@@ -43,19 +56,16 @@ public class MapsActivity extends FragmentActivity implements
         LocationListener {
 
     private GoogleMap mMap;
-    private GoogleApiClient googleApiClient;
     private static final int Request_User_Location_Code = 99;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
-
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            checkUserLocationPermission();
-        }
-
+        checkLocationPermission();
+        startLocationUpdates();
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
@@ -75,11 +85,13 @@ public class MapsActivity extends FragmentActivity implements
         databaseReference.child("circles").addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
                 // get all of the children at this level
                 Iterable<DataSnapshot> children = dataSnapshot.getChildren();
 
                 // shake hands with all of them.
                 for (DataSnapshot ds : children) {
+
                     LatLng center = new LatLng ((Double) ds.child("circle/center/latitude/").getValue(),(Double) ds.child("circle/center/longitude/").getValue());
                     boolean clickable = (boolean) ds.child("circle/clickable").getValue();
                     int fillColor = (int) (long) ds.child("circle/fillColor").getValue();
@@ -107,36 +119,177 @@ public class MapsActivity extends FragmentActivity implements
 
     }
 
-    // Move onclick inside onmapready if possible
-    // Make circle around current location on button press
-    public void onClick(View v) {
-        // Need to update FusedLocationApi in future
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-            return;
-        }
-        Location location = LocationServices.FusedLocationApi.getLastLocation(googleApiClient);
+    public void checkLocationPermission() {
 
-        LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-        Circle circle = mMap.addCircle(
-                new CircleOptions()
-                        .center(latLng)
-                        .radius(40)
-                        .clickable(true)
-                        .strokeWidth(3f)
-                        .strokeColor(Color.BLUE)
-                        .fillColor(Color.argb(70, 50, 50, 100))
-        );
-        CircleInformation circleInformation = new CircleInformation();
-        circleInformation.setCircle(circle);
-        DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("circles").push();
-        newFirebaseCircle.setValue(circleInformation);
+        if (ContextCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            // Should we show an explanation?
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                    Manifest.permission.ACCESS_FINE_LOCATION)) {
+
+                // Show an explanation to the user *asynchronously* -- don't block
+                // this thread waiting for the user's response! After the user
+                // sees the explanation, try again to request the permission.
+                new AlertDialog.Builder(this)
+                        .setTitle("Device Location Required")
+                        .setMessage("We need permission to use your location for the purpose of finding ChatCircles around you.")
+                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+
+                                //Prompt the user once explanation has been shown
+                                ActivityCompat.requestPermissions(MapsActivity.this,
+                                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                                        Request_User_Location_Code);
+                            }
+                        })
+                        .create()
+                        .show();
+
+            } else {
+
+                // No explanation needed, we can request the permission.
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                        Request_User_Location_Code);
+            }
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+
+        // If request is cancelled, the result arrays are empty.
+        if (requestCode == Request_User_Location_Code) {
+            if (grantResults.length > 0
+                    && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+                // permission was granted, yay! Do the
+                // location-related task you need to do.
+                if (ContextCompat.checkSelfPermission(this,
+                        Manifest.permission.ACCESS_FINE_LOCATION)
+                        == PackageManager.PERMISSION_GRANTED) {
+
+                    LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+                    String provider = LocationManager.NETWORK_PROVIDER;
+                    //Request location updates:
+                    locationManager.requestLocationUpdates(provider, 400, 1, this);
+                }
+
+            } else {
+
+                // permission denied, boo! Disable the
+                // functionality that depends on this permission.
+                ActivityCompat.finishAffinity(this);
+
+            }
+        }
+    }
+
+    @Override
+    protected void onResume() {
+
+        super.onResume();
+        if (ContextCompat.checkSelfPermission(MapsActivity.this,
+                Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
+
+            LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+            String provider = LocationManager.NETWORK_PROVIDER;
+            locationManager.requestLocationUpdates(provider, 400, 1, this);
+        }
+        else{
+
+            checkLocationPermission();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+
+        super.onPause();
+        if (ContextCompat.checkSelfPermission(MapsActivity.this,
+                Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
+
+            LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+            locationManager.removeUpdates(this);
+        }
+    }
+
+    protected void startLocationUpdates(){
+
+        // Create the location request to start receiving updates
+        LocationRequest mLocationRequest = new LocationRequest();
+        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+
+        /* 10 secs */
+        long UPDATE_INTERVAL = 10 * 1000;
+        mLocationRequest.setInterval(UPDATE_INTERVAL);
+
+        /* 2 sec */
+        long FASTEST_INTERVAL = 2000;
+        mLocationRequest.setFastestInterval(FASTEST_INTERVAL);
+
+        // Create LocationSettingsRequest object using location request
+        LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder();
+        builder.addLocationRequest(mLocationRequest);
+        LocationSettingsRequest locationSettingsRequest = builder.build();
+
+        // Check whether location settings are satisfied
+        // https://developers.google.com/android/reference/com/google/android/gms/location/SettingsClient
+        SettingsClient settingsClient = LocationServices.getSettingsClient(this);
+        settingsClient.checkLocationSettings(locationSettingsRequest);
+
+        checkLocationPermission();
+
+        // new Google API SDK v11 uses getFusedLocationProviderClient(this)
+        getFusedLocationProviderClient(this).requestLocationUpdates(mLocationRequest, new LocationCallback() {
+                    @Override
+                    public void onLocationResult(LocationResult locationResult) {
+
+                        // do work here
+                        onLocationChanged(locationResult.getLastLocation());
+                    }
+                },
+                Looper.myLooper());
+    }
+
+    // Makes circle around current location on button press
+    public void onClick(View v) {
+
+        checkLocationPermission();
+
+        FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(this);
+
+        mFusedLocationClient.getLastLocation()
+                .addOnSuccessListener(this, new OnSuccessListener<Location>() {
+                    @Override
+                    public void onSuccess(Location location) {
+
+                        // Got last known location. In some rare situations, this can be null.
+                        if (location != null) {
+
+                            // Logic to handle location object
+                            LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
+                            Circle circle = mMap.addCircle(
+                                    new CircleOptions()
+                                            .center(latLng)
+                                            .radius(40)
+                                            .clickable(true)
+                                            .strokeWidth(3f)
+                                            .strokeColor(Color.BLUE)
+                                            .fillColor(Color.argb(70, 50, 50, 100))
+                            );
+                            CircleInformation circleInformation = new CircleInformation();
+                            circleInformation.setCircle(circle);
+                            DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("circles").push();
+                            newFirebaseCircle.setValue(circleInformation);
+                        }
+                    }
+                });
     }
 
     /**
@@ -149,28 +302,49 @@ public class MapsActivity extends FragmentActivity implements
      */
     @Override
     public void onMapReady(GoogleMap googleMap) {
+
         mMap = googleMap;
 
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)
-        {
-            buildGoogleApiClient();
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+
             mMap.setMyLocationEnabled(true);
         }
         //TODO: extract all (visible) circle data and rebuild them when the map loads.
+
+        LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        Criteria criteria = new Criteria();
+        Location location = locationManager.getLastKnownLocation(locationManager.getBestProvider(criteria, false));
+
+        // Slowly zoom to user's location when map is ready
+        if (location != null) {
+
+            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location.getLatitude(), location.getLongitude()), 13));
+
+            CameraPosition cameraPosition = new CameraPosition.Builder()
+                    .target(new LatLng(location.getLatitude(), location.getLongitude()))      // Sets the center of the map to location user
+                    .zoom(18)                   // Sets the zoom
+                    .bearing(0)                // Sets the orientation of the camera
+                    .tilt(0)                   // Sets the tilt of the camera
+                    .build();                   // Creates a CameraPosition from the builder
+            mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition), 4000, null);
+        }
 
         // Does something when clicking on the circle
         mMap.setOnCircleClickListener(new GoogleMap.OnCircleClickListener() {
 
             @Override
             public void onCircleClick(Circle circle) {
+
                     // Checks if user is already signed in.
                     if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+
                         // User is signed in.
                         String circleID = (String) circle.getTag();
                         Intent Activity = new Intent(MapsActivity.this, Chat.class);
                         Activity.putExtra("circleID", circleID);
                         startActivity(Activity);
                     } else {
+
                         // No user is signed in.
                         //TODO: Do the above here.
                         startActivity(new Intent(MapsActivity.this, signIn.class));
@@ -179,110 +353,39 @@ public class MapsActivity extends FragmentActivity implements
         });
     }
 
-    private boolean checkUserLocationPermission()
-    {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
-        {
-            if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION))
-            {
-                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, Request_User_Location_Code);
-            }
-            else
-                {
-                    ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, Request_User_Location_Code);
-                }
-                return false;
-        }
-        else
-            {
-            return true;
-            }
-    }
+    @Override
+    public void onLocationChanged(Location location) {
 
+    }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults)
-    {
-        switch (requestCode)
-        {
-            case Request_User_Location_Code:
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)
-                {
-                    if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)
-                    {
-                        if (googleApiClient == null)
-                        {
-                            buildGoogleApiClient();
-                        }
-                        mMap.setMyLocationEnabled(true);
-                    }
-                }
-                else
-                    {
-                        Toast.makeText(this, "Permission Denied...", Toast.LENGTH_SHORT).show();
-                    }
-        }
+    public void onStatusChanged(String s, int i, Bundle bundle) {
+
     }
 
-    private synchronized void buildGoogleApiClient()
-    {
-        googleApiClient = new GoogleApiClient.Builder(this)
-                .addConnectionCallbacks(this)
-                .addOnConnectionFailedListener(this)
-                .addApi(LocationServices.API)
-                .build();
+    @Override
+    public void onProviderEnabled(String s) {
 
-        googleApiClient.connect();
     }
 
-        @Override
-        public void onLocationChanged(Location location)
-        {
-            //Location lastLocation = location;
+    @Override
+    public void onProviderDisabled(String s) {
 
-            //if (currentUserLocationMarker != null)
-            //{
-            //    currentUserLocationMarker.remove();
-            //}
-
-            LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-            //MarkerOptions markerOptions = new MarkerOptions();
-            //markerOptions.position(latLng);
-            //markerOptions.title("Current Location");
-            //markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE));
-
-            //currentUserLocationMarker = mMap.addMarker(markerOptions);
-
-            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 18f), 2000, null);
-
-            if (googleApiClient != null)
-            {
-                LocationServices.FusedLocationApi.removeLocationUpdates(googleApiClient, this);
-            }
-        }
-
-        @Override
-        public void onConnected(@Nullable Bundle bundle) {
-            LocationRequest locationRequest = new LocationRequest();
-            locationRequest.setInterval(3000);
-            locationRequest.setFastestInterval(3000);
-            locationRequest.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
-
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)
-            {
-                LocationServices.FusedLocationApi.requestLocationUpdates(googleApiClient, locationRequest, this);
-            }
-
-        }
-
-        @Override
-        public void onConnectionSuspended(int i) {
-
-        }
-
-        @Override
-        public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-
-        }
     }
+
+    @Override
+    public void onConnected(@Nullable Bundle bundle) {
+
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+
+    }
+
+    @Override
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+
+    }
+}
 
