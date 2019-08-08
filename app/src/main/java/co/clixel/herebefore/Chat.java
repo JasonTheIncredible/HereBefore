@@ -114,7 +114,8 @@ public class Chat extends AppCompatActivity {
                     DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("messageThreads").push();
                     newMessage.setValue(messageInformation);
                     mInput.getText().clear();
-                }else {
+                }if (input.equals("")){
+                }else{
                     toastMessage("Something went wrong. Please try again later.");
                 }
             }

@@ -7,7 +7,6 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
-import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -57,6 +56,7 @@ public class MapsActivity extends FragmentActivity implements
 
     private GoogleMap mMap;
     private static final int Request_User_Location_Code = 99;
+    boolean firstLoad = true;
 
 
     @Override
@@ -65,6 +65,14 @@ public class MapsActivity extends FragmentActivity implements
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
         checkLocationPermission();
+
+        // Check if GPS is enabled.
+        final LocationManager manager = (LocationManager) getSystemService( Context.LOCATION_SERVICE );
+
+        if ( !manager.isProviderEnabled( LocationManager.GPS_PROVIDER ) ) {
+            buildAlertMessageNoGps();
+        }
+
         startLocationUpdates();
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
@@ -119,6 +127,26 @@ public class MapsActivity extends FragmentActivity implements
 
     }
 
+    private void buildAlertMessageNoGps() {
+
+        final AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage("Your GPS seems to be disabled and GPS is required. Do you want to enable it?")
+                .setCancelable(false)
+                .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                    public void onClick(@SuppressWarnings("unused") final DialogInterface dialog, @SuppressWarnings("unused") final int id) {
+                        startActivity(new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS));
+                    }
+                })
+                .setNegativeButton("No", new DialogInterface.OnClickListener() {
+                    public void onClick(final DialogInterface dialog, @SuppressWarnings("unused") final int id) {
+                        dialog.cancel();
+                        ActivityCompat.finishAffinity(MapsActivity.this);
+                    }
+                });
+        final AlertDialog alert = builder.create();
+        alert.show();
+    }
+
     public void checkLocationPermission() {
 
         if (ContextCompat.checkSelfPermission(this,
@@ -134,7 +162,7 @@ public class MapsActivity extends FragmentActivity implements
                 // sees the explanation, try again to request the permission.
                 new AlertDialog.Builder(this)
                         .setTitle("Device Location Required")
-                        .setMessage("We need permission to use your location for the purpose of finding ChatCircles around you.")
+                        .setMessage("We need permission to use your location to find ChatCircles around you.")
                         .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialogInterface, int i) {
@@ -314,25 +342,6 @@ public class MapsActivity extends FragmentActivity implements
         }
         //TODO: extract all (visible) circle data and rebuild them when the map loads.
 
-        startLocationUpdates();
-        LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        Criteria criteria = new Criteria();
-        Location location = locationManager.getLastKnownLocation(locationManager.getBestProvider(criteria, false));
-
-        // Slowly zoom to user's location when map is ready
-        if (location != null) {
-
-            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location.getLatitude(), location.getLongitude()), 13));
-
-            CameraPosition cameraPosition = new CameraPosition.Builder()
-                    .target(new LatLng(location.getLatitude(), location.getLongitude()))      // Sets the center of the map to location user
-                    .zoom(18)                   // Sets the zoom
-                    .bearing(0)                // Sets the orientation of the camera
-                    .tilt(0)                   // Sets the tilt of the camera
-                    .build();                   // Creates a CameraPosition from the builder
-            mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition), 4000, null);
-        }
-
         // Does something when clicking on the circle
         mMap.setOnCircleClickListener(new GoogleMap.OnCircleClickListener() {
 
@@ -360,6 +369,20 @@ public class MapsActivity extends FragmentActivity implements
     @Override
     public void onLocationChanged(Location location) {
 
+        // Zoom to the user's location the first time the map is loaded.
+        if ((location != null) && (firstLoad)) {
+
+            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location.getLatitude(), location.getLongitude()), 13));
+
+            CameraPosition cameraPosition = new CameraPosition.Builder()
+                    .target(new LatLng(location.getLatitude(), location.getLongitude()))      // Sets the center of the map to location user
+                    .zoom(18)                   // Sets the zoom
+                    .bearing(0)                // Sets the orientation of the camera
+                    .tilt(0)                   // Sets the tilt of the camera
+                    .build();                   // Creates a CameraPosition from the builder
+            mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition), 4000, null);
+            firstLoad = false;
+        }
     }
 
     @Override
