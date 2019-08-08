@@ -1,12 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:map="http://schemas.android.com/apk/res-auto"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".MapsActivity" >
 
-    <fragment xmlns:map="http://schemas.android.com/apk/res-auto"
+    <fragment
         android:id="@+id/activity_maps"
         android:name="com.google.android.gms.maps.SupportMapFragment"
         android:layout_width="match_parent"
@@ -17,8 +16,23 @@
         android:id="@+id/createCircleButton"
         android:layout_width="60dp"
         android:layout_height="60dp"
-        android:layout_gravity="bottom|end"
-        android:layout_marginEnd="10dp"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentBottom="true"
         android:layout_marginBottom="10dp"
-        android:layout_marginRight="10dp"/>
-</FrameLayout>
+        android:layout_marginRight="10dp"
+        android:layout_marginEnd="10dp" />
+
+    <SeekBar
+        android:id="@+id/seekBar"
+        android:layout_width="fill_parent"
+        android:layout_height="60dp"
+        android:layout_alignParentBottom="true"
+        android:layout_marginStart="10dp"
+        android:layout_marginLeft="10dp"
+        android:layout_marginBottom="10dp"
+        android:layout_marginEnd="10dp"
+        android:layout_marginRight="10dp"
+        android:layout_toStartOf="@+id/createCircleButton"
+        android:layout_toLeftOf="@+id/createCircleButton" />
+</RelativeLayout>

@@ -35,6 +35,8 @@ public class Chat extends AppCompatActivity {
     private ArrayList<String> mTime = new ArrayList<>();
     private ArrayList<String> mText = new ArrayList<>();
 
+    //TODO: Save and restore scroll position onPause, onResume, and on screen rotation.
+
     protected void onCreate(Bundle savedInstanceState){
 
         super.onCreate(savedInstanceState);
@@ -47,10 +49,6 @@ public class Chat extends AppCompatActivity {
         databaseReference.child("messageThreads").addListenerForSingleValueEvent(new ValueEventListener(){
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                // get all of the children at this level
-                Iterable<DataSnapshot> children = dataSnapshot.getChildren();
-
-                //TODO: Only update the thread with the newest input
 
                 final Bundle extras = getIntent().getExtras();
                 final String circleID = extras.getString("circleID");

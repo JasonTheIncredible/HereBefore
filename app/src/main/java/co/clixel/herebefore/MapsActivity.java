@@ -260,6 +260,9 @@ public class MapsActivity extends FragmentActivity implements
     // Makes circle around current location on button press
     public void onClick(View v) {
 
+        //TODO: Add onSeekBarListener to change the size of circle when a user creates a circle.
+        //TODO: Add background to seekBar to see it better.
+
         checkLocationPermission();
 
         FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(this);
@@ -311,6 +314,7 @@ public class MapsActivity extends FragmentActivity implements
         }
         //TODO: extract all (visible) circle data and rebuild them when the map loads.
 
+        startLocationUpdates();
         LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         Criteria criteria = new Criteria();
         Location location = locationManager.getLastKnownLocation(locationManager.getBestProvider(criteria, false));
