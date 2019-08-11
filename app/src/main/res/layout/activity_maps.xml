@@ -13,7 +13,7 @@
         android:scrollbars="vertical"/>
 
     <Button
-        android:id="@+id/createCircleButton"
+        android:id="@+id/circleButton"
         android:layout_width="60dp"
         android:layout_height="60dp"
         android:layout_alignParentEnd="true"
@@ -33,6 +33,6 @@
         android:layout_marginBottom="10dp"
         android:layout_marginEnd="10dp"
         android:layout_marginRight="10dp"
-        android:layout_toStartOf="@+id/createCircleButton"
-        android:layout_toLeftOf="@+id/createCircleButton" />
+        android:layout_toStartOf="@+id/circleButton"
+        android:layout_toLeftOf="@+id/circleButton" />
 </RelativeLayout>

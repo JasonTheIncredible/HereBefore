@@ -19,6 +19,7 @@ import android.os.Bundle;
 import androidx.core.content.ContextCompat;
 import android.view.View;
 import android.widget.Button;
+import android.widget.SeekBar;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -51,12 +52,13 @@ public class MapsActivity extends FragmentActivity implements
         OnMapReadyCallback,
         GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener,
-        View.OnClickListener,
         LocationListener {
 
     private GoogleMap mMap;
     private static final int Request_User_Location_Code = 99;
     boolean firstLoad = true;
+    //private static SeekBar seekBar;
+    private Circle circle;
 
 
     @Override
@@ -64,7 +66,57 @@ public class MapsActivity extends FragmentActivity implements
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
+        Button circleButton = findViewById(R.id.circleButton);
         checkLocationPermission();
+
+        circleButton.setOnClickListener(new View.OnClickListener() {
+
+            // Makes circle around current location on button press
+            public void onClick(View v) {
+
+                //TODO: Add onSeekBarListener to change the size of circle when a user creates a circle.
+                //TODO: Add background to seekBar to see it better.
+                //TODO: Change the look of the circleButton.
+                //TODO: Add circleInformation to firebase after changing size and entering the chatCircle.
+                //TODO: Make sure the circle button shows the previously created circle after entering and exiting the chatCircle rather than deleting it and creating a new chatCircle.
+
+                checkLocationPermission();
+
+                FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(MapsActivity.this);
+
+                mFusedLocationClient.getLastLocation()
+                        .addOnSuccessListener(MapsActivity.this, new OnSuccessListener<Location>() {
+                            @Override
+                            public void onSuccess(Location location) {
+
+                                // Got last known location. In some rare situations, this can be null.
+                                if (location != null) {
+
+                                    // Logic to handle location object
+                                    LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
+                                    CircleOptions circleOptions =
+                                            new CircleOptions()
+                                                    .center(latLng)
+                                                    .radius(40)
+                                                    .clickable(true)
+                                                    .strokeWidth(3f)
+                                                    .strokeColor(Color.BLUE)
+                                                    .fillColor(Color.argb(70, 50, 50, 100));
+
+                                    if (circle != null){
+                                        circle.remove();
+                                    }
+                                    circle = mMap.addCircle(circleOptions);
+                                    //CircleInformation circleInformation = new CircleInformation();
+                                    //circleInformation.setCircle(circle);
+                                    //DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("circles").push();
+                                    //newFirebaseCircle.setValue(circleInformation);
+                                }
+                            }
+                        });
+            }
+        });
+
 
         // Check if GPS is enabled.
         final LocationManager manager = (LocationManager) getSystemService( Context.LOCATION_SERVICE );
@@ -80,8 +132,7 @@ public class MapsActivity extends FragmentActivity implements
                 .findFragmentById(R.id.activity_maps);
         mapFragment.getMapAsync(this);
 
-        Button circleButton = findViewById(R.id.createCircleButton);
-        circleButton.setOnClickListener(this);
+        //circleButton.setOnClickListener(this);
 
         /**
          * This method will be invoked any time the data on the database changes.
@@ -124,7 +175,6 @@ public class MapsActivity extends FragmentActivity implements
 
             }
         });
-
     }
 
     private void buildAlertMessageNoGps() {
@@ -283,44 +333,6 @@ public class MapsActivity extends FragmentActivity implements
                     }
                 },
                 Looper.myLooper());
-    }
-
-    // Makes circle around current location on button press
-    public void onClick(View v) {
-
-        //TODO: Add onSeekBarListener to change the size of circle when a user creates a circle.
-        //TODO: Add background to seekBar to see it better.
-
-        checkLocationPermission();
-
-        FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(this);
-
-        mFusedLocationClient.getLastLocation()
-                .addOnSuccessListener(this, new OnSuccessListener<Location>() {
-                    @Override
-                    public void onSuccess(Location location) {
-
-                        // Got last known location. In some rare situations, this can be null.
-                        if (location != null) {
-
-                            // Logic to handle location object
-                            LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-                            Circle circle = mMap.addCircle(
-                                    new CircleOptions()
-                                            .center(latLng)
-                                            .radius(40)
-                                            .clickable(true)
-                                            .strokeWidth(3f)
-                                            .strokeColor(Color.BLUE)
-                                            .fillColor(Color.argb(70, 50, 50, 100))
-                            );
-                            CircleInformation circleInformation = new CircleInformation();
-                            circleInformation.setCircle(circle);
-                            DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("circles").push();
-                            newFirebaseCircle.setValue(circleInformation);
-                        }
-                    }
-                });
     }
 
     /**
