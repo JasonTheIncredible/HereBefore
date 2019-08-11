@@ -69,6 +69,20 @@ public class MapsActivity extends FragmentActivity implements
         Button circleButton = findViewById(R.id.circleButton);
         checkLocationPermission();
 
+        // Check if GPS is enabled.
+        final LocationManager manager = (LocationManager) getSystemService( Context.LOCATION_SERVICE );
+
+        if ( !manager.isProviderEnabled( LocationManager.GPS_PROVIDER ) ) {
+            buildAlertMessageNoGps();
+        }
+
+        startLocationUpdates();
+
+        // Obtain the SupportMapFragment and get notified when the map is ready to be used.
+        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.activity_maps);
+        mapFragment.getMapAsync(this);
+
         circleButton.setOnClickListener(new View.OnClickListener() {
 
             // Makes circle around current location on button press
@@ -76,7 +90,7 @@ public class MapsActivity extends FragmentActivity implements
 
                 //TODO: Add onSeekBarListener to change the size of circle when a user creates a circle.
                 //TODO: Add background to seekBar to see it better.
-                //TODO: Change the look of the circleButton.
+                //TODO: Prevent circle disappearing on screen orientation change.
                 //TODO: Add circleInformation to firebase after changing size and entering the chatCircle.
                 //TODO: Make sure the circle button shows the previously created circle after entering and exiting the chatCircle rather than deleting it and creating a new chatCircle.
 
@@ -116,23 +130,6 @@ public class MapsActivity extends FragmentActivity implements
                         });
             }
         });
-
-
-        // Check if GPS is enabled.
-        final LocationManager manager = (LocationManager) getSystemService( Context.LOCATION_SERVICE );
-
-        if ( !manager.isProviderEnabled( LocationManager.GPS_PROVIDER ) ) {
-            buildAlertMessageNoGps();
-        }
-
-        startLocationUpdates();
-
-        // Obtain the SupportMapFragment and get notified when the map is ready to be used.
-        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.activity_maps);
-        mapFragment.getMapAsync(this);
-
-        //circleButton.setOnClickListener(this);
 
         /**
          * This method will be invoked any time the data on the database changes.
