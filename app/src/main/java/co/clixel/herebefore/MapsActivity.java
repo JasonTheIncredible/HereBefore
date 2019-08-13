@@ -57,7 +57,6 @@ public class MapsActivity extends FragmentActivity implements
     private GoogleMap mMap;
     private static final int Request_User_Location_Code = 99;
     boolean firstLoad = true;
-    //private static SeekBar seekBar;
     private Circle circle;
 
 
@@ -67,6 +66,7 @@ public class MapsActivity extends FragmentActivity implements
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
         Button circleButton = findViewById(R.id.circleButton);
+        final SeekBar progress = findViewById(R.id.seekBar);
         checkLocationPermission();
 
         // Check if GPS is enabled.
@@ -88,7 +88,7 @@ public class MapsActivity extends FragmentActivity implements
             // Makes circle around current location on button press
             public void onClick(View v) {
 
-                //TODO: Add onSeekBarListener to change the size of circle when a user creates a circle.
+                //TODO: Add vertical seekBar to change circle views?
                 //TODO: Add background to seekBar to see it better.
                 //TODO: Prevent circle disappearing on screen orientation change.
                 //TODO: Add circleInformation to firebase after changing size and entering the chatCircle.
@@ -121,6 +121,7 @@ public class MapsActivity extends FragmentActivity implements
                                         circle.remove();
                                     }
                                     circle = mMap.addCircle(circleOptions);
+                                    progress.setProgress(40);
                                     //CircleInformation circleInformation = new CircleInformation();
                                     //circleInformation.setCircle(circle);
                                     //DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("circles").push();
@@ -128,6 +129,24 @@ public class MapsActivity extends FragmentActivity implements
                                 }
                             }
                         });
+            }
+        });
+
+        //TODO: Prevent circle size from going to 0.
+        //Changes size of the circle using the seek bar at the bottom.
+        progress.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                if (circle != null){
+                    circle.setRadius(progress);
+                }
+            }
+
+            @Override
+            public void onStartTrackingTouch(final SeekBar seekBar) {
+            }
+
+            @Override
+            public void onStopTrackingTouch(final SeekBar seekBar) {
             }
         });
 
