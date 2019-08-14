@@ -58,6 +58,7 @@ public class MapsActivity extends FragmentActivity implements
     private static final int Request_User_Location_Code = 99;
     boolean firstLoad = true;
     private Circle circle;
+    SeekBar circleSizeSeekBar;
 
 
     @Override
@@ -65,9 +66,9 @@ public class MapsActivity extends FragmentActivity implements
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
+
         Button circleButton = findViewById(R.id.circleButton);
-        final SeekBar progress = findViewById(R.id.seekBar);
-        checkLocationPermission();
+        circleSizeSeekBar = findViewById(R.id.seekBar);
 
         // Check if GPS is enabled.
         final LocationManager manager = (LocationManager) getSystemService( Context.LOCATION_SERVICE );
@@ -75,8 +76,6 @@ public class MapsActivity extends FragmentActivity implements
         if ( !manager.isProviderEnabled( LocationManager.GPS_PROVIDER ) ) {
             buildAlertMessageNoGps();
         }
-
-        startLocationUpdates();
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
@@ -92,7 +91,7 @@ public class MapsActivity extends FragmentActivity implements
                 //TODO: Add background to seekBar to see it better.
                 //TODO: Prevent circle disappearing on screen orientation change.
                 //TODO: Add circleInformation to firebase after changing size and entering the chatCircle.
-                //TODO: Make sure the circle button shows the previously created circle after entering and exiting the chatCircle rather than deleting it and creating a new chatCircle.
+                //TODO: Pin not appearing after giving access to location.
 
                 checkLocationPermission();
 
@@ -121,20 +120,19 @@ public class MapsActivity extends FragmentActivity implements
                                         circle.remove();
                                     }
                                     circle = mMap.addCircle(circleOptions);
-                                    progress.setProgress(40);
-                                    //CircleInformation circleInformation = new CircleInformation();
-                                    //circleInformation.setCircle(circle);
-                                    //DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("circles").push();
-                                    //newFirebaseCircle.setValue(circleInformation);
+                                    circleSizeSeekBar.setProgress(40);
+                                    CircleInformation circleInformation = new CircleInformation();
+                                    circleInformation.setCircle(circle);
+                                    DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("circles").push();
+                                    newFirebaseCircle.setValue(circleInformation);
                                 }
                             }
                         });
             }
         });
 
-        //TODO: Prevent circle size from going to 0.
         //Changes size of the circle using the seek bar at the bottom.
-        progress.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+        circleSizeSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 if (circle != null){
                     circle.setRadius(progress);
@@ -262,6 +260,8 @@ public class MapsActivity extends FragmentActivity implements
 
                 // permission was granted, yay! Do the
                 // location-related task you need to do.
+                startLocationUpdates();
+
                 if (ContextCompat.checkSelfPermission(this,
                         Manifest.permission.ACCESS_FINE_LOCATION)
                         == PackageManager.PERMISSION_GRANTED) {
@@ -271,13 +271,6 @@ public class MapsActivity extends FragmentActivity implements
                     //Request location updates:
                     locationManager.requestLocationUpdates(provider, 400, 1, this);
                 }
-
-            } else {
-
-                // permission denied, boo! Disable the
-                // functionality that depends on this permission.
-                ActivityCompat.finishAffinity(this);
-
             }
         }
     }
@@ -298,6 +291,12 @@ public class MapsActivity extends FragmentActivity implements
 
             checkLocationPermission();
         }
+        if (circle != null){
+
+            circle.remove();
+        }
+
+        circleSizeSeekBar.setProgress(0);
     }
 
     @Override
@@ -376,21 +375,21 @@ public class MapsActivity extends FragmentActivity implements
             @Override
             public void onCircleClick(Circle circle) {
 
-                    // Checks if user is already signed in.
-                    if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+                // Checks if user is already signed in.
+                if (FirebaseAuth.getInstance().getCurrentUser() != null) {
 
-                        // User is signed in.
-                        String circleID = (String) circle.getTag();
-                        Intent Activity = new Intent(MapsActivity.this, Chat.class);
-                        Activity.putExtra("circleID", circleID);
-                        startActivity(Activity);
-                    } else {
+                    // User is signed in.
+                    String circleID = (String) circle.getTag();
+                    Intent Activity = new Intent(MapsActivity.this, Chat.class);
+                    Activity.putExtra("circleID", circleID);
+                    startActivity(Activity);
+                } else {
 
-                        // No user is signed in.
-                        //TODO: Do the above here.
-                        startActivity(new Intent(MapsActivity.this, signIn.class));
-                    }
+                    // No user is signed in.
+                    //TODO: Do the above here.
+                    startActivity(new Intent(MapsActivity.this, signIn.class));
                 }
+            }
         });
     }
 
@@ -443,4 +442,3 @@ public class MapsActivity extends FragmentActivity implements
 
     }
 }
-

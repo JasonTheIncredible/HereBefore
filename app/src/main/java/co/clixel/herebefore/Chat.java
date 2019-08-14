@@ -104,7 +104,7 @@ public class Chat extends AppCompatActivity {
             public void onClick(View view) {
                 String input = mInput.getText().toString();
                 Bundle extras = getIntent().getExtras();
-                if ((!input.equals("")) && (extras != null)){
+                if ( !input.equals("") ) {
                     MessageInformation messageInformation = new MessageInformation();
                     messageInformation.setMessage(input);
                     Object date = ServerValue.TIMESTAMP;
@@ -114,9 +114,7 @@ public class Chat extends AppCompatActivity {
                     DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("messageThreads").push();
                     newMessage.setValue(messageInformation);
                     mInput.getText().clear();
-                }if (input.equals("")){
-                }else{
-                    toastMessage("Something went wrong. Please try again later.");
+                }else {
                 }
             }
         });
