@@ -70,13 +70,6 @@ public class MapsActivity extends FragmentActivity implements
         Button circleButton = findViewById(R.id.circleButton);
         circleSizeSeekBar = findViewById(R.id.seekBar);
 
-        // Check if GPS is enabled.
-        final LocationManager manager = (LocationManager) getSystemService( Context.LOCATION_SERVICE );
-
-        if ( !manager.isProviderEnabled( LocationManager.GPS_PROVIDER ) ) {
-            buildAlertMessageNoGps();
-        }
-
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.activity_maps);
@@ -91,7 +84,6 @@ public class MapsActivity extends FragmentActivity implements
                 //TODO: Add background to seekBar to see it better.
                 //TODO: Prevent circle disappearing on screen orientation change.
                 //TODO: Add circleInformation to firebase after changing size and entering the chatCircle.
-                //TODO: Pin not appearing after giving access to location.
 
                 checkLocationPermission();
 
@@ -193,22 +185,19 @@ public class MapsActivity extends FragmentActivity implements
 
     private void buildAlertMessageNoGps() {
 
-        final AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setMessage("Your GPS seems to be disabled and GPS is required. Do you want to enable it?")
+        //If GPS is disabled, show an alert dialog and have the user turn GPS on.
+        new AlertDialog.Builder(this)
                 .setCancelable(false)
-                .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
-                    public void onClick(@SuppressWarnings("unused") final DialogInterface dialog, @SuppressWarnings("unused") final int id) {
+                .setTitle("GPS Disabled")
+                .setMessage("Please enable your location services on the following screen.")
+                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+
+                    public void onClick(DialogInterface dialog, int i) {
                         startActivity(new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS));
                     }
                 })
-                .setNegativeButton("No", new DialogInterface.OnClickListener() {
-                    public void onClick(final DialogInterface dialog, @SuppressWarnings("unused") final int id) {
-                        dialog.cancel();
-                        ActivityCompat.finishAffinity(MapsActivity.this);
-                    }
-                });
-        final AlertDialog alert = builder.create();
-        alert.show();
+                .create()
+                .show();
     }
 
     public void checkLocationPermission() {
@@ -225,6 +214,7 @@ public class MapsActivity extends FragmentActivity implements
                 // this thread waiting for the user's response! After the user
                 // sees the explanation, try again to request the permission.
                 new AlertDialog.Builder(this)
+                        .setCancelable(false)
                         .setTitle("Device Location Required")
                         .setMessage("We need permission to use your location to find ChatCircles around you.")
                         .setPositiveButton("OK", new DialogInterface.OnClickListener() {
@@ -270,6 +260,7 @@ public class MapsActivity extends FragmentActivity implements
                     String provider = LocationManager.NETWORK_PROVIDER;
                     //Request location updates:
                     locationManager.requestLocationUpdates(provider, 400, 1, this);
+                    mMap.setMyLocationEnabled(true);
                 }
             }
         }
@@ -286,11 +277,17 @@ public class MapsActivity extends FragmentActivity implements
             LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
             String provider = LocationManager.NETWORK_PROVIDER;
             locationManager.requestLocationUpdates(provider, 400, 1, this);
-        }
-        else{
+        } else{
 
             checkLocationPermission();
         }
+
+        // Check if GPS is enabled.
+        LocationManager manager = (LocationManager) getSystemService( Context.LOCATION_SERVICE );
+        if ( !manager.isProviderEnabled( LocationManager.GPS_PROVIDER ) ) {
+            buildAlertMessageNoGps();
+        }
+
         if (circle != null){
 
             circle.remove();
