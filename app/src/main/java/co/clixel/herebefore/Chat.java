@@ -55,8 +55,10 @@ public class Chat extends AppCompatActivity {
 
                 databaseReference.child("messageThreads").addChildEventListener(new ChildEventListener(){
                     @Override
-                    public void onChildAdded(DataSnapshot ds, String children) {
-                        if (( ds.child("circleID").getValue() ).equals(circleID)) {
+                    public void onChildAdded(@NonNull DataSnapshot ds, String children) {
+
+                        if (ds.child("circleID").getValue().equals(circleID)) {
+
                             String messageText = (String) ds.child("message").getValue();
                             Long serverDate = (Long) ds.child("date").getValue();
                             DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
