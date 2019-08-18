@@ -25,7 +25,7 @@
         android:layout_marginEnd="10dp" />
 
     <SeekBar
-        android:id="@+id/seekBar"
+        android:id="@+id/circleSizeSeekBar"
         android:layout_width="fill_parent"
         android:layout_height="60dp"
         android:layout_alignParentBottom="true"
@@ -37,4 +37,5 @@
         android:layout_marginRight="10dp"
         android:layout_toStartOf="@+id/circleButton"
         android:layout_toLeftOf="@+id/circleButton" />
+
 </RelativeLayout>

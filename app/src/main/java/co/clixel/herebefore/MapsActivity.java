@@ -70,7 +70,7 @@ public class MapsActivity extends FragmentActivity implements
         setContentView(R.layout.activity_maps);
 
         Button circleButton = findViewById(R.id.circleButton);
-        circleSizeSeekBar = findViewById(R.id.seekBar);
+        circleSizeSeekBar = findViewById(R.id.circleSizeSeekBar);
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
@@ -82,10 +82,11 @@ public class MapsActivity extends FragmentActivity implements
             // Makes circle around current location on button press
             public void onClick(View v) {
 
-                //TODO: Add vertical seekBar to change circle views?
-                //TODO: Add background to seekBar to see it better.
+                //TODO: Add discrete vertical seekBar (with images of circleButton) to change circle views and adjust max possible size of chatCircles
                 //TODO: Prevent new (non-Firebase) circle disappearing on screen orientation change.
+                //TODO: Prevent creating new circles every time you enter a circle.
                 //TODO: Maybe: make progress bar create a circle and change the createCircleButton to add/delete circles.
+
 
                 checkLocationPermission();
 
@@ -476,7 +477,7 @@ public class MapsActivity extends FragmentActivity implements
                     .bearing(0)                // Sets the orientation of the camera
                     .tilt(0)                   // Sets the tilt of the camera
                     .build();                   // Creates a CameraPosition from the builder
-            mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition), 4000, null);
+            mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition), 2000, null);
             firstLoad = false;
         }
     }
