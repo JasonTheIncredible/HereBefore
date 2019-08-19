@@ -61,7 +61,14 @@ public class MapsActivity extends FragmentActivity implements
     private Circle circle;
     SeekBar circleSizeSeekBar;
     String circleID;
+    LatLng latLng;
+    Double radius;
 
+    //TODO: Prevent camera zoom-in on screen orientation change (does not happen after clicking circleButton)
+    //TODO: Load non-Firebase circles onResume
+    //TODO: Move more stuff from onCreate to onMapReady
+    //TODO: Prevent circle overlap
+    //TODO: Add discrete vertical seekBar (with images of circleButton) to change circle views and adjust max possible size of chatCircles
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,16 +84,17 @@ public class MapsActivity extends FragmentActivity implements
                 .findFragmentById(R.id.activity_maps);
         mapFragment.getMapAsync(this);
 
+        // Get non-Firebase circle information upon screen orientation change.
+        if ( (savedInstanceState != null) && (savedInstanceState.getParcelable("circleCenter") != null) ) {
+
+            latLng = savedInstanceState.getParcelable("circleCenter");
+            radius = savedInstanceState.getDouble("circleRadius");
+        }
+
         circleButton.setOnClickListener(new View.OnClickListener() {
 
             // Makes circle around current location on button press
             public void onClick(View v) {
-
-                //TODO: Add discrete vertical seekBar (with images of circleButton) to change circle views and adjust max possible size of chatCircles
-                //TODO: Prevent new (non-Firebase) circle disappearing on screen orientation change.
-                //TODO: Prevent creating new circles every time you enter a circle.
-                //TODO: Maybe: make progress bar create a circle and change the createCircleButton to add/delete circles.
-
 
                 checkLocationPermission();
 
@@ -186,6 +194,18 @@ public class MapsActivity extends FragmentActivity implements
         };
 
         firebaseCircles.addListenerForSingleValueEvent(eventListener);
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+
+        //Save non-Firebase circle's info to rebuild it after screen orientation change.
+        if (circle != null){
+
+            outState.putParcelable("circleCenter", circle.getCenter());
+            outState.putDouble("circleRadius", circle.getRadius());
+            super.onSaveInstanceState(outState);
+        }
     }
 
     private void buildAlertMessageNoGps() {
@@ -409,6 +429,28 @@ public class MapsActivity extends FragmentActivity implements
         }
         //TODO: extract all (visible) circle data and rebuild them when the map loads.
 
+        // Rebuild non-Firebase circle upon screen orientation change.
+        if (latLng != null && radius != null) {
+
+            CircleOptions circleOptions =
+                    new CircleOptions()
+                            .center(latLng)
+                            .radius(radius)
+                            .clickable(true)
+                            .strokeWidth(3f)
+                            .strokeColor(Color.BLUE)
+                            .fillColor(Color.argb(70, 50, 50, 100));
+
+            if (circle != null) {
+
+                circle.remove();
+            }
+
+            int circleSize = (int) (double) radius;
+            circle = mMap.addCircle(circleOptions);
+            circleSizeSeekBar.setProgress(circleSize);
+        }
+
         // Does something when clicking on the circle
         mMap.setOnCircleClickListener(new GoogleMap.OnCircleClickListener() {
 
@@ -466,7 +508,7 @@ public class MapsActivity extends FragmentActivity implements
     @Override
     public void onLocationChanged(Location location) {
 
-        // Zoom to the user's location the first time the map is loaded.
+        // Zoom to the user's location the first time the map loads.
         if ((location != null) && (firstLoad)) {
 
             mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location.getLatitude(), location.getLongitude()), 13));
