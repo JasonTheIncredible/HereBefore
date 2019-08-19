@@ -59,13 +59,12 @@ public class MapsActivity extends FragmentActivity implements
     private static final int Request_User_Location_Code = 99;
     boolean firstLoad = true;
     private Circle circle;
-    SeekBar circleSizeSeekBar;
-    String circleID;
-    LatLng latLng;
-    Double radius;
+    private SeekBar circleSizeSeekBar;
+    private String circleID;
+    private LatLng latLng;
+    private Double radius;
+    private CameraPosition cameraPosition;
 
-    //TODO: Prevent camera zoom-in on screen orientation change (does not happen after clicking circleButton)
-    //TODO: Load non-Firebase circles onResume
     //TODO: Move more stuff from onCreate to onMapReady
     //TODO: Prevent circle overlap
     //TODO: Add discrete vertical seekBar (with images of circleButton) to change circle views and adjust max possible size of chatCircles
@@ -84,11 +83,19 @@ public class MapsActivity extends FragmentActivity implements
                 .findFragmentById(R.id.activity_maps);
         mapFragment.getMapAsync(this);
 
-        // Get non-Firebase circle information upon screen orientation change.
+        // Get non-Firebase circle information after screen orientation change.
         if ( (savedInstanceState != null) && (savedInstanceState.getParcelable("circleCenter") != null) ) {
 
             latLng = savedInstanceState.getParcelable("circleCenter");
             radius = savedInstanceState.getDouble("circleRadius");
+            firstLoad = false;
+        }
+
+        // Get camera position information after screen orientation change.
+        if ( (savedInstanceState != null) && (savedInstanceState.getParcelable("cameraPosition") != null) ) {
+
+            cameraPosition = savedInstanceState.getParcelable("cameraPosition");
+            firstLoad = false;
         }
 
         circleButton.setOnClickListener(new View.OnClickListener() {
@@ -199,11 +206,16 @@ public class MapsActivity extends FragmentActivity implements
     @Override
     public void onSaveInstanceState(Bundle outState) {
 
-        //Save non-Firebase circle's info to rebuild it after screen orientation change.
+        //Save non-Firebase circle info upon screen orientation change.
         if (circle != null){
 
             outState.putParcelable("circleCenter", circle.getCenter());
             outState.putDouble("circleRadius", circle.getRadius());
+        }
+
+        //Save camera info upon screen orientation change.
+        if (mMap != null) {
+            outState.putParcelable("cameraPosition", mMap.getCameraPosition());
             super.onSaveInstanceState(outState);
         }
     }
@@ -303,43 +315,6 @@ public class MapsActivity extends FragmentActivity implements
             String provider = LocationManager.NETWORK_PROVIDER;
             locationManager.requestLocationUpdates(provider, 400, 1, this);
 
-            DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-            DatabaseReference firebaseCircles = rootRef.child("circles");
-            ValueEventListener eventListener = new ValueEventListener() {
-                @Override
-                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-
-                    for (DataSnapshot ds : dataSnapshot.getChildren()) {
-
-                        if (dataSnapshot.getValue() != null) {
-                            LatLng center = new LatLng((Double) ds.child("circle/center/latitude/").getValue(), (Double) ds.child("circle/center/longitude/").getValue());
-                            boolean clickable = (boolean) ds.child("circle/clickable").getValue();
-                            int fillColor = (int) (long) ds.child("circle/fillColor").getValue();
-                            Object id = ds.child("circle/id").getValue();
-                            long radius = (long) ds.child("circle/radius").getValue();
-                            int strokeColor = (int) (long) ds.child("circle/strokeColor").getValue();
-                            float strokeWidth = (float) (long) ds.child("circle/strokeWidth").getValue();
-                            Circle circle = mMap.addCircle(
-                                    new CircleOptions()
-                                            .center(center)
-                                            .radius(radius)
-                                            .clickable(clickable)
-                                            .strokeWidth(strokeWidth)
-                                            .strokeColor(strokeColor)
-                                            .fillColor(fillColor)
-                            ); circle.setTag(id);
-                        }
-                    }
-                }
-
-                @Override
-                public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                }
-            };
-
-            firebaseCircles.addListenerForSingleValueEvent(eventListener);
-
         } else{
 
             checkLocationPermission();
@@ -350,13 +325,6 @@ public class MapsActivity extends FragmentActivity implements
         if ( !manager.isProviderEnabled( LocationManager.GPS_PROVIDER ) ) {
             buildAlertMessageNoGps();
         }
-
-        if (circle != null){
-
-            circle.remove();
-        }
-
-        circleSizeSeekBar.setProgress(0);
     }
 
     @Override
@@ -449,6 +417,12 @@ public class MapsActivity extends FragmentActivity implements
             int circleSize = (int) (double) radius;
             circle = mMap.addCircle(circleOptions);
             circleSizeSeekBar.setProgress(circleSize);
+        }
+
+        // Re-build camera position upon screen orientation change.
+        if (cameraPosition != null){
+
+            mMap.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
         }
 
         // Does something when clicking on the circle
