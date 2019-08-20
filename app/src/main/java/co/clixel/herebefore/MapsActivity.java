@@ -65,9 +65,10 @@ public class MapsActivity extends FragmentActivity implements
     private Double radius;
     private CameraPosition cameraPosition;
 
-    //TODO: Move more stuff from onCreate to onMapReady
-    //TODO: Prevent circle overlap
-    //TODO: Add discrete vertical seekBar (with images of circleButton) to change circle views and adjust max possible size of chatCircles
+    //TODO: Prevent circle overlap.
+    //TODO: Add discrete vertical seekBar (with images of circleButton) to change circle views and adjust max possible size of chatCircles.
+    //TODO: Extract all (visible) circle data and rebuild them when the map loads (in onMapReady).
+    //TODO: Adjust what happens if no user is signed in upon clicking a chatCircle (in onMapReady).
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,13 +76,13 @@ public class MapsActivity extends FragmentActivity implements
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
 
-        Button circleButton = findViewById(R.id.circleButton);
-        circleSizeSeekBar = findViewById(R.id.circleSizeSeekBar);
-
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.activity_maps);
         mapFragment.getMapAsync(this);
+
+        Button circleButton = findViewById(R.id.circleButton);
+        circleSizeSeekBar = findViewById(R.id.circleSizeSeekBar);
 
         // Get non-Firebase circle information after screen orientation change.
         if ( (savedInstanceState != null) && (savedInstanceState.getParcelable("circleCenter") != null) ) {
@@ -98,9 +99,9 @@ public class MapsActivity extends FragmentActivity implements
             firstLoad = false;
         }
 
+        // Makes circle around user's current location on button press
         circleButton.setOnClickListener(new View.OnClickListener() {
 
-            // Makes circle around current location on button press
             public void onClick(View v) {
 
                 checkLocationPermission();
@@ -147,7 +148,7 @@ public class MapsActivity extends FragmentActivity implements
             }
         });
 
-        //Changes size of the circle using the seek bar at the bottom.
+        // Changes size of the circle using the seek bar at the bottom.
         circleSizeSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 if (circle != null){
@@ -206,14 +207,14 @@ public class MapsActivity extends FragmentActivity implements
     @Override
     public void onSaveInstanceState(Bundle outState) {
 
-        //Save non-Firebase circle info upon screen orientation change.
+        // Save non-Firebase circle info upon screen orientation change.
         if (circle != null){
 
             outState.putParcelable("circleCenter", circle.getCenter());
             outState.putDouble("circleRadius", circle.getRadius());
         }
 
-        //Save camera info upon screen orientation change.
+        // Save camera info upon screen orientation change.
         if (mMap != null) {
             outState.putParcelable("cameraPosition", mMap.getCameraPosition());
             super.onSaveInstanceState(outState);
@@ -222,7 +223,7 @@ public class MapsActivity extends FragmentActivity implements
 
     private void buildAlertMessageNoGps() {
 
-        //If GPS is disabled, show an alert dialog and have the user turn GPS on.
+        // If GPS is disabled, show an alert dialog and have the user turn GPS on.
         new AlertDialog.Builder(this)
                 .setCancelable(false)
                 .setTitle("GPS Disabled")
@@ -295,7 +296,7 @@ public class MapsActivity extends FragmentActivity implements
 
                     LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
                     String provider = LocationManager.NETWORK_PROVIDER;
-                    //Request location updates:
+                    // Request location updates:
                     locationManager.requestLocationUpdates(provider, 400, 1, this);
                     mMap.setMyLocationEnabled(true);
                 }
@@ -304,9 +305,26 @@ public class MapsActivity extends FragmentActivity implements
     }
 
     @Override
+    protected void onPause() {
+
+        super.onPause();
+
+        // Stop updating location information.
+        if (ContextCompat.checkSelfPermission(MapsActivity.this,
+                Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
+
+            LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+            locationManager.removeUpdates(this);
+        }
+    }
+
+    @Override
     protected void onResume() {
 
         super.onResume();
+
+        // Start updating location
         if (ContextCompat.checkSelfPermission(MapsActivity.this,
                 Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
@@ -324,19 +342,6 @@ public class MapsActivity extends FragmentActivity implements
         LocationManager manager = (LocationManager) getSystemService( Context.LOCATION_SERVICE );
         if ( !manager.isProviderEnabled( LocationManager.GPS_PROVIDER ) ) {
             buildAlertMessageNoGps();
-        }
-    }
-
-    @Override
-    protected void onPause() {
-
-        super.onPause();
-        if (ContextCompat.checkSelfPermission(MapsActivity.this,
-                Manifest.permission.ACCESS_FINE_LOCATION)
-                == PackageManager.PERMISSION_GRANTED) {
-
-            LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
-            locationManager.removeUpdates(this);
         }
     }
 
@@ -395,7 +400,6 @@ public class MapsActivity extends FragmentActivity implements
 
             mMap.setMyLocationEnabled(true);
         }
-        //TODO: extract all (visible) circle data and rebuild them when the map loads.
 
         // Rebuild non-Firebase circle upon screen orientation change.
         if (latLng != null && radius != null) {
@@ -425,7 +429,7 @@ public class MapsActivity extends FragmentActivity implements
             mMap.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
         }
 
-        // Does something when clicking on the circle
+        // Go to chat when clicking on the circle
         mMap.setOnCircleClickListener(new GoogleMap.OnCircleClickListener() {
 
             @Override
@@ -472,7 +476,6 @@ public class MapsActivity extends FragmentActivity implements
                 } else {
 
                     // No user is signed in.
-                    //TODO: Do the above here.
                     startActivity(new Intent(MapsActivity.this, signIn.class));
                 }
             }
@@ -482,7 +485,7 @@ public class MapsActivity extends FragmentActivity implements
     @Override
     public void onLocationChanged(Location location) {
 
-        // Zoom to the user's location the first time the map loads.
+        // Zoom to user's location the first time the map loads.
         if ((location != null) && (firstLoad)) {
 
             mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location.getLatitude(), location.getLongitude()), 13));

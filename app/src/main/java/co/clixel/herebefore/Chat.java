@@ -36,6 +36,11 @@ public class Chat extends AppCompatActivity {
     private ArrayList<String> mText = new ArrayList<>();
 
     //TODO: Save and restore scroll position onPause, onResume, and on screen rotation.
+    //TODO: Do something with onPause and onResume.
+    //TODO: Update the RecyclerView with the newest message rather than initialize the whole recyclerView again (notifyDataSetChanged).
+    //TODO: Move name and time to the middle of the RecyclerView (in message.xml file)?
+    //TODO: Add a username (in message.xml).
+    //TODO: Add ability to add pictures and video to RecyclerView.
 
     protected void onCreate(Bundle savedInstanceState){
 
@@ -43,7 +48,9 @@ public class Chat extends AppCompatActivity {
         setContentView(R.layout.messaginglayout);
 
         mInput = findViewById(R.id.input);
+        FloatingActionButton sendButton = findViewById(R.id.sendButton);
 
+        // Load messages from Firebase.
         final FirebaseDatabase database = FirebaseDatabase.getInstance();
         final DatabaseReference databaseReference = database.getReference();
         databaseReference.child("messageThreads").addListenerForSingleValueEvent(new ValueEventListener(){
@@ -64,12 +71,10 @@ public class Chat extends AppCompatActivity {
                             DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
                             Date netDate = (new Date(serverDate));
                             String messageTime = dateFormat.format(netDate);
-                            //TODO: change this formatting and move it to the middle in the view.
                             mText.add(messageText);
                             mTime.add(messageTime);
                             initRecyclerView();
                         }
-                        // TODO: update the view with the newest message rather than initialize the whole recyclerView again?
                     }
 
                     @Override
@@ -100,13 +105,16 @@ public class Chat extends AppCompatActivity {
             }
         });
 
-        FloatingActionButton sendButton = findViewById(R.id.sendButton);
         sendButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+
                 String input = mInput.getText().toString();
                 Bundle extras = getIntent().getExtras();
+
+                // Send message to Firebase.
                 if ( !input.equals("") ) {
+
                     MessageInformation messageInformation = new MessageInformation();
                     messageInformation.setMessage(input);
                     Object date = ServerValue.TIMESTAMP;
@@ -128,35 +136,29 @@ public class Chat extends AppCompatActivity {
     }
 
     private void initRecyclerView(){
+
+        // Initialize the RecyclerView
         Log.d(TAG, "initRecyclerView: init recyclerView.");
+
         final RecyclerView recyclerView = findViewById(R.id.messageList);
+
         RecyclerViewAdapter adapter = new RecyclerViewAdapter(this, mUser, mTime, mText);
         recyclerView.setAdapter(adapter);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        recyclerView.scrollToPosition(mText.size() - 1);
-        //TODO: move this line inside addListenerForSingleEvent?
-        recyclerView.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
-            @Override
-            public void onLayoutChange(View v, int left, int top, int right, int bottom, int oldLeft, int oldTop, int oldRight, int oldBottom) {
-                if (bottom < oldBottom) {
-                    recyclerView.postDelayed(new Runnable() {
-                        @Override
-                        public void run() {
-                            recyclerView.smoothScrollToPosition(
-                                    recyclerView.getAdapter().getItemCount() - 1);
-                        }
-                    }, 100);
-                }
-            }
-        });
 
+        // Scroll to bottom of chat after initialization.
+        recyclerView.scrollToPosition(mText.size() - 1);
     }
 
     @Override
-    public void onStart(){
+    public void onPause(){
 
-        super.onStart();
-
+        super.onPause();
     }
 
+    @Override
+    public void onResume(){
+
+        super.onResume();
+    }
 }
