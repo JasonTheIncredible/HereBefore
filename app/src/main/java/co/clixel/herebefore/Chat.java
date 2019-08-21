@@ -6,9 +6,12 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import android.os.Parcelable;
 import android.util.Log;
 import android.view.View;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+
 import android.widget.EditText;
 import android.widget.Toast;
 
@@ -34,8 +37,11 @@ public class Chat extends AppCompatActivity {
     private ArrayList<String> mUser = new ArrayList<>();
     private ArrayList<String> mTime = new ArrayList<>();
     private ArrayList<String> mText = new ArrayList<>();
+    private RecyclerView recyclerView;
+    private Parcelable recyclerViewState;
+    public static int index = -1;
+    public static int top = -1;
 
-    //TODO: Save and restore scroll position onPause, onResume, and on screen rotation.
     //TODO: Do something with onPause and onResume.
     //TODO: Update the RecyclerView with the newest message rather than initialize the whole recyclerView again (notifyDataSetChanged).
     //TODO: Move name and time to the middle of the RecyclerView (in message.xml file)?
@@ -49,6 +55,11 @@ public class Chat extends AppCompatActivity {
 
         mInput = findViewById(R.id.input);
         FloatingActionButton sendButton = findViewById(R.id.sendButton);
+
+        // Get RecyclerView scroll position after screen orientation change.
+        if ( (savedInstanceState != null) && (savedInstanceState.getParcelable("recyclerView") != null) ) {
+            recyclerViewState = savedInstanceState.getParcelable("recyclerView");
+        }
 
         // Load messages from Firebase.
         final FirebaseDatabase database = FirebaseDatabase.getInstance();
@@ -73,6 +84,15 @@ public class Chat extends AppCompatActivity {
                             String messageTime = dateFormat.format(netDate);
                             mText.add(messageText);
                             mTime.add(messageTime);
+
+                            // Read RecyclerView scroll position.
+                            if ( recyclerView != null ){
+
+                                index = ( (LinearLayoutManager) recyclerView.getLayoutManager()).findFirstVisibleItemPosition();
+                                View v = recyclerView.getChildAt(0);
+                                top = (v == null) ? 0 : (v.getTop() - recyclerView.getPaddingTop());
+                            }
+
                             initRecyclerView();
                         }
                     }
@@ -131,6 +151,16 @@ public class Chat extends AppCompatActivity {
 
     }
 
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+
+        // Save RecyclerView scroll position upon screen orientation change.
+        if (recyclerView != null) {
+            outState.putParcelable("recyclerView", recyclerView.getLayoutManager().onSaveInstanceState());
+            super.onSaveInstanceState(outState);
+        }
+    }
+
     private void toastMessage(String message){
         Toast.makeText(this,message, Toast.LENGTH_SHORT).show();
     }
@@ -140,14 +170,28 @@ public class Chat extends AppCompatActivity {
         // Initialize the RecyclerView
         Log.d(TAG, "initRecyclerView: init recyclerView.");
 
-        final RecyclerView recyclerView = findViewById(R.id.messageList);
+        recyclerView = findViewById(R.id.messageList);
 
         RecyclerViewAdapter adapter = new RecyclerViewAdapter(this, mUser, mTime, mText);
         recyclerView.setAdapter(adapter);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
-        // Scroll to bottom of chat after initialization.
-        recyclerView.scrollToPosition(mText.size() - 1);
+        // Scroll to bottom of chat after first initialization.
+        if ( recyclerViewState == null && index == -1) {
+            recyclerView.scrollToPosition(mText.size() - 1);
+        }
+
+        // Restore RecyclerView scroll position upon screen orientation change.
+        if ( recyclerViewState != null ) {
+
+            recyclerView.getLayoutManager().onRestoreInstanceState(recyclerViewState);
+        }
+
+        // Set RecyclerView scroll position to prevent movement when Firebase gets updated.
+        if ( index != -1 ){
+
+            ( (LinearLayoutManager) recyclerView.getLayoutManager() ).scrollToPositionWithOffset( index, top);
+        }
     }
 
     @Override
