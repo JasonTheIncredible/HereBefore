@@ -2,7 +2,6 @@ package co.clixel.herebefore;
 
 import android.os.Bundle;
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -13,9 +12,7 @@ import android.view.View;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import android.widget.EditText;
-import android.widget.Toast;
 
-import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -39,92 +36,85 @@ public class Chat extends AppCompatActivity {
     private ArrayList<String> mText = new ArrayList<>();
     private RecyclerView recyclerView;
     private Parcelable recyclerViewState;
-    public static int index = -1;
-    public static int top = -1;
+    private static int index = -1;
+    private static int top = -1;
+    private DatabaseReference databaseReference;
+    private ValueEventListener eventListener;
+    private FloatingActionButton sendButton;
 
-    //TODO: Do something with onPause and onResume.
+    //TODO: If user is on the bottom of RecyclerView and keyboard comes up, move to bottom of RecyclerView up.
     //TODO: Update the RecyclerView with the newest message rather than initialize the whole recyclerView again (notifyDataSetChanged).
     //TODO: Move name and time to the middle of the RecyclerView (in message.xml file)?
     //TODO: Add a username (in message.xml).
     //TODO: Add ability to add pictures and video to RecyclerView.
+    //TODO: Check updating in different states with another device.
 
+    @Override
     protected void onCreate(Bundle savedInstanceState){
 
         super.onCreate(savedInstanceState);
+        Log.i(TAG, "onCreate()");
         setContentView(R.layout.messaginglayout);
 
         mInput = findViewById(R.id.input);
-        FloatingActionButton sendButton = findViewById(R.id.sendButton);
+        sendButton = findViewById(R.id.sendButton);
 
         // Get RecyclerView scroll position after screen orientation change.
         if ( (savedInstanceState != null) && (savedInstanceState.getParcelable("recyclerView") != null) ) {
             recyclerViewState = savedInstanceState.getParcelable("recyclerView");
         }
+    }
+
+    @Override
+    protected void onStart() {
+
+        super.onStart();
+        Log.i(TAG, "onStart()");
 
         // Load messages from Firebase.
-        final FirebaseDatabase database = FirebaseDatabase.getInstance();
-        final DatabaseReference databaseReference = database.getReference();
-        databaseReference.child("messageThreads").addListenerForSingleValueEvent(new ValueEventListener(){
+        DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
+        databaseReference = rootRef.child("messageThreads");
+        eventListener = new ValueEventListener(){
+
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
 
                 final Bundle extras = getIntent().getExtras();
                 final String circleID = extras.getString("circleID");
 
-                databaseReference.child("messageThreads").addChildEventListener(new ChildEventListener(){
-                    @Override
-                    public void onChildAdded(@NonNull DataSnapshot ds, String children) {
+                for (DataSnapshot ds : dataSnapshot.getChildren()) {
 
-                        if (ds.child("circleID").getValue().equals(circleID)) {
+                    if (ds.child("circleID").getValue().equals(circleID)) {
 
-                            String messageText = (String) ds.child("message").getValue();
-                            Long serverDate = (Long) ds.child("date").getValue();
-                            DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
-                            Date netDate = (new Date(serverDate));
-                            String messageTime = dateFormat.format(netDate);
-                            mText.add(messageText);
-                            mTime.add(messageTime);
+                        String messageText = (String) ds.child("message").getValue();
+                        Long serverDate = (Long) ds.child("date").getValue();
+                        DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
+                        Date netDate = (new Date(serverDate));
+                        String messageTime = dateFormat.format(netDate);
+                        mText.add(messageText);
+                        mTime.add(messageTime);
 
-                            // Read RecyclerView scroll position.
-                            if ( recyclerView != null ){
+                        // Read RecyclerView scroll position.
+                        if ( recyclerView != null ){
 
-                                index = ( (LinearLayoutManager) recyclerView.getLayoutManager()).findFirstVisibleItemPosition();
-                                View v = recyclerView.getChildAt(0);
-                                top = (v == null) ? 0 : (v.getTop() - recyclerView.getPaddingTop());
-                            }
-
-                            initRecyclerView();
+                            index = ( (LinearLayoutManager) recyclerView.getLayoutManager()).findFirstVisibleItemPosition();
+                            View v = recyclerView.getChildAt(0);
+                            top = (v == null) ? 0 : (v.getTop() - recyclerView.getPaddingTop());
                         }
+
+                        initRecyclerView();
                     }
-
-                    @Override
-                    public void onChildChanged(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
-
-                    }
-
-                    @Override
-                    public void onChildRemoved(@NonNull DataSnapshot dataSnapshot) {
-
-                    }
-
-                    @Override
-                    public void onChildMoved(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
-
-                    }
-
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                    }
-
-                });
+                }
             }
 
             public void onCancelled(@NonNull DatabaseError databaseError) {
 
             }
-        });
+        };
 
+        databaseReference.addValueEventListener(eventListener);
+
+        // onClickListener for sending message to Firebase.
         sendButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -148,27 +138,86 @@ public class Chat extends AppCompatActivity {
                 }
             }
         });
+    }
 
+    @Override
+    protected void onRestart() {
+
+        super.onRestart();
+        Log.i(TAG, "onRestart()");
+
+        // Clear RecyclerView before adding new items in onStart().
+        if (recyclerView != null){
+
+            mUser.clear();
+            mTime.clear();
+            mText.clear();
+        }
+    }
+
+    @Override
+    protected void onResume(){
+
+        super.onResume();
+        Log.i(TAG, "onResume()");
+    }
+
+    @Override
+    protected void onPause(){
+
+        super.onPause();
+        Log.i(TAG, "onPause()");
+    }
+
+    @Override
+    protected void onStop() {
+
+        super.onStop();
+        Log.i(TAG, "onStop()");
+
+        // Stop the Firebase event listener.
+        if (databaseReference != null){
+
+            databaseReference.removeEventListener(eventListener);
+        }
+
+        // Stop the Firebase event listener.
+        if (eventListener != null){
+
+            eventListener = null;
+        }
+
+        // Stop the listener to save resources.
+        if (sendButton != null){
+
+            sendButton.setOnClickListener(null);
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+
+        super.onDestroy();
+        Log.i(TAG, "onDestroy()");
     }
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
 
+        Log.i(TAG, "onSaveInstanceState()");
+
         // Save RecyclerView scroll position upon screen orientation change.
         if (recyclerView != null) {
+
             outState.putParcelable("recyclerView", recyclerView.getLayoutManager().onSaveInstanceState());
             super.onSaveInstanceState(outState);
         }
     }
 
-    private void toastMessage(String message){
-        Toast.makeText(this,message, Toast.LENGTH_SHORT).show();
-    }
-
     private void initRecyclerView(){
 
         // Initialize the RecyclerView
-        Log.d(TAG, "initRecyclerView: init recyclerView.");
+        Log.i(TAG, "initRecyclerView()");
 
         recyclerView = findViewById(R.id.messageList);
 
@@ -176,9 +225,14 @@ public class Chat extends AppCompatActivity {
         recyclerView.setAdapter(adapter);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
-        // Scroll to bottom of chat after first initialization.
-        if ( recyclerViewState == null && index == -1) {
+        if ( index == -1) {
+
+            // Scroll to bottom of chat after first initialization and after onRestart() is called.
             recyclerView.scrollToPosition(mText.size() - 1);
+        }else{
+
+            // Set RecyclerView scroll position to prevent movement when Firebase gets updated and after screen orientation change.
+            ( (LinearLayoutManager) recyclerView.getLayoutManager() ).scrollToPositionWithOffset( index, top);
         }
 
         // Restore RecyclerView scroll position upon screen orientation change.
@@ -186,23 +240,5 @@ public class Chat extends AppCompatActivity {
 
             recyclerView.getLayoutManager().onRestoreInstanceState(recyclerViewState);
         }
-
-        // Set RecyclerView scroll position to prevent movement when Firebase gets updated.
-        if ( index != -1 ){
-
-            ( (LinearLayoutManager) recyclerView.getLayoutManager() ).scrollToPositionWithOffset( index, top);
-        }
-    }
-
-    @Override
-    public void onPause(){
-
-        super.onPause();
-    }
-
-    @Override
-    public void onResume(){
-
-        super.onResume();
     }
 }

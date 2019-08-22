@@ -17,6 +17,7 @@ import androidx.fragment.app.FragmentActivity;
 import android.os.Bundle;
 import androidx.core.content.ContextCompat;
 
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.SeekBar;
@@ -50,6 +51,7 @@ public class MapsActivity extends FragmentActivity implements
         OnMapReadyCallback,
         LocationListener {
 
+    private static final String TAG = "MapsActivity";
     private GoogleMap mMap;
     private static final int Request_User_Location_Code = 99;
     boolean firstLoad = true;
@@ -59,16 +61,21 @@ public class MapsActivity extends FragmentActivity implements
     private LatLng latLng;
     private Double radius;
     private CameraPosition cameraPosition;
+    private Button circleButton;
+    private DatabaseReference firebaseCircles;
+    private ValueEventListener eventListener;
 
     //TODO: Prevent circle overlap.
     //TODO: Add discrete vertical seekBar (with images of circleButton) to change circle views and adjust max possible size of chatCircles.
     //TODO: Extract all (visible) circle data and rebuild them when the map loads (in onMapReady).
     //TODO: Adjust what happens if no user is signed in upon clicking a chatCircle (in onMapReady).
+    //TODO: Check updating in different states with another device.
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
+        Log.i(TAG, "onCreate()");
         setContentView(R.layout.activity_maps);
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
@@ -76,7 +83,7 @@ public class MapsActivity extends FragmentActivity implements
                 .findFragmentById(R.id.activity_maps);
         mapFragment.getMapAsync(this);
 
-        Button circleButton = findViewById(R.id.circleButton);
+        circleButton = findViewById(R.id.circleButton);
         circleSizeSeekBar = findViewById(R.id.circleSizeSeekBar);
 
         // Get non-Firebase circle information after screen orientation change.
@@ -92,6 +99,27 @@ public class MapsActivity extends FragmentActivity implements
 
             cameraPosition = savedInstanceState.getParcelable("cameraPosition");
             firstLoad = false;
+        }
+
+    }
+
+    @Override
+    protected void onStart() {
+
+        super.onStart();
+        Log.i(TAG, "onStart()");
+
+        // Start updating location
+        if (ContextCompat.checkSelfPermission(MapsActivity.this,
+                Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
+
+            LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+            String provider = LocationManager.NETWORK_PROVIDER;
+            locationManager.requestLocationUpdates(provider, 400, 1, this);
+        } else{
+
+            checkLocationPermission();
         }
 
         // Makes circle around user's current location on button press
@@ -160,10 +188,10 @@ public class MapsActivity extends FragmentActivity implements
             }
         });
 
-        // Load Firebase circles on first load.
+        // Load Firebase circles.
         DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-        DatabaseReference firebaseCircles = rootRef.child("circles");
-        ValueEventListener eventListener = new ValueEventListener() {
+        firebaseCircles = rootRef.child("circles");
+        eventListener = new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
 
@@ -185,7 +213,9 @@ public class MapsActivity extends FragmentActivity implements
                                         .strokeWidth(strokeWidth)
                                         .strokeColor(strokeColor)
                                         .fillColor(fillColor)
-                        ); circle.setTag(id);
+                        );
+
+                        circle.setTag(id);
                     }
                 }
             }
@@ -196,11 +226,94 @@ public class MapsActivity extends FragmentActivity implements
             }
         };
 
-        firebaseCircles.addListenerForSingleValueEvent(eventListener);
+        firebaseCircles.addValueEventListener(eventListener);
+    }
+
+    @Override
+    protected void onRestart() {
+
+        super.onRestart();
+        Log.i(TAG, "onRestart()");
+
+        // Clear map before adding new Firebase circles in onStart() to prevent overlap.
+        if (mMap != null) {
+
+            mMap.clear();
+        }
+    }
+
+    @Override
+    protected void onResume() {
+
+        super.onResume();
+        Log.i(TAG, "onResume()");
+
+        // Check if GPS is enabled.
+        LocationManager manager = (LocationManager) getSystemService( Context.LOCATION_SERVICE );
+        if ( !manager.isProviderEnabled( LocationManager.GPS_PROVIDER ) ) {
+            buildAlertMessageNoGps();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+
+        super.onPause();
+        Log.i(TAG, "onPause()");
+    }
+
+    @Override
+    protected void onStop() {
+
+        super.onStop();
+        Log.i(TAG, "onStop()");
+
+
+        // Stop updating location information.
+        if (ContextCompat.checkSelfPermission(MapsActivity.this,
+                Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
+
+            LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+            locationManager.removeUpdates(this);
+        }
+
+        // Stop the listener to save resources.
+        if (circleButton != null) {
+
+            circleButton.setOnClickListener(null);
+        }
+
+        // Stop the listener to save resources.
+        if (circleSizeSeekBar != null) {
+
+            circleSizeSeekBar.setOnSeekBarChangeListener(null);
+        }
+
+        // Stop the Firebase event listener.
+        if (firebaseCircles != null){
+
+            firebaseCircles.removeEventListener(eventListener);
+        }
+
+        // Stop the Firebase event listener.
+        if (eventListener != null){
+
+            eventListener = null;
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+
+        super.onDestroy();
+        Log.i(TAG, "onDestroy()");
     }
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
+
+        Log.i(TAG, "onSaveInstanceState()");
 
         // Save non-Firebase circle info upon screen orientation change.
         if (circle != null){
@@ -218,6 +331,8 @@ public class MapsActivity extends FragmentActivity implements
 
     private void buildAlertMessageNoGps() {
 
+        Log.i(TAG, "buildAlertMessageNoGps()");
+
         // If GPS is disabled, show an alert dialog and have the user turn GPS on.
         new AlertDialog.Builder(this)
                 .setCancelable(false)
@@ -234,6 +349,8 @@ public class MapsActivity extends FragmentActivity implements
     }
 
     public void checkLocationPermission() {
+
+        Log.i(TAG, "checkLocationPermission()");
 
         if (ContextCompat.checkSelfPermission(this,
                 Manifest.permission.ACCESS_FINE_LOCATION)
@@ -276,6 +393,8 @@ public class MapsActivity extends FragmentActivity implements
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
 
+        Log.i(TAG, "onRequestPermissionsResult()");
+
         // If request is cancelled, the result arrays are empty.
         if (requestCode == Request_User_Location_Code) {
             if (grantResults.length > 0
@@ -299,48 +418,9 @@ public class MapsActivity extends FragmentActivity implements
         }
     }
 
-    @Override
-    protected void onPause() {
-
-        super.onPause();
-
-        // Stop updating location information.
-        if (ContextCompat.checkSelfPermission(MapsActivity.this,
-                Manifest.permission.ACCESS_FINE_LOCATION)
-                == PackageManager.PERMISSION_GRANTED) {
-
-            LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
-            locationManager.removeUpdates(this);
-        }
-    }
-
-    @Override
-    protected void onResume() {
-
-        super.onResume();
-
-        // Start updating location
-        if (ContextCompat.checkSelfPermission(MapsActivity.this,
-                Manifest.permission.ACCESS_FINE_LOCATION)
-                == PackageManager.PERMISSION_GRANTED) {
-
-            LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
-            String provider = LocationManager.NETWORK_PROVIDER;
-            locationManager.requestLocationUpdates(provider, 400, 1, this);
-
-        } else{
-
-            checkLocationPermission();
-        }
-
-        // Check if GPS is enabled.
-        LocationManager manager = (LocationManager) getSystemService( Context.LOCATION_SERVICE );
-        if ( !manager.isProviderEnabled( LocationManager.GPS_PROVIDER ) ) {
-            buildAlertMessageNoGps();
-        }
-    }
-
     protected void startLocationUpdates(){
+
+        Log.i(TAG, "startLocationUpdates()");
 
         // Create the location request to start receiving updates
         LocationRequest mLocationRequest = new LocationRequest();
@@ -388,6 +468,8 @@ public class MapsActivity extends FragmentActivity implements
      */
     @Override
     public void onMapReady(GoogleMap googleMap) {
+
+        Log.i(TAG, "onMapReady()");
 
         mMap = googleMap;
 
@@ -480,6 +562,8 @@ public class MapsActivity extends FragmentActivity implements
     @Override
     public void onLocationChanged(Location location) {
 
+        Log.i(TAG, "onLocationChanged()");
+
         // Zoom to user's location the first time the map loads.
         if ((location != null) && (firstLoad)) {
 
@@ -499,15 +583,18 @@ public class MapsActivity extends FragmentActivity implements
     @Override
     public void onStatusChanged(String s, int i, Bundle bundle) {
 
+        Log.i(TAG, "onStatusChanged()");
     }
 
     @Override
     public void onProviderEnabled(String s) {
 
+        Log.i(TAG, "onProviderEnabled()");
     }
 
     @Override
     public void onProviderDisabled(String s) {
 
+        Log.i(TAG, "onProviderDisabled()");
     }
 }
