@@ -41,12 +41,14 @@ public class Chat extends AppCompatActivity {
     private DatabaseReference databaseReference;
     private ValueEventListener eventListener;
     private FloatingActionButton sendButton;
+    private boolean reachedEndOfRecyclerView = false;
+    private boolean recyclerViewHasScrolled = false;
+    private View.OnLayoutChangeListener onLayoutChangeListener;
 
-    //TODO: If user is on the bottom of RecyclerView and keyboard comes up, move to bottom of RecyclerView up.
-    //TODO: Update the RecyclerView with the newest message rather than initialize the whole recyclerView again (notifyDataSetChanged).
-    //TODO: Move name and time to the middle of the RecyclerView (in message.xml file)?
+    //TODO: Move name and time to the middle of the RecyclerView (in message.xml file).
     //TODO: Add a username (in message.xml).
     //TODO: Add ability to add pictures and video to RecyclerView.
+    //TODO: Work on possible null objects.
     //TODO: Check updating in different states with another device.
 
     @Override
@@ -58,9 +60,11 @@ public class Chat extends AppCompatActivity {
 
         mInput = findViewById(R.id.input);
         sendButton = findViewById(R.id.sendButton);
+        recyclerView = findViewById(R.id.messageList);
 
         // Get RecyclerView scroll position after screen orientation change.
         if ( (savedInstanceState != null) && (savedInstanceState.getParcelable("recyclerView") != null) ) {
+
             recyclerViewState = savedInstanceState.getParcelable("recyclerView");
         }
     }
@@ -79,6 +83,13 @@ public class Chat extends AppCompatActivity {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
 
+                if (recyclerView.getLayoutManager() != null){
+
+                    mUser.clear();
+                    mTime.clear();
+                    mText.clear();
+                }
+
                 final Bundle extras = getIntent().getExtras();
                 final String circleID = extras.getString("circleID");
 
@@ -89,22 +100,65 @@ public class Chat extends AppCompatActivity {
                         String messageText = (String) ds.child("message").getValue();
                         Long serverDate = (Long) ds.child("date").getValue();
                         DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
+                        // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+                        // This will cause onDataChange to fire twice; optimizations could be made in the future.
                         Date netDate = (new Date(serverDate));
                         String messageTime = dateFormat.format(netDate);
                         mText.add(messageText);
                         mTime.add(messageTime);
-
-                        // Read RecyclerView scroll position.
-                        if ( recyclerView != null ){
-
-                            index = ( (LinearLayoutManager) recyclerView.getLayoutManager()).findFirstVisibleItemPosition();
-                            View v = recyclerView.getChildAt(0);
-                            top = (v == null) ? 0 : (v.getTop() - recyclerView.getPaddingTop());
-                        }
-
-                        initRecyclerView();
                     }
                 }
+
+                // Read RecyclerView scroll position.
+                if ( recyclerView.getLayoutManager() != null ){
+
+                    index = ( (LinearLayoutManager) recyclerView.getLayoutManager()).findFirstVisibleItemPosition();
+                    View v = recyclerView.getChildAt(0);
+                    top = (v == null) ? 0 : (v.getTop() - recyclerView.getPaddingTop());
+                }
+
+                initRecyclerView();
+
+                // Check RecyclerView scroll state (to allow the layout to move up when keyboard appears).
+                recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+                    @Override
+                    public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
+
+                        super.onScrollStateChanged(recyclerView, newState);
+
+                        // If RecyclerView can't be scrolled down, reachedEndOfRecyclerView = true.
+                        reachedEndOfRecyclerView = !recyclerView.canScrollVertically(1);
+
+                        // Used to detect if user has just entered the chat (so layout needs to move up when keyboard appears).
+                        recyclerViewHasScrolled = true;
+                    }
+                });
+
+                // If RecyclerView is scrolled to the bottom, move the layout up when the keyboard appears.
+                recyclerView.addOnLayoutChangeListener(onLayoutChangeListener = new View.OnLayoutChangeListener() {
+                    @Override
+                    public void onLayoutChange(View v,
+                                               int left, int top, int right, int bottom,
+                                               int oldLeft, int oldTop, int oldRight, int oldBottom) {
+
+                        if (reachedEndOfRecyclerView || !recyclerViewHasScrolled){
+
+                            if (bottom < oldBottom) {
+
+                                recyclerView.postDelayed(new Runnable() {
+
+                                    @Override
+                                    public void run() {
+
+                                        recyclerView.smoothScrollToPosition(
+
+                                                recyclerView.getAdapter().getItemCount() - 1);
+                                    }
+                                }, 100);
+                            }
+                        }
+                    }
+                });
             }
 
             public void onCancelled(@NonNull DatabaseError databaseError) {
@@ -114,7 +168,7 @@ public class Chat extends AppCompatActivity {
 
         databaseReference.addValueEventListener(eventListener);
 
-        // onClickListener for sending message to Firebase.
+        // Send messages to Firebase.
         sendButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -127,6 +181,8 @@ public class Chat extends AppCompatActivity {
 
                     MessageInformation messageInformation = new MessageInformation();
                     messageInformation.setMessage(input);
+                    // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+                    // This will cause onDataChange to fire twice; optimizations could be made in the future.
                     Object date = ServerValue.TIMESTAMP;
                     messageInformation.setDate(date);
                     String circleID = extras.getString("circleID");
@@ -135,6 +191,7 @@ public class Chat extends AppCompatActivity {
                     newMessage.setValue(messageInformation);
                     mInput.getText().clear();
                 }else {
+
                 }
             }
         });
@@ -146,12 +203,10 @@ public class Chat extends AppCompatActivity {
         super.onRestart();
         Log.i(TAG, "onRestart()");
 
-        // Clear RecyclerView before adding new items in onStart().
-        if (recyclerView != null){
+        // Prevent keyboard from opening.
+        if (mInput != null){
 
-            mUser.clear();
-            mTime.clear();
-            mText.clear();
+            mInput.clearFocus();
         }
     }
 
@@ -179,6 +234,13 @@ public class Chat extends AppCompatActivity {
         if (databaseReference != null){
 
             databaseReference.removeEventListener(eventListener);
+        }
+
+        // Remove RecyclerView listeners.
+        if (recyclerView != null){
+
+            recyclerView.clearOnScrollListeners();
+            recyclerView.removeOnLayoutChangeListener(onLayoutChangeListener);
         }
 
         // Stop the Firebase event listener.
@@ -218,8 +280,6 @@ public class Chat extends AppCompatActivity {
 
         // Initialize the RecyclerView
         Log.i(TAG, "initRecyclerView()");
-
-        recyclerView = findViewById(R.id.messageList);
 
         RecyclerViewAdapter adapter = new RecyclerViewAdapter(this, mUser, mTime, mText);
         recyclerView.setAdapter(adapter);

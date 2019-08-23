@@ -67,8 +67,11 @@ public class MapsActivity extends FragmentActivity implements
 
     //TODO: Prevent circle overlap.
     //TODO: Add discrete vertical seekBar (with images of circleButton) to change circle views and adjust max possible size of chatCircles.
+    //TODO: Go to sign-in page only once user tries to add message to Firebase (in Chat.java).
+    //TODO: Optimize initial camera zoom.
     //TODO: Extract all (visible) circle data and rebuild them when the map loads (in onMapReady).
     //TODO: Adjust what happens if no user is signed in upon clicking a chatCircle (in onMapReady).
+    //TODO: Work on possible null objects.
     //TODO: Check updating in different states with another device.
 
     @Override
