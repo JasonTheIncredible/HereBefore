@@ -71,7 +71,7 @@ public class MapsActivity extends FragmentActivity implements
     //TODO: Optimize initial camera zoom.
     //TODO: Extract all (visible) circle data and rebuild them when the map loads (in onMapReady).
     //TODO: Adjust what happens if no user is signed in upon clicking a chatCircle (in onMapReady).
-    //TODO: Work on possible null objects.
+    //TODO: Work on possible NullPointerExceptions.
     //TODO: Check updating in different states with another device.
 
     @Override
@@ -112,7 +112,7 @@ public class MapsActivity extends FragmentActivity implements
         super.onStart();
         Log.i(TAG, "onStart()");
 
-        // Start updating location
+        // Start updating location.
         if (ContextCompat.checkSelfPermission(MapsActivity.this,
                 Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
@@ -125,7 +125,7 @@ public class MapsActivity extends FragmentActivity implements
             checkLocationPermission();
         }
 
-        // Makes circle around user's current location on button press
+        // Makes circle around user's current location on button press.
         circleButton.setOnClickListener(new View.OnClickListener() {
 
             public void onClick(View v) {
@@ -136,21 +136,23 @@ public class MapsActivity extends FragmentActivity implements
 
                 mFusedLocationClient.getLastLocation()
                         .addOnSuccessListener(MapsActivity.this, new OnSuccessListener<Location>() {
+
                             @Override
                             public void onSuccess(Location location) {
 
                                 // Get last known location. In some rare situations, this can be null.
                                 if (location != null) {
 
-                                    // Make circle the size set by the seekBar
+                                    // Make circle the size set by the seekBar.
                                     int circleSize = circleSizeSeekBar.getProgress();
 
+                                    // Make the circle a default size if the seekBar is set to 0.
                                     if (circleSize < 1){
 
                                         circleSize = 40;
                                     }
 
-                                    // Logic to handle location object
+                                    // Logic to handle location object.
                                     LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
                                     CircleOptions circleOptions =
                                             new CircleOptions()
@@ -176,18 +178,23 @@ public class MapsActivity extends FragmentActivity implements
 
         // Changes size of the circle using the seek bar at the bottom.
         circleSizeSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+
                 if (circle != null){
+
                     circle.setRadius(progress);
                 }
             }
 
             @Override
             public void onStartTrackingTouch(final SeekBar seekBar) {
+
             }
 
             @Override
             public void onStopTrackingTouch(final SeekBar seekBar) {
+
             }
         });
 
@@ -195,12 +202,14 @@ public class MapsActivity extends FragmentActivity implements
         DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
         firebaseCircles = rootRef.child("circles");
         eventListener = new ValueEventListener() {
+
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
 
                 for (DataSnapshot ds : dataSnapshot.getChildren()) {
 
                     if (dataSnapshot.getValue() != null) {
+
                         LatLng center = new LatLng((Double) ds.child("circle/center/latitude/").getValue(), (Double) ds.child("circle/center/longitude/").getValue());
                         boolean clickable = (boolean) ds.child("circle/clickable").getValue();
                         int fillColor = (int) (long) ds.child("circle/fillColor").getValue();
@@ -218,6 +227,7 @@ public class MapsActivity extends FragmentActivity implements
                                         .fillColor(fillColor)
                         );
 
+                        // Set the Tag using the ID Firebase assigned. Sent to Chat.java in onMapReady() to identify the chatCircle.
                         circle.setTag(id);
                     }
                 }
@@ -229,6 +239,7 @@ public class MapsActivity extends FragmentActivity implements
             }
         };
 
+        // Add the Firebase listener.
         firebaseCircles.addValueEventListener(eventListener);
     }
 
@@ -251,9 +262,11 @@ public class MapsActivity extends FragmentActivity implements
         super.onResume();
         Log.i(TAG, "onResume()");
 
-        // Check if GPS is enabled.
         LocationManager manager = (LocationManager) getSystemService( Context.LOCATION_SERVICE );
+
+        // Check if GPS is enabled.
         if ( !manager.isProviderEnabled( LocationManager.GPS_PROVIDER ) ) {
+
             buildAlertMessageNoGps();
         }
     }
@@ -281,13 +294,13 @@ public class MapsActivity extends FragmentActivity implements
             locationManager.removeUpdates(this);
         }
 
-        // Stop the listener to save resources.
+        // Stop the listener.
         if (circleButton != null) {
 
             circleButton.setOnClickListener(null);
         }
 
-        // Stop the listener to save resources.
+        // Stop the seekBar listener.
         if (circleSizeSeekBar != null) {
 
             circleSizeSeekBar.setOnSeekBarChangeListener(null);
@@ -327,6 +340,7 @@ public class MapsActivity extends FragmentActivity implements
 
         // Save camera info upon screen orientation change.
         if (mMap != null) {
+
             outState.putParcelable("cameraPosition", mMap.getCameraPosition());
             super.onSaveInstanceState(outState);
         }
@@ -400,10 +414,11 @@ public class MapsActivity extends FragmentActivity implements
 
         // If request is cancelled, the result arrays are empty.
         if (requestCode == Request_User_Location_Code) {
+
             if (grantResults.length > 0
                     && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
 
-                // permission was granted, yay! Do the
+                // Permission was granted, yay! Do the
                 // location-related task you need to do.
                 startLocationUpdates();
 
@@ -449,15 +464,17 @@ public class MapsActivity extends FragmentActivity implements
 
         checkLocationPermission();
 
-        // new Google API SDK v11 uses getFusedLocationProviderClient(this)
+        // New Google API SDK v11 uses getFusedLocationProviderClient(this)
         getFusedLocationProviderClient(this).requestLocationUpdates(mLocationRequest, new LocationCallback() {
+
                     @Override
                     public void onLocationResult(LocationResult locationResult) {
 
-                        // do work here
+
                         onLocationChanged(locationResult.getLastLocation());
                     }
                 },
+
                 Looper.myLooper());
     }
 
@@ -503,39 +520,42 @@ public class MapsActivity extends FragmentActivity implements
             circleSizeSeekBar.setProgress(circleSize);
         }
 
-        // Re-build camera position upon screen orientation change.
+        // Restore camera position upon screen orientation change.
         if (cameraPosition != null){
 
             mMap.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
         }
 
-        // Go to chat when clicking on the circle
+        // Go to chat when clicking on the circle.
         mMap.setOnCircleClickListener(new GoogleMap.OnCircleClickListener() {
 
             @Override
             public void onCircleClick(final Circle circle) {
 
+                // Get the ID set by Firebase to identify which circle the user clicked on.
                 circleID = (String) circle.getTag();
 
                 // If the circle is new, it will not have a tag, as the tag is pulled from Firebase. Therefore, use the ID.
                 if (circleID == null){
+
                     circleID = circle.getId();
                 }
 
-                // Checks if user is already signed in.
+                // Check if the user is already signed in.
                 if (FirebaseAuth.getInstance().getCurrentUser() != null) {
 
                     // User is signed in.
-                    // Check Firebase. If the circle the user clicks on doesn't already exist, add it.
-                    final DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-                    final DatabaseReference firebaseCircles = rootRef.child("circles");
+                    // Connect to Firebase.
+                    DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
+                    DatabaseReference firebaseCircles = rootRef.child("circles");
                     ValueEventListener eventListener = new ValueEventListener() {
+
                         @Override
                         public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
 
+                            // If the circle the user clicked on doesn't already exist in Firebase, add it.
                             if( ( dataSnapshot.child("circle/id").getValue() == null ) || ! ( ( dataSnapshot.child("circle/id").getValue() ).equals(circleID) ) ) {
 
-                                // Create new circle in Firebase.
                                 CircleInformation circleInformation = new CircleInformation();
                                 circleInformation.setCircle(circle);
                                 DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("circles").push();
@@ -548,8 +568,10 @@ public class MapsActivity extends FragmentActivity implements
                         }
                     };
 
+                    // Add Firebase listener.
                     firebaseCircles.addListenerForSingleValueEvent(eventListener);
 
+                    // Go to Chat.java.
                     Intent Activity = new Intent(MapsActivity.this, Chat.class);
                     Activity.putExtra("circleID", circleID);
                     startActivity(Activity);
@@ -579,6 +601,7 @@ public class MapsActivity extends FragmentActivity implements
                     .tilt(0)                   // Sets the tilt of the camera
                     .build();                   // Creates a CameraPosition from the builder
             mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition), 2000, null);
+            // Set Boolean to false to prevent unnecessary animation, as the camera should already be set on the user's location.
             firstLoad = false;
         }
     }

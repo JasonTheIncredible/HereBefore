@@ -1,5 +1,6 @@
 package co.clixel.herebefore;
 
+// Getters and setters for messages.
 public class MessageInformation {
 
     private String message;

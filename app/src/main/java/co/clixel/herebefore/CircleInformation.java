@@ -2,6 +2,7 @@ package co.clixel.herebefore;
 
 import com.google.android.gms.maps.model.Circle;
 
+// Getters and setters for chatCircles.
 public class CircleInformation {
 
     private Circle circleInfo;

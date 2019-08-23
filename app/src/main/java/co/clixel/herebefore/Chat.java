@@ -48,7 +48,7 @@ public class Chat extends AppCompatActivity {
     //TODO: Move name and time to the middle of the RecyclerView (in message.xml file).
     //TODO: Add a username (in message.xml).
     //TODO: Add ability to add pictures and video to RecyclerView.
-    //TODO: Work on possible null objects.
+    //TODO: Work on possible NullPointerExceptions.
     //TODO: Check updating in different states with another device.
 
     @Override
@@ -75,7 +75,7 @@ public class Chat extends AppCompatActivity {
         super.onStart();
         Log.i(TAG, "onStart()");
 
-        // Load messages from Firebase.
+        // Connect to Firebase.
         DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
         databaseReference = rootRef.child("messageThreads");
         eventListener = new ValueEventListener(){
@@ -83,6 +83,7 @@ public class Chat extends AppCompatActivity {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
 
+                // Clear the RecyclerView before adding new entries to prevent duplicates.
                 if (recyclerView.getLayoutManager() != null){
 
                     mUser.clear();
@@ -90,11 +91,13 @@ public class Chat extends AppCompatActivity {
                     mText.clear();
                 }
 
+                // Get info from MapsActivity.java
                 final Bundle extras = getIntent().getExtras();
                 final String circleID = extras.getString("circleID");
 
                 for (DataSnapshot ds : dataSnapshot.getChildren()) {
 
+                    // If the circle identifier brought from MapsActivity equals the circleID attached to the message in Firebase, load it into the RecyclerView.
                     if (ds.child("circleID").getValue().equals(circleID)) {
 
                         String messageText = (String) ds.child("message").getValue();
@@ -109,7 +112,7 @@ public class Chat extends AppCompatActivity {
                     }
                 }
 
-                // Read RecyclerView scroll position.
+                // Read RecyclerView scroll position (for use in initRecyclerView).
                 if ( recyclerView.getLayoutManager() != null ){
 
                     index = ( (LinearLayoutManager) recyclerView.getLayoutManager()).findFirstVisibleItemPosition();
@@ -166,9 +169,10 @@ public class Chat extends AppCompatActivity {
             }
         };
 
+        // Add the Firebase listener.
         databaseReference.addValueEventListener(eventListener);
 
-        // Send messages to Firebase.
+        // onClickListener for sending message to Firebase.
         sendButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -249,7 +253,7 @@ public class Chat extends AppCompatActivity {
             eventListener = null;
         }
 
-        // Stop the listener to save resources.
+        // Stop the button listener.
         if (sendButton != null){
 
             sendButton.setOnClickListener(null);
@@ -268,7 +272,7 @@ public class Chat extends AppCompatActivity {
 
         Log.i(TAG, "onSaveInstanceState()");
 
-        // Save RecyclerView scroll position upon screen orientation change.
+        // Save RecyclerView scroll position (upon screen orientation change).
         if (recyclerView != null) {
 
             outState.putParcelable("recyclerView", recyclerView.getLayoutManager().onSaveInstanceState());
@@ -287,7 +291,7 @@ public class Chat extends AppCompatActivity {
 
         if ( index == -1) {
 
-            // Scroll to bottom of chat after first initialization and after onRestart() is called.
+            // Scroll to bottom of chat after first initialization.
             recyclerView.scrollToPosition(mText.size() - 1);
         }else{
 

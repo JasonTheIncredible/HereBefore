@@ -22,7 +22,8 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
     private ArrayList<String> mMessageText;
     private Context mContext;
 
-    public RecyclerViewAdapter(Context context, ArrayList<String> mMessageUser, ArrayList<String> mMessageTime, ArrayList<String> mMessageText) {
+    RecyclerViewAdapter(Context context, ArrayList<String> mMessageUser, ArrayList<String> mMessageTime, ArrayList<String> mMessageText) {
+
         this.mContext = context;
         this.mMessageUser = mMessageUser;
         this.mMessageTime = mMessageTime;
@@ -32,42 +33,43 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.message, parent,false);
-        ViewHolder holder = new ViewHolder(view);
-        return holder;
+        return new ViewHolder(view);
     }
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+
         Log.d(TAG, "onBindViewHolder: called.");
         //holder.messageUser.setText(mMessageUser.get(position));
         holder.messageTime.setText(mMessageTime.get(position));
         holder.messageText.setText(mMessageText.get(position));
 
-        if(position %2 == 1)
-        {
+        if(position %2 == 1) {
+
             holder.itemView.setBackgroundColor(Color.parseColor("#FFFFFF"));
-            //  holder.imageView.setBackgroundColor(Color.parseColor("#FFFFFF"));
         }
-        else
-        {
+        else {
+
             holder.itemView.setBackgroundColor(Color.parseColor("#FFFAF8FD"));
-            //  holder.imageView.setBackgroundColor(Color.parseColor("#FFFAF8FD"));
         }
 
     }
 
     @Override
     public int getItemCount() {
+
         return mMessageText.size();
     }
 
-    public class ViewHolder extends RecyclerView.ViewHolder{
+    class ViewHolder extends RecyclerView.ViewHolder{
 
         TextView messageUser, messageTime, messageText;
         RelativeLayout messageItem;
         
-        public ViewHolder(@NonNull View itemView) {
+        ViewHolder(@NonNull View itemView) {
+
             super(itemView);
             messageUser = itemView.findViewById(R.id.messageUser);
             messageTime = itemView.findViewById(R.id.messageTime);
