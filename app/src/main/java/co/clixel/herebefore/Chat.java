@@ -45,7 +45,6 @@ public class Chat extends AppCompatActivity {
     private boolean recyclerViewHasScrolled = false;
     private View.OnLayoutChangeListener onLayoutChangeListener;
 
-    //TODO: Move name and time to the middle of the RecyclerView (in message.xml file).
     //TODO: Add a username (in message.xml).
     //TODO: Add ability to add pictures and video to RecyclerView.
     //TODO: Work on possible NullPointerExceptions.
