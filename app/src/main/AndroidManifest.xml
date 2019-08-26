@@ -29,12 +29,12 @@
             android:value="@string/google_maps_key" />
 
         <activity
-            android:name=".signIn"
+            android:name=".SignIn"
             android:label="@string/title_activity_maps">
         </activity>
 
         <activity
-            android:name=".signUp"
+            android:name=".SignUp"
             android:label="@string/title_activity_maps">
         </activity>
 

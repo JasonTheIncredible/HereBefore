@@ -7,7 +7,7 @@
         android:id="@+id/createEmailAddress"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="150dp"
+        android:layout_marginTop="100dp"
         android:ems="10"
         android:hint="@string/email_address"
         android:inputType="textEmailAddress"

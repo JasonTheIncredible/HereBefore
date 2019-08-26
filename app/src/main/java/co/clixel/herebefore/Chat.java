@@ -234,7 +234,7 @@ public class Chat extends AppCompatActivity {
         super.onStop();
         Log.i(TAG, "onStop()");
 
-        // Stop the Firebase event listener.
+        // Remove the Firebase event listener.
         if (databaseReference != null){
 
             databaseReference.removeEventListener(eventListener);
@@ -247,13 +247,13 @@ public class Chat extends AppCompatActivity {
             recyclerView.removeOnLayoutChangeListener(onLayoutChangeListener);
         }
 
-        // Stop the Firebase event listener.
+        // Remove the Firebase event listener.
         if (eventListener != null){
 
             eventListener = null;
         }
 
-        // Stop the button listener.
+        // Remove the button listener.
         if (sendButton != null){
 
             sendButton.setOnClickListener(null);

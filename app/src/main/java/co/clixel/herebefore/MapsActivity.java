@@ -22,7 +22,6 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.SeekBar;
 
-import com.crashlytics.android.Crashlytics;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
@@ -38,7 +37,6 @@ import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.Circle;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
@@ -70,8 +68,7 @@ public class MapsActivity extends FragmentActivity implements
     //TODO: Add discrete vertical seekBar (with images of circleButton) to change circle views and adjust max possible size of chatCircles.
     //TODO: Only load Firebase circles if they're within camera view (in onMapReady).
     //TODO: Prevent circle overlap.
-    //TODO: Go to sign-in page only once user tries to add message to Firebase (in Chat.java).
-    //TODO: Adjust what happens if no user is signed in upon clicking a chatCircle (in onMapReady).
+    //TODO: Optimize Firebase loading.
     //TODO: Work on possible NullPointerExceptions.
     //TODO: Too much work on main thread.
     //TODO: Check updating in different states with another device.
@@ -229,7 +226,7 @@ public class MapsActivity extends FragmentActivity implements
                                         .fillColor(fillColor)
                         );
 
-                        // Set the Tag using the ID Firebase assigned. Sent to Chat.java in onMapReady() to identify the chatCircle.
+                        // Set the Tag using the ID Firebase assigned. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
                         circle.setTag(id);
                     }
                 }
@@ -287,7 +284,7 @@ public class MapsActivity extends FragmentActivity implements
         Log.i(TAG, "onStop()");
 
 
-        // Stop updating location information.
+        // Remove updating location information.
         if (ContextCompat.checkSelfPermission(MapsActivity.this,
                 Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
@@ -296,25 +293,25 @@ public class MapsActivity extends FragmentActivity implements
             locationManager.removeUpdates(this);
         }
 
-        // Stop the listener.
+        // Remove the listener.
         if (circleButton != null) {
 
             circleButton.setOnClickListener(null);
         }
 
-        // Stop the seekBar listener.
+        // Remove the seekBar listener.
         if (circleSizeSeekBar != null) {
 
             circleSizeSeekBar.setOnSeekBarChangeListener(null);
         }
 
-        // Stop the Firebase event listener.
+        // Remove the Firebase event listener.
         if (firebaseCircles != null){
 
             firebaseCircles.removeEventListener(eventListener);
         }
 
-        // Stop the Firebase event listener.
+        // Remove the Firebase event listener.
         if (eventListener != null){
 
             eventListener = null;
@@ -329,7 +326,7 @@ public class MapsActivity extends FragmentActivity implements
     }
 
     @Override
-    public void onSaveInstanceState(Bundle outState) {
+    protected void onSaveInstanceState(Bundle outState) {
 
         Log.i(TAG, "onSaveInstanceState()");
 
@@ -367,7 +364,7 @@ public class MapsActivity extends FragmentActivity implements
                 .show();
     }
 
-    public void checkLocationPermission() {
+    private void checkLocationPermission() {
 
         Log.i(TAG, "checkLocationPermission()");
 
@@ -580,7 +577,7 @@ public class MapsActivity extends FragmentActivity implements
                 } else {
 
                     // No user is signed in.
-                    startActivity(new Intent(MapsActivity.this, signIn.class));
+                    startActivity(new Intent(MapsActivity.this, SignIn.class));
                 }
             }
         });

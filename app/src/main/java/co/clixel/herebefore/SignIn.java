@@ -10,33 +10,39 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import com.crashlytics.android.Crashlytics;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
 
-public class signIn extends AppCompatActivity{
+public class SignIn extends AppCompatActivity {
 
-    //TODO: General code cleanup.
-    //TODO: Add notes.
-    //TODO: Remove listeners.
+    private EditText mEmail, mPassword;
+    private Button btnSignIn, btnGoToCreateAccount;
+
+    //TODO: Go to Chat.java upon completion.
+    //TODO: Update signin.xml.
     //TODO: Sign in with Google account.
 
-    private FirebaseAuth mAuth;
-    private EditText mEmail, mPassword;
-
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.signin);
+
         mEmail = findViewById(R.id.emailAddress);
         mPassword = findViewById(R.id.password);
-        Button btnSignIn = findViewById(R.id.signInButton);
-        Button btnGoToCreateAccount = findViewById(R.id.goToCreateAccountButton);
-        Button btnLogOut = findViewById(R.id.logOutButton);
-        mAuth = FirebaseAuth.getInstance();
+        btnSignIn = findViewById(R.id.signInButton);
+        btnGoToCreateAccount = findViewById(R.id.goToCreateAccountButton);
+    }
 
+    @Override
+    protected void onStart() {
+
+        super.onStart();
+
+        // Give feedback about email and password.
         btnSignIn.setOnClickListener(new View.OnClickListener() {
 
             @Override
@@ -44,29 +50,31 @@ public class signIn extends AppCompatActivity{
 
                 String email = mEmail.getText().toString().toLowerCase();
                 String pass = mPassword.getText().toString();
+
                 if (email.equals("") && !pass.equals("")) {
 
                     toastMessage("Email address required");
                     mEmail.requestFocus();
                     return;
-                }if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                } if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
 
                     toastMessage("Please enter a valid email address");
                     mEmail.requestFocus();
                     return;
-                }if (pass.equals("") && !email.equals("")) {
+                } if (pass.equals("") && !email.equals("")) {
 
                     toastMessage("Password required");
                     mPassword.requestFocus();
                     return;
-                }if (pass.length()<6){
+                } if (pass.length()<6){
 
                     toastMessage("Password must be at least 6 characters long");
                     mPassword.requestFocus();
                     return;
                 }
 
-                mAuth.signInWithEmailAndPassword(email,pass).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
+                // Check if the account exists in Firebase.
+                FirebaseAuth.getInstance().signInWithEmailAndPassword(email,pass).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
 
                     @Override
                     public void onComplete(@NonNull Task<AuthResult> task) {
@@ -74,12 +82,17 @@ public class signIn extends AppCompatActivity{
                         if(task.isSuccessful()){
 
                             toastMessage("Signed in");
-                            startActivity(new Intent(signIn.this, Chat.class));
-                        }if(task.getException() != null){
+                            startActivity(new Intent(SignIn.this, Chat.class));
+                        } if(task.getException() != null){
 
+                            // Tell the user what happened.
                             Toast.makeText(getApplicationContext(), "User Authentication Failed: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
-                        }else{
 
+                            // Send the information to Crashlytics for future debugging. NOTE: This will only be sent after the user restarts the app.
+                            Crashlytics.logException(new RuntimeException( task.getException().getMessage() ));
+                        } else{
+
+                            // Tell the user something happened.
                             toastMessage("An unknown error occurred. Please try again.");
                         }
                     }
@@ -87,48 +100,57 @@ public class signIn extends AppCompatActivity{
             }
         });
 
+        // Go to the SignUp activity.
         btnGoToCreateAccount.setOnClickListener(new View.OnClickListener() {
 
             @Override
             public void onClick(View view){
 
-                startActivity(new Intent(signIn.this, signUp.class));
-            }
-        });
-
-        btnLogOut.setOnClickListener(new View.OnClickListener() {
-
-            @Override
-            public void onClick(View view){
-
-                mAuth.signOut();
-                toastMessage("Signing out...");
-                finish();
-                startActivity(getIntent());
+                startActivity(new Intent(SignIn.this, SignUp.class));
             }
         });
     }
 
-    protected void updateUI(FirebaseUser currentUser) {
+    @Override
+    protected void onRestart() {
 
-        if (currentUser != null) {
+        super.onRestart();
+    }
 
-            findViewById(R.id.signInButton).setVisibility(View.GONE);
-            findViewById(R.id.logOutButton).setVisibility(View.VISIBLE);
-        } else {
+    @Override
+    protected void onResume() {
 
-            findViewById(R.id.signInButton).setVisibility(View.VISIBLE);
-            findViewById(R.id.goToCreateAccountButton).setVisibility(View.VISIBLE);
-            findViewById(R.id.logOutButton).setVisibility(View.GONE);
-        }}
+        super.onResume();
+    }
 
-    protected void onStart() {
+    @Override
+    protected void onPause() {
 
-        super.onStart();
-        mAuth = FirebaseAuth.getInstance();
-        // Check if user is signed in (non-null) and update UI accordingly.
-        FirebaseUser currentUser = mAuth.getCurrentUser();
-        updateUI(currentUser);
+        super.onPause();
+    }
+
+    @Override
+    protected void onStop(){
+
+        super.onStop();
+
+        // Remove the listener.
+        if (btnSignIn != null) {
+
+            btnSignIn.setOnClickListener(null);
+        }
+
+        // Remove the listener.
+        if (btnGoToCreateAccount != null) {
+
+            btnGoToCreateAccount.setOnClickListener(null);
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+
+        super.onDestroy();
     }
 
     private void toastMessage(String message){
