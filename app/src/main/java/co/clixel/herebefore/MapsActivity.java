@@ -22,6 +22,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.SeekBar;
 
+import com.crashlytics.android.Crashlytics;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
@@ -37,6 +38,7 @@ import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.Circle;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
@@ -65,13 +67,13 @@ public class MapsActivity extends FragmentActivity implements
     private DatabaseReference firebaseCircles;
     private ValueEventListener eventListener;
 
-    //TODO: Prevent circle overlap.
     //TODO: Add discrete vertical seekBar (with images of circleButton) to change circle views and adjust max possible size of chatCircles.
+    //TODO: Only load Firebase circles if they're within camera view (in onMapReady).
+    //TODO: Prevent circle overlap.
     //TODO: Go to sign-in page only once user tries to add message to Firebase (in Chat.java).
-    //TODO: Optimize initial camera zoom.
-    //TODO: Extract all (visible) circle data and rebuild them when the map loads (in onMapReady).
     //TODO: Adjust what happens if no user is signed in upon clicking a chatCircle (in onMapReady).
     //TODO: Work on possible NullPointerExceptions.
+    //TODO: Too much work on main thread.
     //TODO: Check updating in different states with another device.
 
     @Override
@@ -600,7 +602,8 @@ public class MapsActivity extends FragmentActivity implements
                     .bearing(0)                // Sets the orientation of the camera
                     .tilt(0)                   // Sets the tilt of the camera
                     .build();                   // Creates a CameraPosition from the builder
-            mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition), 2000, null);
+            //Can add a second parameter to this to change amount of time it takes for camera to zoom.
+            mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition), null);
             // Set Boolean to false to prevent unnecessary animation, as the camera should already be set on the user's location.
             firstLoad = false;
         }
