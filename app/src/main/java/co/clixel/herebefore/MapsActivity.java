@@ -428,8 +428,11 @@ public class MapsActivity extends FragmentActivity implements
                     LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
                     String provider = LocationManager.NETWORK_PROVIDER;
                     // Request location updates:
-                    locationManager.requestLocationUpdates(provider, 400, 1, this);
-                    mMap.setMyLocationEnabled(true);
+                    if (locationManager != null) {
+
+                        locationManager.requestLocationUpdates(provider, 400, 1, this);
+                        mMap.setMyLocationEnabled(true);
+                    }
                 }
             }
         }

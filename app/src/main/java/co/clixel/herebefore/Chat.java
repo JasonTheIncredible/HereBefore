@@ -148,16 +148,22 @@ public class Chat extends AppCompatActivity {
 
                             if (bottom < oldBottom) {
 
-                                recyclerView.postDelayed(new Runnable() {
+                                if (recyclerView.getAdapter() != null) {
 
-                                    @Override
-                                    public void run() {
+                                    if (recyclerView.getAdapter().getItemCount() > 0) {
 
-                                        recyclerView.smoothScrollToPosition(
+                                        recyclerView.postDelayed(new Runnable() {
 
-                                                recyclerView.getAdapter().getItemCount() - 1);
+                                            @Override
+                                            public void run() {
+
+                                                recyclerView.smoothScrollToPosition(
+
+                                                        recyclerView.getAdapter().getItemCount() - 1);
+                                            }
+                                        }, 100);
                                     }
-                                }, 100);
+                                }
                             }
                         }
                     }
