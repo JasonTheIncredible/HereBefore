@@ -20,9 +20,10 @@ public class SignIn extends AppCompatActivity {
 
     private EditText mEmail, mPassword;
     private Button btnSignIn, btnGoToCreateAccount;
+    private String circleID;
 
-    //TODO: Go to Chat.java upon completion.
     //TODO: Update signin.xml.
+    //TODO: Possibly make circleID / extras protected to be used in multiple activities.
     //TODO: Sign in with Google account.
 
     @Override
@@ -41,6 +42,10 @@ public class SignIn extends AppCompatActivity {
     protected void onStart() {
 
         super.onStart();
+
+        // Get info from MapsActivity.java.
+        Bundle extras = getIntent().getExtras();
+        circleID = extras.getString("circleID");
 
         // Give feedback about email and password.
         btnSignIn.setOnClickListener(new View.OnClickListener() {
@@ -66,7 +71,7 @@ public class SignIn extends AppCompatActivity {
                     toastMessage("Password required");
                     mPassword.requestFocus();
                     return;
-                } if (pass.length()<6){
+                } if (pass.length()<6) {
 
                     toastMessage("Password must be at least 6 characters long");
                     mPassword.requestFocus();
@@ -79,18 +84,22 @@ public class SignIn extends AppCompatActivity {
                     @Override
                     public void onComplete(@NonNull Task<AuthResult> task) {
 
-                        if(task.isSuccessful()){
+                        if (task.isSuccessful()) {
 
+                            // Go to Chat.java ith the circleID.
                             toastMessage("Signed in");
-                            startActivity(new Intent(SignIn.this, Chat.class));
-                        } if(task.getException() != null){
+                            Intent Activity = new Intent(SignIn.this, Chat.class);
+                            Activity.putExtra("circleID", circleID);
+                            startActivity(Activity);
+                            finish();
+                        } if (task.getException() != null) {
 
                             // Tell the user what happened.
                             Toast.makeText(getApplicationContext(), "User Authentication Failed: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
 
                             // Send the information to Crashlytics for future debugging. NOTE: This will only be sent after the user restarts the app.
                             Crashlytics.logException(new RuntimeException( task.getException().getMessage() ));
-                        } else{
+                        } if ( (!task.isSuccessful() ) && ( task.getException() == null) ) {
 
                             // Tell the user something happened.
                             toastMessage("An unknown error occurred. Please try again.");
@@ -100,13 +109,16 @@ public class SignIn extends AppCompatActivity {
             }
         });
 
-        // Go to the SignUp activity.
+        // Go to the SignUp activity with the circleID.
         btnGoToCreateAccount.setOnClickListener(new View.OnClickListener() {
 
             @Override
             public void onClick(View view){
 
-                startActivity(new Intent(SignIn.this, SignUp.class));
+                Intent Activity = new Intent(SignIn.this, SignUp.class);
+                Activity.putExtra("circleID", circleID);
+                startActivity(Activity);
+                finish();
             }
         });
     }

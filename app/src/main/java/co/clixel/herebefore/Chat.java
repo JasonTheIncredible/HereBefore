@@ -6,7 +6,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import android.os.Parcelable;
 import android.util.Log;
 import android.view.View;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -35,7 +34,6 @@ public class Chat extends AppCompatActivity {
     private ArrayList<String> mTime = new ArrayList<>();
     private ArrayList<String> mText = new ArrayList<>();
     private RecyclerView recyclerView;
-    private Parcelable recyclerViewState;
     private static int index = -1;
     private static int top = -1;
     private DatabaseReference databaseReference;
@@ -44,7 +42,9 @@ public class Chat extends AppCompatActivity {
     private boolean reachedEndOfRecyclerView = false;
     private boolean recyclerViewHasScrolled = false;
     private View.OnLayoutChangeListener onLayoutChangeListener;
+    private String circleID;
 
+    //TODO: Possibly make circleID / extras protected to be used in multiple activities.
     //TODO: Too much work on main thread.
     //TODO: Add a username (in message.xml).
     //TODO: Add ability to add pictures and video to RecyclerView.
@@ -61,12 +61,6 @@ public class Chat extends AppCompatActivity {
         mInput = findViewById(R.id.input);
         sendButton = findViewById(R.id.sendButton);
         recyclerView = findViewById(R.id.messageList);
-
-        // Get RecyclerView scroll position after screen orientation change.
-        if ( (savedInstanceState != null) && (savedInstanceState.getParcelable("recyclerView") != null) ) {
-
-            recyclerViewState = savedInstanceState.getParcelable("recyclerView");
-        }
     }
 
     @Override
@@ -74,6 +68,10 @@ public class Chat extends AppCompatActivity {
 
         super.onStart();
         Log.i(TAG, "onStart()");
+
+        // Get info from MapsActivity.java
+        Bundle extras = getIntent().getExtras();
+        circleID = extras.getString("circleID");
 
         // Connect to Firebase.
         DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
@@ -90,10 +88,6 @@ public class Chat extends AppCompatActivity {
                     mTime.clear();
                     mText.clear();
                 }
-
-                // Get info from MapsActivity.java
-                final Bundle extras = getIntent().getExtras();
-                final String circleID = extras.getString("circleID");
 
                 for (DataSnapshot ds : dataSnapshot.getChildren()) {
 
@@ -273,19 +267,6 @@ public class Chat extends AppCompatActivity {
         Log.i(TAG, "onDestroy()");
     }
 
-    @Override
-    public void onSaveInstanceState(Bundle outState) {
-
-        Log.i(TAG, "onSaveInstanceState()");
-
-        // Save RecyclerView scroll position (upon screen orientation change).
-        if (recyclerView != null) {
-
-            outState.putParcelable("recyclerView", recyclerView.getLayoutManager().onSaveInstanceState());
-            super.onSaveInstanceState(outState);
-        }
-    }
-
     private void initRecyclerView(){
 
         // Initialize the RecyclerView
@@ -299,16 +280,10 @@ public class Chat extends AppCompatActivity {
 
             // Scroll to bottom of chat after first initialization.
             recyclerView.scrollToPosition(mText.size() - 1);
-        }else{
+        } else{
 
             // Set RecyclerView scroll position to prevent movement when Firebase gets updated and after screen orientation change.
             ( (LinearLayoutManager) recyclerView.getLayoutManager() ).scrollToPositionWithOffset( index, top);
-        }
-
-        // Restore RecyclerView scroll position upon screen orientation change.
-        if ( recyclerViewState != null ) {
-
-            recyclerView.getLayoutManager().onRestoreInstanceState(recyclerViewState);
         }
     }
 }

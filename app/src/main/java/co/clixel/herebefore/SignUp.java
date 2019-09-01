@@ -20,9 +20,10 @@ public class SignUp extends AppCompatActivity {
 
     private EditText mEmail, mPassword;
     private Button btnCreateAccount;
+    private String circleID;
 
-    //TODO: Go to Chat.java upon completion completion.
     //TODO: Update signup.xml (visuals and add more user information).
+    //TODO: Possibly make circleID / extras protected to be used in multiple activities.
     //TODO: Sign in with Google account.
 
     @Override
@@ -40,6 +41,10 @@ public class SignUp extends AppCompatActivity {
     protected void onStart() {
 
         super.onStart();
+
+        // Get info from MapsActivity.java -> SignIn.java.
+        Bundle extras = getIntent().getExtras();
+        circleID = extras.getString("circleID");
 
         // Give feedback about email and password.
         btnCreateAccount.setOnClickListener(new View.OnClickListener() {
@@ -80,8 +85,12 @@ public class SignUp extends AppCompatActivity {
 
                         if (task.isSuccessful()) {
 
+                            // Go to Chat.java with the circleID.
                             toastMessage("Signed up");
-                            startActivity(new Intent(SignUp.this, Chat.class));
+                            Intent Activity = new Intent(SignUp.this, Chat.class);
+                            Activity.putExtra("circleID", circleID);
+                            startActivity(Activity);
+                            finish();
                         } if (task.getException() != null) {
 
                             // Tell the user what happened.
@@ -89,7 +98,7 @@ public class SignUp extends AppCompatActivity {
 
                             // Send the information to Crashlytics for future debugging. NOTE: This will only be sent after the user restarts the app.
                             Crashlytics.logException(new RuntimeException( task.getException().getMessage() ));
-                        } else {
+                        } if ( (!task.isSuccessful()) && (task.getException() == null) ) {
 
                             // Tell the user something happened.
                             toastMessage("An unknown error occurred. Please try again.");
