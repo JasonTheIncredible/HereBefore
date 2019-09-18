@@ -69,6 +69,8 @@ public class MapsActivity extends FragmentActivity implements
     //TODO: Work on possible NullPointerExceptions.
     //TODO: Too much work on main thread.
     //TODO: Make checkLocationPermission Async.
+    //TODO: Send single point location update.
+    //TODO: Send message without entering app.
     //TODO: Check updating in different states with another device.
 
     @Override
@@ -76,7 +78,7 @@ public class MapsActivity extends FragmentActivity implements
 
         super.onCreate(savedInstanceState);
         Log.i(TAG, "onCreate()");
-        setContentView(R.layout.activity_maps);
+        setContentView(R.layout.map);
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()

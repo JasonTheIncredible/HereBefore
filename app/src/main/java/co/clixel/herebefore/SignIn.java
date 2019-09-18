@@ -22,8 +22,7 @@ public class SignIn extends AppCompatActivity {
     private Button btnSignIn, btnGoToCreateAccount;
     private String circleID;
 
-    //TODO: Update signin.xml.
-    //TODO: Possibly make circleID / extras protected to be used in multiple activities.
+    //TODO: Update signin.xml (visuals).
     //TODO: Sign in with Google account.
 
     @Override

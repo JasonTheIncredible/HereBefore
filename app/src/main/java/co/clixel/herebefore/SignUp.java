@@ -23,7 +23,6 @@ public class SignUp extends AppCompatActivity {
     private String circleID;
 
     //TODO: Update signup.xml (visuals and add more user information).
-    //TODO: Possibly make circleID / extras protected to be used in multiple activities.
     //TODO: Sign in with Google account.
 
     @Override
