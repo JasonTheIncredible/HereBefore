@@ -62,15 +62,17 @@ public class MapsActivity extends FragmentActivity implements
     private DatabaseReference firebaseCircles;
     private ValueEventListener eventListener;
 
+    //TODO: Add dropdown menu for the circleViewsButton to change circle views and adjust max possible size of chatCircles.
+    //TODO: Make horizontal seekBar create a circle.
     //TODO: Prevent circle overlap.
-    //TODO: Add discrete vertical seekBar (with images of circleButton) to change circle views and adjust max possible size of chatCircles.
+    //TODO: Adjust circle location / size.
     //TODO: Only load Firebase circles if they're within camera view (in onMapReady).
     //TODO: Optimize Firebase loading.
-    //TODO: Work on possible NullPointerExceptions.
     //TODO: Too much work on main thread.
     //TODO: Make checkLocationPermission Async.
     //TODO: Send single point location update.
     //TODO: Send message without entering app.
+    //TODO: Work on possible NullPointerExceptions.
     //TODO: Check updating in different states with another device.
 
     @Override
