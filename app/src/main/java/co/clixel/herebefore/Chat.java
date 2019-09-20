@@ -44,6 +44,7 @@ public class Chat extends AppCompatActivity {
     private View.OnLayoutChangeListener onLayoutChangeListener;
     private String circleID;
 
+    //TODO: Scroll to bottom after sending message.
     //TODO: Too much work on main thread.
     //TODO: Add a username (in message.xml).
     //TODO: Add ability to add pictures and video to RecyclerView.

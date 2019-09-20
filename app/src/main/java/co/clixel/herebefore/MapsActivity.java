@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationListener;
@@ -18,8 +19,10 @@ import android.os.Bundle;
 import androidx.core.content.ContextCompat;
 
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.PopupMenu;
 import android.widget.SeekBar;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -49,7 +52,8 @@ import static com.google.android.gms.location.LocationServices.getFusedLocationP
 
 public class MapsActivity extends FragmentActivity implements
         OnMapReadyCallback,
-        LocationListener {
+        LocationListener,
+        PopupMenu.OnMenuItemClickListener {
 
     private static final String TAG = "MapsActivity";
     private GoogleMap mMap;
@@ -58,10 +62,13 @@ public class MapsActivity extends FragmentActivity implements
     private Circle circle;
     private SeekBar circleSizeSeekBar;
     private String circleID;
-    private Button circleButton;
+    private Button circleButton, circleViewsButton;
     private DatabaseReference firebaseCircles;
     private ValueEventListener eventListener;
+    private PopupMenu popup;
+    private Boolean circleViewsMenuIsOpen = false;
 
+    //TODO: Investigate possible issue with onCreate loading circleViewsButton before map is ready.
     //TODO: Add dropdown menu for the circleViewsButton to change circle views and adjust max possible size of chatCircles.
     //TODO: Make horizontal seekBar create a circle.
     //TODO: Prevent circle overlap.
@@ -89,6 +96,7 @@ public class MapsActivity extends FragmentActivity implements
 
         circleButton = findViewById(R.id.circleButton);
         circleSizeSeekBar = findViewById(R.id.circleSizeSeekBar);
+        circleViewsButton = findViewById(R.id.circleViewsButton);
     }
 
     @Override
@@ -109,6 +117,29 @@ public class MapsActivity extends FragmentActivity implements
 
             checkLocationPermission();
         }
+
+        // Shows a menu to filter circle views.
+        circleViewsButton.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View view) {
+
+                popup = new PopupMenu(MapsActivity.this, circleViewsButton);
+                popup.getMenuInflater().inflate(R.menu.circleviews_menu, popup.getMenu());
+                popup.show();
+                circleViewsMenuIsOpen = true;
+
+                // Changes boolean value (used in OnConfigurationChanged) to determine whether menu is currently open.
+                popup.setOnDismissListener(new PopupMenu.OnDismissListener(){
+                    @Override
+                    public void onDismiss(PopupMenu popupMenu) {
+
+                        circleViewsMenuIsOpen = false;
+                        popup.setOnDismissListener(null);
+                    }
+                });
+            }
+        });
 
         // Makes circle around user's current location on button press.
         circleButton.setOnClickListener(new View.OnClickListener() {
@@ -277,6 +308,18 @@ public class MapsActivity extends FragmentActivity implements
 
             LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
             locationManager.removeUpdates(this);
+        }
+
+        // Remove the listener.
+        if (circleViewsButton != null) {
+
+            circleViewsButton.setOnClickListener(null);
+        }
+
+        // Remove the listener.
+        if (popup != null) {
+
+            popup.setOnDismissListener(null);
         }
 
         // Remove the listener.
@@ -575,6 +618,50 @@ public class MapsActivity extends FragmentActivity implements
             mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition), null);
             // Set Boolean to false to prevent unnecessary animation, as the camera should already be set on the user's location.
             firstLoad = false;
+        }
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+
+        super.onConfigurationChanged(newConfig);
+
+        // Checks the orientation of the screen.
+        // Reloads the circleviews_menu when the orientation changes.
+        if ( newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE && circleViewsMenuIsOpen) {
+
+            popup.dismiss();
+            circleViewsButton.performClick();
+        } else if ( newConfig.orientation == Configuration.ORIENTATION_PORTRAIT && circleViewsMenuIsOpen){
+
+            popup.dismiss();
+            circleViewsButton.performClick();
+        }
+    }
+
+    @Override
+    public boolean onMenuItemClick(MenuItem menuItem) {
+
+        // Sets the circleviews_menu actions.
+        switch(menuItem.getItemId()) {
+
+            case R.id.everything:
+                circleViewsMenuIsOpen = false;
+                return true;
+            case R.id.largeCircles:
+                circleViewsMenuIsOpen = false;
+                return true;
+            case R.id.mediumCircles:
+                circleViewsMenuIsOpen = false;
+                return true;
+            case R.id.smallCircles:
+                circleViewsMenuIsOpen = false;
+                return true;
+            case R.id.points:
+                circleViewsMenuIsOpen = false;
+                return true;
+            default:
+                return false;
         }
     }
 

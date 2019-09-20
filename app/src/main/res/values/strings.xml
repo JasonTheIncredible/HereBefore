@@ -8,4 +8,9 @@
     <string name="create_account">Create Account</string>
     <string name="log_out">Log Out</string>
     <string name="new_question">New?</string>
+    <string name="show_everything">Show everything</string>
+    <string name="show_large_circles">Show large circles</string>
+    <string name="show_medium_circles">Show medium circles</string>
+    <string name="show_small_circles">Show small circles</string>
+    <string name="show_points">Show points</string>
 </resources>
