@@ -68,11 +68,12 @@ public class MapsActivity extends FragmentActivity implements
     private PopupMenu popup;
     private Boolean circleViewsMenuIsOpen = false;
 
-    //TODO: Investigate possible issue with onCreate loading circleViewsButton before map is ready.
+    //TODO: Is circleButton necessary? Replace it with circleViewsButton?
+    //TODO: Remove accuracy circle around user's location.
     //TODO: Add dropdown menu for the circleViewsButton to change circle views and adjust max possible size of chatCircles.
-    //TODO: Make horizontal seekBar create a circle.
+    //TODO: Once circle size is set to max, button appears that allows for large circles to be created (and smaller if on larger seek bar).
     //TODO: Prevent circle overlap.
-    //TODO: Adjust circle location / size.
+    //TODO: Adjust circle location / size (make any shape possible).
     //TODO: Only load Firebase circles if they're within camera view (in onMapReady).
     //TODO: Optimize Firebase loading.
     //TODO: Too much work on main thread.
@@ -192,12 +193,51 @@ public class MapsActivity extends FragmentActivity implements
             }
         });
 
-        // Changes size of the circle using the seek bar at the bottom.
+        // Creates circle / changes size of the circle using the seek bar at the bottom.
         circleSizeSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
 
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
 
-                if (circle != null){
+                if (circle == null) {
+
+                    checkLocationPermission();
+
+                    FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(MapsActivity.this);
+
+                    mFusedLocationClient.getLastLocation()
+                            .addOnSuccessListener(MapsActivity.this, new OnSuccessListener<Location>() {
+
+                                @Override
+                                public void onSuccess(Location location) {
+
+                                    // Get last known location. In some rare situations, this can be null.
+                                    if (location != null) {
+
+                                        // Make circle the size set by the seekBar.
+                                        int circleSize = circleSizeSeekBar.getProgress();
+
+                                        // Logic to handle location object.
+                                        LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
+                                        CircleOptions circleOptions =
+                                                new CircleOptions()
+                                                        .center(latLng)
+                                                        .radius(circleSize)
+                                                        .clickable(true)
+                                                        .strokeWidth(3f)
+                                                        .strokeColor(Color.BLUE)
+                                                        .fillColor(Color.argb(70, 50, 50, 100));
+
+                                        if (circle != null){
+
+                                            circle.remove();
+                                        }
+
+                                        circle = mMap.addCircle(circleOptions);
+                                        circleSizeSeekBar.setProgress(circleSize);
+                                    }
+                                }
+                            });
+                } else {
 
                     circle.setRadius(progress);
                 }
@@ -266,9 +306,12 @@ public class MapsActivity extends FragmentActivity implements
         Log.i(TAG, "onRestart()");
 
         // Clear map before adding new Firebase circles in onStart() to prevent overlap.
+        // Set circle to null so changing circleSizeSeekBar in onStart() will create a circle.
         if (mMap != null) {
 
             mMap.clear();
+            circleSizeSeekBar.setProgress(0);
+            circle = null;
         }
     }
 
@@ -299,7 +342,6 @@ public class MapsActivity extends FragmentActivity implements
 
         super.onStop();
         Log.i(TAG, "onStop()");
-
 
         // Remove updating location information.
         if (ContextCompat.checkSelfPermission(MapsActivity.this,
