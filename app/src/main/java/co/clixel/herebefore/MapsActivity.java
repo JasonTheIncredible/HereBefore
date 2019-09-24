@@ -11,6 +11,7 @@ import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.os.Build;
 import android.os.Looper;
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
@@ -19,6 +20,7 @@ import android.os.Bundle;
 import androidx.core.content.ContextCompat;
 
 import android.util.Log;
+import android.view.Gravity;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
@@ -66,12 +68,13 @@ public class MapsActivity extends FragmentActivity implements
     private DatabaseReference firebaseCircles;
     private ValueEventListener eventListener;
     private PopupMenu popup;
+    private PopupMenu popupCreateLargerCircles;
     private Boolean circleViewsMenuIsOpen = false;
+    private Boolean largerCirclesMenuIsOpen = false;
 
-    //TODO: Is circleButton necessary? Replace it with circleViewsButton?
-    //TODO: Remove accuracy circle around user's location.
-    //TODO: Add dropdown menu for the circleViewsButton to change circle views and adjust max possible size of chatCircles.
-    //TODO: Once circle size is set to max, button appears that allows for large circles to be created (and smaller if on larger seek bar).
+    //TODO: Once circle size is set to max, make popup allow for large circles to be created (and smaller if on larger seek bar).
+    //TODO: Redesign and rename circleButton for points.
+    //TODO: Add dropdown menu for the circleViewsButton to change circle views.
     //TODO: Prevent circle overlap.
     //TODO: Adjust circle location / size (make any shape possible).
     //TODO: Only load Firebase circles if they're within camera view (in onMapReady).
@@ -113,7 +116,7 @@ public class MapsActivity extends FragmentActivity implements
 
             LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
             String provider = LocationManager.NETWORK_PROVIDER;
-            locationManager.requestLocationUpdates(provider, 400, 1, this);
+            locationManager.requestLocationUpdates(provider, 1000, 0, this);
         } else{
 
             checkLocationPermission();
@@ -193,11 +196,11 @@ public class MapsActivity extends FragmentActivity implements
             }
         });
 
-        // Creates circle / changes size of the circle using the seek bar at the bottom.
         circleSizeSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
 
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
 
+                // Creates circle / changes size of the circle.
                 if (circle == null) {
 
                     checkLocationPermission();
@@ -227,7 +230,7 @@ public class MapsActivity extends FragmentActivity implements
                                                         .strokeColor(Color.BLUE)
                                                         .fillColor(Color.argb(70, 50, 50, 100));
 
-                                        if (circle != null){
+                                        if (circle != null) {
 
                                             circle.remove();
                                         }
@@ -240,6 +243,39 @@ public class MapsActivity extends FragmentActivity implements
                 } else {
 
                     circle.setRadius(progress);
+                }
+
+                // Creates menu above seekBar that gives user option to make larger circle.
+                if (circleSizeSeekBar.getProgress() == 100) {
+
+                    // Set popup to show at end of seekBar if API >= 19, as this is when Gravity.END is supported.
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+
+                        popupCreateLargerCircles = new PopupMenu(MapsActivity.this, circleSizeSeekBar, Gravity.END);
+                    } else {
+
+                        popupCreateLargerCircles = new PopupMenu(MapsActivity.this, circleSizeSeekBar);
+                    }
+
+                    popupCreateLargerCircles.getMenuInflater().inflate(R.menu.circleviews_menu, popupCreateLargerCircles.getMenu());
+                    popupCreateLargerCircles.show();
+                    largerCirclesMenuIsOpen = true;
+
+                    // Changes boolean value (used in OnConfigurationChanged) to determine whether menu is currently open.
+                    popupCreateLargerCircles.setOnDismissListener(new PopupMenu.OnDismissListener() {
+                        @Override
+                        public void onDismiss(PopupMenu popupMenu) {
+
+                            largerCirclesMenuIsOpen = false;
+                            popupCreateLargerCircles.setOnDismissListener(null);
+                        }
+                    });
+                }
+
+                // Ensures the popup closes.
+                if ( (popupCreateLargerCircles != null) && (circleSizeSeekBar.getProgress() < 100) ) {
+
+                    popupCreateLargerCircles.dismiss();
                 }
             }
 
@@ -481,7 +517,7 @@ public class MapsActivity extends FragmentActivity implements
                     // Request location updates:
                     if (locationManager != null) {
 
-                        locationManager.requestLocationUpdates(provider, 400, 1, this);
+                        locationManager.requestLocationUpdates(provider, 1000, 0, this);
                         mMap.setMyLocationEnabled(true);
                         // Set firstLoad to true to guarantee the camera moves to the user's location.
                         firstLoad = true;
@@ -503,8 +539,8 @@ public class MapsActivity extends FragmentActivity implements
         long UPDATE_INTERVAL = 10 * 1000;
         mLocationRequest.setInterval(UPDATE_INTERVAL);
 
-        /* 2 sec */
-        long FASTEST_INTERVAL = 2000;
+        /* 1 sec */
+        long FASTEST_INTERVAL = 1000;
         mLocationRequest.setFastestInterval(FASTEST_INTERVAL);
 
         // Create LocationSettingsRequest object using location request
@@ -524,7 +560,6 @@ public class MapsActivity extends FragmentActivity implements
 
                     @Override
                     public void onLocationResult(LocationResult locationResult) {
-
 
                         onLocationChanged(locationResult.getLastLocation());
                     }
@@ -661,23 +696,81 @@ public class MapsActivity extends FragmentActivity implements
             // Set Boolean to false to prevent unnecessary animation, as the camera should already be set on the user's location.
             firstLoad = false;
         }
+
+        // Keep the circle's location on the user at all times.
+        if (circle != null) {
+
+            checkLocationPermission();
+
+            FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(MapsActivity.this);
+
+            mFusedLocationClient.getLastLocation()
+                    .addOnSuccessListener(MapsActivity.this, new OnSuccessListener<Location>() {
+
+                        @Override
+                        public void onSuccess(Location location) {
+
+                            // Get last known location. In some rare situations, this can be null.
+                            if (location != null) {
+
+                                // Make circle the size set by the seekBar.
+                                int circleSize = circleSizeSeekBar.getProgress();
+
+                                // Logic to handle location object.
+                                LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
+                                CircleOptions circleOptions =
+                                        new CircleOptions()
+                                                .center(latLng)
+                                                .radius(circleSize)
+                                                .clickable(true)
+                                                .strokeWidth(3f)
+                                                .strokeColor(Color.BLUE)
+                                                .fillColor(Color.argb(70, 50, 50, 100));
+
+                                if (circle != null){
+
+                                    circle.remove();
+                                }
+
+                                circle = mMap.addCircle(circleOptions);
+                                circleSizeSeekBar.setProgress(circleSize);
+                            }
+                        }
+                    });
+        }
     }
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
 
+        // Called when the orientation of the screen changes.
         super.onConfigurationChanged(newConfig);
+        Log.i(TAG, "onConfigurationChanged()");
 
-        // Checks the orientation of the screen.
-        // Reloads the circleviews_menu when the orientation changes.
+        // Reloads the popup when the orientation changes to prevent viewing issues.
         if ( newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE && circleViewsMenuIsOpen) {
 
             popup.dismiss();
-            circleViewsButton.performClick();
+            popup.show();
+            circleViewsMenuIsOpen = true;
         } else if ( newConfig.orientation == Configuration.ORIENTATION_PORTRAIT && circleViewsMenuIsOpen){
 
             popup.dismiss();
-            circleViewsButton.performClick();
+            popup.show();
+            circleViewsMenuIsOpen = true;
+        }
+
+        // Reloads the popup when the orientation changes to prevent viewing issues.
+        if ( newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE && largerCirclesMenuIsOpen) {
+
+            popupCreateLargerCircles.dismiss();
+            popupCreateLargerCircles.show();
+            largerCirclesMenuIsOpen = true;
+        } else if ( newConfig.orientation == Configuration.ORIENTATION_PORTRAIT && largerCirclesMenuIsOpen) {
+
+            popupCreateLargerCircles.dismiss();
+            popupCreateLargerCircles.show();
+            largerCirclesMenuIsOpen = true;
         }
     }
 

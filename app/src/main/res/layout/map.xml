@@ -28,25 +28,27 @@
         android:layout_width="60dp"
         android:layout_height="60dp"
         android:background="@drawable/circle_button"
-        android:layout_alignParentEnd="true"
-        android:layout_alignParentRight="true"
-        android:layout_alignParentBottom="true"
-        android:layout_marginBottom="10dp"
-        android:layout_marginRight="10dp"
-        android:layout_marginEnd="10dp" />
-
-    <SeekBar
-        android:id="@+id/circleSizeSeekBar"
-        android:layout_width="fill_parent"
-        android:layout_height="60dp"
-        android:layout_alignParentBottom="true"
-        android:progress="0"
         android:layout_marginStart="10dp"
         android:layout_marginLeft="10dp"
         android:layout_marginBottom="10dp"
         android:layout_marginEnd="10dp"
         android:layout_marginRight="10dp"
-        android:layout_toStartOf="@+id/circleButton"
-        android:layout_toLeftOf="@+id/circleButton" />
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true" />
+
+    <SeekBar
+        android:id="@+id/circleSizeSeekBar"
+        android:layout_width="fill_parent"
+        android:layout_height="60dp"
+        android:progress="0"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="10dp"
+        android:layout_marginRight="10dp"
+        android:layout_marginEnd="10dp"
+        android:layout_toEndOf="@+id/circleButton"
+        android:layout_toRightOf="@+id/circleButton" />
 
 </RelativeLayout>
