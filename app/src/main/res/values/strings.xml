@@ -13,4 +13,5 @@
     <string name="show_medium_circles">Show medium circles</string>
     <string name="show_small_circles">Show small circles</string>
     <string name="show_points">Show points</string>
+    <string name="larger_circle">Create larger circle</string>
 </resources>
