@@ -69,7 +69,7 @@ public class Chat extends AppCompatActivity {
         super.onStart();
         Log.i(TAG, "onStart()");
 
-        // Get info from MapsActivity.java
+        // Get info from Map.java
         Bundle extras = getIntent().getExtras();
         circleID = extras.getString("circleID");
 
@@ -91,7 +91,7 @@ public class Chat extends AppCompatActivity {
 
                 for (DataSnapshot ds : dataSnapshot.getChildren()) {
 
-                    // If the circle identifier brought from MapsActivity equals the circleID attached to the message in Firebase, load it into the RecyclerView.
+                    // If the circle identifier brought from Map equals the circleID attached to the message in Firebase, load it into the RecyclerView.
                     if (ds.child("circleID").getValue().equals(circleID)) {
 
                         String messageText = (String) ds.child("message").getValue();

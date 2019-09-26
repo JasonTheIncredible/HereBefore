@@ -41,7 +41,7 @@ public class SignUp extends AppCompatActivity {
 
         super.onStart();
 
-        // Get info from MapsActivity.java -> SignIn.java.
+        // Get info from Map.java -> SignIn.java.
         Bundle extras = getIntent().getExtras();
         circleID = extras.getString("circleID");
 

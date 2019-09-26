@@ -52,12 +52,12 @@ import com.google.firebase.database.ValueEventListener;
 
 import static com.google.android.gms.location.LocationServices.getFusedLocationProviderClient;
 
-public class MapsActivity extends FragmentActivity implements
+public class Map extends FragmentActivity implements
         OnMapReadyCallback,
         LocationListener,
         PopupMenu.OnMenuItemClickListener {
 
-    private static final String TAG = "MapsActivity";
+    private static final String TAG = "Map";
     private GoogleMap mMap;
     private static final int Request_User_Location_Code = 99;
     boolean firstLoad = true;
@@ -70,10 +70,11 @@ public class MapsActivity extends FragmentActivity implements
     private ValueEventListener eventListener;
     private PopupMenu popupCircleViews;
     private PopupMenu popupCreateLargerCircles;
+    private PopupMenu popupCreateSmallerCircles;
     private Boolean circleViewsMenuIsOpen = false;
     private Boolean largerCirclesMenuIsOpen = false;
+    private Boolean smallerCirclesMenuIsOpen = false;
 
-    //TODO: Once second seekBar is created, allow for a smaller seekBar once again using a popup.
     //TODO: Bring camera to user's location when creating a circle and make the angle larger when using the second seekBar.
     //TODO: Redesign and rename circleButton for points.
     //TODO: Add dropdown menu for the circleViewsButton to change circle views.
@@ -113,7 +114,7 @@ public class MapsActivity extends FragmentActivity implements
         Log.i(TAG, "onStart()");
 
         // Start updating location.
-        if (ContextCompat.checkSelfPermission(MapsActivity.this,
+        if (ContextCompat.checkSelfPermission(Map.this,
                 Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
 
@@ -131,8 +132,8 @@ public class MapsActivity extends FragmentActivity implements
             @Override
             public void onClick(View view) {
 
-                popupCircleViews = new PopupMenu(MapsActivity.this, circleViewsButton);
-                popupCircleViews.setOnMenuItemClickListener(MapsActivity.this);
+                popupCircleViews = new PopupMenu(Map.this, circleViewsButton);
+                popupCircleViews.setOnMenuItemClickListener(Map.this);
                 popupCircleViews.inflate(R.menu.circleviews_menu);
                 popupCircleViews.show();
                 circleViewsMenuIsOpen = true;
@@ -156,10 +157,10 @@ public class MapsActivity extends FragmentActivity implements
 
                 checkLocationPermission();
 
-                FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(MapsActivity.this);
+                FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
 
                 mFusedLocationClient.getLastLocation()
-                        .addOnSuccessListener(MapsActivity.this, new OnSuccessListener<Location>() {
+                        .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
 
                             @Override
                             public void onSuccess(Location location) {
@@ -210,19 +211,19 @@ public class MapsActivity extends FragmentActivity implements
                     circle.setRadius(progress);
                 }
 
-                // Creates menu above seekBar that gives user option to make larger circle.
+                // Creates popup above seekBar that gives user option to make larger circle.
                 if (circleSizeSeekBar.getProgress() == 100) {
 
                     // Set popup to show at end of seekBar if API >= 19, as this is when Gravity.END is supported.
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
 
-                        popupCreateLargerCircles = new PopupMenu(MapsActivity.this, circleSizeSeekBar, Gravity.END);
+                        popupCreateLargerCircles = new PopupMenu(Map.this, circleSizeSeekBar, Gravity.END);
                     } else {
 
-                        popupCreateLargerCircles = new PopupMenu(MapsActivity.this, circleSizeSeekBar);
+                        popupCreateLargerCircles = new PopupMenu(Map.this, circleSizeSeekBar);
                     }
-                    popupCreateLargerCircles.setOnMenuItemClickListener(MapsActivity.this);
-                    popupCreateLargerCircles.inflate(R.menu.largercircles_seekbar_menu);
+                    popupCreateLargerCircles.setOnMenuItemClickListener(Map.this);
+                    popupCreateLargerCircles.inflate(R.menu.largercircle_seekbar_menu);
                     popupCreateLargerCircles.show();
                     largerCirclesMenuIsOpen = true;
 
@@ -252,10 +253,10 @@ public class MapsActivity extends FragmentActivity implements
 
                     checkLocationPermission();
 
-                    FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(MapsActivity.this);
+                    FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
 
                     mFusedLocationClient.getLastLocation()
-                            .addOnSuccessListener(MapsActivity.this, new OnSuccessListener<Location>() {
+                            .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
 
                                 @Override
                                 public void onSuccess(Location location) {
@@ -355,6 +356,32 @@ public class MapsActivity extends FragmentActivity implements
             circleSizeSeekBar.setProgress(0);
             circle = null;
         }
+
+        // If the largerCircleSizeSeekBar is visible, set it to View.GONE and make the original one visible (as mMap.clear() is called so no circles exist).
+        if (largerCircleSizeSeekBar.getVisibility() != View.GONE) {
+
+            largerCircleSizeSeekBar.setVisibility(View.GONE);
+            circleSizeSeekBar.setVisibility(View.VISIBLE);
+            largerCircleSizeSeekBar.setOnSeekBarChangeListener(null);
+        }
+
+        // Close any open menus
+        if (popupCircleViews != null) {
+
+            popupCircleViews.dismiss();
+        }
+
+        // Close any open menus
+        if (popupCreateLargerCircles != null) {
+
+            popupCreateLargerCircles.dismiss();
+        }
+
+        // Close any open menus
+        if (popupCreateSmallerCircles != null) {
+
+            popupCreateSmallerCircles.dismiss();
+        }
     }
 
     @Override
@@ -386,7 +413,7 @@ public class MapsActivity extends FragmentActivity implements
         Log.i(TAG, "onStop()");
 
         // Remove updating location information.
-        if (ContextCompat.checkSelfPermission(MapsActivity.this,
+        if (ContextCompat.checkSelfPermission(Map.this,
                 Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
 
@@ -487,7 +514,7 @@ public class MapsActivity extends FragmentActivity implements
                             public void onClick(DialogInterface dialogInterface, int i) {
 
                                 //Prompt the user once explanation has been shown
-                                ActivityCompat.requestPermissions(MapsActivity.this,
+                                ActivityCompat.requestPermissions(Map.this,
                                         new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
                                         Request_User_Location_Code);
                             }
@@ -646,7 +673,7 @@ public class MapsActivity extends FragmentActivity implements
                     firebaseCircles.addListenerForSingleValueEvent(eventListener);
 
                     // Go to Chat.java with the circleID.
-                    Intent Activity = new Intent(MapsActivity.this, Chat.class);
+                    Intent Activity = new Intent(Map.this, Chat.class);
                     Activity.putExtra("circleID", circleID);
                     startActivity(Activity);
                 } else {
@@ -679,7 +706,7 @@ public class MapsActivity extends FragmentActivity implements
                     firebaseCircles.addListenerForSingleValueEvent(eventListener);
 
                     // Go to SignIn.java.
-                    Intent Activity = new Intent(MapsActivity.this, SignIn.class);
+                    Intent Activity = new Intent(Map.this, SignIn.class);
                     Activity.putExtra("circleID", circleID);
                     startActivity(Activity);
                 }
@@ -712,10 +739,10 @@ public class MapsActivity extends FragmentActivity implements
         // Keep the circle's location on the user at all times.
         if (circle != null) {
 
-            FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(MapsActivity.this);
+            FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
 
             mFusedLocationClient.getLastLocation()
-                    .addOnSuccessListener(MapsActivity.this, new OnSuccessListener<Location>() {
+                    .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
 
                         @Override
                         public void onSuccess(Location location) {
@@ -748,10 +775,10 @@ public class MapsActivity extends FragmentActivity implements
                                     circle = mMap.addCircle(circleOptions);
                                 } else {
 
-                                    FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(MapsActivity.this);
+                                    FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
 
                                     mFusedLocationClient.getLastLocation()
-                                            .addOnSuccessListener(MapsActivity.this, new OnSuccessListener<Location>() {
+                                            .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
 
                                                 @Override
                                                 public void onSuccess(Location location) {
@@ -821,6 +848,19 @@ public class MapsActivity extends FragmentActivity implements
             popupCreateLargerCircles.show();
             largerCirclesMenuIsOpen = true;
         }
+
+        // Reloads the popup when the orientation changes to prevent viewing issues.
+        if ( newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE && smallerCirclesMenuIsOpen) {
+
+            popupCreateSmallerCircles.dismiss();
+            popupCreateSmallerCircles.show();
+            smallerCirclesMenuIsOpen = true;
+        } else if ( newConfig.orientation == Configuration.ORIENTATION_PORTRAIT && smallerCirclesMenuIsOpen) {
+
+            popupCreateSmallerCircles.dismiss();
+            popupCreateSmallerCircles.show();
+            smallerCirclesMenuIsOpen = true;
+        }
     }
 
     @Override
@@ -847,30 +887,37 @@ public class MapsActivity extends FragmentActivity implements
                 circleViewsMenuIsOpen = false;
                 return true;
 
-            // largercircles_seekbar_menu
-            case R.id.largerCircles:
+            // largercircle_seekbar_menu
+            case R.id.largerCircle:
 
-                Log.i(TAG, "button");
                 largerCirclesMenuIsOpen = false;
                 largerCircleSeekBar();
+                return true;
+
+            // smallercircle_seekbar_menu
+            case R.id.smallerCircle:
+
+                smallerCirclesMenuIsOpen = false;
+                largerCircleSizeSeekBar.setVisibility(View.GONE);
+                circleSizeSeekBar.setVisibility(View.VISIBLE);
+                // Remove the larger seekBar listener.
+                if (largerCircleSizeSeekBar != null) {
+
+                    largerCircleSizeSeekBar.setOnSeekBarChangeListener(null);
+                }
+                return true;
 
             default:
                 return false;
         }
     }
 
-    public void largerCircleSeekBar() {
+    protected void largerCircleSeekBar() {
 
         Log.i(TAG, "largerCircleSeekBar()");
 
         circleSizeSeekBar.setVisibility(View.GONE);
         largerCircleSizeSeekBar.setVisibility(View.VISIBLE);
-
-        // Remove the original seekBar listener.
-        if (circleSizeSeekBar != null) {
-
-            circleSizeSeekBar.setOnSeekBarChangeListener(null);
-        }
 
         largerCircleSizeSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
 
@@ -881,6 +928,26 @@ public class MapsActivity extends FragmentActivity implements
 
                     circle.setRadius(progress + 100);
                 }
+
+                // Creates popup to change the largerCircleSizeSeekBar back to the circleSizeSeekBar.
+                if (largerCircleSizeSeekBar.getProgress() == 0) {
+
+                    popupCreateSmallerCircles = new PopupMenu(Map.this, largerCircleSizeSeekBar);
+                    popupCreateSmallerCircles.setOnMenuItemClickListener(Map.this);
+                    popupCreateSmallerCircles.inflate(R.menu.smallercircle_seekbar_menu);
+                    popupCreateSmallerCircles.show();
+                    smallerCirclesMenuIsOpen = true;
+
+                    // Changes boolean value (used in OnConfigurationChanged) to determine whether menu is currently open.
+                    popupCreateSmallerCircles.setOnDismissListener(new PopupMenu.OnDismissListener() {
+                        @Override
+                        public void onDismiss(PopupMenu popupMenu) {
+
+                            smallerCirclesMenuIsOpen = false;
+                            popupCreateSmallerCircles.setOnDismissListener(null);
+                        }
+                    });
+                }
             }
 
             @Override
@@ -889,10 +956,10 @@ public class MapsActivity extends FragmentActivity implements
                 // Creates circle.
                 if (circle == null) {
 
-                    FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(MapsActivity.this);
+                    FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
 
                     mFusedLocationClient.getLastLocation()
-                            .addOnSuccessListener(MapsActivity.this, new OnSuccessListener<Location>() {
+                            .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
 
                                 @Override
                                 public void onSuccess(Location location) {
