@@ -24,15 +24,15 @@
         android:layout_marginEnd="10dp"/>
 
     <Button
-        android:id="@+id/circleButton"
-        android:layout_width="60dp"
-        android:layout_height="60dp"
-        android:background="@drawable/circle_button"
-        android:layout_marginStart="10dp"
-        android:layout_marginLeft="10dp"
-        android:layout_marginBottom="10dp"
-        android:layout_marginEnd="10dp"
-        android:layout_marginRight="10dp"
+        android:id="@+id/pointButton"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="@drawable/point_button"
+        android:layout_marginStart="20dp"
+        android:layout_marginLeft="20dp"
+        android:layout_marginBottom="20dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginRight="20dp"
         android:layout_alignParentBottom="true"
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true" />
@@ -48,8 +48,8 @@
         android:layout_marginBottom="10dp"
         android:layout_marginRight="10dp"
         android:layout_marginEnd="10dp"
-        android:layout_toEndOf="@+id/circleButton"
-        android:layout_toRightOf="@+id/circleButton" />
+        android:layout_toEndOf="@+id/pointButton"
+        android:layout_toRightOf="@+id/pointButton" />
 
     <SeekBar
         android:id="@+id/largerCircleSizeSeekBar"
@@ -62,8 +62,8 @@
         android:layout_marginBottom="10dp"
         android:layout_marginRight="10dp"
         android:layout_marginEnd="10dp"
-        android:layout_toEndOf="@+id/circleButton"
-        android:layout_toRightOf="@+id/circleButton"
+        android:layout_toEndOf="@+id/pointButton"
+        android:layout_toRightOf="@+id/pointButton"
         android:visibility="gone"/>
 
 </RelativeLayout>
