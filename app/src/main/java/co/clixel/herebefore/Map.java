@@ -75,10 +75,10 @@ public class Map extends FragmentActivity implements
     private Boolean largerCirclesMenuIsOpen = false;
     private Boolean smallerCirclesMenuIsOpen = false;
 
-    //TODO: Add dropdown menu for the circleViewsButton to change circle views.
     //TODO: Prevent circle overlap (also, clicking on circle creates a circle).
     //TODO: Adjust circle location / size (make any shape possible) and get rid of circle always updating to be on user's location.
     //TODO: Only load Firebase circles if they're within camera view (in onMapReady).
+    //TODO: Make sure Firebase listener is always updating map properly.
     //TODO: Optimize Firebase loading.
     //TODO: Too much work on main thread.
     //TODO: Make checkLocationPermission Async.
@@ -359,10 +359,39 @@ public class Map extends FragmentActivity implements
 
             }
         });
+    }
 
-        // Load Firebase circles.
-        DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-        firebaseCircles = rootRef.child("circles");
+    @Override
+    protected void onRestart() {
+
+        super.onRestart();
+        Log.i(TAG, "onRestart()");
+
+        // Clear map before adding new Firebase circles in onStart() to prevent overlap.
+        // Set circle to null so changing circleSizeSeekBar in onStart() will create a circle.
+        if (mMap != null) {
+
+            mMap.clear();
+            circleSizeSeekBar.setProgress(0);
+            circle = null;
+        }
+
+        // If the largerCircleSizeSeekBar is visible, set it to View.GONE and make the original one visible (as mMap.clear() is called so no circles exist).
+        if (largerCircleSizeSeekBar.getVisibility() != View.GONE) {
+
+            largerCircleSizeSeekBar.setVisibility(View.GONE);
+            circleSizeSeekBar.setVisibility(View.VISIBLE);
+            circleSizeSeekBar.setEnabled(true);
+            largerCircleSizeSeekBar.setOnSeekBarChangeListener(null);
+        }
+
+        // Remove previous event listener.
+        if (eventListener != null){
+
+            eventListener = null;
+        }
+
+        // Load Firebase circles, as onMapReady() doesn't get called after onRestart().
         eventListener = new ValueEventListener() {
 
             @Override
@@ -403,30 +432,6 @@ public class Map extends FragmentActivity implements
 
         // Add the Firebase listener.
         firebaseCircles.addValueEventListener(eventListener);
-    }
-
-    @Override
-    protected void onRestart() {
-
-        super.onRestart();
-        Log.i(TAG, "onRestart()");
-
-        // Clear map before adding new Firebase circles in onStart() to prevent overlap.
-        // Set circle to null so changing circleSizeSeekBar in onStart() will create a circle.
-        if (mMap != null) {
-
-            mMap.clear();
-            circleSizeSeekBar.setProgress(0);
-            circle = null;
-        }
-
-        // If the largerCircleSizeSeekBar is visible, set it to View.GONE and make the original one visible (as mMap.clear() is called so no circles exist).
-        if (largerCircleSizeSeekBar.getVisibility() != View.GONE) {
-
-            largerCircleSizeSeekBar.setVisibility(View.GONE);
-            circleSizeSeekBar.setVisibility(View.VISIBLE);
-            largerCircleSizeSeekBar.setOnSeekBarChangeListener(null);
-        }
 
         // Close any open menus
         if (popupCircleViews != null) {
@@ -690,6 +695,50 @@ public class Map extends FragmentActivity implements
             mMap.setMyLocationEnabled(true);
         }
 
+        // Load Firebase circles.
+        DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
+        firebaseCircles = rootRef.child("circles");
+        eventListener = new ValueEventListener() {
+
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                for (DataSnapshot ds : dataSnapshot.getChildren()) {
+
+                    if (dataSnapshot.getValue() != null) {
+
+                        LatLng center = new LatLng((Double) ds.child("circle/center/latitude/").getValue(), (Double) ds.child("circle/center/longitude/").getValue());
+                        boolean clickable = (boolean) ds.child("circle/clickable").getValue();
+                        int fillColor = (int) (long) ds.child("circle/fillColor").getValue();
+                        Object id = ds.child("circle/id").getValue();
+                        int radius = (int) (long) ds.child("circle/radius").getValue();
+                        int strokeColor = (int) (long) ds.child("circle/strokeColor").getValue();
+                        float strokeWidth = (float) (long) ds.child("circle/strokeWidth").getValue();
+                        Circle circle = mMap.addCircle(
+                                new CircleOptions()
+                                        .center(center)
+                                        .radius(radius)
+                                        .clickable(clickable)
+                                        .strokeWidth(strokeWidth)
+                                        .strokeColor(strokeColor)
+                                        .fillColor(fillColor)
+                        );
+
+                        // Set the Tag using the ID Firebase assigned. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                        circle.setTag(id);
+                    }
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        };
+
+        // Add the Firebase listener.
+        firebaseCircles.addValueEventListener(eventListener);
+
         // Go to chat when clicking on the circle.
         mMap.setOnCircleClickListener(new GoogleMap.OnCircleClickListener() {
 
@@ -938,23 +987,367 @@ public class Map extends FragmentActivity implements
 
             // circleviews_menu
             case R.id.everything:
+
+                Log.i(TAG, "onMenuItemClick() -> everything");
+
                 circleViewsMenuIsOpen = false;
+                // Remove previous Firebase listener.
+                if (firebaseCircles != null){
+
+                    firebaseCircles.removeEventListener(eventListener);
+                }
+                if (eventListener != null){
+
+                    eventListener = null;
+                }
+                mMap.clear();
+                // Set circle to null so changing circleSizeSeekBar will create a circle.
+                circle = null;
+                // Set progress to 0, as no circle exists.
+                circleSizeSeekBar.setProgress(0);
+                // If the largerCircleSizeSeekBar is visible, set it to View.GONE and make the original one visible (as mMap.clear() is called so no circles exist).
+                if (largerCircleSizeSeekBar.getVisibility() != View.GONE) {
+
+                    largerCircleSizeSeekBar.setVisibility(View.GONE);
+                    circleSizeSeekBar.setVisibility(View.VISIBLE);
+                    circleSizeSeekBar.setEnabled(true);
+                    largerCircleSizeSeekBar.setOnSeekBarChangeListener(null);
+                }
+                // Load all Firebase circles.
+                eventListener = new ValueEventListener() {
+
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                        for (DataSnapshot ds : dataSnapshot.getChildren()) {
+
+                            if (dataSnapshot.getValue() != null) {
+
+                                LatLng center = new LatLng((Double) ds.child("circle/center/latitude/").getValue(), (Double) ds.child("circle/center/longitude/").getValue());
+                                boolean clickable = (boolean) ds.child("circle/clickable").getValue();
+                                int fillColor = (int) (long) ds.child("circle/fillColor").getValue();
+                                Object id = ds.child("circle/id").getValue();
+                                int radius = (int) (long) ds.child("circle/radius").getValue();
+                                int strokeColor = (int) (long) ds.child("circle/strokeColor").getValue();
+                                float strokeWidth = (float) (long) ds.child("circle/strokeWidth").getValue();
+                                Circle circle = mMap.addCircle(
+                                        new CircleOptions()
+                                                .center(center)
+                                                .radius(radius)
+                                                .clickable(clickable)
+                                                .strokeWidth(strokeWidth)
+                                                .strokeColor(strokeColor)
+                                                .fillColor(fillColor)
+                                );
+
+                                // Set the Tag using the ID Firebase assigned. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                                circle.setTag(id);
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                    }
+                };
+                // Add the Firebase listener.
+                firebaseCircles.addValueEventListener(eventListener);
                 return true;
+
             case R.id.largeCircles:
+
+                Log.i(TAG, "onMenuItemClick() -> largeCircles");
+
                 circleViewsMenuIsOpen = false;
+                // Remove previous Firebase listener.
+                if (firebaseCircles != null){
+
+                    firebaseCircles.removeEventListener(eventListener);
+                }
+                if (eventListener != null){
+
+                    eventListener = null;
+                }
+                mMap.clear();
+                // Set circle to null so changing circleSizeSeekBar will create a circle.
+                circle = null;
+                // Set progress to 0, as no circle exists.
+                circleSizeSeekBar.setProgress(0);
+                // If the largerCircleSizeSeekBar is visible, set it to View.GONE and make the original one visible (as mMap.clear() is called so no circles exist).
+                if (largerCircleSizeSeekBar.getVisibility() != View.GONE) {
+
+                    largerCircleSizeSeekBar.setVisibility(View.GONE);
+                    circleSizeSeekBar.setVisibility(View.VISIBLE);
+                    circleSizeSeekBar.setEnabled(true);
+                    largerCircleSizeSeekBar.setOnSeekBarChangeListener(null);
+                }
+                // Load Firebase circles.
+                eventListener = new ValueEventListener() {
+
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                        for (DataSnapshot ds : dataSnapshot.getChildren()) {
+
+                            if (dataSnapshot.getValue() != null) {
+
+                                // Only load large circles (radius > 100)
+                                if ((int) (long)ds.child("circle/radius").getValue() >  100) {
+
+                                    LatLng center = new LatLng((Double) ds.child("circle/center/latitude/").getValue(), (Double) ds.child("circle/center/longitude/").getValue());
+                                    boolean clickable = (boolean) ds.child("circle/clickable").getValue();
+                                    int fillColor = (int) (long) ds.child("circle/fillColor").getValue();
+                                    Object id = ds.child("circle/id").getValue();
+                                    int radius = (int) (long) ds.child("circle/radius").getValue();
+                                    int strokeColor = (int) (long) ds.child("circle/strokeColor").getValue();
+                                    float strokeWidth = (float) (long) ds.child("circle/strokeWidth").getValue();
+                                    Circle circle = mMap.addCircle(
+                                            new CircleOptions()
+                                                    .center(center)
+                                                    .radius(radius)
+                                                    .clickable(clickable)
+                                                    .strokeWidth(strokeWidth)
+                                                    .strokeColor(strokeColor)
+                                                    .fillColor(fillColor)
+                                    );
+
+                                    // Set the Tag using the ID Firebase assigned. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                                    circle.setTag(id);
+                                }
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                    }
+                };
+                // Add the Firebase listener.
+                firebaseCircles.addValueEventListener(eventListener);
                 return true;
             case R.id.mediumCircles:
+
+                Log.i(TAG, "onMenuItemClick() -> mediumCircles");
+
                 circleViewsMenuIsOpen = false;
+                // Remove previous Firebase listener.
+                if (firebaseCircles != null){
+
+                    firebaseCircles.removeEventListener(eventListener);
+                }
+                if (eventListener != null){
+
+                    eventListener = null;
+                }
+                mMap.clear();
+                // Set circle to null so changing circleSizeSeekBar will create a circle.
+                circle = null;
+                // Set progress to 0, as no circle exists.
+                circleSizeSeekBar.setProgress(0);
+                // If the largerCircleSizeSeekBar is visible, set it to View.GONE and make the original one visible (as mMap.clear() is called so no circles exist).
+                if (largerCircleSizeSeekBar.getVisibility() != View.GONE) {
+
+                    largerCircleSizeSeekBar.setVisibility(View.GONE);
+                    circleSizeSeekBar.setVisibility(View.VISIBLE);
+                    circleSizeSeekBar.setEnabled(true);
+                    largerCircleSizeSeekBar.setOnSeekBarChangeListener(null);
+                }
+                // Load Firebase circles.
+                eventListener = new ValueEventListener() {
+
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                        for (DataSnapshot ds : dataSnapshot.getChildren()) {
+
+                            if (dataSnapshot.getValue() != null) {
+
+                                // Only load medium circles (50 < radius < 100)
+                                if ((int) (long)ds.child("circle/radius").getValue() > 50 && (int) (long)ds.child("circle/radius").getValue() <= 100 ) {
+
+                                    LatLng center = new LatLng((Double) ds.child("circle/center/latitude/").getValue(), (Double) ds.child("circle/center/longitude/").getValue());
+                                    boolean clickable = (boolean) ds.child("circle/clickable").getValue();
+                                    int fillColor = (int) (long) ds.child("circle/fillColor").getValue();
+                                    Object id = ds.child("circle/id").getValue();
+                                    int radius = (int) (long) ds.child("circle/radius").getValue();
+                                    int strokeColor = (int) (long) ds.child("circle/strokeColor").getValue();
+                                    float strokeWidth = (float) (long) ds.child("circle/strokeWidth").getValue();
+                                    Circle circle = mMap.addCircle(
+                                            new CircleOptions()
+                                                    .center(center)
+                                                    .radius(radius)
+                                                    .clickable(clickable)
+                                                    .strokeWidth(strokeWidth)
+                                                    .strokeColor(strokeColor)
+                                                    .fillColor(fillColor)
+                                    );
+
+                                    // Set the Tag using the ID Firebase assigned. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                                    circle.setTag(id);
+                                }
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                    }
+                };
+                // Add the Firebase listener.
+                firebaseCircles.addValueEventListener(eventListener);
                 return true;
             case R.id.smallCircles:
+
+                Log.i(TAG, "onMenuItemClick() -> smallCircles");
+
                 circleViewsMenuIsOpen = false;
+                // Remove previous Firebase listener.
+                if (firebaseCircles != null){
+
+                    firebaseCircles.removeEventListener(eventListener);
+                }
+                if (eventListener != null){
+
+                    eventListener = null;
+                }
+                mMap.clear();
+                // Set circle to null so changing circleSizeSeekBar will create a circle.
+                circle = null;
+                // Set progress to 0, as no circle exists.
+                circleSizeSeekBar.setProgress(0);
+                // If the largerCircleSizeSeekBar is visible, set it to View.GONE and make the original one visible (as mMap.clear() is called so no circles exist).
+                if (largerCircleSizeSeekBar.getVisibility() != View.GONE) {
+
+                    largerCircleSizeSeekBar.setVisibility(View.GONE);
+                    circleSizeSeekBar.setVisibility(View.VISIBLE);
+                    circleSizeSeekBar.setEnabled(true);
+                    largerCircleSizeSeekBar.setOnSeekBarChangeListener(null);
+                }
+                // Load Firebase circles.
+                eventListener = new ValueEventListener() {
+
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                        for (DataSnapshot ds : dataSnapshot.getChildren()) {
+
+                            if (dataSnapshot.getValue() != null) {
+
+                                // Only load small circles (1 < radius < 50)
+                                if ((int) (long)ds.child("circle/radius").getValue() > 1 && (int) (long)ds.child("circle/radius").getValue() <= 50 ) {
+
+                                    LatLng center = new LatLng((Double) ds.child("circle/center/latitude/").getValue(), (Double) ds.child("circle/center/longitude/").getValue());
+                                    boolean clickable = (boolean) ds.child("circle/clickable").getValue();
+                                    int fillColor = (int) (long) ds.child("circle/fillColor").getValue();
+                                    Object id = ds.child("circle/id").getValue();
+                                    int radius = (int) (long) ds.child("circle/radius").getValue();
+                                    int strokeColor = (int) (long) ds.child("circle/strokeColor").getValue();
+                                    float strokeWidth = (float) (long) ds.child("circle/strokeWidth").getValue();
+                                    Circle circle = mMap.addCircle(
+                                            new CircleOptions()
+                                                    .center(center)
+                                                    .radius(radius)
+                                                    .clickable(clickable)
+                                                    .strokeWidth(strokeWidth)
+                                                    .strokeColor(strokeColor)
+                                                    .fillColor(fillColor)
+                                    );
+
+                                    // Set the Tag using the ID Firebase assigned. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                                    circle.setTag(id);
+                                }
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                    }
+                };
+                // Add the Firebase listener.
+                firebaseCircles.addValueEventListener(eventListener);
                 return true;
             case R.id.points:
+
+                Log.i(TAG, "onMenuItemClick() -> points");
+
                 circleViewsMenuIsOpen = false;
+                // Clear previous Firebase listener.
+                if (firebaseCircles != null){
+
+                    firebaseCircles.removeEventListener(eventListener);
+                }
+                if (eventListener != null){
+
+                    eventListener = null;
+                }
+                mMap.clear();
+                // Set circle to null so changing circleSizeSeekBar will create a circle.
+                circle = null;
+                // Set progress to 0, as no circle exists.
+                circleSizeSeekBar.setProgress(0);
+                // If the largerCircleSizeSeekBar is visible, set it to View.GONE and make the original one visible (as mMap.clear() is called so no circles exist).
+                if (largerCircleSizeSeekBar.getVisibility() != View.GONE) {
+
+                    largerCircleSizeSeekBar.setVisibility(View.GONE);
+                    circleSizeSeekBar.setVisibility(View.VISIBLE);
+                    circleSizeSeekBar.setEnabled(true);
+                    largerCircleSizeSeekBar.setOnSeekBarChangeListener(null);
+                }
+                // Load Firebase circles.
+                eventListener = new ValueEventListener() {
+
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                        for (DataSnapshot ds : dataSnapshot.getChildren()) {
+
+                            if (dataSnapshot.getValue() != null) {
+
+                                // Only load "points" (radius == 1)
+                                if ((int) (long)ds.child("circle/radius").getValue() == 1) {
+
+                                    LatLng center = new LatLng((Double) ds.child("circle/center/latitude/").getValue(), (Double) ds.child("circle/center/longitude/").getValue());
+                                    boolean clickable = (boolean) ds.child("circle/clickable").getValue();
+                                    int fillColor = (int) (long) ds.child("circle/fillColor").getValue();
+                                    Object id = ds.child("circle/id").getValue();
+                                    int radius = (int) (long) ds.child("circle/radius").getValue();
+                                    int strokeColor = (int) (long) ds.child("circle/strokeColor").getValue();
+                                    float strokeWidth = (float) (long) ds.child("circle/strokeWidth").getValue();
+                                    Circle circle = mMap.addCircle(
+                                            new CircleOptions()
+                                                    .center(center)
+                                                    .radius(radius)
+                                                    .clickable(clickable)
+                                                    .strokeWidth(strokeWidth)
+                                                    .strokeColor(strokeColor)
+                                                    .fillColor(fillColor)
+                                    );
+
+                                    // Set the Tag using the ID Firebase assigned. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                                    circle.setTag(id);
+                                }
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                    }
+                };
+                // Add the Firebase listener.
+                firebaseCircles.addValueEventListener(eventListener);
                 return true;
 
             // largercircle_seekbar_menu
             case R.id.largerCircle:
+
+                Log.i(TAG, "onMenuItemClick() -> largerCircle");
 
                 largerCirclesMenuIsOpen = false;
                 largerCircleSeekBar();
@@ -969,6 +1362,8 @@ public class Map extends FragmentActivity implements
 
             // smallercircle_seekbar_menu
             case R.id.smallerCircle:
+
+                Log.i(TAG, "onMenuItemClick() -> smallerCircle");
 
                 smallerCirclesMenuIsOpen = false;
                 largerCircleSizeSeekBar.setVisibility(View.GONE);
