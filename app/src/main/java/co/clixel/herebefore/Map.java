@@ -82,7 +82,6 @@ public class Map extends FragmentActivity implements
     //TODO: Optimize Firebase loading.
     //TODO: Too much work on main thread.
     //TODO: Make checkLocationPermission Async.
-    //TODO: Send single point location update.
     //TODO: Send message without entering app.
     //TODO: Work on possible NullPointerExceptions.
     //TODO: Check updating in different states with another device.

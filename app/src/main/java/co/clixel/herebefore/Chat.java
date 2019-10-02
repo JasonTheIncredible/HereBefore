@@ -1,5 +1,6 @@
 package co.clixel.herebefore;
 
+import android.content.Context;
 import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -10,6 +11,7 @@ import android.util.Log;
 import android.view.View;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
+import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 
 import com.google.firebase.database.DataSnapshot;
@@ -41,10 +43,10 @@ public class Chat extends AppCompatActivity {
     private FloatingActionButton sendButton;
     private boolean reachedEndOfRecyclerView = false;
     private boolean recyclerViewHasScrolled = false;
+    private boolean messageSent = false;
     private View.OnLayoutChangeListener onLayoutChangeListener;
     private String circleID;
 
-    //TODO: Scroll to bottom after sending message.
     //TODO: Too much work on main thread.
     //TODO: Add a username (in message.xml).
     //TODO: Add ability to add pictures and video to RecyclerView.
@@ -142,21 +144,18 @@ public class Chat extends AppCompatActivity {
 
                             if (bottom < oldBottom) {
 
-                                if (recyclerView.getAdapter() != null) {
+                                if (recyclerView.getAdapter() != null && recyclerView.getAdapter().getItemCount() > 0) {
 
-                                    if (recyclerView.getAdapter().getItemCount() > 0) {
+                                    recyclerView.postDelayed(new Runnable() {
 
-                                        recyclerView.postDelayed(new Runnable() {
+                                        @Override
+                                        public void run() {
 
-                                            @Override
-                                            public void run() {
+                                            recyclerView.smoothScrollToPosition(
 
-                                                recyclerView.smoothScrollToPosition(
-
-                                                        recyclerView.getAdapter().getItemCount() - 1);
-                                            }
-                                        }, 100);
-                                    }
+                                                    recyclerView.getAdapter().getItemCount() - 1);
+                                        }
+                                    }, 100);
                                 }
                             }
                         }
@@ -183,6 +182,8 @@ public class Chat extends AppCompatActivity {
                 // Send message to Firebase.
                 if ( !input.equals("") ) {
 
+                    // Change boolean to true - scrolls to the bottom of the recyclerView (in initRecyclerView()).
+                    messageSent = true;
                     MessageInformation messageInformation = new MessageInformation();
                     messageInformation.setMessage(input);
                     // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
@@ -276,14 +277,30 @@ public class Chat extends AppCompatActivity {
         recyclerView.setAdapter(adapter);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
-        if ( index == -1) {
+        if (index == -1 || messageSent) {
 
-            // Scroll to bottom of chat after first initialization.
+            // Scroll to bottom of chat after first initialization and after sending a message.
             recyclerView.scrollToPosition(mText.size() - 1);
+            messageSent = false;
         } else{
 
             // Set RecyclerView scroll position to prevent movement when Firebase gets updated and after screen orientation change.
             ( (LinearLayoutManager) recyclerView.getLayoutManager() ).scrollToPositionWithOffset( index, top);
+        }
+
+        // Close keyboard after sending a message.
+        View view = this.getCurrentFocus();
+        if (view != null) {
+
+            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            if (imm != null) {
+
+                imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+            }
+            if (mInput != null){
+
+                mInput.clearFocus();
+            }
         }
     }
 }
