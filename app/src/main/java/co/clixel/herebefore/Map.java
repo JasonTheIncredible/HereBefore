@@ -86,7 +86,7 @@ public class Map extends FragmentActivity implements
     //TODO: Make sure Firebase listener is always updating map properly.
     //TODO: Optimize Firebase loading.
     //TODO: Too much work on main thread.
-    //TODO: Make checkLocationPermission Async.
+    //TODO: Make checkLocationPermission Async / create loading animations.
     //TODO: Send message without entering app.
     //TODO: Work on possible NullPointerExceptions.
     //TODO: Check updating in different states with another device - make sure uuids never overlap.
@@ -737,15 +737,13 @@ public class Map extends FragmentActivity implements
             @Override
             public void onCircleClick(final Circle circle) {
 
-                // Get the ID set by Firebase to identify which circle the user clicked on.
                 if (circle.getTag() != null) {
 
+                    // Get the ID set by Firebase to identify which circle the user clicked on.
                     uuid = (String) circle.getTag();
-                }
+                } else {
 
-                // If the circle is new, it will not have a tag, as the tag is pulled from Firebase. Therefore, use the ID.
-                if (uuid == null){
-
+                    // If the circle is new, it will not have a tag, as the tag is pulled from Firebase. Therefore, generate a uuid.
                     uuid = UUID.randomUUID().toString();
                 }
 
@@ -753,81 +751,103 @@ public class Map extends FragmentActivity implements
                 if (FirebaseAuth.getInstance().getCurrentUser() != null) {
 
                     // User is signed in.
-                    // Connect to Firebase.
-                    firebaseCircles.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
 
-                        @Override
-                        public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                    // If circle.getTag() == null, the circle is new. Therefore, compare it to the uuids in Firebase to prevent uuid overlap before adding it to Firebase.
+                    if (circle.getTag() == null) {
 
-                            // If the uuid doesn't already exist in Firebase, add the circle.
-                            if (!dataSnapshot.exists() && circle.getTag() == null) {
+                        firebaseCircles.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
 
-                                CircleInformation circleInformation = new CircleInformation();
-                                circleInformation.setCircle(circle);
-                                circleInformation.setUUID(uuid);
-                                DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("circles").push();
-                                newFirebaseCircle.setValue(circleInformation);
-                            } if (dataSnapshot.exists() && circle.getTag() == null) {
+                            @Override
+                            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
 
-                                // Generate another UUID and try again.
-                                uuid = UUID.randomUUID().toString();
+                                // If the uuid doesn't already exist in Firebase, add the circle.
+                                if (!dataSnapshot.exists()) {
 
-                                CircleInformation circleInformation = new CircleInformation();
-                                circleInformation.setCircle(circle);
-                                circleInformation.setUUID(uuid);
-                                DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("circles").push();
-                                newFirebaseCircle.setValue(circleInformation);
+                                    CircleInformation circleInformation = new CircleInformation();
+                                    circleInformation.setCircle(circle);
+                                    circleInformation.setUUID(uuid);
+                                    DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("circles").push();
+                                    newFirebaseCircle.setValue(circleInformation);
+                                }
+                                if (dataSnapshot.exists()) {
+
+                                    // Generate another UUID and try again.
+                                    uuid = UUID.randomUUID().toString();
+
+                                    CircleInformation circleInformation = new CircleInformation();
+                                    circleInformation.setCircle(circle);
+                                    circleInformation.setUUID(uuid);
+                                    DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("circles").push();
+                                    newFirebaseCircle.setValue(circleInformation);
+                                }
+
+                                // Go to Chat.java with the uuid.
+                                Intent Activity = new Intent(Map.this, Chat.class);
+                                Activity.putExtra("uuid", uuid);
+                                startActivity(Activity);
                             }
 
-                            // Go to Chat.java with the uuid.
-                            Intent Activity = new Intent(Map.this, Chat.class);
-                            Activity.putExtra("uuid", uuid);
-                            startActivity(Activity);
-                        }
+                            @Override
+                            public void onCancelled(@NonNull DatabaseError databaseError) {
+                            }
+                        });
+                    } else {
 
-                        @Override
-                        public void onCancelled(@NonNull DatabaseError databaseError) {
-                        }
-                    });
+                        // Go to Chat.java with the uuid.
+                        Intent Activity = new Intent(Map.this, Chat.class);
+                        Activity.putExtra("uuid", uuid);
+                        startActivity(Activity);
+                    }
                 } else {
 
                     // No user is signed in.
-                    // Connect to Firebase.
-                    firebaseCircles.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
 
-                        @Override
-                        public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                    // If circle.getTag() == null, the circle is new. Therefore, compare it to the uuids in Firebase to prevent uuid overlap before adding it to Firebase.
+                    if (circle.getTag() == null) {
 
-                            // If the uuid doesn't already exist in Firebase, add the circle.
-                            if (!dataSnapshot.exists() && circle.getTag() == null) {
+                        firebaseCircles.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
 
-                                CircleInformation circleInformation = new CircleInformation();
-                                circleInformation.setCircle(circle);
-                                circleInformation.setUUID(uuid);
-                                DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("circles").push();
-                                newFirebaseCircle.setValue(circleInformation);
-                            } if (dataSnapshot.exists() && circle.getTag() == null) {
+                            @Override
+                            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
 
-                                // Generate another UUID and try again.
-                                uuid = UUID.randomUUID().toString();
+                                // If the uuid doesn't already exist in Firebase, add the circle.
+                                if (!dataSnapshot.exists()) {
 
-                                CircleInformation circleInformation = new CircleInformation();
-                                circleInformation.setCircle(circle);
-                                circleInformation.setUUID(uuid);
-                                DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("circles").push();
-                                newFirebaseCircle.setValue(circleInformation);
+                                    CircleInformation circleInformation = new CircleInformation();
+                                    circleInformation.setCircle(circle);
+                                    circleInformation.setUUID(uuid);
+                                    DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("circles").push();
+                                    newFirebaseCircle.setValue(circleInformation);
+                                }
+                                if (dataSnapshot.exists()) {
+
+                                    // Generate another UUID and try again.
+                                    uuid = UUID.randomUUID().toString();
+
+                                    CircleInformation circleInformation = new CircleInformation();
+                                    circleInformation.setCircle(circle);
+                                    circleInformation.setUUID(uuid);
+                                    DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("circles").push();
+                                    newFirebaseCircle.setValue(circleInformation);
+                                }
+
+                                // Go to SignIn.java.
+                                Intent Activity = new Intent(Map.this, SignIn.class);
+                                Activity.putExtra("uuid", uuid);
+                                startActivity(Activity);
                             }
 
-                            // Go to SignIn.java.
-                            Intent Activity = new Intent(Map.this, SignIn.class);
-                            Activity.putExtra("uuid", uuid);
-                            startActivity(Activity);
-                        }
+                            @Override
+                            public void onCancelled(@NonNull DatabaseError databaseError) {
+                            }
+                        });
+                    } else {
 
-                        @Override
-                        public void onCancelled(@NonNull DatabaseError databaseError) {
-                        }
-                    });
+                        // Go to SignIn.java.
+                        Intent Activity = new Intent(Map.this, SignIn.class);
+                        Activity.putExtra("uuid", uuid);
+                        startActivity(Activity);
+                    }
                 }
             }
         });
