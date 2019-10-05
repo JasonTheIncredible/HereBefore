@@ -5,7 +5,7 @@ public class MessageInformation {
 
     private String message;
     private Object date;
-    private String circleID;
+    private String uuid;
 
     public MessageInformation(){
     }
@@ -26,11 +26,11 @@ public class MessageInformation {
         this.date = date;
     }
 
-    public String getCircleID() {
-        return circleID;
+    public String getUUID() {
+        return uuid;
     }
 
-    public void setCircleID(String circleID) {
-        this.circleID = circleID;
+    public void setUUID(String uuid) {
+        this.uuid = uuid;
     }
 }

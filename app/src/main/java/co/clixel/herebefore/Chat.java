@@ -45,7 +45,7 @@ public class Chat extends AppCompatActivity {
     private boolean recyclerViewHasScrolled = false;
     private boolean messageSent = false;
     private View.OnLayoutChangeListener onLayoutChangeListener;
-    private String circleID;
+    private String uuid;
 
     //TODO: Too much work on main thread.
     //TODO: Add a username (in message.xml).
@@ -73,7 +73,7 @@ public class Chat extends AppCompatActivity {
 
         // Get info from Map.java
         Bundle extras = getIntent().getExtras();
-        circleID = extras.getString("circleID");
+        uuid = extras.getString("uuid");
 
         // Connect to Firebase.
         DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
@@ -93,8 +93,8 @@ public class Chat extends AppCompatActivity {
 
                 for (DataSnapshot ds : dataSnapshot.getChildren()) {
 
-                    // If the circle identifier brought from Map equals the circleID attached to the message in Firebase, load it into the RecyclerView.
-                    if (ds.child("circleID").getValue().equals(circleID)) {
+                    // If the circle identifier brought from Map equals the uuid attached to the message in Firebase, load it into the RecyclerView.
+                    if (ds.child("uuid").getValue().equals(uuid)) {
 
                         String messageText = (String) ds.child("message").getValue();
                         Long serverDate = (Long) ds.child("date").getValue();
@@ -190,8 +190,8 @@ public class Chat extends AppCompatActivity {
                     // This will cause onDataChange to fire twice; optimizations could be made in the future.
                     Object date = ServerValue.TIMESTAMP;
                     messageInformation.setDate(date);
-                    String circleID = extras.getString("circleID");
-                    messageInformation.setCircleID(circleID);
+                    String uuid = extras.getString("uuid");
+                    messageInformation.setUUID(uuid);
                     DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("messageThreads").push();
                     newMessage.setValue(messageInformation);
                     mInput.getText().clear();
