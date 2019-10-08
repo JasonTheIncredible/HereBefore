@@ -70,16 +70,17 @@ public class Map extends FragmentActivity implements
     private SeekBar circleSizeSeekBar;
     private SeekBar largerCircleSizeSeekBar;
     private String uuid;
-    private Button pointButton, circleViewsButton;
+    private Button pointButton, circleViewsButton, mapTypeButton;
+    private PopupMenu popupMapType;
     private PopupMenu popupCircleViews;
     private PopupMenu popupCreateLargerCircles;
     private PopupMenu popupCreateSmallerCircles;
+    private Boolean mapTypeMenuIsOpen = false;
     private Boolean circleViewsMenuIsOpen = false;
     private Boolean largerCirclesMenuIsOpen = false;
     private Boolean smallerCirclesMenuIsOpen = false;
 
     //TODO: Prevent circle overlap (also, clicking on circle creates a circle, may need to clear map).
-    //TODO: Give user the ability to change map view type.
     //TODO: Give user option to change color of the circles (or just change it outright).
     //TODO: Adjust circle location / size (make any shape possible) and get rid of circle always updating to be on user's location.
     //TODO: Have circles spread if they are too close when clicking.
@@ -104,6 +105,7 @@ public class Map extends FragmentActivity implements
                 .findFragmentById(R.id.activity_maps);
         mapFragment.getMapAsync(this);
 
+        mapTypeButton = findViewById(R.id.mapTypeButton);
         pointButton = findViewById(R.id.pointButton);
         circleSizeSeekBar = findViewById(R.id.circleSizeSeekBar);
         circleViewsButton = findViewById(R.id.circleViewsButton);
@@ -128,6 +130,29 @@ public class Map extends FragmentActivity implements
 
             checkLocationPermission();
         }
+
+        // Shows a menu to change the map type.
+        mapTypeButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+                popupMapType = new PopupMenu(Map.this, mapTypeButton);
+                popupMapType.setOnMenuItemClickListener(Map.this);
+                popupMapType.inflate(R.menu.maptype_menu);
+                popupMapType.show();
+                mapTypeMenuIsOpen = true;
+
+                // Changes boolean value (used in OnConfigurationChanged) to determine whether menu is currently open.
+                popupMapType.setOnDismissListener(new PopupMenu.OnDismissListener(){
+                    @Override
+                    public void onDismiss(PopupMenu popupMenu) {
+
+                        mapTypeMenuIsOpen = false;
+                        popupMapType.setOnDismissListener(null);
+                    }
+                });
+            }
+        });
 
         // Shows a menu to filter circle views.
         circleViewsButton.setOnClickListener(new View.OnClickListener() {
@@ -490,6 +515,12 @@ public class Map extends FragmentActivity implements
             locationManager.removeUpdates(this);
         }
 
+        //Remove the listener.
+        if (mapTypeButton != null) {
+
+            mapTypeButton.setOnClickListener(null);
+        }
+
         // Remove the listener.
         if (circleViewsButton != null) {
 
@@ -684,6 +715,7 @@ public class Map extends FragmentActivity implements
         Log.i(TAG, "onMapReady()");
 
         mMap = googleMap;
+        mMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
 
@@ -964,6 +996,19 @@ public class Map extends FragmentActivity implements
         Log.i(TAG, "onConfigurationChanged()");
 
         // Reloads the popup when the orientation changes to prevent viewing issues.
+        if ( newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE && mapTypeMenuIsOpen) {
+
+            popupMapType.dismiss();
+            popupMapType.show();
+            mapTypeMenuIsOpen = true;
+        } else if ( newConfig.orientation == Configuration.ORIENTATION_PORTRAIT && circleViewsMenuIsOpen){
+
+            popupMapType.dismiss();
+            popupMapType.show();
+            mapTypeMenuIsOpen = true;
+        }
+
+        // Reloads the popup when the orientation changes to prevent viewing issues.
         if ( newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE && circleViewsMenuIsOpen) {
 
             popupCircleViews.dismiss();
@@ -1010,12 +1055,79 @@ public class Map extends FragmentActivity implements
         // Sets the circleviews_menu actions.
         switch(menuItem.getItemId()) {
 
+            // maptype_menu
+            case R.id.roadmap:
+
+                Log.i(TAG, "onMenuItemClick() -> road map");
+
+                // Use the "road map" map type if the map is not null.
+                if (mMap != null) {
+
+                    // getMapType() returns 1 if the map type is set to "road map".
+                    if (mMap.getMapType() != 1) {
+
+                        mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
+                    }
+                }
+                mapTypeMenuIsOpen = false;
+                return true;
+
+            // maptype_menu
+            case R.id.satellite:
+
+                Log.i(TAG, "onMenuItemClick() -> satellite");
+
+                // Use the "satellite" map type if the map is not null.
+                if (mMap != null) {
+
+                    // getMapType() returns 2 if the map type is set to "satellite".
+                    if (mMap.getMapType() != 2) {
+
+                        mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
+                    }
+                }
+                mapTypeMenuIsOpen = false;
+                return true;
+
+            // maptype_menu
+            case R.id.hybrid:
+
+                Log.i(TAG, "onMenuItemClick() -> hybrid");
+
+                // Use the "hybrid" map type if the map is not null.
+                if (mMap != null) {
+
+                    // getMapType() returns 4 if the map type is set to "hybrid".
+                    if (mMap.getMapType() != 4) {
+
+                        mMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
+                    }
+                }
+                mapTypeMenuIsOpen = false;
+                return true;
+
+            // maptype_menu
+            case R.id.terrain:
+
+                Log.i(TAG, "onMenuItemClick() -> terrain");
+
+                // Use the "terrain" map type if the map is not null.
+                if (mMap != null) {
+
+                    // getMapType() returns 3 if the map type is set to "terrain".
+                    if (mMap.getMapType() != 3) {
+
+                        mMap.setMapType(GoogleMap.MAP_TYPE_TERRAIN);
+                    }
+                }
+                mapTypeMenuIsOpen = false;
+                return true;
+
             // circleviews_menu
             case R.id.everything:
 
                 Log.i(TAG, "onMenuItemClick() -> everything");
 
-                circleViewsMenuIsOpen = false;
                 // Remove previous Firebase listener.
                 if (firebaseCircles != null && firebaseEventListener != null){
 
@@ -1072,13 +1184,13 @@ public class Map extends FragmentActivity implements
 
                     }
                 });
+                circleViewsMenuIsOpen = false;
                 return true;
 
             case R.id.largeCircles:
 
                 Log.i(TAG, "onMenuItemClick() -> largeCircles");
 
-                circleViewsMenuIsOpen = false;
                 // Remove previous Firebase listener.
                 if (firebaseCircles != null && firebaseEventListener != null){
 
@@ -1139,13 +1251,13 @@ public class Map extends FragmentActivity implements
 
                     }
                 });
+                circleViewsMenuIsOpen = false;
                 return true;
 
             case R.id.mediumCircles:
 
                 Log.i(TAG, "onMenuItemClick() -> mediumCircles");
 
-                circleViewsMenuIsOpen = false;
                 // Remove previous Firebase listener.
                 if (firebaseCircles != null && firebaseEventListener != null){
 
@@ -1206,13 +1318,13 @@ public class Map extends FragmentActivity implements
 
                     }
                 });
+                circleViewsMenuIsOpen = false;
                 return true;
 
             case R.id.smallCircles:
 
                 Log.i(TAG, "onMenuItemClick() -> smallCircles");
 
-                circleViewsMenuIsOpen = false;
                 // Remove previous Firebase listener.
                 if (firebaseCircles != null && firebaseEventListener != null){
 
@@ -1273,13 +1385,13 @@ public class Map extends FragmentActivity implements
 
                     }
                 });
+                circleViewsMenuIsOpen = false;
                 return true;
 
             case R.id.points:
 
                 Log.i(TAG, "onMenuItemClick() -> points");
 
-                circleViewsMenuIsOpen = false;
                 // Clear previous Firebase listener.
                 if (firebaseCircles != null && firebaseEventListener != null){
 
@@ -1340,6 +1452,7 @@ public class Map extends FragmentActivity implements
 
                     }
                 });
+                circleViewsMenuIsOpen = false;
                 return true;
 
             // largercircle_seekbar_menu
@@ -1347,7 +1460,6 @@ public class Map extends FragmentActivity implements
 
                 Log.i(TAG, "onMenuItemClick() -> largerCircle");
 
-                largerCirclesMenuIsOpen = false;
                 largerCircleSeekBar();
                 circleSizeSeekBar.setEnabled(false);
                 largerCircleSizeSeekBar.setProgress(0);
@@ -1356,6 +1468,7 @@ public class Map extends FragmentActivity implements
 
                     popupCreateSmallerCircles.dismiss();
                 }
+                largerCirclesMenuIsOpen = false;
                 return true;
 
             // smallercircle_seekbar_menu
@@ -1363,7 +1476,6 @@ public class Map extends FragmentActivity implements
 
                 Log.i(TAG, "onMenuItemClick() -> smallerCircle");
 
-                smallerCirclesMenuIsOpen = false;
                 largerCircleSizeSeekBar.setVisibility(View.GONE);
                 circleSizeSeekBar.setVisibility(View.VISIBLE);
                 circleSizeSeekBar.setEnabled(true);
@@ -1372,6 +1484,7 @@ public class Map extends FragmentActivity implements
 
                     largerCircleSizeSeekBar.setOnSeekBarChangeListener(null);
                 }
+                smallerCirclesMenuIsOpen = false;
                 return true;
 
             default:

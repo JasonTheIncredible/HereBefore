@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item android:id="@+id/roadmap"
+        android:title="@string/use_road_map_view"/>
+
+    <item android:id="@+id/satellite"
+        android:title="@string/use_satellite_view"/>
+
+    <item android:id="@+id/hybrid"
+        android:title="@string/use_hybrid_view"/>
+
+    <item android:id="@+id/terrain"
+        android:title="@string/use_terrain_view"/>
+</menu>
