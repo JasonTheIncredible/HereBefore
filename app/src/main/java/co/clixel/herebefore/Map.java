@@ -80,6 +80,7 @@ public class Map extends FragmentActivity implements
 
     //TODO: Prevent circle overlap (also, clicking on circle creates a circle, may need to clear map).
     //TODO: Give user the ability to change map view type.
+    //TODO: Give user option to change color of the circles (or just change it outright).
     //TODO: Adjust circle location / size (make any shape possible) and get rid of circle always updating to be on user's location.
     //TODO: Have circles spread if they are too close when clicking.
     //TODO: Only load Firebase circles if they're within camera view (in onMapReady) (getMap().getProjection().getVisibleRegion().latLangBounds.)
