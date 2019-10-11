@@ -50,6 +50,7 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+import java.io.Serializable;
 import java.util.UUID;
 
 import static com.google.android.gms.location.LocationServices.getFusedLocationProviderClient;
@@ -80,9 +81,11 @@ public class Map extends FragmentActivity implements
     private Boolean largerCirclesMenuIsOpen = false;
     private Boolean smallerCirclesMenuIsOpen = false;
 
+    //TODO: Only make a chat if there's a message.
     //TODO: Prevent circle overlap (also, clicking on circle creates a circle, may need to clear map).
     //TODO: Give user option to change color of the circles (or just change it outright).
     //TODO: Adjust circle location / size (make any shape possible) and get rid of circle always updating to be on user's location.
+    //TODO: Make points easier to see somehow.
     //TODO: Have circles spread if they are too close when clicking.
     //TODO: Only load Firebase circles if they're within camera view (in onMapReady) (getMap().getProjection().getVisibleRegion().latLangBounds.)
     //TODO: Make sure Firebase listener is always updating map properly.
@@ -202,11 +205,11 @@ public class Map extends FragmentActivity implements
                                     CircleOptions circleOptions =
                                             new CircleOptions()
                                                     .center(latLng)
-                                                    .fillColor(Color.argb(100, 0, 0, 255))
+                                                    .fillColor(Color.argb(100, 255, 255, 0))
                                                     .radius(circleSize)
                                                     .clickable(true)
                                                     .strokeWidth(3f)
-                                                    .strokeColor(Color.BLUE);
+                                                    .strokeColor(Color.YELLOW);
 
                                     // Remove any other "new" circle before adding the circle to Firebase.
                                     if (circle != null){
@@ -367,11 +370,11 @@ public class Map extends FragmentActivity implements
                                         CircleOptions circleOptions =
                                                 new CircleOptions()
                                                         .center(latLng)
-                                                        .fillColor(Color.argb(70, 50, 50, 100))
+                                                        .fillColor(Color.argb(70, 255, 215, 0))
                                                         .radius(circleSize)
                                                         .clickable(true)
                                                         .strokeWidth(3f)
-                                                        .strokeColor(Color.BLUE);
+                                                        .strokeColor(Color.YELLOW);
 
                                         if (circle != null) {
 
@@ -379,7 +382,7 @@ public class Map extends FragmentActivity implements
                                         }
 
                                         circle = mMap.addCircle(circleOptions);
-                                        circleSizeSeekBar.setProgress( (int) circleSize);
+                                        circleSizeSeekBar.setProgress(circleSize);
                                     }
                                 }
                             });
@@ -933,10 +936,10 @@ public class Map extends FragmentActivity implements
                                     CircleOptions circleOptions =
                                             new CircleOptions()
                                                     .center(latLng)
-                                                    .fillColor(Color.argb(70, 50, 50, 100))
+                                                    .fillColor(Color.argb(70, 255, 215, 0))
                                                     .radius(circleSize)
                                                     .clickable(true)
-                                                    .strokeColor(Color.BLUE)
+                                                    .strokeColor(Color.YELLOW)
                                                     .strokeWidth(3f);
 
                                     if (circle != null) {
@@ -966,10 +969,10 @@ public class Map extends FragmentActivity implements
                                                         CircleOptions circleOptions =
                                                                 new CircleOptions()
                                                                         .center(latLng)
-                                                                        .fillColor(Color.argb(70, 50, 50, 100))
+                                                                        .fillColor(Color.argb(70, 255, 215, 0))
                                                                         .radius(circleSize)
                                                                         .clickable(true)
-                                                                        .strokeColor(Color.BLUE)
+                                                                        .strokeColor(Color.YELLOW)
                                                                         .strokeWidth(3f);
 
                                                         if (circle != null) {
@@ -1563,8 +1566,8 @@ public class Map extends FragmentActivity implements
                                                         .center(latLng)
                                                         .radius(circleSize)
                                                         .strokeWidth(3f)
-                                                        .fillColor(Color.argb(70, 50, 50, 100))
-                                                        .strokeColor(Color.BLUE);
+                                                        .fillColor(Color.argb(70, 255, 215, 0))
+                                                        .strokeColor(Color.YELLOW);
 
                                         if (circle != null) {
 
