@@ -1,6 +1,7 @@
 package co.clixel.herebefore;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -9,6 +10,9 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import android.util.Log;
 import android.view.View;
+
+import com.google.android.gms.maps.model.CircleOptions;
+import com.google.android.gms.maps.model.LatLng;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import android.view.inputmethod.InputMethodManager;
@@ -44,8 +48,12 @@ public class Chat extends AppCompatActivity {
     private boolean reachedEndOfRecyclerView = false;
     private boolean recyclerViewHasScrolled = false;
     private boolean messageSent = false;
+    private boolean newCircle;
     private View.OnLayoutChangeListener onLayoutChangeListener;
     private String uuid;
+    private Double latitude;
+    private Double longitude;
+    private Double radius;
 
     //TODO: Too much work on main thread.
     //TODO: Add a username (in message.xml).
@@ -73,7 +81,12 @@ public class Chat extends AppCompatActivity {
 
         // Get info from Map.java
         Bundle extras = getIntent().getExtras();
+        newCircle = extras.getBoolean("newCircle");
         uuid = extras.getString("uuid");
+        // latitude, longitude, and radius will be null if the circle is not new (as a new circle is not being created).
+        latitude = extras.getDouble("latitude");
+        longitude = extras.getDouble("longitude");
+        radius = extras.getDouble("radius");
 
         // Connect to Firebase.
         DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
@@ -91,20 +104,24 @@ public class Chat extends AppCompatActivity {
                     mText.clear();
                 }
 
-                for (DataSnapshot ds : dataSnapshot.getChildren()) {
+                // If the value from Map.java is false, check Firebase and load any existing messages.
+                if (!newCircle) {
 
-                    // If the circle identifier brought from Map equals the uuid attached to the message in Firebase, load it into the RecyclerView.
-                    if (ds.child("uuid").getValue().equals(uuid)) {
+                    for (DataSnapshot ds : dataSnapshot.getChildren()) {
 
-                        String messageText = (String) ds.child("message").getValue();
-                        Long serverDate = (Long) ds.child("date").getValue();
-                        DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
-                        // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                        // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                        Date netDate = (new Date(serverDate));
-                        String messageTime = dateFormat.format(netDate);
-                        mText.add(messageText);
-                        mTime.add(messageTime);
+                        // If the circle identifier brought from Map equals the uuid attached to the message in Firebase, load it into the RecyclerView.
+                        if (ds.child("uuid").getValue().equals(uuid)) {
+
+                            String messageText = (String) ds.child("message").getValue();
+                            Long serverDate = (Long) ds.child("date").getValue();
+                            DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
+                            // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+                            // This will cause onDataChange to fire twice; optimizations could be made in the future.
+                            Date netDate = (new Date(serverDate));
+                            String messageTime = dateFormat.format(netDate);
+                            mText.add(messageText);
+                            mTime.add(messageTime);
+                        }
                     }
                 }
 
@@ -176,27 +193,73 @@ public class Chat extends AppCompatActivity {
             @Override
             public void onClick(View view) {
 
-                String input = mInput.getText().toString();
-                Bundle extras = getIntent().getExtras();
+                final String input = mInput.getText().toString();
+                final Bundle extras = getIntent().getExtras();
 
                 // Send message to Firebase.
                 if ( !input.equals("") ) {
 
-                    // Change boolean to true - scrolls to the bottom of the recyclerView (in initRecyclerView()).
-                    messageSent = true;
-                    MessageInformation messageInformation = new MessageInformation();
-                    messageInformation.setMessage(input);
-                    // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                    // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                    Object date = ServerValue.TIMESTAMP;
-                    messageInformation.setDate(date);
-                    String uuid = extras.getString("uuid");
-                    messageInformation.setUUID(uuid);
-                    DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("messageThreads").push();
-                    newMessage.setValue(messageInformation);
-                    mInput.getText().clear();
-                }else {
+                    // Check Boolean value from onStart();
+                    if (newCircle) {
 
+                        DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
+                        DatabaseReference firebaseCircles = rootRef.child("circles");
+
+                        firebaseCircles.addListenerForSingleValueEvent(new ValueEventListener() {
+                            @Override
+                            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                                // Since the uuid doesn't already exist in Firebase, add the circle.
+                                CircleOptions circleOptions = new CircleOptions()
+                                        .center(new LatLng(latitude, longitude))
+                                        .fillColor(Color.argb(70, 255, 215, 0))
+                                        .radius(radius)
+                                        .clickable(true)
+                                        .strokeColor(Color.YELLOW)
+                                        .strokeWidth(3f);
+                                CircleInformation circleInformation = new CircleInformation();
+                                circleInformation.setCircleOptions(circleOptions);
+                                circleInformation.setUUID(uuid);
+                                DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("circles").push();
+                                newFirebaseCircle.setValue(circleInformation);
+
+                                // Change boolean to true - scrolls to the bottom of the recyclerView (in initRecyclerView()).
+                                messageSent = true;
+                                MessageInformation messageInformation = new MessageInformation();
+                                messageInformation.setMessage(input);
+                                // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+                                // This will cause onDataChange to fire twice; optimizations could be made in the future.
+                                Object date = ServerValue.TIMESTAMP;
+                                messageInformation.setDate(date);
+                                String uuid = extras.getString("uuid");
+                                messageInformation.setUUID(uuid);
+                                DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("messageThreads").push();
+                                newMessage.setValue(messageInformation);
+                                mInput.getText().clear();
+                                newCircle = false;
+                            }
+
+                            @Override
+                            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                            }
+                        });
+                    } else {
+
+                        // Change boolean to true - scrolls to the bottom of the recyclerView (in initRecyclerView()).
+                        messageSent = true;
+                        MessageInformation messageInformation = new MessageInformation();
+                        messageInformation.setMessage(input);
+                        // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+                        // This will cause onDataChange to fire twice; optimizations could be made in the future.
+                        Object date = ServerValue.TIMESTAMP;
+                        messageInformation.setDate(date);
+                        String uuid = extras.getString("uuid");
+                        messageInformation.setUUID(uuid);
+                        DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("messageThreads").push();
+                        newMessage.setValue(messageInformation);
+                        mInput.getText().clear();
+                    }
                 }
             }
         });

@@ -50,7 +50,6 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
-import java.io.Serializable;
 import java.util.UUID;
 
 import static com.google.android.gms.location.LocationServices.getFusedLocationProviderClient;
@@ -80,8 +79,10 @@ public class Map extends FragmentActivity implements
     private Boolean circleViewsMenuIsOpen = false;
     private Boolean largerCirclesMenuIsOpen = false;
     private Boolean smallerCirclesMenuIsOpen = false;
+    private Boolean newCircle;
 
-    //TODO: Only make a chat if there's a message.
+    //TODO: Work on what happens if a user is not signed in when creating a point or clicking on a circle.
+    //TODO: Stop pulling unnecessary information from Firebase when creating circles.
     //TODO: Prevent circle overlap (also, clicking on circle creates a circle, may need to clear map).
     //TODO: Give user option to change color of the circles (or just change it outright).
     //TODO: Adjust circle location / size (make any shape possible) and get rid of circle always updating to be on user's location.
@@ -229,22 +230,26 @@ public class Map extends FragmentActivity implements
 
                                             // User is signed in.
                                             // Connect to Firebase.
-                                            firebaseCircles.orderByChild("circle/id").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
+                                            firebaseCircles.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
                                                 @Override
                                                 public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
 
-                                                    // If the uuid doesn't already exist in Firebase, add the circle. Else, remove circle and add another until a unique uuid appears.
+                                                    // If the uuid already exists in Firebase, generate another uuid and try again.
                                                     if (!dataSnapshot.exists()) {
 
-                                                        CircleInformation circleInformation = new CircleInformation();
-                                                        circleInformation.setCircle(circle);
-                                                        circleInformation.setUUID(uuid);
-                                                        DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("circles").push();
-                                                        newFirebaseCircle.setValue(circleInformation);
+                                                        // Set boolean to true, as this is a new circle.
+                                                        newCircle = true;
 
-                                                        // Go to Chat.java with the uuid.
+                                                        // Go to Chat.java with the uuid (used to connect the circle with the messageThread).
                                                         Intent Activity = new Intent(Map.this, Chat.class);
+                                                        // Pass this boolean value (true) to Chat.java.
+                                                        Activity.putExtra("newCircle", newCircle);
+                                                        // Pass this value to Chat.java to identify the circle.
                                                         Activity.putExtra("uuid", uuid);
+                                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
+                                                        Activity.putExtra("latitude", circle.getCenter().latitude);
+                                                        Activity.putExtra("longitude", circle.getCenter().longitude);
+                                                        Activity.putExtra("radius", circle.getRadius());
                                                         startActivity(Activity);
                                                     } else {
 
@@ -263,7 +268,7 @@ public class Map extends FragmentActivity implements
 
                                             // No user is signed in.
                                             // Connect to Firebase.
-                                            firebaseCircles.orderByChild("circle/uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
+                                            firebaseCircles.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
 
                                                 @Override
                                                 public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
@@ -271,8 +276,15 @@ public class Map extends FragmentActivity implements
                                                     // If the uuid doesn't already exist in Firebase, add the circle. Else, remove circle and add another until a unique uuid appears.
                                                     if (!dataSnapshot.exists()) {
 
+                                                        CircleOptions circleOptions = new CircleOptions()
+                                                                .center(circle.getCenter())
+                                                                .fillColor(Color.argb(70, 255, 215, 0))
+                                                                .radius(circle.getRadius())
+                                                                .clickable(true)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f);
                                                         CircleInformation circleInformation = new CircleInformation();
-                                                        circleInformation.setCircle(circle);
+                                                        circleInformation.setCircleOptions(circleOptions);
                                                         circleInformation.setUUID(uuid);
                                                         DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("circles").push();
                                                         newFirebaseCircle.setValue(circleInformation);
@@ -430,11 +442,11 @@ public class Map extends FragmentActivity implements
 
                     if (dataSnapshot.getValue() != null) {
 
-                        LatLng center = new LatLng((Double) ds.child("circle/center/latitude/").getValue(), (Double) ds.child("circle/center/longitude/").getValue());
-                        int fillColor = (int) (long) ds.child("circle/fillColor").getValue();
-                        double radius = (double) (long) ds.child("circle/radius").getValue();
-                        int strokeColor = (int) (long) ds.child("circle/strokeColor").getValue();
-                        float strokeWidth = (float) (long) ds.child("circle/strokeWidth").getValue();
+                        LatLng center = new LatLng((Double) ds.child("circleOptions/center/latitude/").getValue(), (Double) ds.child("circleOptions/center/longitude/").getValue());
+                        int fillColor = (int) (long) ds.child("circleOptions/fillColor").getValue();
+                        double radius = (double) (long) ds.child("circleOptions/radius").getValue();
+                        int strokeColor = (int) (long) ds.child("circleOptions/strokeColor").getValue();
+                        float strokeWidth = (float) (long) ds.child("circleOptions/strokeWidth").getValue();
                         Circle circle = mMap.addCircle(
                                 new CircleOptions()
                                         .center(center)
@@ -735,11 +747,11 @@ public class Map extends FragmentActivity implements
 
                     if (dataSnapshot.getValue() != null) {
 
-                        LatLng center = new LatLng((Double) ds.child("circle/center/latitude/").getValue(), (Double) ds.child("circle/center/longitude/").getValue());
-                        int fillColor = (int) (long) ds.child("circle/fillColor").getValue();
-                        double radius = (double) (long) ds.child("circle/radius").getValue();
-                        int strokeColor = (int) (long) ds.child("circle/strokeColor").getValue();
-                        float strokeWidth = (float) (long) ds.child("circle/strokeWidth").getValue();
+                        LatLng center = new LatLng((Double) ds.child("circleOptions/center/latitude/").getValue(), (Double) ds.child("circleOptions/center/longitude/").getValue());
+                        int fillColor = (int) (long) ds.child("circleOptions/fillColor").getValue();
+                        double radius = (double) (long) ds.child("circleOptions/radius").getValue();
+                        int strokeColor = (int) (long) ds.child("circleOptions/strokeColor").getValue();
+                        float strokeWidth = (float) (long) ds.child("circleOptions/strokeWidth").getValue();
                         Circle circle = mMap.addCircle(
                                 new CircleOptions()
                                         .center(center)
@@ -767,7 +779,7 @@ public class Map extends FragmentActivity implements
         // Add the Firebase listener.
         firebaseCircles.addValueEventListener(firebaseEventListener);
 
-        // Go to chat when clicking on the circle.
+        // Go to Chat.java when clicking on the circle.
         mMap.setOnCircleClickListener(new GoogleMap.OnCircleClickListener() {
 
             @Override
@@ -796,31 +808,40 @@ public class Map extends FragmentActivity implements
                             @Override
                             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
 
-                                // If the uuid doesn't already exist in Firebase, add the circle.
-                                if (!dataSnapshot.exists()) {
+                                // Set boolean to true, as this circle has a null tag and is therefore new.
+                                newCircle = true;
 
-                                    CircleInformation circleInformation = new CircleInformation();
-                                    circleInformation.setCircle(circle);
-                                    circleInformation.setUUID(uuid);
-                                    DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("circles").push();
-                                    newFirebaseCircle.setValue(circleInformation);
-                                }
+                                // If the uuid already exists in Firebase, generate another uuid and try again.
                                 if (dataSnapshot.exists()) {
 
                                     // Generate another UUID and try again.
                                     uuid = UUID.randomUUID().toString();
 
-                                    CircleInformation circleInformation = new CircleInformation();
-                                    circleInformation.setCircle(circle);
-                                    circleInformation.setUUID(uuid);
-                                    DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("circles").push();
-                                    newFirebaseCircle.setValue(circleInformation);
-                                }
+                                    // Go to Chat.java with the uuid (used to connect the circle with the messageThread).
+                                    Intent Activity = new Intent(Map.this, Chat.class);
+                                    // Pass this boolean value (true) to Chat.java.
+                                    Activity.putExtra("newCircle", newCircle);
+                                    // Pass this value to Chat.java to identify the circle.
+                                    Activity.putExtra("uuid", uuid);
+                                    // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
+                                    Activity.putExtra("latitude", circle.getCenter().latitude);
+                                    Activity.putExtra("longitude", circle.getCenter().longitude);
+                                    Activity.putExtra("radius", circle.getRadius());
+                                    startActivity(Activity);
+                                } else {
 
-                                // Go to Chat.java with the uuid.
-                                Intent Activity = new Intent(Map.this, Chat.class);
-                                Activity.putExtra("uuid", uuid);
-                                startActivity(Activity);
+                                    // Go to Chat.java with the uuid (used to connect the circle with the messageThread).
+                                    Intent Activity = new Intent(Map.this, Chat.class);
+                                    // Pass this boolean value (true) to Chat.java.
+                                    Activity.putExtra("newCircle", newCircle);
+                                    // Pass this value to Chat.java to identify the circle.
+                                    Activity.putExtra("uuid", uuid);
+                                    // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
+                                    Activity.putExtra("latitude", circle.getCenter().latitude);
+                                    Activity.putExtra("longitude", circle.getCenter().longitude);
+                                    Activity.putExtra("radius", circle.getRadius());
+                                    startActivity(Activity);
+                                }
                             }
 
                             @Override
@@ -829,8 +850,14 @@ public class Map extends FragmentActivity implements
                         });
                     } else {
 
-                        // Go to Chat.java with the uuid.
+                        // Set boolean to false, as this circle has a non-null tag and is therefore not new.
+                        newCircle = false;
+
+                        // Go to Chat.java with the boolean value.
                         Intent Activity = new Intent(Map.this, Chat.class);
+                        // Pass this boolean value (false) to Chat.java.
+                        Activity.putExtra("newCircle", newCircle);
+                        // Pass this value to Chat.java to identify the circle.
                         Activity.putExtra("uuid", uuid);
                         startActivity(Activity);
                     }
@@ -849,8 +876,15 @@ public class Map extends FragmentActivity implements
                                 // If the uuid doesn't already exist in Firebase, add the circle.
                                 if (!dataSnapshot.exists()) {
 
+                                    CircleOptions circleOptions = new CircleOptions()
+                                            .center(circle.getCenter())
+                                            .fillColor(Color.argb(70, 255, 215, 0))
+                                            .radius(circle.getRadius())
+                                            .clickable(true)
+                                            .strokeColor(Color.YELLOW)
+                                            .strokeWidth(3f);
                                     CircleInformation circleInformation = new CircleInformation();
-                                    circleInformation.setCircle(circle);
+                                    circleInformation.setCircleOptions(circleOptions);
                                     circleInformation.setUUID(uuid);
                                     DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("circles").push();
                                     newFirebaseCircle.setValue(circleInformation);
@@ -860,8 +894,15 @@ public class Map extends FragmentActivity implements
                                     // Generate another UUID and try again.
                                     uuid = UUID.randomUUID().toString();
 
+                                    CircleOptions circleOptions = new CircleOptions()
+                                            .center(circle.getCenter())
+                                            .fillColor(Color.argb(70, 255, 215, 0))
+                                            .radius(circle.getRadius())
+                                            .clickable(true)
+                                            .strokeColor(Color.YELLOW)
+                                            .strokeWidth(3f);
                                     CircleInformation circleInformation = new CircleInformation();
-                                    circleInformation.setCircle(circle);
+                                    circleInformation.setCircleOptions(circleOptions);
                                     circleInformation.setUUID(uuid);
                                     DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("circles").push();
                                     newFirebaseCircle.setValue(circleInformation);
@@ -1159,11 +1200,11 @@ public class Map extends FragmentActivity implements
 
                             if (dataSnapshot.getValue() != null) {
 
-                                LatLng center = new LatLng((Double) ds.child("circle/center/latitude/").getValue(), (Double) ds.child("circle/center/longitude/").getValue());
-                                int fillColor = (int) (long) ds.child("circle/fillColor").getValue();
-                                double radius = (double) (long) ds.child("circle/radius").getValue();
-                                int strokeColor = (int) (long) ds.child("circle/strokeColor").getValue();
-                                float strokeWidth = (float) (long) ds.child("circle/strokeWidth").getValue();
+                                LatLng center = new LatLng((Double) ds.child("circleOptions/center/latitude/").getValue(), (Double) ds.child("circleOptions/center/longitude/").getValue());
+                                int fillColor = (int) (long) ds.child("circleOptions/fillColor").getValue();
+                                double radius = (double) (long) ds.child("circleOptions/radius").getValue();
+                                int strokeColor = (int) (long) ds.child("circleOptions/strokeColor").getValue();
+                                float strokeWidth = (float) (long) ds.child("circleOptions/strokeWidth").getValue();
                                 Circle circle = mMap.addCircle(
                                         new CircleOptions()
                                                 .center(center)
@@ -1223,13 +1264,13 @@ public class Map extends FragmentActivity implements
                             if (dataSnapshot.getValue() != null) {
 
                                 // Only load large circles (radius > 100)
-                                if ((double) (long)ds.child("circle/radius").getValue() >  100) {
+                                if ((double) (long)ds.child("circleOptions/radius").getValue() >  100) {
 
-                                    LatLng center = new LatLng((Double) ds.child("circle/center/latitude/").getValue(), (Double) ds.child("circle/center/longitude/").getValue());
-                                    int fillColor = (int) (long) ds.child("circle/fillColor").getValue();
-                                    double radius = (double) (long) ds.child("circle/radius").getValue();
-                                    int strokeColor = (int) (long) ds.child("circle/strokeColor").getValue();
-                                    float strokeWidth = (float) (long) ds.child("circle/strokeWidth").getValue();
+                                    LatLng center = new LatLng((Double) ds.child("circleOptions/center/latitude/").getValue(), (Double) ds.child("circleOptions/center/longitude/").getValue());
+                                    int fillColor = (int) (long) ds.child("circleOptions/fillColor").getValue();
+                                    double radius = (double) (long) ds.child("circleOptions/radius").getValue();
+                                    int strokeColor = (int) (long) ds.child("circleOptions/strokeColor").getValue();
+                                    float strokeWidth = (float) (long) ds.child("circleOptions/strokeWidth").getValue();
                                     Circle circle = mMap.addCircle(
                                             new CircleOptions()
                                                     .center(center)
@@ -1290,13 +1331,13 @@ public class Map extends FragmentActivity implements
                             if (dataSnapshot.getValue() != null) {
 
                                 // Only load medium circles (50 < radius < 100)
-                                if ((double) (long)ds.child("circle/radius").getValue() > 50 && (double) (long)ds.child("circle/radius").getValue() <= 100 ) {
+                                if ((double) (long)ds.child("circleOptions/radius").getValue() > 50 && (double) (long)ds.child("circleOptions/radius").getValue() <= 100 ) {
 
-                                    LatLng center = new LatLng((Double) ds.child("circle/center/latitude/").getValue(), (Double) ds.child("circle/center/longitude/").getValue());
-                                    int fillColor = (int) (long) ds.child("circle/fillColor").getValue();
-                                    double radius = (double) (long) ds.child("circle/radius").getValue();
-                                    int strokeColor = (int) (long) ds.child("circle/strokeColor").getValue();
-                                    float strokeWidth = (float) (long) ds.child("circle/strokeWidth").getValue();
+                                    LatLng center = new LatLng((Double) ds.child("circleOptions/center/latitude/").getValue(), (Double) ds.child("circleOptions/center/longitude/").getValue());
+                                    int fillColor = (int) (long) ds.child("circleOptions/fillColor").getValue();
+                                    double radius = (double) (long) ds.child("circleOptions/radius").getValue();
+                                    int strokeColor = (int) (long) ds.child("circleOptions/strokeColor").getValue();
+                                    float strokeWidth = (float) (long) ds.child("circleOptions/strokeWidth").getValue();
                                     Circle circle = mMap.addCircle(
                                             new CircleOptions()
                                                     .center(center)
@@ -1357,13 +1398,13 @@ public class Map extends FragmentActivity implements
                             if (dataSnapshot.getValue() != null) {
 
                                 // Only load small circles (1 < radius < 50)
-                                if ((double) (long)ds.child("circle/radius").getValue() > 1 && (double) (long)ds.child("circle/radius").getValue() <= 50 ) {
+                                if ((double) (long)ds.child("circleOptions/radius").getValue() > 1 && (double) (long)ds.child("circleOptions/radius").getValue() <= 50 ) {
 
-                                    LatLng center = new LatLng((Double) ds.child("circle/center/latitude/").getValue(), (Double) ds.child("circle/center/longitude/").getValue());
-                                    int fillColor = (int) (long) ds.child("circle/fillColor").getValue();
-                                    double radius = (double) (long) ds.child("circle/radius").getValue();
-                                    int strokeColor = (int) (long) ds.child("circle/strokeColor").getValue();
-                                    float strokeWidth = (float) (long) ds.child("circle/strokeWidth").getValue();
+                                    LatLng center = new LatLng((Double) ds.child("circleOptions/center/latitude/").getValue(), (Double) ds.child("circleOptions/center/longitude/").getValue());
+                                    int fillColor = (int) (long) ds.child("circleOptions/fillColor").getValue();
+                                    double radius = (double) (long) ds.child("circleOptions/radius").getValue();
+                                    int strokeColor = (int) (long) ds.child("circleOptions/strokeColor").getValue();
+                                    float strokeWidth = (float) (long) ds.child("circleOptions/strokeWidth").getValue();
                                     Circle circle = mMap.addCircle(
                                             new CircleOptions()
                                                     .center(center)
@@ -1424,13 +1465,13 @@ public class Map extends FragmentActivity implements
                             if (dataSnapshot.getValue() != null) {
 
                                 // Only load "points" (radius == 1)
-                                if ((double) (long)ds.child("circle/radius").getValue() == 1) {
+                                if ((double) (long)ds.child("circleOptions/radius").getValue() == 1) {
 
-                                    LatLng center = new LatLng((Double) ds.child("circle/center/latitude/").getValue(), (Double) ds.child("circle/center/longitude/").getValue());
-                                    int fillColor = (int) (long) ds.child("circle/fillColor").getValue();
-                                    double radius = (double) (long) ds.child("circle/radius").getValue();
-                                    int strokeColor = (int) (long) ds.child("circle/strokeColor").getValue();
-                                    float strokeWidth = (float) (long) ds.child("circle/strokeWidth").getValue();
+                                    LatLng center = new LatLng((Double) ds.child("circleOptions/center/latitude/").getValue(), (Double) ds.child("circleOptions/center/longitude/").getValue());
+                                    int fillColor = (int) (long) ds.child("circleOptions/fillColor").getValue();
+                                    double radius = (double) (long) ds.child("circleOptions/radius").getValue();
+                                    int strokeColor = (int) (long) ds.child("circleOptions/strokeColor").getValue();
+                                    float strokeWidth = (float) (long) ds.child("circleOptions/strokeWidth").getValue();
                                     Circle circle = mMap.addCircle(
                                             new CircleOptions()
                                                     .center(center)

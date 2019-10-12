@@ -1,26 +1,18 @@
 package co.clixel.herebefore;
 
-import com.google.android.gms.maps.model.Circle;
+import com.google.android.gms.maps.model.CircleOptions;
 
 // Getters and setters for chatCircles.
 public class CircleInformation {
 
-    private Circle circleInfo;
-    private String uuid;
+    public CircleOptions circleOptions;
+    public String uuid;
 
     CircleInformation(){
     }
 
-    public Circle getCircle() {
-        return circleInfo;
-    }
-
-    void setCircle(Circle circle) {
-        this.circleInfo = circle;
-    }
-
-    public String getUuid() {
-        return uuid;
+    void setCircleOptions (CircleOptions circleOptions) {
+        this.circleOptions = circleOptions;
     }
 
     void setUUID(String uuid) {
