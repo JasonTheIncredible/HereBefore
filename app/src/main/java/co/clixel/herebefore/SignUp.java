@@ -4,6 +4,8 @@ import android.content.Intent;
 import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+
+import android.util.Log;
 import android.util.Patterns;
 import android.view.View;
 import android.widget.Button;
@@ -18,9 +20,14 @@ import com.google.firebase.auth.FirebaseAuth;
 
 public class SignUp extends AppCompatActivity {
 
+    private static final String TAG = "SignUp";
     private EditText mEmail, mPassword;
     private Button btnCreateAccount;
-    private String circleID;
+    private String uuid;
+    private Double latitude;
+    private Double longitude;
+    private Double radius;
+    private boolean newCircle;
 
     //TODO: Update signup.xml (visuals and add more user information).
     //TODO: Sign in with Google account.
@@ -29,6 +36,7 @@ public class SignUp extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
+        Log.i(TAG, "onCreate()");
         setContentView(R.layout.signup);
 
         mEmail = findViewById(R.id.createEmailAddress);
@@ -40,10 +48,17 @@ public class SignUp extends AppCompatActivity {
     protected void onStart() {
 
         super.onStart();
+        Log.i(TAG, "onStart()");
 
         // Get info from Map.java -> SignIn.java.
         Bundle extras = getIntent().getExtras();
-        circleID = extras.getString("circleID");
+        newCircle = extras.getBoolean("newCircle");
+        uuid = extras.getString("uuid");
+        // latitude, longitude, and radius will be null if the circle is not new (as a new circle is not being created).
+        latitude = extras.getDouble("latitude");
+        longitude = extras.getDouble("longitude");
+        radius = extras.getDouble("radius");
+
 
         // Give feedback about email and password.
         btnCreateAccount.setOnClickListener(new View.OnClickListener() {
@@ -87,7 +102,11 @@ public class SignUp extends AppCompatActivity {
                             // Go to Chat.java with the circleID.
                             toastMessage("Signed up");
                             Intent Activity = new Intent(SignUp.this, Chat.class);
-                            Activity.putExtra("circleID", circleID);
+                            Activity.putExtra("newCircle", newCircle);
+                            Activity.putExtra("uuid", uuid);
+                            Activity.putExtra("latitude", latitude);
+                            Activity.putExtra("longitude", longitude);
+                            Activity.putExtra("radius", radius);
                             startActivity(Activity);
                             finish();
                         } if (task.getException() != null) {
@@ -112,24 +131,28 @@ public class SignUp extends AppCompatActivity {
     protected void onRestart() {
 
         super.onRestart();
+        Log.i(TAG, "onRestart()");
     }
 
     @Override
     protected void onResume() {
 
         super.onResume();
+        Log.i(TAG, "onResume()");
     }
 
     @Override
     protected void onPause() {
 
         super.onPause();
+        Log.i(TAG, "onPause()");
     }
 
     @Override
     protected void onStop() {
 
         super.onStop();
+        Log.i(TAG, "onStop()");
 
         // Remove the listener.
         if (btnCreateAccount != null) {
@@ -142,6 +165,7 @@ public class SignUp extends AppCompatActivity {
     protected void onDestroy() {
 
         super.onDestroy();
+        Log.i(TAG, "onDestroy()");
     }
 
     private void toastMessage(String message) {

@@ -4,6 +4,8 @@ import android.content.Intent;
 import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+
+import android.util.Log;
 import android.util.Patterns;
 import android.view.View;
 import android.widget.Button;
@@ -18,9 +20,14 @@ import com.google.firebase.auth.FirebaseAuth;
 
 public class SignIn extends AppCompatActivity {
 
+    private static final String TAG = "SignIn";
     private EditText mEmail, mPassword;
     private Button btnSignIn, btnGoToCreateAccount;
-    private String circleID;
+    private String uuid;
+    private Double latitude;
+    private Double longitude;
+    private Double radius;
+    private boolean newCircle;
 
     //TODO: Update signin.xml (visuals).
     //TODO: Sign in with Google account.
@@ -29,6 +36,7 @@ public class SignIn extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
+        Log.i(TAG, "onCreate()");
         setContentView(R.layout.signin);
 
         mEmail = findViewById(R.id.emailAddress);
@@ -41,10 +49,16 @@ public class SignIn extends AppCompatActivity {
     protected void onStart() {
 
         super.onStart();
+        Log.i(TAG, "onStart()");
 
-        // Get info from Map.java.
+        // Get info from Map.java
         Bundle extras = getIntent().getExtras();
-        circleID = extras.getString("circleID");
+        newCircle = extras.getBoolean("newCircle");
+        uuid = extras.getString("uuid");
+        // latitude, longitude, and radius will be null if the circle is not new (as a new circle is not being created).
+        latitude = extras.getDouble("latitude");
+        longitude = extras.getDouble("longitude");
+        radius = extras.getDouble("radius");
 
         // Give feedback about email and password.
         btnSignIn.setOnClickListener(new View.OnClickListener() {
@@ -88,7 +102,11 @@ public class SignIn extends AppCompatActivity {
                             // Go to Chat.java ith the circleID.
                             toastMessage("Signed in");
                             Intent Activity = new Intent(SignIn.this, Chat.class);
-                            Activity.putExtra("circleID", circleID);
+                            Activity.putExtra("newCircle", newCircle);
+                            Activity.putExtra("uuid", uuid);
+                            Activity.putExtra("latitude", latitude);
+                            Activity.putExtra("longitude", longitude);
+                            Activity.putExtra("radius", radius);
                             startActivity(Activity);
                             finish();
                         } if (task.getException() != null) {
@@ -115,7 +133,11 @@ public class SignIn extends AppCompatActivity {
             public void onClick(View view){
 
                 Intent Activity = new Intent(SignIn.this, SignUp.class);
-                Activity.putExtra("circleID", circleID);
+                Activity.putExtra("newCircle", newCircle);
+                Activity.putExtra("uuid", uuid);
+                Activity.putExtra("latitude", latitude);
+                Activity.putExtra("longitude", longitude);
+                Activity.putExtra("radius", radius);
                 startActivity(Activity);
                 finish();
             }
@@ -126,24 +148,28 @@ public class SignIn extends AppCompatActivity {
     protected void onRestart() {
 
         super.onRestart();
+        Log.i(TAG, "onRestart()");
     }
 
     @Override
     protected void onResume() {
 
         super.onResume();
+        Log.i(TAG, "onResume()");
     }
 
     @Override
     protected void onPause() {
 
         super.onPause();
+        Log.i(TAG, "onPause()");
     }
 
     @Override
     protected void onStop(){
 
         super.onStop();
+        Log.i(TAG, "onStop()");
 
         // Remove the listener.
         if (btnSignIn != null) {
@@ -162,6 +188,7 @@ public class SignIn extends AppCompatActivity {
     protected void onDestroy() {
 
         super.onDestroy();
+        Log.i(TAG, "onDestroy()");
     }
 
     private void toastMessage(String message){

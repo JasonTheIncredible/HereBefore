@@ -81,7 +81,6 @@ public class Map extends FragmentActivity implements
     private Boolean smallerCirclesMenuIsOpen = false;
     private Boolean newCircle;
 
-    //TODO: Work on what happens if a user is not signed in when creating a point or clicking on a circle.
     //TODO: Stop pulling unnecessary information from Firebase when creating circles.
     //TODO: Prevent circle overlap (also, clicking on circle creates a circle, may need to clear map).
     //TODO: Give user option to change color of the circles (or just change it outright).
@@ -276,22 +275,19 @@ public class Map extends FragmentActivity implements
                                                     // If the uuid doesn't already exist in Firebase, add the circle. Else, remove circle and add another until a unique uuid appears.
                                                     if (!dataSnapshot.exists()) {
 
-                                                        CircleOptions circleOptions = new CircleOptions()
-                                                                .center(circle.getCenter())
-                                                                .fillColor(Color.argb(70, 255, 215, 0))
-                                                                .radius(circle.getRadius())
-                                                                .clickable(true)
-                                                                .strokeColor(Color.YELLOW)
-                                                                .strokeWidth(3f);
-                                                        CircleInformation circleInformation = new CircleInformation();
-                                                        circleInformation.setCircleOptions(circleOptions);
-                                                        circleInformation.setUUID(uuid);
-                                                        DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("circles").push();
-                                                        newFirebaseCircle.setValue(circleInformation);
+                                                        // Set boolean to true, as this is a new circle.
+                                                        newCircle = true;
 
-                                                        // Go to SignIn.java.
+                                                        // Go to Chat.java with the uuid (used to connect the circle with the messageThread).
                                                         Intent Activity = new Intent(Map.this, SignIn.class);
+                                                        // Pass this boolean value (true) to Chat.java.
+                                                        Activity.putExtra("newCircle", newCircle);
+                                                        // Pass this value to Chat.java to identify the circle.
                                                         Activity.putExtra("uuid", uuid);
+                                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
+                                                        Activity.putExtra("latitude", circle.getCenter().latitude);
+                                                        Activity.putExtra("longitude", circle.getCenter().longitude);
+                                                        Activity.putExtra("radius", circle.getRadius());
                                                         startActivity(Activity);
                                                     } else {
 
@@ -511,23 +507,25 @@ public class Map extends FragmentActivity implements
     @Override
     protected void onPause() {
 
-        super.onPause();
         Log.i(TAG, "onPause()");
+        super.onPause();
     }
 
     @Override
     protected void onStop() {
 
-        super.onStop();
         Log.i(TAG, "onStop()");
 
         // Remove updating location information.
-        if (ContextCompat.checkSelfPermission(Map.this,
-                Manifest.permission.ACCESS_FINE_LOCATION)
-                == PackageManager.PERMISSION_GRANTED) {
+        LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+        if (locationManager != null) {
 
-            LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
-            locationManager.removeUpdates(this);
+            if (ContextCompat.checkSelfPermission(Map.this,
+                    Manifest.permission.ACCESS_FINE_LOCATION)
+                    == PackageManager.PERMISSION_GRANTED) {
+
+                locationManager.removeUpdates(Map.this);
+            }
         }
 
         //Remove the listener.
@@ -571,13 +569,15 @@ public class Map extends FragmentActivity implements
 
             firebaseCircles.removeEventListener(firebaseEventListener);
         }
+
+        super.onStop();
     }
 
     @Override
     protected void onDestroy() {
 
-        super.onDestroy();
         Log.i(TAG, "onDestroy()");
+        super.onDestroy();
     }
 
     private void buildAlertMessageNoGps() {
@@ -859,6 +859,10 @@ public class Map extends FragmentActivity implements
                         Activity.putExtra("newCircle", newCircle);
                         // Pass this value to Chat.java to identify the circle.
                         Activity.putExtra("uuid", uuid);
+                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
+                        Activity.putExtra("latitude", circle.getCenter().latitude);
+                        Activity.putExtra("longitude", circle.getCenter().longitude);
+                        Activity.putExtra("radius", circle.getRadius());
                         startActivity(Activity);
                     }
                 } else {
@@ -873,45 +877,40 @@ public class Map extends FragmentActivity implements
                             @Override
                             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
 
-                                // If the uuid doesn't already exist in Firebase, add the circle.
-                                if (!dataSnapshot.exists()) {
+                                // Set boolean to true, as this circle has a null tag and is therefore new.
+                                newCircle = true;
 
-                                    CircleOptions circleOptions = new CircleOptions()
-                                            .center(circle.getCenter())
-                                            .fillColor(Color.argb(70, 255, 215, 0))
-                                            .radius(circle.getRadius())
-                                            .clickable(true)
-                                            .strokeColor(Color.YELLOW)
-                                            .strokeWidth(3f);
-                                    CircleInformation circleInformation = new CircleInformation();
-                                    circleInformation.setCircleOptions(circleOptions);
-                                    circleInformation.setUUID(uuid);
-                                    DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("circles").push();
-                                    newFirebaseCircle.setValue(circleInformation);
-                                }
+                                // If the uuid already exists in Firebase, generate another uuid and try again.
                                 if (dataSnapshot.exists()) {
 
                                     // Generate another UUID and try again.
                                     uuid = UUID.randomUUID().toString();
 
-                                    CircleOptions circleOptions = new CircleOptions()
-                                            .center(circle.getCenter())
-                                            .fillColor(Color.argb(70, 255, 215, 0))
-                                            .radius(circle.getRadius())
-                                            .clickable(true)
-                                            .strokeColor(Color.YELLOW)
-                                            .strokeWidth(3f);
-                                    CircleInformation circleInformation = new CircleInformation();
-                                    circleInformation.setCircleOptions(circleOptions);
-                                    circleInformation.setUUID(uuid);
-                                    DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("circles").push();
-                                    newFirebaseCircle.setValue(circleInformation);
-                                }
+                                    // Go to Chat.java with the uuid (used to connect the circle with the messageThread).
+                                    Intent Activity = new Intent(Map.this, SignIn.class);
+                                    // Pass this boolean value (true) to Chat.java.
+                                    Activity.putExtra("newCircle", newCircle);
+                                    // Pass this value to Chat.java to identify the circle.
+                                    Activity.putExtra("uuid", uuid);
+                                    // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
+                                    Activity.putExtra("latitude", circle.getCenter().latitude);
+                                    Activity.putExtra("longitude", circle.getCenter().longitude);
+                                    Activity.putExtra("radius", circle.getRadius());
+                                    startActivity(Activity);
+                                } else {
 
-                                // Go to SignIn.java.
-                                Intent Activity = new Intent(Map.this, SignIn.class);
-                                Activity.putExtra("uuid", uuid);
-                                startActivity(Activity);
+                                    // Go to Chat.java with the uuid (used to connect the circle with the messageThread).
+                                    Intent Activity = new Intent(Map.this, SignIn.class);
+                                    // Pass this boolean value (true) to Chat.java.
+                                    Activity.putExtra("newCircle", newCircle);
+                                    // Pass this value to Chat.java to identify the circle.
+                                    Activity.putExtra("uuid", uuid);
+                                    // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
+                                    Activity.putExtra("latitude", circle.getCenter().latitude);
+                                    Activity.putExtra("longitude", circle.getCenter().longitude);
+                                    Activity.putExtra("radius", circle.getRadius());
+                                    startActivity(Activity);
+                                }
                             }
 
                             @Override
@@ -920,9 +919,19 @@ public class Map extends FragmentActivity implements
                         });
                     } else {
 
-                        // Go to SignIn.java.
+                        // Set boolean to false, as this circle has a non-null tag and is therefore not new.
+                        newCircle = false;
+
+                        // Go to Chat.java with the boolean value.
                         Intent Activity = new Intent(Map.this, SignIn.class);
+                        // Pass this boolean value (false) to Chat.java.
+                        Activity.putExtra("newCircle", newCircle);
+                        // Pass this value to Chat.java to identify the circle.
                         Activity.putExtra("uuid", uuid);
+                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
+                        Activity.putExtra("latitude", circle.getCenter().latitude);
+                        Activity.putExtra("longitude", circle.getCenter().longitude);
+                        Activity.putExtra("radius", circle.getRadius());
                         startActivity(Activity);
                     }
                 }
