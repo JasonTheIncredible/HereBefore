@@ -79,9 +79,7 @@ public class Map extends FragmentActivity implements
     private Boolean circleViewsMenuIsOpen = false;
     private Boolean largerCirclesMenuIsOpen = false;
     private Boolean smallerCirclesMenuIsOpen = false;
-    private Boolean newCircle;
 
-    //TODO: Stop pulling unnecessary information from Firebase when creating circles.
     //TODO: Prevent circle overlap (also, clicking on circle creates a circle, may need to clear map).
     //TODO: Give user option to change color of the circles (or just change it outright).
     //TODO: Adjust circle location / size (make any shape possible) and get rid of circle always updating to be on user's location.
@@ -93,7 +91,7 @@ public class Map extends FragmentActivity implements
     //TODO: Too much work on main thread.
     //TODO: Make checkLocationPermission Async / create loading animations.
     //TODO: Send message without entering app.
-    //TODO: Work on possible NullPointerExceptions.
+    //TODO: Work on possible NullPointerExceptions (try/catch).
     //TODO: Check updating in different states with another device - make sure uuids never overlap.
 
     @Override
@@ -205,11 +203,11 @@ public class Map extends FragmentActivity implements
                                     CircleOptions circleOptions =
                                             new CircleOptions()
                                                     .center(latLng)
+                                                    .clickable(true)
                                                     .fillColor(Color.argb(100, 255, 255, 0))
                                                     .radius(circleSize)
-                                                    .clickable(true)
-                                                    .strokeWidth(3f)
-                                                    .strokeColor(Color.YELLOW);
+                                                    .strokeColor(Color.YELLOW)
+                                                    .strokeWidth(3f);
 
                                     // Remove any other "new" circle before adding the circle to Firebase.
                                     if (circle != null){
@@ -236,18 +234,16 @@ public class Map extends FragmentActivity implements
                                                     // If the uuid already exists in Firebase, generate another uuid and try again.
                                                     if (!dataSnapshot.exists()) {
 
-                                                        // Set boolean to true, as this is a new circle.
-                                                        newCircle = true;
-
                                                         // Go to Chat.java with the uuid (used to connect the circle with the messageThread).
                                                         Intent Activity = new Intent(Map.this, Chat.class);
                                                         // Pass this boolean value (true) to Chat.java.
-                                                        Activity.putExtra("newCircle", newCircle);
+                                                        Activity.putExtra("newCircle", true);
                                                         // Pass this value to Chat.java to identify the circle.
                                                         Activity.putExtra("uuid", uuid);
                                                         // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
                                                         Activity.putExtra("latitude", circle.getCenter().latitude);
                                                         Activity.putExtra("longitude", circle.getCenter().longitude);
+                                                        Activity.putExtra("fillColor", Color.argb(100, 255, 255, 0));
                                                         Activity.putExtra("radius", circle.getRadius());
                                                         startActivity(Activity);
                                                     } else {
@@ -275,18 +271,16 @@ public class Map extends FragmentActivity implements
                                                     // If the uuid doesn't already exist in Firebase, add the circle. Else, remove circle and add another until a unique uuid appears.
                                                     if (!dataSnapshot.exists()) {
 
-                                                        // Set boolean to true, as this is a new circle.
-                                                        newCircle = true;
-
                                                         // Go to Chat.java with the uuid (used to connect the circle with the messageThread).
                                                         Intent Activity = new Intent(Map.this, SignIn.class);
                                                         // Pass this boolean value (true) to Chat.java.
-                                                        Activity.putExtra("newCircle", newCircle);
+                                                        Activity.putExtra("newCircle", true);
                                                         // Pass this value to Chat.java to identify the circle.
                                                         Activity.putExtra("uuid", uuid);
                                                         // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
                                                         Activity.putExtra("latitude", circle.getCenter().latitude);
                                                         Activity.putExtra("longitude", circle.getCenter().longitude);
+                                                        Activity.putExtra("fillColor", Color.argb(100, 255, 255, 0));
                                                         Activity.putExtra("radius", circle.getRadius());
                                                         startActivity(Activity);
                                                     } else {
@@ -378,11 +372,11 @@ public class Map extends FragmentActivity implements
                                         CircleOptions circleOptions =
                                                 new CircleOptions()
                                                         .center(latLng)
+                                                        .clickable(true)
                                                         .fillColor(Color.argb(70, 255, 215, 0))
                                                         .radius(circleSize)
-                                                        .clickable(true)
-                                                        .strokeWidth(3f)
-                                                        .strokeColor(Color.YELLOW);
+                                                        .strokeColor(Color.YELLOW)
+                                                        .strokeWidth(3f);
 
                                         if (circle != null) {
 
@@ -441,16 +435,14 @@ public class Map extends FragmentActivity implements
                         LatLng center = new LatLng((Double) ds.child("circleOptions/center/latitude/").getValue(), (Double) ds.child("circleOptions/center/longitude/").getValue());
                         int fillColor = (int) (long) ds.child("circleOptions/fillColor").getValue();
                         double radius = (double) (long) ds.child("circleOptions/radius").getValue();
-                        int strokeColor = (int) (long) ds.child("circleOptions/strokeColor").getValue();
-                        float strokeWidth = (float) (long) ds.child("circleOptions/strokeWidth").getValue();
                         Circle circle = mMap.addCircle(
                                 new CircleOptions()
                                         .center(center)
+                                        .clickable(true)
                                         .fillColor(fillColor)
                                         .radius(radius)
-                                        .clickable(true)
-                                        .strokeWidth(strokeWidth)
-                                        .strokeColor(strokeColor)
+                                        .strokeColor(Color.YELLOW)
+                                        .strokeWidth(3f)
                         );
 
                         // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
@@ -750,16 +742,14 @@ public class Map extends FragmentActivity implements
                         LatLng center = new LatLng((Double) ds.child("circleOptions/center/latitude/").getValue(), (Double) ds.child("circleOptions/center/longitude/").getValue());
                         int fillColor = (int) (long) ds.child("circleOptions/fillColor").getValue();
                         double radius = (double) (long) ds.child("circleOptions/radius").getValue();
-                        int strokeColor = (int) (long) ds.child("circleOptions/strokeColor").getValue();
-                        float strokeWidth = (float) (long) ds.child("circleOptions/strokeWidth").getValue();
                         Circle circle = mMap.addCircle(
                                 new CircleOptions()
                                         .center(center)
+                                        .clickable(true)
                                         .fillColor(fillColor)
                                         .radius(radius)
-                                        .clickable(true)
-                                        .strokeWidth(strokeWidth)
-                                        .strokeColor(strokeColor)
+                                        .strokeColor(Color.YELLOW)
+                                        .strokeWidth(3f)
                         );
 
                         // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
@@ -808,9 +798,6 @@ public class Map extends FragmentActivity implements
                             @Override
                             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
 
-                                // Set boolean to true, as this circle has a null tag and is therefore new.
-                                newCircle = true;
-
                                 // If the uuid already exists in Firebase, generate another uuid and try again.
                                 if (dataSnapshot.exists()) {
 
@@ -820,12 +807,13 @@ public class Map extends FragmentActivity implements
                                     // Go to Chat.java with the uuid (used to connect the circle with the messageThread).
                                     Intent Activity = new Intent(Map.this, Chat.class);
                                     // Pass this boolean value (true) to Chat.java.
-                                    Activity.putExtra("newCircle", newCircle);
+                                    Activity.putExtra("newCircle", true);
                                     // Pass this value to Chat.java to identify the circle.
                                     Activity.putExtra("uuid", uuid);
                                     // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
                                     Activity.putExtra("latitude", circle.getCenter().latitude);
                                     Activity.putExtra("longitude", circle.getCenter().longitude);
+                                    Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                     Activity.putExtra("radius", circle.getRadius());
                                     startActivity(Activity);
                                 } else {
@@ -833,12 +821,13 @@ public class Map extends FragmentActivity implements
                                     // Go to Chat.java with the uuid (used to connect the circle with the messageThread).
                                     Intent Activity = new Intent(Map.this, Chat.class);
                                     // Pass this boolean value (true) to Chat.java.
-                                    Activity.putExtra("newCircle", newCircle);
+                                    Activity.putExtra("newCircle", true);
                                     // Pass this value to Chat.java to identify the circle.
                                     Activity.putExtra("uuid", uuid);
                                     // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
                                     Activity.putExtra("latitude", circle.getCenter().latitude);
                                     Activity.putExtra("longitude", circle.getCenter().longitude);
+                                    Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                     Activity.putExtra("radius", circle.getRadius());
                                     startActivity(Activity);
                                 }
@@ -850,19 +839,12 @@ public class Map extends FragmentActivity implements
                         });
                     } else {
 
-                        // Set boolean to false, as this circle has a non-null tag and is therefore not new.
-                        newCircle = false;
-
                         // Go to Chat.java with the boolean value.
                         Intent Activity = new Intent(Map.this, Chat.class);
                         // Pass this boolean value (false) to Chat.java.
-                        Activity.putExtra("newCircle", newCircle);
+                        Activity.putExtra("newCircle", false);
                         // Pass this value to Chat.java to identify the circle.
                         Activity.putExtra("uuid", uuid);
-                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
-                        Activity.putExtra("latitude", circle.getCenter().latitude);
-                        Activity.putExtra("longitude", circle.getCenter().longitude);
-                        Activity.putExtra("radius", circle.getRadius());
                         startActivity(Activity);
                     }
                 } else {
@@ -877,9 +859,6 @@ public class Map extends FragmentActivity implements
                             @Override
                             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
 
-                                // Set boolean to true, as this circle has a null tag and is therefore new.
-                                newCircle = true;
-
                                 // If the uuid already exists in Firebase, generate another uuid and try again.
                                 if (dataSnapshot.exists()) {
 
@@ -889,12 +868,13 @@ public class Map extends FragmentActivity implements
                                     // Go to Chat.java with the uuid (used to connect the circle with the messageThread).
                                     Intent Activity = new Intent(Map.this, SignIn.class);
                                     // Pass this boolean value (true) to Chat.java.
-                                    Activity.putExtra("newCircle", newCircle);
+                                    Activity.putExtra("newCircle", true);
                                     // Pass this value to Chat.java to identify the circle.
                                     Activity.putExtra("uuid", uuid);
                                     // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
                                     Activity.putExtra("latitude", circle.getCenter().latitude);
                                     Activity.putExtra("longitude", circle.getCenter().longitude);
+                                    Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                     Activity.putExtra("radius", circle.getRadius());
                                     startActivity(Activity);
                                 } else {
@@ -902,12 +882,13 @@ public class Map extends FragmentActivity implements
                                     // Go to Chat.java with the uuid (used to connect the circle with the messageThread).
                                     Intent Activity = new Intent(Map.this, SignIn.class);
                                     // Pass this boolean value (true) to Chat.java.
-                                    Activity.putExtra("newCircle", newCircle);
+                                    Activity.putExtra("newCircle", true);
                                     // Pass this value to Chat.java to identify the circle.
                                     Activity.putExtra("uuid", uuid);
                                     // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
                                     Activity.putExtra("latitude", circle.getCenter().latitude);
                                     Activity.putExtra("longitude", circle.getCenter().longitude);
+                                    Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                     Activity.putExtra("radius", circle.getRadius());
                                     startActivity(Activity);
                                 }
@@ -919,19 +900,12 @@ public class Map extends FragmentActivity implements
                         });
                     } else {
 
-                        // Set boolean to false, as this circle has a non-null tag and is therefore not new.
-                        newCircle = false;
-
                         // Go to Chat.java with the boolean value.
                         Intent Activity = new Intent(Map.this, SignIn.class);
                         // Pass this boolean value (false) to Chat.java.
-                        Activity.putExtra("newCircle", newCircle);
+                        Activity.putExtra("newCircle", false);
                         // Pass this value to Chat.java to identify the circle.
                         Activity.putExtra("uuid", uuid);
-                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
-                        Activity.putExtra("latitude", circle.getCenter().latitude);
-                        Activity.putExtra("longitude", circle.getCenter().longitude);
-                        Activity.putExtra("radius", circle.getRadius());
                         startActivity(Activity);
                     }
                 }
@@ -986,9 +960,9 @@ public class Map extends FragmentActivity implements
                                     CircleOptions circleOptions =
                                             new CircleOptions()
                                                     .center(latLng)
+                                                    .clickable(true)
                                                     .fillColor(Color.argb(70, 255, 215, 0))
                                                     .radius(circleSize)
-                                                    .clickable(true)
                                                     .strokeColor(Color.YELLOW)
                                                     .strokeWidth(3f);
 
@@ -1019,9 +993,9 @@ public class Map extends FragmentActivity implements
                                                         CircleOptions circleOptions =
                                                                 new CircleOptions()
                                                                         .center(latLng)
+                                                                        .clickable(true)
                                                                         .fillColor(Color.argb(70, 255, 215, 0))
                                                                         .radius(circleSize)
-                                                                        .clickable(true)
                                                                         .strokeColor(Color.YELLOW)
                                                                         .strokeWidth(3f);
 
@@ -1212,16 +1186,14 @@ public class Map extends FragmentActivity implements
                                 LatLng center = new LatLng((Double) ds.child("circleOptions/center/latitude/").getValue(), (Double) ds.child("circleOptions/center/longitude/").getValue());
                                 int fillColor = (int) (long) ds.child("circleOptions/fillColor").getValue();
                                 double radius = (double) (long) ds.child("circleOptions/radius").getValue();
-                                int strokeColor = (int) (long) ds.child("circleOptions/strokeColor").getValue();
-                                float strokeWidth = (float) (long) ds.child("circleOptions/strokeWidth").getValue();
                                 Circle circle = mMap.addCircle(
                                         new CircleOptions()
                                                 .center(center)
+                                                .clickable(true)
                                                 .fillColor(fillColor)
                                                 .radius(radius)
-                                                .clickable(true)
-                                                .strokeColor(strokeColor)
-                                                .strokeWidth(strokeWidth)
+                                                .strokeColor(Color.YELLOW)
+                                                .strokeWidth(3f)
                                 );
 
                                 // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
@@ -1278,16 +1250,14 @@ public class Map extends FragmentActivity implements
                                     LatLng center = new LatLng((Double) ds.child("circleOptions/center/latitude/").getValue(), (Double) ds.child("circleOptions/center/longitude/").getValue());
                                     int fillColor = (int) (long) ds.child("circleOptions/fillColor").getValue();
                                     double radius = (double) (long) ds.child("circleOptions/radius").getValue();
-                                    int strokeColor = (int) (long) ds.child("circleOptions/strokeColor").getValue();
-                                    float strokeWidth = (float) (long) ds.child("circleOptions/strokeWidth").getValue();
                                     Circle circle = mMap.addCircle(
                                             new CircleOptions()
                                                     .center(center)
+                                                    .clickable(true)
                                                     .fillColor(fillColor)
                                                     .radius(radius)
-                                                    .clickable(true)
-                                                    .strokeColor(strokeColor)
-                                                    .strokeWidth(strokeWidth)
+                                                    .strokeColor(Color.YELLOW)
+                                                    .strokeWidth(3f)
                                     );
 
                                     // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
@@ -1345,16 +1315,14 @@ public class Map extends FragmentActivity implements
                                     LatLng center = new LatLng((Double) ds.child("circleOptions/center/latitude/").getValue(), (Double) ds.child("circleOptions/center/longitude/").getValue());
                                     int fillColor = (int) (long) ds.child("circleOptions/fillColor").getValue();
                                     double radius = (double) (long) ds.child("circleOptions/radius").getValue();
-                                    int strokeColor = (int) (long) ds.child("circleOptions/strokeColor").getValue();
-                                    float strokeWidth = (float) (long) ds.child("circleOptions/strokeWidth").getValue();
                                     Circle circle = mMap.addCircle(
                                             new CircleOptions()
                                                     .center(center)
+                                                    .clickable(true)
                                                     .fillColor(fillColor)
                                                     .radius(radius)
-                                                    .clickable(true)
-                                                    .strokeColor(strokeColor)
-                                                    .strokeWidth(strokeWidth)
+                                                    .strokeColor(Color.YELLOW)
+                                                    .strokeWidth(3f)
                                     );
 
                                     // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
@@ -1412,16 +1380,14 @@ public class Map extends FragmentActivity implements
                                     LatLng center = new LatLng((Double) ds.child("circleOptions/center/latitude/").getValue(), (Double) ds.child("circleOptions/center/longitude/").getValue());
                                     int fillColor = (int) (long) ds.child("circleOptions/fillColor").getValue();
                                     double radius = (double) (long) ds.child("circleOptions/radius").getValue();
-                                    int strokeColor = (int) (long) ds.child("circleOptions/strokeColor").getValue();
-                                    float strokeWidth = (float) (long) ds.child("circleOptions/strokeWidth").getValue();
                                     Circle circle = mMap.addCircle(
                                             new CircleOptions()
                                                     .center(center)
+                                                    .clickable(true)
                                                     .fillColor(fillColor)
                                                     .radius(radius)
-                                                    .clickable(true)
-                                                    .strokeColor(strokeColor)
-                                                    .strokeWidth(strokeWidth)
+                                                    .strokeColor(Color.YELLOW)
+                                                    .strokeWidth(3f)
                                     );
 
                                     // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
@@ -1479,16 +1445,14 @@ public class Map extends FragmentActivity implements
                                     LatLng center = new LatLng((Double) ds.child("circleOptions/center/latitude/").getValue(), (Double) ds.child("circleOptions/center/longitude/").getValue());
                                     int fillColor = (int) (long) ds.child("circleOptions/fillColor").getValue();
                                     double radius = (double) (long) ds.child("circleOptions/radius").getValue();
-                                    int strokeColor = (int) (long) ds.child("circleOptions/strokeColor").getValue();
-                                    float strokeWidth = (float) (long) ds.child("circleOptions/strokeWidth").getValue();
                                     Circle circle = mMap.addCircle(
                                             new CircleOptions()
                                                     .center(center)
+                                                    .clickable(true)
                                                     .fillColor(fillColor)
                                                     .radius(radius)
-                                                    .clickable(true)
-                                                    .strokeColor(strokeColor)
-                                                    .strokeWidth(strokeWidth)
+                                                    .strokeColor(Color.YELLOW)
+                                                    .strokeWidth(3f)
                                     );
 
                                     // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
@@ -1614,10 +1578,11 @@ public class Map extends FragmentActivity implements
                                         CircleOptions circleOptions =
                                                 new CircleOptions()
                                                         .center(latLng)
-                                                        .radius(circleSize)
-                                                        .strokeWidth(3f)
+                                                        .clickable(true)
                                                         .fillColor(Color.argb(70, 255, 215, 0))
-                                                        .strokeColor(Color.YELLOW);
+                                                        .radius(circleSize)
+                                                        .strokeColor(Color.YELLOW)
+                                                        .strokeWidth(3f);
 
                                         if (circle != null) {
 

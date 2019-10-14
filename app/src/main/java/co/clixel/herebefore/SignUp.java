@@ -28,6 +28,7 @@ public class SignUp extends AppCompatActivity {
     private Double longitude;
     private Double radius;
     private boolean newCircle;
+    private int fillColor;
 
     //TODO: Update signup.xml (visuals and add more user information).
     //TODO: Sign in with Google account.
@@ -57,6 +58,7 @@ public class SignUp extends AppCompatActivity {
         // latitude, longitude, and radius will be null if the circle is not new (as a new circle is not being created).
         latitude = extras.getDouble("latitude");
         longitude = extras.getDouble("longitude");
+        fillColor = extras.getInt("fillColor");
         radius = extras.getDouble("radius");
 
 
@@ -106,6 +108,7 @@ public class SignUp extends AppCompatActivity {
                             Activity.putExtra("uuid", uuid);
                             Activity.putExtra("latitude", latitude);
                             Activity.putExtra("longitude", longitude);
+                            Activity.putExtra("fillColor", fillColor);
                             Activity.putExtra("radius", radius);
                             startActivity(Activity);
                             finish();
@@ -144,14 +147,13 @@ public class SignUp extends AppCompatActivity {
     @Override
     protected void onPause() {
 
-        super.onPause();
         Log.i(TAG, "onPause()");
+        super.onPause();
     }
 
     @Override
     protected void onStop() {
 
-        super.onStop();
         Log.i(TAG, "onStop()");
 
         // Remove the listener.
@@ -159,13 +161,15 @@ public class SignUp extends AppCompatActivity {
 
             btnCreateAccount.setOnClickListener(null);
         }
+
+        super.onStop();
     }
 
     @Override
     protected void onDestroy() {
 
-        super.onDestroy();
         Log.i(TAG, "onDestroy()");
+        super.onDestroy();
     }
 
     private void toastMessage(String message) {

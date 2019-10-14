@@ -1,7 +1,6 @@
 package co.clixel.herebefore;
 
 import android.content.Context;
-import android.graphics.Color;
 import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -54,6 +53,7 @@ public class Chat extends AppCompatActivity {
     private Double latitude;
     private Double longitude;
     private Double radius;
+    private int fillColor;
 
     //TODO: Too much work on main thread.
     //TODO: Add a username (in message.xml).
@@ -83,9 +83,10 @@ public class Chat extends AppCompatActivity {
         Bundle extras = getIntent().getExtras();
         newCircle = extras.getBoolean("newCircle");
         uuid = extras.getString("uuid");
-        // latitude, longitude, and radius will be null if the circle is not new (as a new circle is not being created).
+        // latitude, longitude, fillColor and radius will be null if the circle is not new (as a new circle is not being created).
         latitude = extras.getDouble("latitude");
         longitude = extras.getDouble("longitude");
+        fillColor = extras.getInt("fillColor");
         radius = extras.getDouble("radius");
 
         // Connect to Firebase.
@@ -212,11 +213,9 @@ public class Chat extends AppCompatActivity {
                                 // Since the uuid doesn't already exist in Firebase, add the circle.
                                 CircleOptions circleOptions = new CircleOptions()
                                         .center(new LatLng(latitude, longitude))
-                                        .fillColor(Color.argb(70, 255, 215, 0))
-                                        .radius(radius)
                                         .clickable(true)
-                                        .strokeColor(Color.YELLOW)
-                                        .strokeWidth(3f);
+                                        .fillColor(fillColor)
+                                        .radius(radius);
                                 CircleInformation circleInformation = new CircleInformation();
                                 circleInformation.setCircleOptions(circleOptions);
                                 circleInformation.setUUID(uuid);
@@ -288,14 +287,13 @@ public class Chat extends AppCompatActivity {
     @Override
     protected void onPause(){
 
-        super.onPause();
         Log.i(TAG, "onPause()");
+        super.onPause();
     }
 
     @Override
     protected void onStop() {
 
-        super.onStop();
         Log.i(TAG, "onStop()");
 
         // Remove the Firebase event listener.
@@ -322,13 +320,15 @@ public class Chat extends AppCompatActivity {
 
             sendButton.setOnClickListener(null);
         }
+
+        super.onStop();
     }
 
     @Override
     protected void onDestroy() {
 
-        super.onDestroy();
         Log.i(TAG, "onDestroy()");
+        super.onDestroy();
     }
 
     private void initRecyclerView(){
