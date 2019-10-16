@@ -66,7 +66,6 @@ public class Map extends FragmentActivity implements
     private Circle circle;
     private DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
     private DatabaseReference firebaseCircles = rootRef.child("circles");
-    private ValueEventListener firebaseEventListener;
     private SeekBar circleSizeSeekBar;
     private SeekBar largerCircleSizeSeekBar;
     private String uuid;
@@ -80,12 +79,12 @@ public class Map extends FragmentActivity implements
     private Boolean largerCirclesMenuIsOpen = false;
     private Boolean smallerCirclesMenuIsOpen = false;
 
-    //TODO: Prevent circle overlap (also, clicking on circle creates a circle, may need to clear map).
-    //TODO: Give user option to change color of the circles (or just change it outright).
     //TODO: Adjust circle location / size (make any shape possible) and get rid of circle always updating to be on user's location.
+    //TODO: Prevent circle overlap.
+    //TODO: Give user option to change color of the circles (or just change it outright).
     //TODO: Make points easier to see somehow.
     //TODO: Have circles spread if they are too close when clicking.
-    //TODO: Only load Firebase circles if they're within camera view (in onMapReady) (getMap().getProjection().getVisibleRegion().latLangBounds.)
+    //TODO: Only load Firebase circles if they're within camera view (in onMapReady) (getMap().getProjection().getVisibleRegion().latLangBounds). If this works, can possibly replace singleValueEventListener in onMapReady() and onRestart() with a valueEventListener.
     //TODO: Make sure Firebase listener is always updating map properly.
     //TODO: Optimize Firebase loading.
     //TODO: Too much work on main thread.
@@ -423,7 +422,7 @@ public class Map extends FragmentActivity implements
         }
 
         // Load Firebase circles, as onMapReady() doesn't get called after onRestart().
-        firebaseEventListener = new ValueEventListener() {
+        firebaseCircles.addListenerForSingleValueEvent(new ValueEventListener() {
 
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
@@ -457,10 +456,7 @@ public class Map extends FragmentActivity implements
             public void onCancelled(@NonNull DatabaseError databaseError) {
 
             }
-        };
-
-        // Add the Firebase listener.
-        firebaseCircles.addValueEventListener(firebaseEventListener);
+        });
 
         // Close any open menus
         if (popupCircleViews != null) {
@@ -554,12 +550,6 @@ public class Map extends FragmentActivity implements
         if (largerCircleSizeSeekBar != null) {
 
             largerCircleSizeSeekBar.setOnSeekBarChangeListener(null);
-        }
-
-        // Remove the Firebase event listener.
-        if (firebaseCircles != null && firebaseEventListener != null) {
-
-            firebaseCircles.removeEventListener(firebaseEventListener);
         }
 
         super.onStop();
@@ -730,7 +720,7 @@ public class Map extends FragmentActivity implements
         }
 
         // Load Firebase circles.
-        firebaseEventListener = new ValueEventListener() {
+        firebaseCircles.addListenerForSingleValueEvent(new ValueEventListener() {
 
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
@@ -764,10 +754,7 @@ public class Map extends FragmentActivity implements
             public void onCancelled(@NonNull DatabaseError databaseError) {
 
             }
-        };
-
-        // Add the Firebase listener.
-        firebaseCircles.addValueEventListener(firebaseEventListener);
+        });
 
         // Go to Chat.java when clicking on the circle.
         mMap.setOnCircleClickListener(new GoogleMap.OnCircleClickListener() {
@@ -1155,11 +1142,6 @@ public class Map extends FragmentActivity implements
 
                 Log.i(TAG, "onMenuItemClick() -> everything");
 
-                // Remove previous Firebase listener.
-                if (firebaseCircles != null && firebaseEventListener != null){
-
-                    firebaseCircles.removeEventListener(firebaseEventListener);
-                }
                 mMap.clear();
                 // Set circle to null so changing circleSizeSeekBar will create a circle.
                 circle = null;
@@ -1216,11 +1198,6 @@ public class Map extends FragmentActivity implements
 
                 Log.i(TAG, "onMenuItemClick() -> largeCircles");
 
-                // Remove previous Firebase listener.
-                if (firebaseCircles != null && firebaseEventListener != null){
-
-                    firebaseCircles.removeEventListener(firebaseEventListener);
-                }
                 mMap.clear();
                 // Set circle to null so changing circleSizeSeekBar will create a circle.
                 circle = null;
@@ -1281,11 +1258,6 @@ public class Map extends FragmentActivity implements
 
                 Log.i(TAG, "onMenuItemClick() -> mediumCircles");
 
-                // Remove previous Firebase listener.
-                if (firebaseCircles != null && firebaseEventListener != null){
-
-                    firebaseCircles.removeEventListener(firebaseEventListener);
-                }
                 mMap.clear();
                 // Set circle to null so changing circleSizeSeekBar will create a circle.
                 circle = null;
@@ -1346,11 +1318,6 @@ public class Map extends FragmentActivity implements
 
                 Log.i(TAG, "onMenuItemClick() -> smallCircles");
 
-                // Remove previous Firebase listener.
-                if (firebaseCircles != null && firebaseEventListener != null){
-
-                    firebaseCircles.removeEventListener(firebaseEventListener);
-                }
                 mMap.clear();
                 // Set circle to null so changing circleSizeSeekBar will create a circle.
                 circle = null;
@@ -1411,11 +1378,6 @@ public class Map extends FragmentActivity implements
 
                 Log.i(TAG, "onMenuItemClick() -> points");
 
-                // Clear previous Firebase listener.
-                if (firebaseCircles != null && firebaseEventListener != null){
-
-                    firebaseCircles.removeEventListener(firebaseEventListener);
-                }
                 mMap.clear();
                 // Set circle to null so changing circleSizeSeekBar will create a circle.
                 circle = null;
