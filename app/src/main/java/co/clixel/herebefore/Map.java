@@ -69,17 +69,21 @@ public class Map extends FragmentActivity implements
     private SeekBar circleSizeSeekBar;
     private SeekBar largerCircleSizeSeekBar;
     private String uuid;
-    private Button pointButton, circleViewsButton, mapTypeButton;
+    private Button createCircleButton, circleViewsButton, mapTypeButton;
     private PopupMenu popupMapType;
     private PopupMenu popupCircleViews;
+    private PopupMenu popupCreateCircle;
     private PopupMenu popupCreateLargerCircles;
     private PopupMenu popupCreateSmallerCircles;
+    private Boolean circleExists = false;
+    private Boolean circleRemoved = false;
     private Boolean mapTypeMenuIsOpen = false;
     private Boolean circleViewsMenuIsOpen = false;
+    private Boolean createCircleMenuIsOpen = false;
     private Boolean largerCirclesMenuIsOpen = false;
     private Boolean smallerCirclesMenuIsOpen = false;
 
-    //TODO: Adjust circle location / size (make any shape possible) and get rid of circle always updating to be on user's location.
+    //TODO: Adjust circle location / size (make any shape possible).
     //TODO: Prevent circle overlap.
     //TODO: Give user option to change color of the circles (or just change it outright).
     //TODO: Make points easier to see somehow.
@@ -106,7 +110,7 @@ public class Map extends FragmentActivity implements
         mapFragment.getMapAsync(this);
 
         mapTypeButton = findViewById(R.id.mapTypeButton);
-        pointButton = findViewById(R.id.pointButton);
+        createCircleButton = findViewById(R.id.createCircleButton);
         circleSizeSeekBar = findViewById(R.id.circleSizeSeekBar);
         circleViewsButton = findViewById(R.id.circleViewsButton);
         largerCircleSizeSeekBar = findViewById(R.id.largerCircleSizeSeekBar);
@@ -178,127 +182,35 @@ public class Map extends FragmentActivity implements
             }
         });
 
-        // Makes circle around user's current location on button press.
-        pointButton.setOnClickListener(new View.OnClickListener() {
+        // Shows a menu for creating circles.
+        createCircleButton.setOnClickListener(new View.OnClickListener() {
 
-            public void onClick(View v) {
+            @Override
+            public void onClick(View view) {
 
-                FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
+                popupCreateCircle = new PopupMenu(Map.this, createCircleButton);
+                popupCreateCircle.setOnMenuItemClickListener(Map.this);
+                popupCreateCircle.inflate(R.menu.circlesize_menu);
+                // Check if the circle exists and adjust the menu items accordingly.
+                if (circleExists) {
 
-                mFusedLocationClient.getLastLocation()
-                        .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
+                    popupCreateCircle.getMenu().findItem(R.id.createCircle).setVisible(false);
+                } else {
 
-                            @Override
-                            public void onSuccess(Location location) {
+                    popupCreateCircle.getMenu().findItem(R.id.removeCircle).setVisible(false);
+                }
+                popupCreateCircle.show();
+                createCircleMenuIsOpen = true;
 
-                                // Get last known location. In some rare situations, this can be null.
-                                if (location != null) {
+                // Changes boolean value (used in OnConfigurationChanged) to determine whether menu is currently open.
+                popupCreateCircle.setOnDismissListener(new PopupMenu.OnDismissListener() {
+                    @Override
+                    public void onDismiss(PopupMenu popupMenu) {
 
-                                    // Make circle the size set by the seekBar.
-                                    int circleSize = 1;
-
-                                    // Logic to handle location object.
-                                    LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-                                    CircleOptions circleOptions =
-                                            new CircleOptions()
-                                                    .center(latLng)
-                                                    .clickable(true)
-                                                    .fillColor(Color.argb(100, 255, 255, 0))
-                                                    .radius(circleSize)
-                                                    .strokeColor(Color.YELLOW)
-                                                    .strokeWidth(3f);
-
-                                    // Remove any other "new" circle before adding the circle to Firebase.
-                                    if (circle != null){
-
-                                        circle.remove();
-                                    }
-
-                                    // Add circle to the map and go to chat.
-                                    if (mMap != null) {
-
-                                        circle = mMap.addCircle(circleOptions);
-
-                                        uuid = UUID.randomUUID().toString();
-
-                                        // Check if the user is already signed in.
-                                        if (FirebaseAuth.getInstance().getCurrentUser() != null) {
-
-                                            // User is signed in.
-                                            // Connect to Firebase.
-                                            firebaseCircles.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
-                                                @Override
-                                                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-
-                                                    // If the uuid already exists in Firebase, generate another uuid and try again.
-                                                    if (!dataSnapshot.exists()) {
-
-                                                        // Go to Chat.java with the uuid (used to connect the circle with the messageThread).
-                                                        Intent Activity = new Intent(Map.this, Chat.class);
-                                                        // Pass this boolean value (true) to Chat.java.
-                                                        Activity.putExtra("newCircle", true);
-                                                        // Pass this value to Chat.java to identify the circle.
-                                                        Activity.putExtra("uuid", uuid);
-                                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
-                                                        Activity.putExtra("latitude", circle.getCenter().latitude);
-                                                        Activity.putExtra("longitude", circle.getCenter().longitude);
-                                                        Activity.putExtra("fillColor", Color.argb(100, 255, 255, 0));
-                                                        Activity.putExtra("radius", circle.getRadius());
-                                                        startActivity(Activity);
-                                                    } else {
-
-                                                        circle.remove();
-
-                                                        pointButton.callOnClick();
-                                                    }
-                                                }
-
-                                                @Override
-                                                public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                                                }
-                                            });
-                                        } else {
-
-                                            // No user is signed in.
-                                            // Connect to Firebase.
-                                            firebaseCircles.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
-
-                                                @Override
-                                                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-
-                                                    // If the uuid doesn't already exist in Firebase, add the circle. Else, remove circle and add another until a unique uuid appears.
-                                                    if (!dataSnapshot.exists()) {
-
-                                                        // Go to Chat.java with the uuid (used to connect the circle with the messageThread).
-                                                        Intent Activity = new Intent(Map.this, SignIn.class);
-                                                        // Pass this boolean value (true) to Chat.java.
-                                                        Activity.putExtra("newCircle", true);
-                                                        // Pass this value to Chat.java to identify the circle.
-                                                        Activity.putExtra("uuid", uuid);
-                                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
-                                                        Activity.putExtra("latitude", circle.getCenter().latitude);
-                                                        Activity.putExtra("longitude", circle.getCenter().longitude);
-                                                        Activity.putExtra("fillColor", Color.argb(100, 255, 255, 0));
-                                                        Activity.putExtra("radius", circle.getRadius());
-                                                        startActivity(Activity);
-                                                    } else {
-
-                                                        circle.remove();
-
-                                                        pointButton.callOnClick();
-                                                    }
-                                                }
-
-                                                @Override
-                                                public void onCancelled(@NonNull DatabaseError databaseError) {
-                                                }
-                                            });
-                                        }
-                                    }
-                                }
-                            }
-                        });
+                        createCircleMenuIsOpen = false;
+                        popupCreateCircle.setOnDismissListener(null);
+                    }
+                });
             }
         });
 
@@ -349,8 +261,8 @@ public class Map extends FragmentActivity implements
             @Override
             public void onStartTrackingTouch(final SeekBar seekBar) {
 
-                // Creates circle
-                if (circle == null) {
+                // Creates circle.
+                if (circle == null || circleRemoved) {
 
                     FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
 
@@ -384,6 +296,8 @@ public class Map extends FragmentActivity implements
 
                                         circle = mMap.addCircle(circleOptions);
                                         circleSizeSeekBar.setProgress(circleSize);
+                                        // Boolean used in circlesize_menu to change the menu item from "Create a Circle" to "Remove the circle".
+                                        circleExists = true;
                                     }
                                 }
                             });
@@ -409,7 +323,12 @@ public class Map extends FragmentActivity implements
 
             mMap.clear();
             circleSizeSeekBar.setProgress(0);
-            circle = null;
+            if (circle != null) {
+
+                circle = null;
+            }
+            // Boolean used in circlesize_menu to change the menu item from "Create a Circle" to "Remove the circle".
+            circleExists = false;
         }
 
         // If the largerCircleSizeSeekBar is visible, set it to View.GONE and make the original one visible (as mMap.clear() is called so no circles exist).
@@ -459,21 +378,38 @@ public class Map extends FragmentActivity implements
         });
 
         // Close any open menus
+        if (popupMapType != null) {
+
+            popupMapType.dismiss();
+            mapTypeMenuIsOpen = false;
+        }
+
+        // Close any open menus
         if (popupCircleViews != null) {
 
             popupCircleViews.dismiss();
+            circleViewsMenuIsOpen = false;
+        }
+
+        // Close any open menus
+        if (popupCreateCircle != null) {
+
+            popupCreateCircle.dismiss();
+            createCircleMenuIsOpen = false;
         }
 
         // Close any open menus
         if (popupCreateLargerCircles != null) {
 
             popupCreateLargerCircles.dismiss();
+            largerCirclesMenuIsOpen = false;
         }
 
         // Close any open menus
         if (popupCreateSmallerCircles != null) {
 
             popupCreateSmallerCircles.dismiss();
+            smallerCirclesMenuIsOpen = false;
         }
     }
 
@@ -535,9 +471,9 @@ public class Map extends FragmentActivity implements
         }
 
         // Remove the listener.
-        if (pointButton != null) {
+        if (createCircleButton != null) {
 
-            pointButton.setOnClickListener(null);
+            createCircleButton.setOnClickListener(null);
         }
 
         // Remove the seekBar listener.
@@ -791,7 +727,7 @@ public class Map extends FragmentActivity implements
                                     // Generate another UUID and try again.
                                     uuid = UUID.randomUUID().toString();
 
-                                    // Go to Chat.java with the uuid (used to connect the circle with the messageThread).
+                                    // Carry the extras all the way to Chat.java.
                                     Intent Activity = new Intent(Map.this, Chat.class);
                                     // Pass this boolean value (true) to Chat.java.
                                     Activity.putExtra("newCircle", true);
@@ -805,7 +741,7 @@ public class Map extends FragmentActivity implements
                                     startActivity(Activity);
                                 } else {
 
-                                    // Go to Chat.java with the uuid (used to connect the circle with the messageThread).
+                                    // Carry the extras all the way to Chat.java.
                                     Intent Activity = new Intent(Map.this, Chat.class);
                                     // Pass this boolean value (true) to Chat.java.
                                     Activity.putExtra("newCircle", true);
@@ -852,7 +788,7 @@ public class Map extends FragmentActivity implements
                                     // Generate another UUID and try again.
                                     uuid = UUID.randomUUID().toString();
 
-                                    // Go to Chat.java with the uuid (used to connect the circle with the messageThread).
+                                    // Carry the extras all the way to Chat.java.
                                     Intent Activity = new Intent(Map.this, SignIn.class);
                                     // Pass this boolean value (true) to Chat.java.
                                     Activity.putExtra("newCircle", true);
@@ -866,7 +802,7 @@ public class Map extends FragmentActivity implements
                                     startActivity(Activity);
                                 } else {
 
-                                    // Go to Chat.java with the uuid (used to connect the circle with the messageThread).
+                                    // Carry the extras all the way to Chat.java.
                                     Intent Activity = new Intent(Map.this, SignIn.class);
                                     // Pass this boolean value (true) to Chat.java.
                                     Activity.putExtra("newCircle", true);
@@ -921,85 +857,6 @@ public class Map extends FragmentActivity implements
             // Set Boolean to false to prevent unnecessary animation, as the camera should already be set on the user's location.
             firstLoad = false;
         }
-
-        // Keep the circle's location on the user at all times.
-        if (circle != null) {
-
-            FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
-
-            mFusedLocationClient.getLastLocation()
-                    .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
-
-                        @Override
-                        public void onSuccess(Location location) {
-
-                            // Get last known location. In some rare situations, this can be null.
-                            if (location != null) {
-
-                                // Creates smaller circle if smaller seekBar is visible. Else, create larger circle.
-                                if (circleSizeSeekBar.getVisibility() != View.GONE) {
-
-                                    // Make circle the size set by the seekBar.
-                                    int circleSize = circleSizeSeekBar.getProgress();
-
-                                    // Logic to handle location object.
-                                    LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-                                    CircleOptions circleOptions =
-                                            new CircleOptions()
-                                                    .center(latLng)
-                                                    .clickable(true)
-                                                    .fillColor(Color.argb(70, 255, 215, 0))
-                                                    .radius(circleSize)
-                                                    .strokeColor(Color.YELLOW)
-                                                    .strokeWidth(3f);
-
-                                    if (circle != null) {
-
-                                        circle.remove();
-                                    }
-
-                                    circle = mMap.addCircle(circleOptions);
-                                } else {
-
-                                    FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
-
-                                    mFusedLocationClient.getLastLocation()
-                                            .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
-
-                                                @Override
-                                                public void onSuccess(Location location) {
-
-                                                    // Get last known location. In some rare situations, this can be null.
-                                                    if (location != null) {
-
-                                                        // Make circle the size set by the seekBar.
-                                                        int circleSize = largerCircleSizeSeekBar.getProgress() + 100;
-
-                                                        // Logic to handle location object.
-                                                        LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-                                                        CircleOptions circleOptions =
-                                                                new CircleOptions()
-                                                                        .center(latLng)
-                                                                        .clickable(true)
-                                                                        .fillColor(Color.argb(70, 255, 215, 0))
-                                                                        .radius(circleSize)
-                                                                        .strokeColor(Color.YELLOW)
-                                                                        .strokeWidth(3f);
-
-                                                        if (circle != null) {
-
-                                                            circle.remove();
-                                                        }
-
-                                                        circle = mMap.addCircle(circleOptions);
-                                                    }
-                                                }
-                                            });
-                                }
-                            }
-                        }
-                    });
-        }
     }
 
     @Override
@@ -1033,6 +890,19 @@ public class Map extends FragmentActivity implements
             popupCircleViews.dismiss();
             popupCircleViews.show();
             circleViewsMenuIsOpen = true;
+        }
+
+        // Reloads the popup when the orientation changes to prevent viewing issues.
+        if ( newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE && createCircleMenuIsOpen) {
+
+            popupCreateCircle.dismiss();
+            popupCreateCircle.show();
+            createCircleMenuIsOpen = true;
+        } else if ( newConfig.orientation == Configuration.ORIENTATION_PORTRAIT && createCircleMenuIsOpen){
+
+            popupCreateCircle.dismiss();
+            popupCreateCircle.show();
+            createCircleMenuIsOpen = true;
         }
 
         // Reloads the popup when the orientation changes to prevent viewing issues.
@@ -1083,6 +953,7 @@ public class Map extends FragmentActivity implements
                         mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
                     }
                 }
+
                 mapTypeMenuIsOpen = false;
                 return true;
 
@@ -1100,6 +971,7 @@ public class Map extends FragmentActivity implements
                         mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
                     }
                 }
+
                 mapTypeMenuIsOpen = false;
                 return true;
 
@@ -1117,6 +989,7 @@ public class Map extends FragmentActivity implements
                         mMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
                     }
                 }
+
                 mapTypeMenuIsOpen = false;
                 return true;
 
@@ -1134,19 +1007,23 @@ public class Map extends FragmentActivity implements
                         mMap.setMapType(GoogleMap.MAP_TYPE_TERRAIN);
                     }
                 }
+
                 mapTypeMenuIsOpen = false;
                 return true;
 
             // circleviews_menu
-            case R.id.everything:
+            case R.id.showEverything:
 
                 Log.i(TAG, "onMenuItemClick() -> everything");
 
                 mMap.clear();
+
                 // Set circle to null so changing circleSizeSeekBar will create a circle.
                 circle = null;
+
                 // Set progress to 0, as no circle exists.
                 circleSizeSeekBar.setProgress(0);
+
                 // If the largerCircleSizeSeekBar is visible, set it to View.GONE and make the original one visible (as mMap.clear() is called so no circles exist).
                 if (largerCircleSizeSeekBar.getVisibility() != View.GONE) {
 
@@ -1155,6 +1032,7 @@ public class Map extends FragmentActivity implements
                     circleSizeSeekBar.setEnabled(true);
                     largerCircleSizeSeekBar.setOnSeekBarChangeListener(null);
                 }
+
                 // Load all Firebase circles.
                 firebaseCircles.addListenerForSingleValueEvent(new ValueEventListener() {
 
@@ -1191,18 +1069,22 @@ public class Map extends FragmentActivity implements
 
                     }
                 });
+
                 circleViewsMenuIsOpen = false;
                 return true;
 
-            case R.id.largeCircles:
+            case R.id.showLargeCircles:
 
                 Log.i(TAG, "onMenuItemClick() -> largeCircles");
 
                 mMap.clear();
+
                 // Set circle to null so changing circleSizeSeekBar will create a circle.
                 circle = null;
+
                 // Set progress to 0, as no circle exists.
                 circleSizeSeekBar.setProgress(0);
+
                 // If the largerCircleSizeSeekBar is visible, set it to View.GONE and make the original one visible (as mMap.clear() is called so no circles exist).
                 if (largerCircleSizeSeekBar.getVisibility() != View.GONE) {
 
@@ -1211,6 +1093,7 @@ public class Map extends FragmentActivity implements
                     circleSizeSeekBar.setEnabled(true);
                     largerCircleSizeSeekBar.setOnSeekBarChangeListener(null);
                 }
+
                 // Load Firebase circles.
                 firebaseCircles.addListenerForSingleValueEvent(new ValueEventListener() {
 
@@ -1251,18 +1134,22 @@ public class Map extends FragmentActivity implements
 
                     }
                 });
+
                 circleViewsMenuIsOpen = false;
                 return true;
 
-            case R.id.mediumCircles:
+            case R.id.showMediumCircles:
 
                 Log.i(TAG, "onMenuItemClick() -> mediumCircles");
 
                 mMap.clear();
+
                 // Set circle to null so changing circleSizeSeekBar will create a circle.
                 circle = null;
+
                 // Set progress to 0, as no circle exists.
                 circleSizeSeekBar.setProgress(0);
+
                 // If the largerCircleSizeSeekBar is visible, set it to View.GONE and make the original one visible (as mMap.clear() is called so no circles exist).
                 if (largerCircleSizeSeekBar.getVisibility() != View.GONE) {
 
@@ -1271,6 +1158,7 @@ public class Map extends FragmentActivity implements
                     circleSizeSeekBar.setEnabled(true);
                     largerCircleSizeSeekBar.setOnSeekBarChangeListener(null);
                 }
+
                 // Load Firebase circles.
                 firebaseCircles.addListenerForSingleValueEvent(new ValueEventListener() {
 
@@ -1311,18 +1199,22 @@ public class Map extends FragmentActivity implements
 
                     }
                 });
+
                 circleViewsMenuIsOpen = false;
                 return true;
 
-            case R.id.smallCircles:
+            case R.id.showSmallCircles:
 
                 Log.i(TAG, "onMenuItemClick() -> smallCircles");
 
                 mMap.clear();
+
                 // Set circle to null so changing circleSizeSeekBar will create a circle.
                 circle = null;
+
                 // Set progress to 0, as no circle exists.
                 circleSizeSeekBar.setProgress(0);
+
                 // If the largerCircleSizeSeekBar is visible, set it to View.GONE and make the original one visible (as mMap.clear() is called so no circles exist).
                 if (largerCircleSizeSeekBar.getVisibility() != View.GONE) {
 
@@ -1331,6 +1223,7 @@ public class Map extends FragmentActivity implements
                     circleSizeSeekBar.setEnabled(true);
                     largerCircleSizeSeekBar.setOnSeekBarChangeListener(null);
                 }
+
                 // Load Firebase circles.
                 firebaseCircles.addListenerForSingleValueEvent(new ValueEventListener() {
 
@@ -1371,18 +1264,22 @@ public class Map extends FragmentActivity implements
 
                     }
                 });
+
                 circleViewsMenuIsOpen = false;
                 return true;
 
-            case R.id.points:
+            case R.id.showPoints:
 
                 Log.i(TAG, "onMenuItemClick() -> points");
 
                 mMap.clear();
+
                 // Set circle to null so changing circleSizeSeekBar will create a circle.
                 circle = null;
+
                 // Set progress to 0, as no circle exists.
                 circleSizeSeekBar.setProgress(0);
+
                 // If the largerCircleSizeSeekBar is visible, set it to View.GONE and make the original one visible (as mMap.clear() is called so no circles exist).
                 if (largerCircleSizeSeekBar.getVisibility() != View.GONE) {
 
@@ -1391,6 +1288,7 @@ public class Map extends FragmentActivity implements
                     circleSizeSeekBar.setEnabled(true);
                     largerCircleSizeSeekBar.setOnSeekBarChangeListener(null);
                 }
+
                 // Load Firebase circles.
                 firebaseCircles.addListenerForSingleValueEvent(new ValueEventListener() {
 
@@ -1431,7 +1329,230 @@ public class Map extends FragmentActivity implements
 
                     }
                 });
+
                 circleViewsMenuIsOpen = false;
+                return true;
+
+            // circlesize_menu
+            case R.id.createCircle:
+
+                Log.i(TAG, "onMenuItemClick() -> makeCircle");
+
+                // Creates circle.
+                if (circle == null || circleRemoved) {
+
+                    FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
+
+                    mFusedLocationClient.getLastLocation()
+                            .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
+
+                                @Override
+                                public void onSuccess(Location location) {
+
+                                    // Get last known location. In some rare situations, this can be null.
+                                    if (location != null) {
+
+                                        // Make circle an arbitrary size.
+                                        int circleSize = 10;
+                                        circleSizeSeekBar.setProgress(10);
+
+                                        // Logic to handle location object.
+                                        LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
+                                        CircleOptions circleOptions =
+                                                new CircleOptions()
+                                                        .center(latLng)
+                                                        .clickable(true)
+                                                        .fillColor(Color.argb(70, 255, 215, 0))
+                                                        .radius(circleSize)
+                                                        .strokeColor(Color.YELLOW)
+                                                        .strokeWidth(3f);
+
+                                        if (circle != null) {
+
+                                            circle.remove();
+                                        }
+
+                                        circle = mMap.addCircle(circleOptions);
+                                        circleSizeSeekBar.setProgress(circleSize);
+                                        circleExists = true;
+                                    }
+                                }
+                            });
+                }
+
+                createCircleMenuIsOpen = false;
+                return true;
+
+            // circlesize_menu
+            case R.id.removeCircle:
+
+                // Remove the circle.
+                if (circle != null) {
+
+                    circle.remove();
+                    circleRemoved = true;
+                }
+                circleSizeSeekBar.setProgress(0);
+
+                // If the largerCircleSizeSeekBar is visible, set it to View.GONE and make the original one visible.
+                if (largerCircleSizeSeekBar.getVisibility() != View.GONE) {
+
+                    largerCircleSizeSeekBar.setVisibility(View.GONE);
+                    circleSizeSeekBar.setVisibility(View.VISIBLE);
+                    circleSizeSeekBar.setEnabled(true);
+                    largerCircleSizeSeekBar.setOnSeekBarChangeListener(null);
+                }
+
+                circleExists = false;
+                createCircleMenuIsOpen = false;
+                return true;
+
+            // circlesize_menu
+            case R.id.createPoint:
+
+                Log.i(TAG, "onMenuItemClick() -> makePoint");
+
+                // Create a point and to to Chat.java or SignIn.java.
+                FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
+
+                mFusedLocationClient.getLastLocation()
+                        .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
+
+                            @Override
+                            public void onSuccess(Location location) {
+
+                                // Get last known location. In some rare situations, this can be null.
+                                if (location != null) {
+
+                                    // Make circle the size set by the seekBar.
+                                    int circleSize = 1;
+
+                                    // Logic to handle location object.
+                                    LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
+                                    CircleOptions circleOptions =
+                                            new CircleOptions()
+                                                    .center(latLng)
+                                                    .clickable(true)
+                                                    .fillColor(Color.argb(100, 255, 255, 0))
+                                                    .radius(circleSize)
+                                                    .strokeColor(Color.YELLOW)
+                                                    .strokeWidth(3f);
+
+                                    // Remove any other "new" circle before adding the circle to Firebase.
+                                    if (circle != null){
+
+                                        circle.remove();
+                                    }
+
+                                    // Add circle to the map and go to chat.
+                                    if (mMap != null) {
+
+                                        circle = mMap.addCircle(circleOptions);
+
+                                        uuid = UUID.randomUUID().toString();
+
+                                        // Check if the user is already signed in.
+                                        if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+
+                                            // User is signed in.
+                                            // Connect to Firebase.
+                                            firebaseCircles.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
+                                                @Override
+                                                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                                                    // If the uuid already exists in Firebase, generate another uuid and try again.
+                                                    if (dataSnapshot.exists()) {
+
+                                                        uuid = UUID.randomUUID().toString();
+
+                                                        // Carry the extras all the way to Chat.java.
+                                                        Intent Activity = new Intent(Map.this, Chat.class);
+                                                        // Pass this boolean value (true) to Chat.java.
+                                                        Activity.putExtra("newCircle", true);
+                                                        // Pass this value to Chat.java to identify the circle.
+                                                        Activity.putExtra("uuid", uuid);
+                                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
+                                                        Activity.putExtra("latitude", circle.getCenter().latitude);
+                                                        Activity.putExtra("longitude", circle.getCenter().longitude);
+                                                        Activity.putExtra("fillColor", Color.argb(100, 255, 255, 0));
+                                                        Activity.putExtra("radius", circle.getRadius());
+                                                        startActivity(Activity);
+                                                    } else {
+
+                                                        // Carry the extras all the way to Chat.java.
+                                                        Intent Activity = new Intent(Map.this, Chat.class);
+                                                        // Pass this boolean value (true) to Chat.java.
+                                                        Activity.putExtra("newCircle", true);
+                                                        // Pass this value to Chat.java to identify the circle.
+                                                        Activity.putExtra("uuid", uuid);
+                                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
+                                                        Activity.putExtra("latitude", circle.getCenter().latitude);
+                                                        Activity.putExtra("longitude", circle.getCenter().longitude);
+                                                        Activity.putExtra("fillColor", Color.argb(100, 255, 255, 0));
+                                                        Activity.putExtra("radius", circle.getRadius());
+                                                        startActivity(Activity);
+                                                    }
+                                                }
+
+                                                @Override
+                                                public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                                                }
+                                            });
+                                        } else {
+
+                                            // No user is signed in.
+                                            // Connect to Firebase.
+                                            firebaseCircles.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
+
+                                                @Override
+                                                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                                                    // If the uuid already exists in Firebase, generate another uuid and try again.
+                                                    if (dataSnapshot.exists()) {
+
+                                                        uuid = UUID.randomUUID().toString();
+
+                                                        // Carry the extras all the way to Chat.java.
+                                                        Intent Activity = new Intent(Map.this, SignIn.class);
+                                                        // Pass this boolean value (true) to Chat.java.
+                                                        Activity.putExtra("newCircle", true);
+                                                        // Pass this value to Chat.java to identify the circle.
+                                                        Activity.putExtra("uuid", uuid);
+                                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
+                                                        Activity.putExtra("latitude", circle.getCenter().latitude);
+                                                        Activity.putExtra("longitude", circle.getCenter().longitude);
+                                                        Activity.putExtra("fillColor", Color.argb(100, 255, 255, 0));
+                                                        Activity.putExtra("radius", circle.getRadius());
+                                                        startActivity(Activity);
+                                                    } else {
+
+                                                        // Carry the extras all the way to Chat.java.
+                                                        Intent Activity = new Intent(Map.this, SignIn.class);
+                                                        // Pass this boolean value (true) to Chat.java.
+                                                        Activity.putExtra("newCircle", true);
+                                                        // Pass this value to Chat.java to identify the circle.
+                                                        Activity.putExtra("uuid", uuid);
+                                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
+                                                        Activity.putExtra("latitude", circle.getCenter().latitude);
+                                                        Activity.putExtra("longitude", circle.getCenter().longitude);
+                                                        Activity.putExtra("fillColor", Color.argb(100, 255, 255, 0));
+                                                        Activity.putExtra("radius", circle.getRadius());
+                                                        startActivity(Activity);
+                                                    }
+                                                }
+
+                                                @Override
+                                                public void onCancelled(@NonNull DatabaseError databaseError) {
+                                                }
+                                            });
+                                        }
+                                    }
+                                }
+                            }
+                        });
+
+                createCircleMenuIsOpen = false;
                 return true;
 
             // largercircle_seekbar_menu
@@ -1442,11 +1563,13 @@ public class Map extends FragmentActivity implements
                 largerCircleSeekBar();
                 circleSizeSeekBar.setEnabled(false);
                 largerCircleSizeSeekBar.setProgress(0);
+
                 // Ensures the popup is closed when the progress is set to 0.
                 if (popupCreateSmallerCircles != null) {
 
                     popupCreateSmallerCircles.dismiss();
                 }
+
                 largerCirclesMenuIsOpen = false;
                 return true;
 
@@ -1458,11 +1581,14 @@ public class Map extends FragmentActivity implements
                 largerCircleSizeSeekBar.setVisibility(View.GONE);
                 circleSizeSeekBar.setVisibility(View.VISIBLE);
                 circleSizeSeekBar.setEnabled(true);
-                // Remove the larger seekBar listener.
-                if (largerCircleSizeSeekBar != null) {
+                largerCircleSizeSeekBar.setOnSeekBarChangeListener(null);
 
-                    largerCircleSizeSeekBar.setOnSeekBarChangeListener(null);
+                // Ensures the popup is closed when the progress is set to 0.
+                if (popupCreateSmallerCircles != null) {
+
+                    popupCreateSmallerCircles.dismiss();
                 }
+
                 smallerCirclesMenuIsOpen = false;
                 return true;
 

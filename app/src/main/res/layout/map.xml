@@ -35,7 +35,7 @@
         android:layout_marginEnd="10dp"/>
 
     <Button
-        android:id="@+id/pointButton"
+        android:id="@+id/createCircleButton"
         android:layout_width="30dp"
         android:layout_height="30dp"
         android:background="@drawable/point_button"
@@ -59,8 +59,8 @@
         android:layout_marginBottom="10dp"
         android:layout_marginRight="10dp"
         android:layout_marginEnd="10dp"
-        android:layout_toEndOf="@+id/pointButton"
-        android:layout_toRightOf="@+id/pointButton" />
+        android:layout_toEndOf="@+id/createCircleButton"
+        android:layout_toRightOf="@+id/createCircleButton" />
 
     <SeekBar
         android:id="@+id/largerCircleSizeSeekBar"
@@ -73,8 +73,8 @@
         android:layout_marginBottom="10dp"
         android:layout_marginRight="10dp"
         android:layout_marginEnd="10dp"
-        android:layout_toEndOf="@+id/pointButton"
-        android:layout_toRightOf="@+id/pointButton"
+        android:layout_toEndOf="@+id/createCircleButton"
+        android:layout_toRightOf="@+id/createCircleButton"
         android:visibility="gone"/>
 
 </RelativeLayout>

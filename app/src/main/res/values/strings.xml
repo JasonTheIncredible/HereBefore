@@ -19,4 +19,7 @@
     <string name="use_satellite_view">Use satellite view</string>
     <string name="use_hybrid_view">Use hybrid view</string>
     <string name="use_terrain_view">Use terrain view</string>
+    <string name="create_a_point">Create a point</string>
+    <string name="create_a_circle">Create a circle</string>
+    <string name="remove_the_circle">Remove the circle</string>
 </resources>
