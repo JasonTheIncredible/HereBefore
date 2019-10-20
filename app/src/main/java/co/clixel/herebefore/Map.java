@@ -76,14 +76,14 @@ public class Map extends FragmentActivity implements
     private PopupMenu popupCreateLargerCircles;
     private PopupMenu popupCreateSmallerCircles;
     private Boolean circleExists = false;
-    private Boolean circleRemoved = false;
     private Boolean mapTypeMenuIsOpen = false;
     private Boolean circleViewsMenuIsOpen = false;
     private Boolean createCircleMenuIsOpen = false;
     private Boolean largerCirclesMenuIsOpen = false;
     private Boolean smallerCirclesMenuIsOpen = false;
 
-    //TODO: Adjust circle location / size (make any shape possible).
+    //TODO: Remove the onMapReady() listeners.
+    //TODO: Only allow new circle location if user is within circle radius.
     //TODO: Prevent circle overlap.
     //TODO: Give user option to change color of the circles (or just change it outright).
     //TODO: Make points easier to see somehow.
@@ -262,7 +262,7 @@ public class Map extends FragmentActivity implements
             public void onStartTrackingTouch(final SeekBar seekBar) {
 
                 // Creates circle.
-                if (circle == null || circleRemoved) {
+                if (circle == null || !circleExists) {
 
                     FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
 
@@ -834,6 +834,19 @@ public class Map extends FragmentActivity implements
                 }
             }
         });
+
+        // Listener to see if user is long pressing while a circle exists so they can move the location.
+        mMap.setOnMapLongClickListener(new GoogleMap.OnMapLongClickListener() {
+            @Override
+            public void onMapLongClick(LatLng latLng) {
+
+                if (circle != null || circleExists) {
+
+                    Log.i(TAG, "new circle - long press");
+                    circle.setCenter(latLng);
+                }
+            }
+        });
     }
 
     @Override
@@ -1339,7 +1352,7 @@ public class Map extends FragmentActivity implements
                 Log.i(TAG, "onMenuItemClick() -> makeCircle");
 
                 // Creates circle.
-                if (circle == null || circleRemoved) {
+                if (circle == null || !circleExists) {
 
                     FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
 
@@ -1390,7 +1403,6 @@ public class Map extends FragmentActivity implements
                 if (circle != null) {
 
                     circle.remove();
-                    circleRemoved = true;
                 }
                 circleSizeSeekBar.setProgress(0);
 
