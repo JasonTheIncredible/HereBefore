@@ -48,6 +48,7 @@ public class Chat extends AppCompatActivity {
     private boolean recyclerViewHasScrolled = false;
     private boolean messageSent = false;
     private boolean newCircle;
+    private Boolean userIsWithinCircle;
     private View.OnLayoutChangeListener onLayoutChangeListener;
     private String uuid;
     private Double latitude;
@@ -55,6 +56,7 @@ public class Chat extends AppCompatActivity {
     private Double radius;
     private int fillColor;
 
+    //TODO: Keep users from adding messages if userIsWithinCircle == false, and add a message at the top notifying user of this.
     //TODO: Too much work on main thread.
     //TODO: Add a username (in message.xml).
     //TODO: Add ability to add pictures and video to RecyclerView.
@@ -83,6 +85,7 @@ public class Chat extends AppCompatActivity {
         Bundle extras = getIntent().getExtras();
         newCircle = extras.getBoolean("newCircle");
         uuid = extras.getString("uuid");
+        userIsWithinCircle = extras.getBoolean("userIsWithinCircle");
         // latitude, longitude, fillColor and radius will be null if the circle is not new (as a new circle is not being created).
         latitude = extras.getDouble("latitude");
         longitude = extras.getDouble("longitude");

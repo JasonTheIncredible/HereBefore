@@ -28,6 +28,7 @@ public class SignUp extends AppCompatActivity {
     private Double longitude;
     private Double radius;
     private boolean newCircle;
+    private boolean userIsWithinCircle;
     private int fillColor;
 
     //TODO: Update signup.xml (visuals and add more user information).
@@ -55,6 +56,7 @@ public class SignUp extends AppCompatActivity {
         Bundle extras = getIntent().getExtras();
         newCircle = extras.getBoolean("newCircle");
         uuid = extras.getString("uuid");
+        userIsWithinCircle = extras.getBoolean("userIsWithinCircle");
         // latitude, longitude, and radius will be null if the circle is not new (as a new circle is not being created).
         latitude = extras.getDouble("latitude");
         longitude = extras.getDouble("longitude");
@@ -106,6 +108,7 @@ public class SignUp extends AppCompatActivity {
                             Intent Activity = new Intent(SignUp.this, Chat.class);
                             Activity.putExtra("newCircle", newCircle);
                             Activity.putExtra("uuid", uuid);
+                            Activity.putExtra("userIsWithinCircle", userIsWithinCircle);
                             Activity.putExtra("latitude", latitude);
                             Activity.putExtra("longitude", longitude);
                             Activity.putExtra("fillColor", fillColor);
