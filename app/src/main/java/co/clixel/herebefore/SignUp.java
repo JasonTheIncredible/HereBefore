@@ -169,6 +169,20 @@ public class SignUp extends AppCompatActivity {
     }
 
     @Override
+    public void onTrimMemory(int level) {
+
+        Log.i(TAG, "onTrimMemory()");
+        super.onTrimMemory(level);
+    }
+
+    @Override
+    public void onLowMemory() {
+
+        Log.i(TAG, "OnLowMemory()");
+        super.onLowMemory();
+    }
+
+    @Override
     protected void onDestroy() {
 
         Log.i(TAG, "onDestroy()");

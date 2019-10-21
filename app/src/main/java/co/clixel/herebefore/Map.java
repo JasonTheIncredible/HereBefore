@@ -84,6 +84,7 @@ public class Map extends FragmentActivity implements
     private Boolean smallerCirclesMenuIsOpen = false;
     private Boolean userIsWithinCircle;
 
+    //TODO: Allow any shaped "circle", and add ability to drag the circle.
     //TODO: Prevent circle overlap.
     //TODO: Give user option to change color of the circles (or just change it outright).
     //TODO: Make points easier to see somehow.
@@ -327,6 +328,7 @@ public class Map extends FragmentActivity implements
 
                 circle = null;
             }
+
             // Boolean used in circlesize_menu to change the menu item from "Create a Circle" to "Remove the circle".
             circleExists = false;
 
@@ -679,6 +681,20 @@ public class Map extends FragmentActivity implements
     }
 
     @Override
+    public void onTrimMemory(int level) {
+
+        Log.i(TAG, "onTrimMemory()");
+        super.onTrimMemory(level);
+    }
+
+    @Override
+    public void onLowMemory() {
+
+        Log.i(TAG, "OnLowMemory()");
+        super.onLowMemory();
+    }
+
+    @Override
     protected void onDestroy() {
 
         Log.i(TAG, "onDestroy()");
@@ -835,7 +851,7 @@ public class Map extends FragmentActivity implements
         Log.i(TAG, "onMapReady()");
 
         mMap = googleMap;
-        mMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
+        mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
 
@@ -1084,6 +1100,8 @@ public class Map extends FragmentActivity implements
                     .build();                   // Creates a CameraPosition from the builder
             // Can add a second parameter to this to change amount of time it takes for camera to zoom.
             mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition), null);
+            // Change the map type to hybrid once the camera has adjusted for quicker initial loading.
+            mMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
             // Set Boolean to false to prevent unnecessary animation, as the camera should already be set on the user's location.
             firstLoad = false;
         }

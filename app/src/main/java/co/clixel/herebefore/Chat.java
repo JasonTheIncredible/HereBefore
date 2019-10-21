@@ -56,6 +56,7 @@ public class Chat extends AppCompatActivity {
     private Double radius;
     private int fillColor;
 
+    //TODO: Keep checking user's location while user is in chat to see if they can keep messaging?
     //TODO: Keep users from adding messages if userIsWithinCircle == false, and add a message at the top notifying user of this.
     //TODO: Too much work on main thread.
     //TODO: Add a username (in message.xml).
@@ -325,6 +326,20 @@ public class Chat extends AppCompatActivity {
         }
 
         super.onStop();
+    }
+
+    @Override
+    public void onTrimMemory(int level) {
+
+        Log.i(TAG, "onTrimMemory()");
+        super.onTrimMemory(level);
+    }
+
+    @Override
+    public void onLowMemory() {
+
+        Log.i(TAG, "OnLowMemory()");
+        super.onLowMemory();
     }
 
     @Override
