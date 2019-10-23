@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <item android:id="@+id/createPolygon"
+        android:title="@string/create_a_polygon"/>
+
     <item android:id="@+id/createCircle"
         android:title="@string/create_a_circle"/>
 
-    <item android:id="@+id/removeCircle"
+    <item android:id="@+id/removeShape"
         android:title="@string/remove_the_circle"/>
 
     <item android:id="@+id/createPoint"
