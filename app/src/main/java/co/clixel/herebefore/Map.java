@@ -54,6 +54,8 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
 import static com.google.android.gms.location.LocationServices.getFusedLocationProviderClient;
@@ -69,7 +71,6 @@ public class Map extends FragmentActivity implements
     private Marker marker;
     private Circle circle;
     private Polygon polygon;
-    private LatLng lastKnownUserLocation;
     private DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
     private DatabaseReference firebaseCircles = rootRef.child("circles");
     private SeekBar circleSizeSeekBar, largerCircleSizeSeekBar;
@@ -77,8 +78,6 @@ public class Map extends FragmentActivity implements
     private Button createCircleButton, circleViewsButton, mapTypeButton;
     private PopupMenu popupMapType, popupCircleViews, popupCreateCircle, popupCreateLargerCircles, popupCreateSmallerCircles;
     boolean firstLoad = true;
-    private Boolean circleExists = false;
-    private Boolean polygonExists = false;
     private Boolean mapTypeMenuIsOpen = false;
     private Boolean circleViewsMenuIsOpen = false;
     private Boolean createCircleMenuIsOpen = false;
@@ -86,11 +85,11 @@ public class Map extends FragmentActivity implements
     private Boolean smallerCirclesMenuIsOpen = false;
     private Boolean userIsWithinCircle;
 
-    //TODO: Change marker icon.
     //TODO: Add ability to move individual polygon points.
+    //TODO: Add onMarkerClickListener to go to circle's chat.
     //TODO: Adjust seekBar to work with polygon.
+    //TODO: Rename circleViewsButton and have it show polygons.
     //TODO: Have polygon go to chat.
-    //TODO: Allow any shaped "circle", and add ability to drag the circle.
     //TODO: Prevent circle overlap.
     //TODO: Give user option to change color of the circles (or just change it outright).
     //TODO: Make points easier to see somehow.
@@ -199,7 +198,7 @@ public class Map extends FragmentActivity implements
                 popupCreateCircle.setOnMenuItemClickListener(Map.this);
                 popupCreateCircle.inflate(R.menu.createcircle_menu);
                 // Check if the circle exists and adjust the menu items accordingly.
-                if (circleExists || polygonExists) {
+                if (circle != null || polygon != null) {
 
                     popupCreateCircle.getMenu().findItem(R.id.createPolygon).setVisible(false);
                     popupCreateCircle.getMenu().findItem(R.id.createCircle).setVisible(false);
@@ -270,7 +269,7 @@ public class Map extends FragmentActivity implements
             public void onStartTrackingTouch(final SeekBar seekBar) {
 
                 // Creates circle.
-                if (circle == null || !circleExists) {
+                if (circle == null) {
 
                     FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
 
@@ -304,8 +303,6 @@ public class Map extends FragmentActivity implements
 
                                         circle = mMap.addCircle(circleOptions);
                                         circleSizeSeekBar.setProgress(circleSize);
-                                        // Boolean used in createcircle_menu to change the menu item from "Create a Circle" to "Remove the circle".
-                                        circleExists = true;
                                     }
                                 }
                             });
@@ -326,7 +323,7 @@ public class Map extends FragmentActivity implements
         Log.i(TAG, "onRestart()");
 
         // Clear map before adding new Firebase circles in onStart() to prevent overlap.
-        // Set circle to null so changing circleSizeSeekBar in onStart() will create a circle.
+        // Set shape to null so changing circleSizeSeekBar in onStart() will create a circle.
         if (mMap != null) {
 
             mMap.clear();
@@ -334,15 +331,14 @@ public class Map extends FragmentActivity implements
             if (circle != null) {
 
                 circle = null;
+                marker = null;
             }
 
             if (polygon != null) {
 
                 polygon = null;
+                marker = null;
             }
-
-            // Boolean used in createcircle_menu to change the menu item from "Create a Circle" to "Remove the circle".
-            circleExists = false;
 
             // Load Firebase circles, as onMapReady() doesn't get called after onRestart().
             firebaseCircles.addListenerForSingleValueEvent(new ValueEventListener() {
@@ -381,6 +377,58 @@ public class Map extends FragmentActivity implements
                 }
             });
 
+            // Keep the shapes on the marker to allow for dragging of the shapes. A listener exists in onMapReady() but that is not called after restarting app and is set to null in onStop().
+            mMap.setOnMarkerDragListener(new GoogleMap.OnMarkerDragListener() {
+                @Override
+                public void onMarkerDragStart(Marker marker) {
+
+                    LatLng latLng = marker.getPosition();
+                    if (circle != null) {
+
+                        circle.setCenter(latLng);
+                    }
+
+                    if (polygon != null) {
+
+                        LatLng latLng0 = new LatLng(latLng.latitude - 0.0001, latLng.longitude);
+                        LatLng latLng1 = new LatLng(latLng.latitude, latLng.longitude - 0.0001);
+                        LatLng latLng2 = new LatLng(latLng.latitude + 0.0001, latLng.longitude);
+                        LatLng latLng3 = new LatLng(latLng.latitude, latLng.longitude + 0.0001);
+
+                        LatLng[] polygonPoints = new LatLng[] {latLng0, latLng1, latLng2, latLng3};
+                        List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                        polygon.setPoints(polygonPointsList);
+                    }
+                }
+
+                @Override
+                public void onMarkerDrag(Marker marker) {
+
+                    LatLng latLng = marker.getPosition();
+                    if (circle != null) {
+
+                        circle.setCenter(latLng);
+                    }
+
+                    if (polygon != null) {
+
+                        LatLng latLng0 = new LatLng(latLng.latitude - 0.0001, latLng.longitude);
+                        LatLng latLng1 = new LatLng(latLng.latitude, latLng.longitude - 0.0001);
+                        LatLng latLng2 = new LatLng(latLng.latitude + 0.0001, latLng.longitude);
+                        LatLng latLng3 = new LatLng(latLng.latitude, latLng.longitude + 0.0001);
+
+                        LatLng[] polygonPoints = new LatLng[] { latLng0, latLng1, latLng2, latLng3 };
+                        List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                        polygon.setPoints(polygonPointsList);
+                    }
+                }
+
+                @Override
+                public void onMarkerDragEnd(Marker marker) {
+
+                }
+            });
+
             // Go to Chat.java when clicking on the circle. A listener exists in onMapReady() but that is not called after restarting app and is set to null in onStop().
             mMap.setOnCircleClickListener(new GoogleMap.OnCircleClickListener() {
 
@@ -403,16 +451,25 @@ public class Map extends FragmentActivity implements
                         // User is signed in.
 
                         // Check if user is within the circle before going to the chat.
-                        if (lastKnownUserLocation != null) {
+                        FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
 
-                            float[] distance = new float[2];
+                        mFusedLocationClient.getLastLocation()
+                                .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
+                                    @Override
+                                    public void onSuccess(Location location) {
 
-                            Location.distanceBetween( lastKnownUserLocation.latitude, lastKnownUserLocation.longitude,
-                                    circle.getCenter().latitude, circle.getCenter().longitude, distance);
+                                        if (location != null) {
 
-                            // Boolean; will be true if user is within the circle upon circle click.
-                            userIsWithinCircle = !(distance[0] > circle.getRadius());
-                        }
+                                            float[] distance = new float[2];
+
+                                            Location.distanceBetween(location.getLatitude(), location.getLongitude(),
+                                                    circle.getCenter().latitude, circle.getCenter().longitude, distance);
+
+                                            // Boolean; will be true if user is within the circle upon circle click.
+                                            userIsWithinCircle = !(distance[0] > circle.getRadius());
+                                        }
+                                    }
+                                });
 
                         // If circle.getTag() == null, the circle is new. Therefore, compare it to the uuids in Firebase to prevent uuid overlap before adding it to Firebase.
                         if (circle.getTag() == null) {
@@ -600,10 +657,10 @@ public class Map extends FragmentActivity implements
         super.onResume();
         Log.i(TAG, "onResume()");
 
-        LocationManager manager = (LocationManager) getSystemService( Context.LOCATION_SERVICE );
+        LocationManager manager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 
         // Check if GPS is enabled.
-        if ( !manager.isProviderEnabled( LocationManager.GPS_PROVIDER ) ) {
+        if (!manager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
 
             buildAlertMessageNoGps();
         }
@@ -633,7 +690,7 @@ public class Map extends FragmentActivity implements
             }
         }
 
-        //Remove the listener.
+        // Remove the listener.
         if (mapTypeButton != null) {
 
             mapTypeButton.setOnClickListener(null);
@@ -673,6 +730,7 @@ public class Map extends FragmentActivity implements
         if (mMap != null) {
 
             mMap.setOnCircleClickListener(null);
+            mMap.setOnMarkerDragListener(null);
         }
 
         super.onStop();
@@ -893,19 +951,50 @@ public class Map extends FragmentActivity implements
             }
         });
 
+        // Keep the shapes on the marker to allow for dragging of the shapes.
         mMap.setOnMarkerDragListener(new GoogleMap.OnMarkerDragListener() {
             @Override
             public void onMarkerDragStart(Marker marker) {
 
                 LatLng latLng = marker.getPosition();
-                circle.setCenter(latLng);
+                if (circle != null) {
+
+                    circle.setCenter(latLng);
+                }
+
+                if (polygon != null) {
+
+                    LatLng latLng0 = new LatLng(latLng.latitude - 0.0001, latLng.longitude);
+                    LatLng latLng1 = new LatLng(latLng.latitude, latLng.longitude - 0.0001);
+                    LatLng latLng2 = new LatLng(latLng.latitude + 0.0001, latLng.longitude);
+                    LatLng latLng3 = new LatLng(latLng.latitude, latLng.longitude + 0.0001);
+
+                    LatLng[] polygonPoints = new LatLng[] {latLng0, latLng1, latLng2, latLng3};
+                    List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                    polygon.setPoints(polygonPointsList);
+                }
             }
 
             @Override
             public void onMarkerDrag(Marker marker) {
 
                 LatLng latLng = marker.getPosition();
-                circle.setCenter(latLng);
+                if (circle != null) {
+
+                    circle.setCenter(latLng);
+                }
+
+                if (polygon != null) {
+
+                    LatLng latLng0 = new LatLng(latLng.latitude - 0.0001, latLng.longitude);
+                    LatLng latLng1 = new LatLng(latLng.latitude, latLng.longitude - 0.0001);
+                    LatLng latLng2 = new LatLng(latLng.latitude + 0.0001, latLng.longitude);
+                    LatLng latLng3 = new LatLng(latLng.latitude, latLng.longitude + 0.0001);
+
+                    LatLng[] polygonPoints = new LatLng[] {latLng0, latLng1, latLng2, latLng3};
+                    List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                    polygon.setPoints(polygonPointsList);
+                }
             }
 
             @Override
@@ -936,16 +1025,25 @@ public class Map extends FragmentActivity implements
                     // User is signed in.
 
                     // Check if user is within the circle before going to the chat.
-                    if (lastKnownUserLocation != null) {
+                    FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
 
-                        float[] distance = new float[2];
+                    mFusedLocationClient.getLastLocation()
+                            .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
+                                @Override
+                                public void onSuccess(Location location) {
 
-                        Location.distanceBetween( lastKnownUserLocation.latitude, lastKnownUserLocation.longitude,
-                                circle.getCenter().latitude, circle.getCenter().longitude, distance);
+                                    if (location != null) {
 
-                        // Boolean; will be true if user is within the circle upon circle click.
-                        userIsWithinCircle = !(distance[0] > circle.getRadius());
-                    }
+                                        float[] distance = new float[2];
+
+                                        Location.distanceBetween(location.getLatitude(), location.getLongitude(),
+                                                circle.getCenter().latitude, circle.getCenter().longitude, distance);
+
+                                        // Boolean; will be true if user is within the circle upon circle click.
+                                        userIsWithinCircle = !(distance[0] > circle.getRadius());
+                                    }
+                                }
+                            });
 
                     // If circle.getTag() == null, the circle is new. Therefore, compare it to the uuids in Firebase to prevent uuid overlap before adding it to Firebase.
                     if (circle.getTag() == null) {
@@ -1086,12 +1184,6 @@ public class Map extends FragmentActivity implements
     public void onLocationChanged(Location location) {
 
         Log.i(TAG, "onLocationChanged()");
-
-        // Global variable that keeps track of the last known user location.
-        if (location != null) {
-
-            lastKnownUserLocation = new LatLng(location.getLatitude(), location.getLongitude());
-        }
 
         // Zoom to user's location the first time the map loads.
         if ( (location != null) && (firstLoad) ) {
@@ -1593,7 +1685,7 @@ public class Map extends FragmentActivity implements
                 Log.i(TAG, "onMenuItemClick() -> createPolygon");
 
                 // Creates a polygon.
-                if (polygon == null || !polygonExists) {
+                if (polygon == null) {
 
                     FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
 
@@ -1610,6 +1702,7 @@ public class Map extends FragmentActivity implements
                                         circleSizeSeekBar.setProgress(10);
 
                                         // Logic to handle location object.
+                                        LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
                                         LatLng latLng0 = new LatLng(location.getLatitude() - 0.0001, location.getLongitude());
                                         LatLng latLng1 = new LatLng(location.getLatitude(), location.getLongitude() - 0.0001);
                                         LatLng latLng2 = new LatLng(location.getLatitude() + 0.0001, location.getLongitude());
@@ -1622,18 +1715,24 @@ public class Map extends FragmentActivity implements
                                                         .strokeColor(Color.YELLOW)
                                                         .strokeWidth(3f);
 
-                                        if (circle != null || circleExists) {
+                                        if (circle != null) {
 
                                             circle.remove();
                                         }
 
-                                        if (polygon != null || polygonExists) {
+                                        if (polygon != null) {
 
                                             polygon.remove();
                                         }
 
+                                        // Create a marker when creating the polygon to allow for dragging.
+                                        MarkerOptions markerOptions = new MarkerOptions()
+                                                .position(latLng)
+                                                .draggable(true);
+
+                                        marker = mMap.addMarker(markerOptions);
+
                                         polygon = mMap.addPolygon(polygonOptions);
-                                        polygonExists = true;
                                     }
                                 }
                             });
@@ -1647,7 +1746,7 @@ public class Map extends FragmentActivity implements
                 Log.i(TAG, "onMenuItemClick() -> createCircle");
 
                 // Creates circle.
-                if (circle == null || !circleExists) {
+                if (circle == null) {
 
                     FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
 
@@ -1674,16 +1773,17 @@ public class Map extends FragmentActivity implements
                                                         .strokeColor(Color.YELLOW)
                                                         .strokeWidth(3f);
 
-                                        if (circle != null || circleExists) {
+                                        if (circle != null) {
 
                                             circle.remove();
                                         }
 
-                                        if (polygon != null || polygonExists) {
+                                        if (polygon != null) {
 
                                             polygon.remove();
                                         }
 
+                                        // Create a marker when creating the circle to allow for dragging.
                                         MarkerOptions markerOptions = new MarkerOptions()
                                                 .position(latLng)
                                                 .draggable(true);
@@ -1691,7 +1791,6 @@ public class Map extends FragmentActivity implements
                                         marker = mMap.addMarker(markerOptions);
 
                                         circle = mMap.addCircle(circleOptions);
-                                        circleExists = true;
                                     }
                                 }
                             });
@@ -1703,16 +1802,22 @@ public class Map extends FragmentActivity implements
             // createcircle_menu
             case R.id.removeShape:
 
-                // Remove the circle.
-                if (circle != null) {
-
-                    circle.remove();
-                }
-
-                // Remove the circle.
+                // Remove the polygon and marker.
                 if (polygon != null) {
 
                     polygon.remove();
+                    marker.remove();
+                    polygon = null;
+                    marker = null;
+                }
+
+                // Remove the circle and marker.
+                if (circle != null) {
+
+                    circle.remove();
+                    marker.remove();
+                    circle = null;
+                    marker = null;
                 }
 
                 circleSizeSeekBar.setProgress(0);
@@ -1726,8 +1831,6 @@ public class Map extends FragmentActivity implements
                     largerCircleSizeSeekBar.setOnSeekBarChangeListener(null);
                 }
 
-                circleExists = false;
-                polygonExists = false;
                 createCircleMenuIsOpen = false;
                 return true;
 
@@ -1762,10 +1865,17 @@ public class Map extends FragmentActivity implements
                                                     .strokeColor(Color.YELLOW)
                                                     .strokeWidth(3f);
 
-                                    // Remove any other "new" circle before adding the circle to Firebase.
-                                    if (circle != null){
+                                    // Remove any other shape before adding the circle to Firebase.
+                                    if (circle != null) {
 
                                         circle.remove();
+                                        circle = null;
+                                    }
+
+                                    if (polygon != null) {
+
+                                        polygon.remove();
+                                        polygon = null;
                                     }
 
                                     // Add circle to the map and go to chat.
