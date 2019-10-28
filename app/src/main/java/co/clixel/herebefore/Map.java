@@ -86,7 +86,7 @@ public class Map extends FragmentActivity implements
     private Boolean userIsWithinCircle;
 
     //TODO: Add ability to move individual polygon points, possibly using markers on all vertices.
-    //TODO: Adjust seekBar to work with polygon.
+    //TODO: Add marker to edge of circle and possibly get rid of seekBar entirely.
     //TODO: Add onMarkerClickListener to go to circle's chat.
     //TODO: Rename circleViewsButton and have it show polygons.
     //TODO: Have polygon go to chat.
