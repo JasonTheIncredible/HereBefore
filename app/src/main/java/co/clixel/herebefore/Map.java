@@ -98,6 +98,7 @@ public class Map extends FragmentActivity implements
     //TODO: Make sure Firebase listener is always updating map properly.
     //TODO: Optimize Firebase loading.
     //TODO: Too much work on main thread.
+    //TODO: Change map type on different thread.
     //TODO: Make checkLocationPermission Async / create loading animations.
     //TODO: Send message without entering app.
     //TODO: Work on possible NullPointerExceptions (try/catch).
@@ -323,11 +324,9 @@ public class Map extends FragmentActivity implements
         Log.i(TAG, "onRestart()");
 
         // Clear map before adding new Firebase circles in onStart() to prevent overlap.
-        // Set shape to null so changing circleSizeSeekBar in onStart() will create a circle.
+        // Set shape to null so changing circleSizeSeekBar in onStart() will create a circle and createCircleButton will reset itself.
         if (mMap != null) {
 
-            mMap.clear();
-            circleSizeSeekBar.setProgress(0);
             if (circle != null) {
 
                 circle = null;
@@ -339,6 +338,9 @@ public class Map extends FragmentActivity implements
                 polygon = null;
                 marker = null;
             }
+
+            mMap.clear();
+            circleSizeSeekBar.setProgress(0);
 
             // Load Firebase circles, as onMapReady() doesn't get called after onRestart().
             firebaseCircles.addListenerForSingleValueEvent(new ValueEventListener() {
@@ -377,12 +379,40 @@ public class Map extends FragmentActivity implements
                 }
             });
 
-            // Keep the shapes on the marker to allow for dragging of the shapes. A listener exists in onMapReady() but that is not called after restarting app and is set to null in onStop().
+            // Keep the shapes on the marker to allow for dragging of the shapes.
             mMap.setOnMarkerDragListener(new GoogleMap.OnMarkerDragListener() {
                 @Override
                 public void onMarkerDragStart(Marker marker) {
 
                     LatLng latLng = marker.getPosition();
+
+                    if (circle != null) {
+
+                        circle.setCenter(latLng);
+                        // To be consistent with the polygon.
+                        circle.setFillColor(0);
+                    }
+
+                    if (polygon != null) {
+
+                        LatLng latLng0 = new LatLng(latLng.latitude - 0.0001, latLng.longitude);
+                        LatLng latLng1 = new LatLng(latLng.latitude, latLng.longitude - 0.0001);
+                        LatLng latLng2 = new LatLng(latLng.latitude + 0.0001, latLng.longitude);
+                        LatLng latLng3 = new LatLng(latLng.latitude, latLng.longitude + 0.0001);
+
+                        LatLng[] polygonPoints = new LatLng[] {latLng0, latLng1, latLng2, latLng3};
+                        List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                        polygon.setPoints(polygonPointsList);
+                        // Prevent the fill color from flashing by setting it to 0 and then re-adding it in onMarkerDragEnd().
+                        polygon.setFillColor(0);
+                    }
+                }
+
+                @Override
+                public void onMarkerDrag(Marker marker) {
+
+                    LatLng latLng = marker.getPosition();
+
                     if (circle != null) {
 
                         circle.setCenter(latLng);
@@ -402,30 +432,17 @@ public class Map extends FragmentActivity implements
                 }
 
                 @Override
-                public void onMarkerDrag(Marker marker) {
+                public void onMarkerDragEnd(Marker marker) {
 
-                    LatLng latLng = marker.getPosition();
                     if (circle != null) {
 
-                        circle.setCenter(latLng);
+                        circle.setFillColor(Color.argb(70, 255, 215, 0));
                     }
 
                     if (polygon != null) {
 
-                        LatLng latLng0 = new LatLng(latLng.latitude - 0.0001, latLng.longitude);
-                        LatLng latLng1 = new LatLng(latLng.latitude, latLng.longitude - 0.0001);
-                        LatLng latLng2 = new LatLng(latLng.latitude + 0.0001, latLng.longitude);
-                        LatLng latLng3 = new LatLng(latLng.latitude, latLng.longitude + 0.0001);
-
-                        LatLng[] polygonPoints = new LatLng[] { latLng0, latLng1, latLng2, latLng3 };
-                        List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
-                        polygon.setPoints(polygonPointsList);
+                        polygon.setFillColor(Color.argb(70, 255, 215, 0));
                     }
-                }
-
-                @Override
-                public void onMarkerDragEnd(Marker marker) {
-
                 }
             });
 
@@ -904,6 +921,8 @@ public class Map extends FragmentActivity implements
     @Override
     public void onMapReady(GoogleMap googleMap) {
 
+        // NOTE: Anything done here should be done in onRestart() as well, as onMapReady() is not called again after the app restarts!
+
         Log.i(TAG, "onMapReady()");
 
         mMap = googleMap;
@@ -957,9 +976,12 @@ public class Map extends FragmentActivity implements
             public void onMarkerDragStart(Marker marker) {
 
                 LatLng latLng = marker.getPosition();
+
                 if (circle != null) {
 
                     circle.setCenter(latLng);
+                    // To be consistent with the polygon.
+                    circle.setFillColor(0);
                 }
 
                 if (polygon != null) {
@@ -972,6 +994,8 @@ public class Map extends FragmentActivity implements
                     LatLng[] polygonPoints = new LatLng[] {latLng0, latLng1, latLng2, latLng3};
                     List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
                     polygon.setPoints(polygonPointsList);
+                    // Prevent the fill color from flashing by setting it to 0 and then re-adding it in onMarkerDragEnd().
+                    polygon.setFillColor(0);
                 }
             }
 
@@ -979,6 +1003,7 @@ public class Map extends FragmentActivity implements
             public void onMarkerDrag(Marker marker) {
 
                 LatLng latLng = marker.getPosition();
+
                 if (circle != null) {
 
                     circle.setCenter(latLng);
@@ -1000,6 +1025,15 @@ public class Map extends FragmentActivity implements
             @Override
             public void onMarkerDragEnd(Marker marker) {
 
+                if (circle != null) {
+
+                    circle.setFillColor(Color.argb(70, 255, 215, 0));
+                }
+
+                if (polygon != null) {
+
+                    polygon.setFillColor(Color.argb(70, 255, 215, 0));
+                }
             }
         });
 
