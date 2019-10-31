@@ -69,6 +69,7 @@ public class Map extends FragmentActivity implements
     private GoogleMap mMap;
     private static final int Request_User_Location_Code = 99;
     private Marker marker;
+    private Marker marker0, marker1, marker2, marker3;
     private Circle circle;
     private Polygon polygon;
     private DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
@@ -84,11 +85,14 @@ public class Map extends FragmentActivity implements
     private Boolean largerCirclesMenuIsOpen = false;
     private Boolean smallerCirclesMenuIsOpen = false;
     private Boolean userIsWithinCircle;
+    private LatLng marker0Position, marker1Position, marker2Position, marker3Position;
+    private String marker0ID, marker1ID, marker2ID, marker3ID;
 
-    //TODO: Add ability to move individual polygon points, possibly using markers on all vertices.
+    //TODO: Prevent polygon shape overlap during the marker dragging process.
     //TODO: Add marker to edge of circle and possibly get rid of seekBar entirely.
     //TODO: Add onMarkerClickListener to go to circle's chat.
     //TODO: Rename circleViewsButton and have it show polygons.
+    //TODO: Change marker appearance.
     //TODO: Have polygon go to chat.
     //TODO: Prevent circle overlap.
     //TODO: Give user option to change color of the circles (or just change it outright).
@@ -336,7 +340,10 @@ public class Map extends FragmentActivity implements
             if (polygon != null) {
 
                 polygon = null;
-                marker = null;
+                marker0 = null;
+                marker1 = null;
+                marker2 = null;
+                marker3 = null;
             }
 
             mMap.clear();
@@ -379,7 +386,7 @@ public class Map extends FragmentActivity implements
                 }
             });
 
-            // Keep the shapes on the marker to allow for dragging of the shapes.
+            // Keep the marker on the shapes to allow for dragging.
             mMap.setOnMarkerDragListener(new GoogleMap.OnMarkerDragListener() {
                 @Override
                 public void onMarkerDragStart(Marker marker) {
@@ -393,16 +400,45 @@ public class Map extends FragmentActivity implements
                         circle.setFillColor(0);
                     }
 
+                    // Update the polygon shape as the marker positions get updated.
                     if (polygon != null) {
 
-                        LatLng latLng0 = new LatLng(latLng.latitude - 0.0001, latLng.longitude);
-                        LatLng latLng1 = new LatLng(latLng.latitude, latLng.longitude - 0.0001);
-                        LatLng latLng2 = new LatLng(latLng.latitude + 0.0001, latLng.longitude);
-                        LatLng latLng3 = new LatLng(latLng.latitude, latLng.longitude + 0.0001);
+                        if (marker.getId().equals(marker0ID)) {
 
-                        LatLng[] polygonPoints = new LatLng[] {latLng0, latLng1, latLng2, latLng3};
-                        List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
-                        polygon.setPoints(polygonPointsList);
+                            LatLng markerPosition = marker.getPosition();
+
+                            LatLng[] polygonPoints = new LatLng[] {markerPosition, marker1Position, marker2Position, marker3Position};
+                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygon.setPoints(polygonPointsList);
+                        }
+
+                        if (marker.getId().equals(marker1ID)) {
+
+                            LatLng markerPosition = marker.getPosition();
+
+                            LatLng[] polygonPoints = new LatLng[] {marker0Position, markerPosition, marker2Position, marker3Position};
+                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygon.setPoints(polygonPointsList);
+                        }
+
+                        if (marker.getId().equals(marker2ID)) {
+
+                            LatLng markerPosition = marker.getPosition();
+
+                            LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, markerPosition, marker3Position};
+                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygon.setPoints(polygonPointsList);
+                        }
+
+                        if (marker.getId().equals(marker3ID)) {
+
+                            LatLng markerPosition = marker.getPosition();
+
+                            LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, markerPosition};
+                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygon.setPoints(polygonPointsList);
+                        }
+
                         // Prevent the fill color from flashing by setting it to 0 and then re-adding it in onMarkerDragEnd().
                         polygon.setFillColor(0);
                     }
@@ -411,23 +447,43 @@ public class Map extends FragmentActivity implements
                 @Override
                 public void onMarkerDrag(Marker marker) {
 
-                    LatLng latLng = marker.getPosition();
+                    LatLng markerPosition = marker.getPosition();
 
                     if (circle != null) {
 
-                        circle.setCenter(latLng);
+                        circle.setCenter(markerPosition);
                     }
 
+                    // Update the polygon shape as the marker positions get updated.
                     if (polygon != null) {
 
-                        LatLng latLng0 = new LatLng(latLng.latitude - 0.0001, latLng.longitude);
-                        LatLng latLng1 = new LatLng(latLng.latitude, latLng.longitude - 0.0001);
-                        LatLng latLng2 = new LatLng(latLng.latitude + 0.0001, latLng.longitude);
-                        LatLng latLng3 = new LatLng(latLng.latitude, latLng.longitude + 0.0001);
+                        if (marker.getId().equals(marker0ID)) {
 
-                        LatLng[] polygonPoints = new LatLng[] {latLng0, latLng1, latLng2, latLng3};
-                        List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
-                        polygon.setPoints(polygonPointsList);
+                            LatLng[] polygonPoints = new LatLng[] {markerPosition, marker1Position, marker2Position, marker3Position};
+                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygon.setPoints(polygonPointsList);
+                        }
+
+                        if (marker.getId().equals(marker1ID)) {
+
+                            LatLng[] polygonPoints = new LatLng[] {marker0Position, markerPosition, marker2Position, marker3Position};
+                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygon.setPoints(polygonPointsList);
+                        }
+
+                        if (marker.getId().equals(marker2ID)) {
+
+                            LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, markerPosition, marker3Position};
+                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygon.setPoints(polygonPointsList);
+                        }
+
+                        if (marker.getId().equals(marker3ID)) {
+
+                            LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, markerPosition};
+                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygon.setPoints(polygonPointsList);
+                        }
                     }
                 }
 
@@ -439,7 +495,28 @@ public class Map extends FragmentActivity implements
                         circle.setFillColor(Color.argb(70, 255, 215, 0));
                     }
 
+                    // Updated the global variable with the marker's position.
                     if (polygon != null) {
+
+                        if (marker.getId().equals(marker0ID)) {
+
+                            marker0Position = marker.getPosition();
+                        }
+
+                        if (marker.getId().equals(marker1ID)) {
+
+                            marker1Position = marker.getPosition();
+                        }
+
+                        if (marker.getId().equals(marker2ID)) {
+
+                            marker2Position = marker.getPosition();
+                        }
+
+                        if (marker.getId().equals(marker3ID)) {
+
+                            marker3Position = marker.getPosition();
+                        }
 
                         polygon.setFillColor(Color.argb(70, 255, 215, 0));
                     }
@@ -970,7 +1047,7 @@ public class Map extends FragmentActivity implements
             }
         });
 
-        // Keep the shapes on the marker to allow for dragging of the shapes.
+        // Keep the marker on the shapes to allow for dragging.
         mMap.setOnMarkerDragListener(new GoogleMap.OnMarkerDragListener() {
             @Override
             public void onMarkerDragStart(Marker marker) {
@@ -984,16 +1061,45 @@ public class Map extends FragmentActivity implements
                     circle.setFillColor(0);
                 }
 
+                // Update the polygon shape as the marker positions get updated.
                 if (polygon != null) {
 
-                    LatLng latLng0 = new LatLng(latLng.latitude - 0.0001, latLng.longitude);
-                    LatLng latLng1 = new LatLng(latLng.latitude, latLng.longitude - 0.0001);
-                    LatLng latLng2 = new LatLng(latLng.latitude + 0.0001, latLng.longitude);
-                    LatLng latLng3 = new LatLng(latLng.latitude, latLng.longitude + 0.0001);
+                    if (marker.getId().equals(marker0ID)) {
 
-                    LatLng[] polygonPoints = new LatLng[] {latLng0, latLng1, latLng2, latLng3};
-                    List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
-                    polygon.setPoints(polygonPointsList);
+                        LatLng markerPosition = marker.getPosition();
+
+                        LatLng[] polygonPoints = new LatLng[] {markerPosition, marker1Position, marker2Position, marker3Position};
+                        List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                        polygon.setPoints(polygonPointsList);
+                    }
+
+                    if (marker.getId().equals(marker1ID)) {
+
+                        LatLng markerPosition = marker.getPosition();
+
+                        LatLng[] polygonPoints = new LatLng[] {marker0Position, markerPosition, marker2Position, marker3Position};
+                        List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                        polygon.setPoints(polygonPointsList);
+                    }
+
+                    if (marker.getId().equals(marker2ID)) {
+
+                        LatLng markerPosition = marker.getPosition();
+
+                        LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, markerPosition, marker3Position};
+                        List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                        polygon.setPoints(polygonPointsList);
+                    }
+
+                    if (marker.getId().equals(marker3ID)) {
+
+                        LatLng markerPosition = marker.getPosition();
+
+                        LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, markerPosition};
+                        List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                        polygon.setPoints(polygonPointsList);
+                    }
+
                     // Prevent the fill color from flashing by setting it to 0 and then re-adding it in onMarkerDragEnd().
                     polygon.setFillColor(0);
                 }
@@ -1002,23 +1108,43 @@ public class Map extends FragmentActivity implements
             @Override
             public void onMarkerDrag(Marker marker) {
 
-                LatLng latLng = marker.getPosition();
+                LatLng markerPosition = marker.getPosition();
 
                 if (circle != null) {
 
-                    circle.setCenter(latLng);
+                    circle.setCenter(markerPosition);
                 }
 
+                // Update the polygon shape as the marker positions get updated.
                 if (polygon != null) {
 
-                    LatLng latLng0 = new LatLng(latLng.latitude - 0.0001, latLng.longitude);
-                    LatLng latLng1 = new LatLng(latLng.latitude, latLng.longitude - 0.0001);
-                    LatLng latLng2 = new LatLng(latLng.latitude + 0.0001, latLng.longitude);
-                    LatLng latLng3 = new LatLng(latLng.latitude, latLng.longitude + 0.0001);
+                    if (marker.getId().equals(marker0ID)) {
 
-                    LatLng[] polygonPoints = new LatLng[] {latLng0, latLng1, latLng2, latLng3};
-                    List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
-                    polygon.setPoints(polygonPointsList);
+                        LatLng[] polygonPoints = new LatLng[] {markerPosition, marker1Position, marker2Position, marker3Position};
+                        List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                        polygon.setPoints(polygonPointsList);
+                    }
+
+                    if (marker.getId().equals(marker1ID)) {
+
+                        LatLng[] polygonPoints = new LatLng[] {marker0Position, markerPosition, marker2Position, marker3Position};
+                        List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                        polygon.setPoints(polygonPointsList);
+                    }
+
+                    if (marker.getId().equals(marker2ID)) {
+
+                        LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, markerPosition, marker3Position};
+                        List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                        polygon.setPoints(polygonPointsList);
+                    }
+
+                    if (marker.getId().equals(marker3ID)) {
+
+                        LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, markerPosition};
+                        List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                        polygon.setPoints(polygonPointsList);
+                    }
                 }
             }
 
@@ -1030,7 +1156,28 @@ public class Map extends FragmentActivity implements
                     circle.setFillColor(Color.argb(70, 255, 215, 0));
                 }
 
+                // Updated the global variable with the marker's position.
                 if (polygon != null) {
+
+                    if (marker.getId().equals(marker0ID)) {
+
+                        marker0Position = marker.getPosition();
+                    }
+
+                    if (marker.getId().equals(marker1ID)) {
+
+                        marker1Position = marker.getPosition();
+                    }
+
+                    if (marker.getId().equals(marker2ID)) {
+
+                        marker2Position = marker.getPosition();
+                    }
+
+                    if (marker.getId().equals(marker3ID)) {
+
+                        marker3Position = marker.getPosition();
+                    }
 
                     polygon.setFillColor(Color.argb(70, 255, 215, 0));
                 }
@@ -1736,14 +1883,13 @@ public class Map extends FragmentActivity implements
                                         circleSizeSeekBar.setProgress(10);
 
                                         // Logic to handle location object.
-                                        LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-                                        LatLng latLng0 = new LatLng(location.getLatitude() - 0.0001, location.getLongitude());
-                                        LatLng latLng1 = new LatLng(location.getLatitude(), location.getLongitude() - 0.0001);
-                                        LatLng latLng2 = new LatLng(location.getLatitude() + 0.0001, location.getLongitude());
-                                        LatLng latLng3 = new LatLng(location.getLatitude(), location.getLongitude() + 0.0001);
+                                        marker0Position = new LatLng(location.getLatitude() - 0.0001, location.getLongitude());
+                                        marker1Position = new LatLng(location.getLatitude(), location.getLongitude() - 0.0001);
+                                        marker2Position = new LatLng(location.getLatitude() + 0.0001, location.getLongitude());
+                                        marker3Position = new LatLng(location.getLatitude(), location.getLongitude() + 0.0001);
                                         PolygonOptions polygonOptions =
                                                 new PolygonOptions()
-                                                        .add(latLng0, latLng1, latLng2, latLng3)
+                                                        .add(marker0Position, marker1Position, marker2Position, marker3Position)
                                                         .clickable(true)
                                                         .fillColor(Color.argb(70, 255, 215, 0))
                                                         .strokeColor(Color.YELLOW)
@@ -1759,12 +1905,33 @@ public class Map extends FragmentActivity implements
                                             polygon.remove();
                                         }
 
-                                        // Create a marker when creating the polygon to allow for dragging.
-                                        MarkerOptions markerOptions = new MarkerOptions()
-                                                .position(latLng)
+                                        // Create markers when creating the polygon to allow for dragging of the center and vertices.
+                                        MarkerOptions markerOptions1 = new MarkerOptions()
+                                                .position(marker0Position)
                                                 .draggable(true);
 
-                                        marker = mMap.addMarker(markerOptions);
+                                        MarkerOptions markerOptions2 = new MarkerOptions()
+                                                .position(marker1Position)
+                                                .draggable(true);
+
+                                        MarkerOptions markerOptions3 = new MarkerOptions()
+                                                .position(marker2Position)
+                                                .draggable(true);
+
+                                        MarkerOptions markerOptions4 = new MarkerOptions()
+                                                .position(marker3Position)
+                                                .draggable(true);
+
+                                        marker0 = mMap.addMarker(markerOptions1);
+                                        marker1 = mMap.addMarker(markerOptions2);
+                                        marker2 = mMap.addMarker(markerOptions3);
+                                        marker3 = mMap.addMarker(markerOptions4);
+
+                                        // Update the global variable to compare with the marker the user clicks on during the dragging process.
+                                        marker0ID = marker0.getId();
+                                        marker1ID = marker1.getId();
+                                        marker2ID = marker2.getId();
+                                        marker3ID = marker3.getId();
 
                                         polygon = mMap.addPolygon(polygonOptions);
                                     }
@@ -1840,9 +2007,15 @@ public class Map extends FragmentActivity implements
                 if (polygon != null) {
 
                     polygon.remove();
-                    marker.remove();
+                    marker0.remove();
+                    marker1.remove();
+                    marker2.remove();
+                    marker3.remove();
                     polygon = null;
-                    marker = null;
+                    marker0 = null;
+                    marker1 = null;
+                    marker2 = null;
+                    marker3 = null;
                 }
 
                 // Remove the circle and marker.
