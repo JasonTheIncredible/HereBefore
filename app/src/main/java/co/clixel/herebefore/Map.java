@@ -59,6 +59,8 @@ import java.util.List;
 import java.util.UUID;
 
 import static com.google.android.gms.location.LocationServices.getFusedLocationProviderClient;
+import static java.lang.Math.cos;
+import static java.lang.Math.sin;
 
 public class Map extends FragmentActivity implements
         OnMapReadyCallback,
@@ -68,7 +70,6 @@ public class Map extends FragmentActivity implements
     private static final String TAG = "Map";
     private GoogleMap mMap;
     private static final int Request_User_Location_Code = 99;
-    private Marker marker;
     private Marker marker0, marker1, marker2, marker3;
     private Circle circle;
     private Polygon polygon;
@@ -87,9 +88,9 @@ public class Map extends FragmentActivity implements
     private Boolean userIsWithinCircle;
     private LatLng marker0Position, marker1Position, marker2Position, marker3Position;
     private String marker0ID, marker1ID, marker2ID, marker3ID;
+    private Double relativeAngle = 0.0;
 
-    //TODO: Prevent polygon shape overlap during the marker dragging process.
-    //TODO: Add marker to edge of circle and possibly get rid of seekBar entirely.
+    //TODO: Get rid of seekBar.
     //TODO: Add onMarkerClickListener to go to circle's chat.
     //TODO: Rename circleViewsButton and have it show polygons.
     //TODO: Change marker appearance.
@@ -331,19 +332,40 @@ public class Map extends FragmentActivity implements
         // Set shape to null so changing circleSizeSeekBar in onStart() will create a circle and createCircleButton will reset itself.
         if (mMap != null) {
 
-            if (circle != null) {
-
-                circle = null;
-                marker = null;
-            }
-
+            // Remove the polygon and marker.
             if (polygon != null) {
 
+                polygon.remove();
+                marker0.remove();
+                marker1.remove();
+                marker2.remove();
+                marker3.remove();
                 polygon = null;
                 marker0 = null;
                 marker1 = null;
                 marker2 = null;
                 marker3 = null;
+                marker0Position = null;
+                marker1Position = null;
+                marker2Position = null;
+                marker3Position = null;
+                marker0ID = null;
+                marker1ID = null;
+                marker2ID = null;
+                marker3ID = null;
+            }
+
+            // Remove the circle and marker.
+            if (circle != null) {
+
+                circle.remove();
+                marker0.remove();
+                marker1.remove();
+                circle = null;
+                marker0 = null;
+                marker1 = null;
+                marker0ID = null;
+                marker1ID = null;
             }
 
             mMap.clear();
@@ -391,21 +413,30 @@ public class Map extends FragmentActivity implements
                 @Override
                 public void onMarkerDragStart(Marker marker) {
 
-                    LatLng latLng = marker.getPosition();
+                    LatLng markerPosition = marker.getPosition();
 
+                    // If user holds the center marker, update the circle's position. Else, update the circle's radius.
                     if (circle != null) {
 
-                        circle.setCenter(latLng);
                         // To be consistent with the polygon.
                         circle.setFillColor(0);
+
+                        if (marker.getId().equals(marker0ID)) {
+
+                            circle.setCenter(markerPosition);
+                            marker1.setVisible(false);
+                        }
+
+                        if (marker.getId().equals(marker1ID)) {
+
+                            circle.setRadius(distanceGivenLatLng(circle.getCenter().latitude, circle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude));
+                        }
                     }
 
                     // Update the polygon shape as the marker positions get updated.
                     if (polygon != null) {
 
                         if (marker.getId().equals(marker0ID)) {
-
-                            LatLng markerPosition = marker.getPosition();
 
                             LatLng[] polygonPoints = new LatLng[] {markerPosition, marker1Position, marker2Position, marker3Position};
                             List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
@@ -414,8 +445,6 @@ public class Map extends FragmentActivity implements
 
                         if (marker.getId().equals(marker1ID)) {
 
-                            LatLng markerPosition = marker.getPosition();
-
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, markerPosition, marker2Position, marker3Position};
                             List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
@@ -423,16 +452,12 @@ public class Map extends FragmentActivity implements
 
                         if (marker.getId().equals(marker2ID)) {
 
-                            LatLng markerPosition = marker.getPosition();
-
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, markerPosition, marker3Position};
                             List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (marker.getId().equals(marker3ID)) {
-
-                            LatLng markerPosition = marker.getPosition();
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, markerPosition};
                             List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
@@ -449,9 +474,18 @@ public class Map extends FragmentActivity implements
 
                     LatLng markerPosition = marker.getPosition();
 
+                    // If user holds the center marker, update the circle's position. Else, update the circle's radius.
                     if (circle != null) {
 
-                        circle.setCenter(markerPosition);
+                        if (marker.getId().equals(marker0ID)) {
+
+                            circle.setCenter(markerPosition);
+                        }
+
+                        if (marker.getId().equals(marker1ID)) {
+
+                            circle.setRadius(distanceGivenLatLng(circle.getCenter().latitude, circle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude));
+                        }
                     }
 
                     // Update the polygon shape as the marker positions get updated.
@@ -490,9 +524,46 @@ public class Map extends FragmentActivity implements
                 @Override
                 public void onMarkerDragEnd(Marker marker) {
 
+                    LatLng markerPosition = marker.getPosition();
+
                     if (circle != null) {
 
                         circle.setFillColor(Color.argb(70, 255, 215, 0));
+
+                        // Sets marker1's position relative to where the user last left marker1. In the future, this should be exact.
+                        if (marker.getId().equals(marker0ID)) {
+
+                            double marker1Latitude = (markerPosition.latitude  + (circle.getRadius() / 6371000) * (180 / Math.PI));
+                            double marker1Longitude = (markerPosition.longitude + (circle.getRadius() / 6371000) * (180 / Math.PI) / cos(markerPosition.latitude * Math.PI/180));
+                            double marker1LatitudeNegative = (markerPosition.latitude  - (circle.getRadius() / 6371000) * (180 / Math.PI));
+                            double marker1LongitudeNegative = (markerPosition.longitude - (circle.getRadius() / 6371000) * (180 / Math.PI) / cos(markerPosition.latitude * Math.PI/180));
+
+                            if (relativeAngle > 315 || relativeAngle < 45) {
+
+                                marker1.setPosition(new LatLng(marker1Latitude, circle.getCenter().longitude));
+
+                            } else if (135 >= relativeAngle && relativeAngle >= 45) {
+
+                                marker1.setPosition(new LatLng(circle.getCenter().latitude, marker1Longitude));
+
+                            } else if (225 > relativeAngle && relativeAngle > 135) {
+
+                                marker1.setPosition(new LatLng(marker1LatitudeNegative, circle.getCenter().longitude));
+
+                            } else {
+
+                                marker1.setPosition(new LatLng(circle.getCenter().latitude, marker1LongitudeNegative));
+                            }
+
+                            marker1.setVisible(true);
+                        }
+
+                        if (marker.getId().equals(marker1ID)) {
+
+                            marker1Position = marker.getPosition();
+                            // Update the global variable with the angle the user left the marker's position. This is used if the user drags the center marker.
+                            relativeAngle = angleFromCoordinate(circle.getCenter().latitude, circle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude);
+                        }
                     }
 
                     // Updated the global variable with the marker's position.
@@ -1052,21 +1123,30 @@ public class Map extends FragmentActivity implements
             @Override
             public void onMarkerDragStart(Marker marker) {
 
-                LatLng latLng = marker.getPosition();
+                LatLng markerPosition = marker.getPosition();
 
+                // If user holds the center marker, update the circle's position. Else, update the circle's radius.
                 if (circle != null) {
 
-                    circle.setCenter(latLng);
                     // To be consistent with the polygon.
                     circle.setFillColor(0);
+
+                    if (marker.getId().equals(marker0ID)) {
+
+                        circle.setCenter(markerPosition);
+                        marker1.setVisible(false);
+                    }
+
+                    if (marker.getId().equals(marker1ID)) {
+
+                        circle.setRadius(distanceGivenLatLng(circle.getCenter().latitude, circle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude));
+                    }
                 }
 
                 // Update the polygon shape as the marker positions get updated.
                 if (polygon != null) {
 
                     if (marker.getId().equals(marker0ID)) {
-
-                        LatLng markerPosition = marker.getPosition();
 
                         LatLng[] polygonPoints = new LatLng[] {markerPosition, marker1Position, marker2Position, marker3Position};
                         List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
@@ -1075,8 +1155,6 @@ public class Map extends FragmentActivity implements
 
                     if (marker.getId().equals(marker1ID)) {
 
-                        LatLng markerPosition = marker.getPosition();
-
                         LatLng[] polygonPoints = new LatLng[] {marker0Position, markerPosition, marker2Position, marker3Position};
                         List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
                         polygon.setPoints(polygonPointsList);
@@ -1084,16 +1162,12 @@ public class Map extends FragmentActivity implements
 
                     if (marker.getId().equals(marker2ID)) {
 
-                        LatLng markerPosition = marker.getPosition();
-
                         LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, markerPosition, marker3Position};
                         List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
                         polygon.setPoints(polygonPointsList);
                     }
 
                     if (marker.getId().equals(marker3ID)) {
-
-                        LatLng markerPosition = marker.getPosition();
 
                         LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, markerPosition};
                         List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
@@ -1110,9 +1184,18 @@ public class Map extends FragmentActivity implements
 
                 LatLng markerPosition = marker.getPosition();
 
+                // If user holds the center marker, update the circle's position. Else, update the circle's radius.
                 if (circle != null) {
 
-                    circle.setCenter(markerPosition);
+                    if (marker.getId().equals(marker0ID)) {
+
+                        circle.setCenter(markerPosition);
+                    }
+
+                    if (marker.getId().equals(marker1ID)) {
+
+                        circle.setRadius(distanceGivenLatLng(circle.getCenter().latitude, circle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude));
+                    }
                 }
 
                 // Update the polygon shape as the marker positions get updated.
@@ -1151,9 +1234,46 @@ public class Map extends FragmentActivity implements
             @Override
             public void onMarkerDragEnd(Marker marker) {
 
+                LatLng markerPosition = marker.getPosition();
+
                 if (circle != null) {
 
                     circle.setFillColor(Color.argb(70, 255, 215, 0));
+
+                    // Sets marker1's position relative to where the user last left marker1. In the future, this should be exact.
+                    if (marker.getId().equals(marker0ID)) {
+
+                        double marker1Latitude = (markerPosition.latitude  + (circle.getRadius() / 6371000) * (180 / Math.PI));
+                        double marker1Longitude = (markerPosition.longitude + (circle.getRadius() / 6371000) * (180 / Math.PI) / cos(markerPosition.latitude * Math.PI/180));
+                        double marker1LatitudeNegative = (markerPosition.latitude  - (circle.getRadius() / 6371000) * (180 / Math.PI));
+                        double marker1LongitudeNegative = (markerPosition.longitude - (circle.getRadius() / 6371000) * (180 / Math.PI) / cos(markerPosition.latitude * Math.PI/180));
+
+                        if (relativeAngle > 315 || relativeAngle < 45) {
+
+                            marker1.setPosition(new LatLng(marker1Latitude, circle.getCenter().longitude));
+
+                        } else if (135 >= relativeAngle && relativeAngle >= 45) {
+
+                            marker1.setPosition(new LatLng(circle.getCenter().latitude, marker1Longitude));
+
+                        } else if (225 > relativeAngle && relativeAngle > 135) {
+
+                            marker1.setPosition(new LatLng(marker1LatitudeNegative, circle.getCenter().longitude));
+
+                        } else {
+
+                            marker1.setPosition(new LatLng(circle.getCenter().latitude, marker1LongitudeNegative));
+                        }
+
+                        marker1.setVisible(true);
+                    }
+
+                    if (marker.getId().equals(marker1ID)) {
+
+                        marker1Position = marker.getPosition();
+                        // Update the global variable with the angle the user left the marker's position. This is used if the user drags the center marker.
+                        relativeAngle = angleFromCoordinate(circle.getCenter().latitude, circle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude);
+                    }
                 }
 
                 // Updated the global variable with the marker's position.
@@ -1865,145 +1985,6 @@ public class Map extends FragmentActivity implements
 
                 Log.i(TAG, "onMenuItemClick() -> createPolygon");
 
-                // Creates a polygon.
-                if (polygon == null) {
-
-                    FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
-
-                    mFusedLocationClient.getLastLocation()
-                            .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
-
-                                @Override
-                                public void onSuccess(Location location) {
-
-                                    // Get last known location. In some rare situations, this can be null.
-                                    if (location != null) {
-
-                                        // Set seekBar to be the same as the polygon's arbitrary size.
-                                        circleSizeSeekBar.setProgress(10);
-
-                                        // Logic to handle location object.
-                                        marker0Position = new LatLng(location.getLatitude() - 0.0001, location.getLongitude());
-                                        marker1Position = new LatLng(location.getLatitude(), location.getLongitude() - 0.0001);
-                                        marker2Position = new LatLng(location.getLatitude() + 0.0001, location.getLongitude());
-                                        marker3Position = new LatLng(location.getLatitude(), location.getLongitude() + 0.0001);
-                                        PolygonOptions polygonOptions =
-                                                new PolygonOptions()
-                                                        .add(marker0Position, marker1Position, marker2Position, marker3Position)
-                                                        .clickable(true)
-                                                        .fillColor(Color.argb(70, 255, 215, 0))
-                                                        .strokeColor(Color.YELLOW)
-                                                        .strokeWidth(3f);
-
-                                        if (circle != null) {
-
-                                            circle.remove();
-                                        }
-
-                                        if (polygon != null) {
-
-                                            polygon.remove();
-                                        }
-
-                                        // Create markers when creating the polygon to allow for dragging of the center and vertices.
-                                        MarkerOptions markerOptions1 = new MarkerOptions()
-                                                .position(marker0Position)
-                                                .draggable(true);
-
-                                        MarkerOptions markerOptions2 = new MarkerOptions()
-                                                .position(marker1Position)
-                                                .draggable(true);
-
-                                        MarkerOptions markerOptions3 = new MarkerOptions()
-                                                .position(marker2Position)
-                                                .draggable(true);
-
-                                        MarkerOptions markerOptions4 = new MarkerOptions()
-                                                .position(marker3Position)
-                                                .draggable(true);
-
-                                        marker0 = mMap.addMarker(markerOptions1);
-                                        marker1 = mMap.addMarker(markerOptions2);
-                                        marker2 = mMap.addMarker(markerOptions3);
-                                        marker3 = mMap.addMarker(markerOptions4);
-
-                                        // Update the global variable to compare with the marker the user clicks on during the dragging process.
-                                        marker0ID = marker0.getId();
-                                        marker1ID = marker1.getId();
-                                        marker2ID = marker2.getId();
-                                        marker3ID = marker3.getId();
-
-                                        polygon = mMap.addPolygon(polygonOptions);
-                                    }
-                                }
-                            });
-                }
-
-                return true;
-
-            // createcircle_menu
-            case R.id.createCircle:
-
-                Log.i(TAG, "onMenuItemClick() -> createCircle");
-
-                // Creates circle.
-                if (circle == null) {
-
-                    FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
-
-                    mFusedLocationClient.getLastLocation()
-                            .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
-
-                                @Override
-                                public void onSuccess(Location location) {
-
-                                    // Get last known location. In some rare situations, this can be null.
-                                    if (location != null) {
-
-                                        // Set seekBar to be the same as the circle's arbitrary size.
-                                        circleSizeSeekBar.setProgress(10);
-
-                                        // Logic to handle location object.
-                                        LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-                                        CircleOptions circleOptions =
-                                                new CircleOptions()
-                                                        .center(latLng)
-                                                        .clickable(true)
-                                                        .fillColor(Color.argb(70, 255, 215, 0))
-                                                        .radius(10)
-                                                        .strokeColor(Color.YELLOW)
-                                                        .strokeWidth(3f);
-
-                                        if (circle != null) {
-
-                                            circle.remove();
-                                        }
-
-                                        if (polygon != null) {
-
-                                            polygon.remove();
-                                        }
-
-                                        // Create a marker when creating the circle to allow for dragging.
-                                        MarkerOptions markerOptions = new MarkerOptions()
-                                                .position(latLng)
-                                                .draggable(true);
-
-                                        marker = mMap.addMarker(markerOptions);
-
-                                        circle = mMap.addCircle(circleOptions);
-                                    }
-                                }
-                            });
-                }
-
-                createCircleMenuIsOpen = false;
-                return true;
-
-            // createcircle_menu
-            case R.id.removeShape:
-
-                // Remove the polygon and marker.
                 if (polygon != null) {
 
                     polygon.remove();
@@ -2016,15 +1997,216 @@ public class Map extends FragmentActivity implements
                     marker1 = null;
                     marker2 = null;
                     marker3 = null;
+                    marker0Position = null;
+                    marker1Position = null;
+                    marker2Position = null;
+                    marker3Position = null;
+                    marker0ID = null;
+                    marker1ID = null;
+                    marker2ID = null;
+                    marker3ID = null;
                 }
 
-                // Remove the circle and marker.
                 if (circle != null) {
 
                     circle.remove();
-                    marker.remove();
+                    marker0.remove();
+                    marker1.remove();
                     circle = null;
-                    marker = null;
+                    marker0 = null;
+                    marker1 = null;
+                    marker0ID = null;
+                    marker1ID = null;
+                }
+
+                // Creates a polygon.
+                FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
+
+                mFusedLocationClient.getLastLocation()
+                        .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
+
+                            @Override
+                            public void onSuccess(Location location) {
+
+                                // Get last known location. In some rare situations, this can be null.
+                                if (location != null) {
+
+                                    // Set seekBar to be the same as the polygon's arbitrary size.
+                                    circleSizeSeekBar.setProgress(10);
+
+                                    // Logic to handle location object.
+                                    marker0Position = new LatLng(location.getLatitude() - 0.0001, location.getLongitude());
+                                    marker1Position = new LatLng(location.getLatitude(), location.getLongitude() - 0.0001);
+                                    marker2Position = new LatLng(location.getLatitude() + 0.0001, location.getLongitude());
+                                    marker3Position = new LatLng(location.getLatitude(), location.getLongitude() + 0.0001);
+                                    PolygonOptions polygonOptions =
+                                            new PolygonOptions()
+                                                    .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                                    .clickable(true)
+                                                    .fillColor(Color.argb(70, 255, 215, 0))
+                                                    .strokeColor(Color.YELLOW)
+                                                    .strokeWidth(3f);
+
+                                    // Create markers when creating the polygon to allow for dragging of the center and vertices.
+                                    MarkerOptions markerOptions1 = new MarkerOptions()
+                                            .position(marker0Position)
+                                            .draggable(true);
+
+                                    MarkerOptions markerOptions2 = new MarkerOptions()
+                                            .position(marker1Position)
+                                            .draggable(true);
+
+                                    MarkerOptions markerOptions3 = new MarkerOptions()
+                                            .position(marker2Position)
+                                            .draggable(true);
+
+                                    MarkerOptions markerOptions4 = new MarkerOptions()
+                                            .position(marker3Position)
+                                            .draggable(true);
+
+                                    marker0 = mMap.addMarker(markerOptions1);
+                                    marker1 = mMap.addMarker(markerOptions2);
+                                    marker2 = mMap.addMarker(markerOptions3);
+                                    marker3 = mMap.addMarker(markerOptions4);
+
+                                    // Update the global variable to compare with the marker the user clicks on during the dragging process.
+                                    marker0ID = marker0.getId();
+                                    marker1ID = marker1.getId();
+                                    marker2ID = marker2.getId();
+                                    marker3ID = marker3.getId();
+
+                                    polygon = mMap.addPolygon(polygonOptions);
+                                }
+                            }
+                        });
+
+                createCircleMenuIsOpen = false;
+                return true;
+
+            // createcircle_menu
+            case R.id.createCircle:
+
+                Log.i(TAG, "onMenuItemClick() -> createCircle");
+
+                if (polygon != null) {
+
+                    polygon.remove();
+                    marker0.remove();
+                    marker1.remove();
+                    marker2.remove();
+                    marker3.remove();
+                    polygon = null;
+                    marker0 = null;
+                    marker1 = null;
+                    marker2 = null;
+                    marker3 = null;
+                    marker0Position = null;
+                    marker1Position = null;
+                    marker2Position = null;
+                    marker3Position = null;
+                    marker0ID = null;
+                    marker1ID = null;
+                    marker2ID = null;
+                    marker3ID = null;
+                }
+
+                if (circle != null) {
+
+                    circle.remove();
+                    marker0.remove();
+                    marker1.remove();
+                    circle = null;
+                    marker0 = null;
+                    marker1 = null;
+                    marker0ID = null;
+                    marker1ID = null;
+                }
+
+                // Creates circle.
+                mFusedLocationClient = getFusedLocationProviderClient(Map.this);
+
+                mFusedLocationClient.getLastLocation()
+                        .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
+
+                            @Override
+                            public void onSuccess(Location location) {
+                                // Get last known location. In some rare situations, this can be null.
+                                if (location != null) {
+
+                                    // Logic to handle location object.
+                                    LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
+                                    marker1Position = new LatLng(location.getLatitude() + 0.0001, location.getLongitude());
+                                    float circleRadius = distanceGivenLatLng(location.getLatitude(), location.getLongitude(), marker1Position.latitude, marker1Position.longitude);
+                                    CircleOptions circleOptions =
+                                            new CircleOptions()
+                                                    .center(latLng)
+                                                    .clickable(true)
+                                                    .fillColor(Color.argb(70, 255, 215, 0))
+                                                    .radius(circleRadius)
+                                                    .strokeColor(Color.YELLOW)
+                                                    .strokeWidth(3f);
+
+                                    // Create a marker in the center of the circle to allow for dragging.
+                                    MarkerOptions markerOptionsCenter = new MarkerOptions()
+                                            .position(latLng)
+                                            .draggable(true);
+
+                                    MarkerOptions markerOptionsEdge = new MarkerOptions()
+                                            .position(marker1Position)
+                                            .draggable(true);
+
+                                    marker0 = mMap.addMarker(markerOptionsCenter);
+                                    marker1 = mMap.addMarker(markerOptionsEdge);
+
+                                    // Update the global variable to compare with the marker the user clicks on during the dragging process.
+                                    marker0ID = marker0.getId();
+                                    marker1ID = marker1.getId();
+
+                                    circle = mMap.addCircle(circleOptions);
+                                }
+                            }
+                        });
+
+                createCircleMenuIsOpen = false;
+                return true;
+
+            // createcircle_menu
+            case R.id.removeShape:
+
+                // Remove the polygon and markers.
+                if (polygon != null) {
+
+                    polygon.remove();
+                    marker0.remove();
+                    marker1.remove();
+                    marker2.remove();
+                    marker3.remove();
+                    polygon = null;
+                    marker0 = null;
+                    marker1 = null;
+                    marker2 = null;
+                    marker3 = null;
+                    marker0Position = null;
+                    marker1Position = null;
+                    marker2Position = null;
+                    marker3Position = null;
+                    marker0ID = null;
+                    marker1ID = null;
+                    marker2ID = null;
+                    marker3ID = null;
+                }
+
+                // Remove the circle and markers.
+                if (circle != null) {
+
+                    circle.remove();
+                    marker0.remove();
+                    marker1.remove();
+                    circle = null;
+                    marker0 = null;
+                    marker1 = null;
+                    marker0ID = null;
+                    marker1ID = null;
                 }
 
                 circleSizeSeekBar.setProgress(0);
@@ -2047,7 +2229,7 @@ public class Map extends FragmentActivity implements
                 Log.i(TAG, "onMenuItemClick() -> createPoint");
 
                 // Create a point and to to Chat.java or SignIn.java.
-                FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
+                mFusedLocationClient = getFusedLocationProviderClient(Map.this);
 
                 mFusedLocationClient.getLastLocation()
                         .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
@@ -2331,6 +2513,38 @@ public class Map extends FragmentActivity implements
 
             }
         });
+    }
+
+    // Returns the distance between 2 latitudes and longitudes in meters.
+    public static float distanceGivenLatLng(double lat1, double lng1, double lat2, double lng2) {
+
+        double earthRadius = 6371000; // Meters
+        double dLat = Math.toRadians(lat2-lat1);
+        double dLng = Math.toRadians(lng2-lng1);
+        double a = sin(dLat/2) * sin(dLat/2) +
+                cos(Math.toRadians(lat1)) * cos(Math.toRadians(lat2)) *
+                        sin(dLng/2) * sin(dLng/2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+        return (float) (earthRadius * c);
+    }
+
+    // Returns the angle between 2 latitudes and longitudes in degrees. If lat1, lng1 are circle's center, this will return 0 for 12 o'clock and 90 for 3 o'clock.
+    private double angleFromCoordinate(double lat1, double lng1, double lat2, double lng2) {
+
+        double dLon = (lng2 - lng1);
+
+        double y = Math.sin(dLon) * Math.cos(lat2);
+        double x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1)
+                * Math.cos(lat2) * Math.cos(dLon);
+
+        double angle = Math.atan2(y, x);
+
+        angle = Math.toDegrees(angle);
+        angle = (angle + 360) % 360;
+        //angle = 360 - angle; // count degrees counter-clockwise - remove to make clockwise
+
+        return angle;
     }
 
     @Override
