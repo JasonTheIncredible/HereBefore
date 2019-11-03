@@ -85,12 +85,14 @@ public class Map extends FragmentActivity implements
     private Boolean createCircleMenuIsOpen = false;
     private Boolean largerCirclesMenuIsOpen = false;
     private Boolean smallerCirclesMenuIsOpen = false;
+    private Boolean usedSeekBar = false;
     private Boolean userIsWithinCircle;
     private LatLng marker0Position, marker1Position, marker2Position, marker3Position;
     private String marker0ID, marker1ID, marker2ID, marker3ID;
     private Double relativeAngle = 0.0;
 
-    //TODO: Get rid of seekBar.
+    //TODO: Align marker dragging with largerCircleSeekBar.
+    //TODO: Limit circle size while dragging with marker.
     //TODO: Add onMarkerClickListener to go to circle's chat.
     //TODO: Rename circleViewsButton and have it show polygons.
     //TODO: Change marker appearance.
@@ -229,12 +231,77 @@ public class Map extends FragmentActivity implements
 
         circleSizeSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
 
+            @Override
+            public void onStartTrackingTouch(final SeekBar seekBar) {
+
+                // Global variable used to prevent conflicts when the user updates the circle's radius with the marker rather than the seekBar.
+                usedSeekBar = true;
+
+                // Creates circle.
+                if (circle == null) {
+
+                    FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
+
+                    mFusedLocationClient.getLastLocation()
+                            .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
+
+                                @Override
+                                public void onSuccess(Location location) {
+                                    // Get last known location. In some rare situations, this can be null.
+                                    if (location != null) {
+
+                                        // Make circle the size set by the seekBar.
+                                        int circleSize = circleSizeSeekBar.getProgress();
+
+                                        // Logic to handle location object.
+                                        LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
+                                        marker1Position = new LatLng(latLng.latitude  + (circleSize / 6371000) * (180 / Math.PI), latLng.longitude + (circleSize / 6371000) * (180 / Math.PI) / cos(latLng.latitude * Math.PI/180));
+                                        CircleOptions circleOptions =
+                                                new CircleOptions()
+                                                        .center(latLng)
+                                                        .clickable(true)
+                                                        .fillColor(0)
+                                                        .radius(circleSize)
+                                                        .strokeColor(Color.YELLOW)
+                                                        .strokeWidth(3f);
+
+                                        // Create a marker in the center of the circle to allow for dragging.
+                                        MarkerOptions markerOptionsCenter = new MarkerOptions()
+                                                .position(latLng)
+                                                .draggable(true);
+
+                                        MarkerOptions markerOptionsEdge = new MarkerOptions()
+                                                .position(marker1Position)
+                                                .draggable(true);
+
+                                        marker0 = mMap.addMarker(markerOptionsCenter);
+                                        marker1 = mMap.addMarker(markerOptionsEdge);
+
+                                        // Update the global variable to compare with the marker the user clicks on during the dragging process.
+                                        marker0ID = marker0.getId();
+                                        marker1ID = marker1.getId();
+
+                                        marker1.setVisible(false);
+
+                                        circle = mMap.addCircle(circleOptions);
+                                    }
+                                }
+                            });
+                }
+            }
+
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
 
-                // Changes size of the circle.
-                if (circle != null) {
+                // Global variable used to prevent conflicts when the user updates the circle's radius with the marker rather than the seekBar.
+                if (usedSeekBar) {
 
-                    circle.setRadius(progress);
+                    // Changes size of the circle.
+                    if (circle != null) {
+
+                        circle.setRadius(progress);
+                        marker1.setVisible(false);
+                        circle.setFillColor(0);
+                    }
                 }
 
                 // Creates popup above seekBar that gives user option to make larger circle.
@@ -272,52 +339,42 @@ public class Map extends FragmentActivity implements
             }
 
             @Override
-            public void onStartTrackingTouch(final SeekBar seekBar) {
-
-                // Creates circle.
-                if (circle == null) {
-
-                    FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
-
-                    mFusedLocationClient.getLastLocation()
-                            .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
-
-                                @Override
-                                public void onSuccess(Location location) {
-
-                                    // Get last known location. In some rare situations, this can be null.
-                                    if (location != null) {
-
-                                        // Make circle the size set by the seekBar.
-                                        int circleSize = circleSizeSeekBar.getProgress();
-
-                                        // Logic to handle location object.
-                                        LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-                                        CircleOptions circleOptions =
-                                                new CircleOptions()
-                                                        .center(latLng)
-                                                        .clickable(true)
-                                                        .fillColor(Color.argb(70, 255, 215, 0))
-                                                        .radius(circleSize)
-                                                        .strokeColor(Color.YELLOW)
-                                                        .strokeWidth(3f);
-
-                                        if (circle != null) {
-
-                                            circle.remove();
-                                        }
-
-                                        circle = mMap.addCircle(circleOptions);
-                                        circleSizeSeekBar.setProgress(circleSize);
-                                    }
-                                }
-                            });
-                }
-            }
-
-            @Override
             public void onStopTrackingTouch(final SeekBar seekBar) {
 
+                // Global variable used to prevent conflicts when the user updates the circle's radius with the marker rather than the seekBar.
+                usedSeekBar = false;
+
+                LatLng markerPosition = marker1.getPosition();
+
+                if (circle != null) {
+
+                    circle.setFillColor(Color.argb(70, 255, 215, 0));
+
+                    // Sets marker1's position relative to where the user last left marker1. In the future, this should be exact.
+                    double marker1Latitude = (circle.getCenter().latitude  + (circle.getRadius() / 6371000) * (180 / Math.PI));
+                    double marker1Longitude = (circle.getCenter().longitude + (circle.getRadius() / 6371000) * (180 / Math.PI) / cos(markerPosition.latitude * Math.PI/180));
+                    double marker1LatitudeNegative = (circle.getCenter().latitude  - (circle.getRadius() / 6371000) * (180 / Math.PI));
+                    double marker1LongitudeNegative = (circle.getCenter().longitude - (circle.getRadius() / 6371000) * (180 / Math.PI) / cos(markerPosition.latitude * Math.PI/180));
+
+                    if (relativeAngle > 315 || relativeAngle < 45) {
+
+                        marker1.setPosition(new LatLng(marker1Latitude, circle.getCenter().longitude));
+
+                    } else if (135 >= relativeAngle && relativeAngle >= 45) {
+
+                        marker1.setPosition(new LatLng(circle.getCenter().latitude, marker1Longitude));
+
+                    } else if (225 > relativeAngle && relativeAngle > 135) {
+
+                        marker1.setPosition(new LatLng(marker1LatitudeNegative, circle.getCenter().longitude));
+
+                    } else {
+
+                        marker1.setPosition(new LatLng(circle.getCenter().latitude, marker1LongitudeNegative));
+                    }
+
+                    marker1.setVisible(true);
+                }
             }
         });
     }
@@ -370,6 +427,7 @@ public class Map extends FragmentActivity implements
 
             mMap.clear();
             circleSizeSeekBar.setProgress(0);
+            usedSeekBar = false;
 
             // Load Firebase circles, as onMapReady() doesn't get called after onRestart().
             firebaseCircles.addListenerForSingleValueEvent(new ValueEventListener() {
@@ -563,6 +621,8 @@ public class Map extends FragmentActivity implements
                             marker1Position = marker.getPosition();
                             // Update the global variable with the angle the user left the marker's position. This is used if the user drags the center marker.
                             relativeAngle = angleFromCoordinate(circle.getCenter().latitude, circle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude);
+                            // Keep the seekBar's progress aligned with the marker.
+                            circleSizeSeekBar.setProgress((int) distanceGivenLatLng(circle.getCenter().latitude, circle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude));
                         }
                     }
 
@@ -1273,6 +1333,8 @@ public class Map extends FragmentActivity implements
                         marker1Position = marker.getPosition();
                         // Update the global variable with the angle the user left the marker's position. This is used if the user drags the center marker.
                         relativeAngle = angleFromCoordinate(circle.getCenter().latitude, circle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude);
+                        // Keep the seekBar's progress aligned with the marker.
+                        circleSizeSeekBar.setProgress((int) distanceGivenLatLng(circle.getCenter().latitude, circle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude));
                     }
                 }
 
@@ -2163,6 +2225,7 @@ public class Map extends FragmentActivity implements
                                     marker1ID = marker1.getId();
 
                                     circle = mMap.addCircle(circleOptions);
+                                    circleSizeSeekBar.setProgress((int) distanceGivenLatLng(location.getLatitude(), location.getLongitude(), marker1Position.latitude, marker1Position.longitude));
                                 }
                             }
                         });
@@ -2429,12 +2492,71 @@ public class Map extends FragmentActivity implements
 
         largerCircleSizeSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
 
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+                // Creates circle.
+                if (circle == null) {
+
+                    FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
+
+                    mFusedLocationClient.getLastLocation()
+                            .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
+
+                                @Override
+                                public void onSuccess(Location location) {
+                                    // Get last known location. In some rare situations, this can be null.
+                                    if (location != null) {
+
+                                        // Make circle the size set by the seekBar.
+                                        int circleSize = 100;
+
+                                        // Logic to handle location object.
+                                        LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
+                                        marker1Position = new LatLng(latLng.latitude  + (circleSize / 6371000) * (180 / Math.PI), latLng.longitude + (circleSize / 6371000) * (180 / Math.PI) / cos(latLng.latitude * Math.PI/180));
+                                        CircleOptions circleOptions =
+                                                new CircleOptions()
+                                                        .center(latLng)
+                                                        .clickable(true)
+                                                        .fillColor(0)
+                                                        .radius(circleSize)
+                                                        .strokeColor(Color.YELLOW)
+                                                        .strokeWidth(3f);
+
+                                        // Create a marker in the center of the circle to allow for dragging.
+                                        MarkerOptions markerOptionsCenter = new MarkerOptions()
+                                                .position(latLng)
+                                                .draggable(true);
+
+                                        MarkerOptions markerOptionsEdge = new MarkerOptions()
+                                                .position(marker1Position)
+                                                .draggable(true);
+
+                                        marker0 = mMap.addMarker(markerOptionsCenter);
+                                        marker1 = mMap.addMarker(markerOptionsEdge);
+
+                                        // Update the global variable to compare with the marker the user clicks on during the dragging process.
+                                        marker0ID = marker0.getId();
+                                        marker1ID = marker1.getId();
+
+                                        marker1.setVisible(false);
+
+                                        circle = mMap.addCircle(circleOptions);
+                                        largerCircleSizeSeekBar.setProgress(0);
+                                    }
+                                }
+                            });
+                }
+            }
+
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
 
                 // Changes size of the circle.
                 if (circle != null) {
 
                     circle.setRadius(progress + 100);
+                    marker1.setVisible(false);
+                    circle.setFillColor(0);
                 }
 
                 // Creates popup to change the largerCircleSizeSeekBar back to the circleSizeSeekBar.
@@ -2465,52 +2587,39 @@ public class Map extends FragmentActivity implements
             }
 
             @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-
-                // Creates circle.
-                if (circle == null) {
-
-                    FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
-
-                    mFusedLocationClient.getLastLocation()
-                            .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
-
-                                @Override
-                                public void onSuccess(Location location) {
-
-                                    // Get last known location. In some rare situations, this can be null.
-                                    if (location != null) {
-
-                                        // Make circle the size set by the seekBar.
-                                        int circleSize = 100;
-
-                                        // Logic to handle location object.
-                                        LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-                                        CircleOptions circleOptions =
-                                                new CircleOptions()
-                                                        .center(latLng)
-                                                        .clickable(true)
-                                                        .fillColor(Color.argb(70, 255, 215, 0))
-                                                        .radius(circleSize)
-                                                        .strokeColor(Color.YELLOW)
-                                                        .strokeWidth(3f);
-
-                                        if (circle != null) {
-
-                                            circle.remove();
-                                        }
-
-                                        circle = mMap.addCircle(circleOptions);
-                                        largerCircleSizeSeekBar.setProgress(0);
-                                    }
-                                }
-                            });
-                }
-            }
-
-            @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
 
+                LatLng markerPosition = marker1.getPosition();
+
+                if (circle != null) {
+
+                    circle.setFillColor(Color.argb(70, 255, 215, 0));
+
+                    // Sets marker1's position relative to where the user last left marker1. In the future, this should be exact.
+                    double marker1Latitude = (circle.getCenter().latitude  + (circle.getRadius() / 6371000) * (180 / Math.PI));
+                    double marker1Longitude = (circle.getCenter().longitude + (circle.getRadius() / 6371000) * (180 / Math.PI) / cos(markerPosition.latitude * Math.PI/180));
+                    double marker1LatitudeNegative = (circle.getCenter().latitude  - (circle.getRadius() / 6371000) * (180 / Math.PI));
+                    double marker1LongitudeNegative = (circle.getCenter().longitude - (circle.getRadius() / 6371000) * (180 / Math.PI) / cos(markerPosition.latitude * Math.PI/180));
+
+                    if (relativeAngle > 315 || relativeAngle < 45) {
+
+                        marker1.setPosition(new LatLng(marker1Latitude, circle.getCenter().longitude));
+
+                    } else if (135 >= relativeAngle && relativeAngle >= 45) {
+
+                        marker1.setPosition(new LatLng(circle.getCenter().latitude, marker1Longitude));
+
+                    } else if (225 > relativeAngle && relativeAngle > 135) {
+
+                        marker1.setPosition(new LatLng(marker1LatitudeNegative, circle.getCenter().longitude));
+
+                    } else {
+
+                        marker1.setPosition(new LatLng(circle.getCenter().latitude, marker1LongitudeNegative));
+                    }
+
+                    marker1.setVisible(true);
+                }
             }
         });
     }
