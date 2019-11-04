@@ -59,6 +59,7 @@ import java.util.UUID;
 import static com.google.android.gms.location.LocationServices.getFusedLocationProviderClient;
 import static java.lang.Math.cos;
 import static java.lang.Math.sin;
+import static java.lang.Math.toDegrees;
 
 public class Map extends FragmentActivity implements
         OnMapReadyCallback,
@@ -87,10 +88,8 @@ public class Map extends FragmentActivity implements
     private String marker0ID, marker1ID, marker2ID, marker3ID;
     private Double relativeAngle = 0.0;
 
-    //TODO: Keep marker at same position relative to the center of the circle.
-    //TODO: Add onMarkerClickListener to go to circle's chat.
+    //TODO: Add middle marker onMarkerClickListener to go to circle's chat (this could lead to accidentally going to chat).
     //TODO: Rename circleViewsButton and have it show polygons.
-    //TODO: Change marker appearance.
     //TODO: Have polygon go to chat.
     //TODO: Prevent circle overlap.
     //TODO: Give user option to change color of the circles (or just change it outright).
@@ -231,7 +230,7 @@ public class Map extends FragmentActivity implements
                 // Global variable used to prevent conflicts when the user updates the circle's radius with the marker rather than the seekBar.
                 usedSeekBar = true;
 
-                // Creates circle.
+                // Creates circle with markers.
                 if (circle == null) {
 
                     FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
@@ -264,6 +263,7 @@ public class Map extends FragmentActivity implements
                                                 .position(latLng)
                                                 .draggable(true);
 
+                                        // Create marker at the edge of the circle to allow for changing of the circle's radius.
                                         MarkerOptions markerOptionsEdge = new MarkerOptions()
                                                 .position(marker1Position)
                                                 .draggable(true);
@@ -289,7 +289,7 @@ public class Map extends FragmentActivity implements
                 // Global variable used to prevent conflicts when the user updates the circle's radius with the marker rather than the seekBar.
                 if (usedSeekBar) {
 
-                    // Changes size of the circle.
+                    // Changes size of the circle, marker1 visibility, and fill color.
                     if (circle != null) {
 
                         circle.setRadius(progress);
@@ -305,34 +305,12 @@ public class Map extends FragmentActivity implements
                 // Global variable used to prevent conflicts when the user updates the circle's radius with the marker rather than the seekBar.
                 usedSeekBar = false;
 
-                LatLng markerPosition = marker1.getPosition();
-
+                // Sets fill color, sets marker1's position on the circle's edge relative to where the user last left it, and sets marker1's visibility.
                 if (circle != null) {
 
                     circle.setFillColor(Color.argb(70, 255, 215, 0));
 
-                    // Sets marker1's position relative to where the user last left marker1. In the future, this should be exact.
-                    double marker1Latitude = (circle.getCenter().latitude  + (circle.getRadius() / 6371000) * (180 / Math.PI));
-                    double marker1Longitude = (circle.getCenter().longitude + (circle.getRadius() / 6371000) * (180 / Math.PI) / cos(markerPosition.latitude * Math.PI/180));
-                    double marker1LatitudeNegative = (circle.getCenter().latitude  - (circle.getRadius() / 6371000) * (180 / Math.PI));
-                    double marker1LongitudeNegative = (circle.getCenter().longitude - (circle.getRadius() / 6371000) * (180 / Math.PI) / cos(markerPosition.latitude * Math.PI/180));
-
-                    if (relativeAngle > 315 || relativeAngle < 45) {
-
-                        marker1.setPosition(new LatLng(marker1Latitude, circle.getCenter().longitude));
-
-                    } else if (135 >= relativeAngle && relativeAngle >= 45) {
-
-                        marker1.setPosition(new LatLng(circle.getCenter().latitude, marker1Longitude));
-
-                    } else if (225 > relativeAngle && relativeAngle > 135) {
-
-                        marker1.setPosition(new LatLng(marker1LatitudeNegative, circle.getCenter().longitude));
-
-                    } else {
-
-                        marker1.setPosition(new LatLng(circle.getCenter().latitude, marker1LongitudeNegative));
-                    }
+                    marker1.setPosition(latLngGivenDistance(circle.getCenter().latitude, circle.getCenter().longitude, circleSizeSeekBar.getProgress(), relativeAngle));
 
                     marker1.setVisible(true);
                 }
@@ -382,12 +360,15 @@ public class Map extends FragmentActivity implements
                 circle = null;
                 marker0 = null;
                 marker1 = null;
+                marker0Position = null;
+                marker1Position = null;
                 marker0ID = null;
                 marker1ID = null;
             }
 
             mMap.clear();
             circleSizeSeekBar.setProgress(0);
+            relativeAngle = 0.0;
             usedSeekBar = false;
 
             // Load Firebase circles, as onMapReady() doesn't get called after onRestart().
@@ -437,7 +418,6 @@ public class Map extends FragmentActivity implements
                     // If user holds the center marker, update the circle's position. Else, update the circle's radius.
                     if (circle != null) {
 
-                        // To be consistent with the polygon.
                         circle.setFillColor(0);
 
                         if (marker.getId().equals(marker0ID)) {
@@ -448,7 +428,14 @@ public class Map extends FragmentActivity implements
 
                         if (marker.getId().equals(marker1ID)) {
 
-                            circle.setRadius(distanceGivenLatLng(circle.getCenter().latitude, circle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude));
+                            // Limits the size of the circle.
+                            if (circle.getRadius() < 200) {
+
+                                circle.setRadius(distanceGivenLatLng(circle.getCenter().latitude, circle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude));
+                            } else {
+
+                                circle.setRadius(200);
+                            }
                         }
                     }
 
@@ -503,7 +490,14 @@ public class Map extends FragmentActivity implements
 
                         if (marker.getId().equals(marker1ID)) {
 
-                            circle.setRadius(distanceGivenLatLng(circle.getCenter().latitude, circle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude));
+                            // Limits the size of the circle.
+                            if (distanceGivenLatLng(markerPosition.latitude, markerPosition.longitude, circle.getCenter().latitude, circle.getCenter().longitude) < 200) {
+
+                                circle.setRadius(distanceGivenLatLng(circle.getCenter().latitude, circle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude));
+                            } else {
+
+                                circle.setRadius(200);
+                            }
                         }
                     }
 
@@ -549,41 +543,32 @@ public class Map extends FragmentActivity implements
 
                         circle.setFillColor(Color.argb(70, 255, 215, 0));
 
-                        // Sets marker1's position relative to where the user last left marker1. In the future, this should be exact.
+                        // Sets marker1's position on the circle's edge at the same angle relative to where the user last left it.
                         if (marker.getId().equals(marker0ID)) {
 
-                            double marker1Latitude = (markerPosition.latitude  + (circle.getRadius() / 6371000) * (180 / Math.PI));
-                            double marker1Longitude = (markerPosition.longitude + (circle.getRadius() / 6371000) * (180 / Math.PI) / cos(markerPosition.latitude * Math.PI/180));
-                            double marker1LatitudeNegative = (markerPosition.latitude  - (circle.getRadius() / 6371000) * (180 / Math.PI));
-                            double marker1LongitudeNegative = (markerPosition.longitude - (circle.getRadius() / 6371000) * (180 / Math.PI) / cos(markerPosition.latitude * Math.PI/180));
-
-                            if (relativeAngle > 315 || relativeAngle < 45) {
-
-                                marker1.setPosition(new LatLng(marker1Latitude, circle.getCenter().longitude));
-
-                            } else if (135 >= relativeAngle && relativeAngle >= 45) {
-
-                                marker1.setPosition(new LatLng(circle.getCenter().latitude, marker1Longitude));
-
-                            } else if (225 > relativeAngle && relativeAngle > 135) {
-
-                                marker1.setPosition(new LatLng(marker1LatitudeNegative, circle.getCenter().longitude));
-
-                            } else {
-
-                                marker1.setPosition(new LatLng(circle.getCenter().latitude, marker1LongitudeNegative));
-                            }
+                            marker1.setPosition(latLngGivenDistance(circle.getCenter().latitude, circle.getCenter().longitude, 200, relativeAngle));
 
                             marker1.setVisible(true);
                         }
 
                         if (marker.getId().equals(marker1ID)) {
 
-                            marker1Position = marker.getPosition();
                             // Update the global variable with the angle the user left the marker's position. This is used if the user drags the center marker.
                             relativeAngle = angleFromCoordinate(circle.getCenter().latitude, circle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude);
+
                             // Keep the seekBar's progress aligned with the marker.
-                            circleSizeSeekBar.setProgress((int) distanceGivenLatLng(circle.getCenter().latitude, circle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude));
+                            if (circle.getRadius() < 200) {
+
+                                circleSizeSeekBar.setProgress((int) distanceGivenLatLng(circle.getCenter().latitude, circle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude));
+                            }
+
+                            // Limits the size of the circle, keeps marker1's position on the circle's edge at the same angle relative to where the user last left it, and keeps the seekBar's progress aligned with the marker.
+                            if (circle.getRadius() >= 200) {
+
+                                marker.setPosition(latLngGivenDistance(circle.getCenter().latitude, circle.getCenter().longitude, 200, relativeAngle));
+
+                                circleSizeSeekBar.setProgress(200);
+                            }
                         }
                     }
 
@@ -1120,7 +1105,6 @@ public class Map extends FragmentActivity implements
                 // If user holds the center marker, update the circle's position. Else, update the circle's radius.
                 if (circle != null) {
 
-                    // To be consistent with the polygon.
                     circle.setFillColor(0);
 
                     if (marker.getId().equals(marker0ID)) {
@@ -1132,7 +1116,7 @@ public class Map extends FragmentActivity implements
                     if (marker.getId().equals(marker1ID)) {
 
                         // Limits the size of the circle.
-                        if (circle.getRadius() < 200) {
+                        if (distanceGivenLatLng(circle.getCenter().latitude, circle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude) < 200) {
 
                             circle.setRadius(distanceGivenLatLng(circle.getCenter().latitude, circle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude));
                         } else {
@@ -1246,30 +1230,10 @@ public class Map extends FragmentActivity implements
 
                     circle.setFillColor(Color.argb(70, 255, 215, 0));
 
-                    // Sets marker1's position relative to where the user last left marker1. In the future, this should be exact.
+                    // Sets marker1's position on the circle's edge relative to where the user last left marker1.
                     if (marker.getId().equals(marker0ID)) {
 
-                        double marker1Latitude = (markerPosition.latitude  + (circle.getRadius() / 6371000) * (180 / Math.PI));
-                        double marker1Longitude = (markerPosition.longitude + (circle.getRadius() / 6371000) * (180 / Math.PI) / cos(markerPosition.latitude * Math.PI/180));
-                        double marker1LatitudeNegative = (markerPosition.latitude  - (circle.getRadius() / 6371000) * (180 / Math.PI));
-                        double marker1LongitudeNegative = (markerPosition.longitude - (circle.getRadius() / 6371000) * (180 / Math.PI) / cos(markerPosition.latitude * Math.PI/180));
-
-                        if (relativeAngle > 315 || relativeAngle < 45) {
-
-                            marker1.setPosition(new LatLng(marker1Latitude, circle.getCenter().longitude));
-
-                        } else if (135 >= relativeAngle && relativeAngle >= 45) {
-
-                            marker1.setPosition(new LatLng(circle.getCenter().latitude, marker1Longitude));
-
-                        } else if (225 > relativeAngle && relativeAngle > 135) {
-
-                            marker1.setPosition(new LatLng(marker1LatitudeNegative, circle.getCenter().longitude));
-
-                        } else {
-
-                            marker1.setPosition(new LatLng(circle.getCenter().latitude, marker1LongitudeNegative));
-                        }
+                        marker1.setPosition(latLngGivenDistance(circle.getCenter().latitude, circle.getCenter().longitude, 200, relativeAngle));
 
                         marker1.setVisible(true);
                     }
@@ -1285,30 +1249,10 @@ public class Map extends FragmentActivity implements
                             circleSizeSeekBar.setProgress((int) distanceGivenLatLng(circle.getCenter().latitude, circle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude));
                         }
 
-                        // Limits the size of the circle and keeps the seekBar's progress aligned with the marker.
+                        // Limits the size of the circle, keeps marker1's position on the circle's edge at the same angle relative to where the user last left it, and keeps the seekBar's progress aligned with the marker.
                         if (circle.getRadius() >= 200) {
 
-                            double marker1Latitude = (circle.getCenter().latitude  + (circle.getRadius() / 6371000) * (180 / Math.PI));
-                            double marker1Longitude = (circle.getCenter().longitude + (circle.getRadius() / 6371000) * (180 / Math.PI) / cos(circle.getCenter().latitude * Math.PI/180));
-                            double marker1LatitudeNegative = (circle.getCenter().latitude  - (circle.getRadius() / 6371000) * (180 / Math.PI));
-                            double marker1LongitudeNegative = (circle.getCenter().longitude - (circle.getRadius() / 6371000) * (180 / Math.PI) / cos(circle.getCenter().latitude * Math.PI/180));
-
-                            if (relativeAngle > 315 || relativeAngle < 45) {
-
-                                marker1.setPosition(new LatLng(marker1Latitude, circle.getCenter().longitude));
-
-                            } else if (135 >= relativeAngle && relativeAngle >= 45) {
-
-                                marker1.setPosition(new LatLng(circle.getCenter().latitude, marker1Longitude));
-
-                            } else if (225 > relativeAngle && relativeAngle > 135) {
-
-                                marker1.setPosition(new LatLng(marker1LatitudeNegative, circle.getCenter().longitude));
-
-                            } else {
-
-                                marker1.setPosition(new LatLng(circle.getCenter().latitude, marker1LongitudeNegative));
-                            }
+                            marker.setPosition(latLngGivenDistance(circle.getCenter().latitude, circle.getCenter().longitude, 200, relativeAngle));
 
                             circleSizeSeekBar.setProgress(200);
                         }
@@ -1983,6 +1927,8 @@ public class Map extends FragmentActivity implements
                     circle = null;
                     marker0 = null;
                     marker1 = null;
+                    marker0Position = null;
+                    marker1Position = null;
                     marker0ID = null;
                     marker1ID = null;
                 }
@@ -2086,6 +2032,8 @@ public class Map extends FragmentActivity implements
                     circle = null;
                     marker0 = null;
                     marker1 = null;
+                    marker0Position = null;
+                    marker1Position = null;
                     marker0ID = null;
                     marker1ID = null;
                 }
@@ -2174,11 +2122,14 @@ public class Map extends FragmentActivity implements
                     circle = null;
                     marker0 = null;
                     marker1 = null;
+                    marker0Position = null;
+                    marker1Position = null;
                     marker0ID = null;
                     marker1ID = null;
                 }
 
                 circleSizeSeekBar.setProgress(0);
+                relativeAngle = 0.0;
 
                 createCircleMenuIsOpen = false;
                 return true;
@@ -2344,7 +2295,7 @@ public class Map extends FragmentActivity implements
     }
 
     // Returns the distance between 2 latitudes and longitudes in meters.
-    public static float distanceGivenLatLng(double lat1, double lng1, double lat2, double lng2) {
+    private static float distanceGivenLatLng(double lat1, double lng1, double lat2, double lng2) {
 
         double earthRadius = 6371000; // Meters
         double dLat = Math.toRadians(lat2-lat1);
@@ -2373,6 +2324,21 @@ public class Map extends FragmentActivity implements
         //angle = 360 - angle; // count degrees counter-clockwise - remove to make clockwise
 
         return angle;
+    }
+
+    private LatLng latLngGivenDistance(double latitude, double longitude, double distanceInMetres, double bearing) {
+        double brngRad = Math.toRadians(bearing);
+        double latRad = Math.toRadians(latitude);
+        double lonRad = Math.toRadians(longitude);
+        int earthRadiusInMetres = 6371000;
+        double distFrac = distanceInMetres / earthRadiusInMetres;
+
+        double latitudeResult = Math.asin(sin(latRad) * cos(distFrac) + cos(latRad) * sin(distFrac) * cos(brngRad));
+        double a = Math.atan2(sin(brngRad) * sin(distFrac) * cos(latRad), cos(distFrac) - sin(latRad) * sin(latitudeResult));
+        double longitudeResult = (lonRad + a + 3 * Math.PI) % (2 * Math.PI) - Math.PI;
+
+
+        return new LatLng (toDegrees(latitudeResult), toDegrees(longitudeResult));
     }
 
     @Override
