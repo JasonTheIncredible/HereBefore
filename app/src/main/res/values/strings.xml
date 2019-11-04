@@ -13,8 +13,6 @@
     <string name="show_medium_circles">Show medium circles</string>
     <string name="show_small_circles">Show small circles</string>
     <string name="show_points">Show points</string>
-    <string name="larger_circle">Create larger circle</string>
-    <string name="smaller_circle">Create smaller circle</string>
     <string name="use_road_map_view">Use road map view</string>
     <string name="use_satellite_view">Use satellite view</string>
     <string name="use_hybrid_view">Use hybrid view</string>
