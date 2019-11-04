@@ -87,7 +87,7 @@ public class Map extends FragmentActivity implements
     private String marker0ID, marker1ID, marker2ID, marker3ID;
     private Double relativeAngle = 0.0;
 
-    //TODO: Limit circle size while dragging with marker.
+    //TODO: Keep marker at same position relative to the center of the circle.
     //TODO: Add onMarkerClickListener to go to circle's chat.
     //TODO: Rename circleViewsButton and have it show polygons.
     //TODO: Change marker appearance.
@@ -1131,7 +1131,14 @@ public class Map extends FragmentActivity implements
 
                     if (marker.getId().equals(marker1ID)) {
 
-                        circle.setRadius(distanceGivenLatLng(circle.getCenter().latitude, circle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude));
+                        // Limits the size of the circle.
+                        if (circle.getRadius() < 200) {
+
+                            circle.setRadius(distanceGivenLatLng(circle.getCenter().latitude, circle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude));
+                        } else {
+
+                            circle.setRadius(200);
+                        }
                     }
                 }
 
@@ -1186,7 +1193,14 @@ public class Map extends FragmentActivity implements
 
                     if (marker.getId().equals(marker1ID)) {
 
-                        circle.setRadius(distanceGivenLatLng(circle.getCenter().latitude, circle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude));
+                        // Limits the size of the circle.
+                        if (distanceGivenLatLng(markerPosition.latitude, markerPosition.longitude, circle.getCenter().latitude, circle.getCenter().longitude) < 200) {
+
+                            circle.setRadius(distanceGivenLatLng(circle.getCenter().latitude, circle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude));
+                        } else {
+
+                            circle.setRadius(200);
+                        }
                     }
                 }
 
@@ -1262,13 +1276,41 @@ public class Map extends FragmentActivity implements
 
                     if (marker.getId().equals(marker1ID)) {
 
-                        marker1Position = marker.getPosition();
                         // Update the global variable with the angle the user left the marker's position. This is used if the user drags the center marker.
                         relativeAngle = angleFromCoordinate(circle.getCenter().latitude, circle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude);
+
                         // Keep the seekBar's progress aligned with the marker.
-                        if (circle.getRadius() >= 100 && circleSizeSeekBar.getVisibility() != View.GONE) {
+                        if (circle.getRadius() < 200) {
 
                             circleSizeSeekBar.setProgress((int) distanceGivenLatLng(circle.getCenter().latitude, circle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude));
+                        }
+
+                        // Limits the size of the circle and keeps the seekBar's progress aligned with the marker.
+                        if (circle.getRadius() >= 200) {
+
+                            double marker1Latitude = (circle.getCenter().latitude  + (circle.getRadius() / 6371000) * (180 / Math.PI));
+                            double marker1Longitude = (circle.getCenter().longitude + (circle.getRadius() / 6371000) * (180 / Math.PI) / cos(circle.getCenter().latitude * Math.PI/180));
+                            double marker1LatitudeNegative = (circle.getCenter().latitude  - (circle.getRadius() / 6371000) * (180 / Math.PI));
+                            double marker1LongitudeNegative = (circle.getCenter().longitude - (circle.getRadius() / 6371000) * (180 / Math.PI) / cos(circle.getCenter().latitude * Math.PI/180));
+
+                            if (relativeAngle > 315 || relativeAngle < 45) {
+
+                                marker1.setPosition(new LatLng(marker1Latitude, circle.getCenter().longitude));
+
+                            } else if (135 >= relativeAngle && relativeAngle >= 45) {
+
+                                marker1.setPosition(new LatLng(circle.getCenter().latitude, marker1Longitude));
+
+                            } else if (225 > relativeAngle && relativeAngle > 135) {
+
+                                marker1.setPosition(new LatLng(marker1LatitudeNegative, circle.getCenter().longitude));
+
+                            } else {
+
+                                marker1.setPosition(new LatLng(circle.getCenter().latitude, marker1LongitudeNegative));
+                            }
+
+                            circleSizeSeekBar.setProgress(200);
                         }
                     }
                 }
