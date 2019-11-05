@@ -99,7 +99,7 @@ public class Map extends FragmentActivity implements
     //TODO: Make sure Firebase listener is always updating map properly.
     //TODO: Optimize Firebase loading.
     //TODO: Too much work on main thread.
-    //TODO: Change map type on different thread.
+    //TODO: Change map type on different thread - check without wifi and maybe load map type in background or only if internet is good enough.
     //TODO: Make checkLocationPermission Async / create loading animations.
     //TODO: Send message without entering app.
     //TODO: Work on possible NullPointerExceptions (try/catch).
@@ -546,7 +546,7 @@ public class Map extends FragmentActivity implements
                         // Sets marker1's position on the circle's edge at the same angle relative to where the user last left it.
                         if (marker.getId().equals(marker0ID)) {
 
-                            marker1.setPosition(latLngGivenDistance(circle.getCenter().latitude, circle.getCenter().longitude, 200, relativeAngle));
+                            marker1.setPosition(latLngGivenDistance(circle.getCenter().latitude, circle.getCenter().longitude, circle.getRadius(), relativeAngle));
 
                             marker1.setVisible(true);
                         }
@@ -1233,7 +1233,7 @@ public class Map extends FragmentActivity implements
                     // Sets marker1's position on the circle's edge relative to where the user last left marker1.
                     if (marker.getId().equals(marker0ID)) {
 
-                        marker1.setPosition(latLngGivenDistance(circle.getCenter().latitude, circle.getCenter().longitude, 200, relativeAngle));
+                        marker1.setPosition(latLngGivenDistance(circle.getCenter().latitude, circle.getCenter().longitude, circle.getRadius(), relativeAngle));
 
                         marker1.setVisible(true);
                     }
