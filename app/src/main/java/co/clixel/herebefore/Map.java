@@ -88,8 +88,8 @@ public class Map extends FragmentActivity implements
     private String marker0ID, marker1ID, marker2ID, marker3ID;
     private Double relativeAngle = 0.0;
 
-    //TODO: Add middle marker onMarkerClickListener to go to circle's chat (this could lead to accidentally going to chat).
     //TODO: Rename circleViewsButton and have it show polygons.
+    //TODO: Have circleSizeSeekBar work with polygons somehow and possibly rename circleSizeSeekBar.
     //TODO: Have polygon go to chat.
     //TODO: Prevent circle overlap.
     //TODO: Give user option to change color of the circles (or just change it outright).
@@ -405,6 +405,179 @@ public class Map extends FragmentActivity implements
                 @Override
                 public void onCancelled(@NonNull DatabaseError databaseError) {
 
+                }
+            });
+
+            // Go to Chat.java after clicking on a circle's middle marker.
+            mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
+                @Override
+                public boolean onMarkerClick(Marker marker) {
+
+                    if (circle != null && marker.getId().equals(marker0ID)) {
+
+                        // Since the circle is new, it will not have a tag, as the tag is pulled from Firebase. Therefore, generate a uuid.
+                        uuid = UUID.randomUUID().toString();
+
+                        // Check if the user is already signed in.
+                        if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+
+                            // User is signed in.
+
+                            // Check if user is within the circle before going to the chat.
+                            FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
+
+                            mFusedLocationClient.getLastLocation()
+                                    .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
+                                        @Override
+                                        public void onSuccess(Location location) {
+
+                                            if (location != null) {
+
+                                                float[] distance = new float[2];
+
+                                                Location.distanceBetween(location.getLatitude(), location.getLongitude(),
+                                                        circle.getCenter().latitude, circle.getCenter().longitude, distance);
+
+                                                // Boolean; will be true if user is within the circle upon circle click.
+                                                userIsWithinCircle = !(distance[0] > circle.getRadius());
+                                            }
+                                        }
+                                    });
+
+                            // If circle.getTag() == null, the circle is new. Therefore, compare it to the uuids in Firebase to prevent uuid overlap before adding it to Firebase.
+                            if (circle.getTag() == null) {
+
+                                firebaseCircles.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
+
+                                    @Override
+                                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                                        // If the uuid already exists in Firebase, generate another uuid and try again.
+                                        if (dataSnapshot.exists()) {
+
+                                            // Generate another UUID and try again.
+                                            uuid = UUID.randomUUID().toString();
+
+                                            // Carry the extras all the way to Chat.java.
+                                            Intent Activity = new Intent(Map.this, Chat.class);
+                                            // Pass this boolean value (true) to Chat.java.
+                                            Activity.putExtra("newCircle", true);
+                                            // Pass this value to Chat.java to identify the circle.
+                                            Activity.putExtra("uuid", uuid);
+                                            // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                            Activity.putExtra("userIsWithinCircle", userIsWithinCircle);
+                                            // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
+                                            Activity.putExtra("latitude", circle.getCenter().latitude);
+                                            Activity.putExtra("longitude", circle.getCenter().longitude);
+                                            Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
+                                            Activity.putExtra("radius", circle.getRadius());
+                                            startActivity(Activity);
+                                        } else {
+
+                                            // Carry the extras all the way to Chat.java.
+                                            Intent Activity = new Intent(Map.this, Chat.class);
+                                            // Pass this boolean value (true) to Chat.java.
+                                            Activity.putExtra("newCircle", true);
+                                            // Pass this value to Chat.java to identify the circle.
+                                            Activity.putExtra("uuid", uuid);
+                                            // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                            Activity.putExtra("userIsWithinCircle", userIsWithinCircle);
+                                            // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
+                                            Activity.putExtra("latitude", circle.getCenter().latitude);
+                                            Activity.putExtra("longitude", circle.getCenter().longitude);
+                                            Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
+                                            Activity.putExtra("radius", circle.getRadius());
+                                            startActivity(Activity);
+                                        }
+                                    }
+
+                                    @Override
+                                    public void onCancelled(@NonNull DatabaseError databaseError) {
+                                    }
+                                });
+                            } else {
+
+                                // Go to Chat.java with the boolean value.
+                                Intent Activity = new Intent(Map.this, Chat.class);
+                                // Pass this boolean value (false) to Chat.java.
+                                Activity.putExtra("newCircle", false);
+                                // Pass this value to Chat.java to identify the circle.
+                                Activity.putExtra("uuid", uuid);
+                                // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                Activity.putExtra("userIsWithinCircle", userIsWithinCircle);
+                                startActivity(Activity);
+                            }
+                        } else {
+
+                            // No user is signed in.
+
+                            // If circle.getTag() == null, the circle is new. Therefore, compare it to the uuids in Firebase to prevent uuid overlap before adding it to Firebase.
+                            if (circle.getTag() == null) {
+
+                                firebaseCircles.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
+
+                                    @Override
+                                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                                        // If the uuid already exists in Firebase, generate another uuid and try again.
+                                        if (dataSnapshot.exists()) {
+
+                                            // Generate another UUID and try again.
+                                            uuid = UUID.randomUUID().toString();
+
+                                            // Carry the extras all the way to Chat.java.
+                                            Intent Activity = new Intent(Map.this, SignIn.class);
+                                            // Pass this boolean value (true) to Chat.java.
+                                            Activity.putExtra("newCircle", true);
+                                            // Pass this value to Chat.java to identify the circle.
+                                            Activity.putExtra("uuid", uuid);
+                                            // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                            Activity.putExtra("userIsWithinCircle", userIsWithinCircle);
+                                            // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
+                                            Activity.putExtra("latitude", circle.getCenter().latitude);
+                                            Activity.putExtra("longitude", circle.getCenter().longitude);
+                                            Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
+                                            Activity.putExtra("radius", circle.getRadius());
+                                            startActivity(Activity);
+                                        } else {
+
+                                            // Carry the extras all the way to Chat.java.
+                                            Intent Activity = new Intent(Map.this, SignIn.class);
+                                            // Pass this boolean value (true) to Chat.java.
+                                            Activity.putExtra("newCircle", true);
+                                            // Pass this value to Chat.java to identify the circle.
+                                            Activity.putExtra("uuid", uuid);
+                                            // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                            Activity.putExtra("userIsWithinCircle", userIsWithinCircle);
+                                            // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
+                                            Activity.putExtra("latitude", circle.getCenter().latitude);
+                                            Activity.putExtra("longitude", circle.getCenter().longitude);
+                                            Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
+                                            Activity.putExtra("radius", circle.getRadius());
+                                            startActivity(Activity);
+                                        }
+                                    }
+
+                                    @Override
+                                    public void onCancelled(@NonNull DatabaseError databaseError) {
+                                    }
+                                });
+                            } else {
+
+                                // Go to Chat.java with the boolean value.
+                                Intent Activity = new Intent(Map.this, SignIn.class);
+                                // Pass this boolean value (false) to Chat.java.
+                                Activity.putExtra("newCircle", false);
+                                // Pass this value to Chat.java to identify the circle.
+                                Activity.putExtra("uuid", uuid);
+                                // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                Activity.putExtra("userIsWithinCircle", userIsWithinCircle);
+                                startActivity(Activity);
+                            }
+                        }
+                    }
+
+                    return true;
                 }
             });
 
@@ -1092,6 +1265,179 @@ public class Map extends FragmentActivity implements
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {
 
+            }
+        });
+
+        // Go to Chat.java after clicking on a circle's middle marker.
+        mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
+            @Override
+            public boolean onMarkerClick(Marker marker) {
+
+                if (circle != null && marker.getId().equals(marker0ID)) {
+
+                    // Since the circle is new, it will not have a tag, as the tag is pulled from Firebase. Therefore, generate a uuid.
+                    uuid = UUID.randomUUID().toString();
+
+                    // Check if the user is already signed in.
+                    if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+
+                        // User is signed in.
+
+                        // Check if user is within the circle before going to the chat.
+                        FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
+
+                        mFusedLocationClient.getLastLocation()
+                                .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
+                                    @Override
+                                    public void onSuccess(Location location) {
+
+                                        if (location != null) {
+
+                                            float[] distance = new float[2];
+
+                                            Location.distanceBetween(location.getLatitude(), location.getLongitude(),
+                                                    circle.getCenter().latitude, circle.getCenter().longitude, distance);
+
+                                            // Boolean; will be true if user is within the circle upon circle click.
+                                            userIsWithinCircle = !(distance[0] > circle.getRadius());
+                                        }
+                                    }
+                                });
+
+                        // If circle.getTag() == null, the circle is new. Therefore, compare it to the uuids in Firebase to prevent uuid overlap before adding it to Firebase.
+                        if (circle.getTag() == null) {
+
+                            firebaseCircles.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
+
+                                @Override
+                                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                                    // If the uuid already exists in Firebase, generate another uuid and try again.
+                                    if (dataSnapshot.exists()) {
+
+                                        // Generate another UUID and try again.
+                                        uuid = UUID.randomUUID().toString();
+
+                                        // Carry the extras all the way to Chat.java.
+                                        Intent Activity = new Intent(Map.this, Chat.class);
+                                        // Pass this boolean value (true) to Chat.java.
+                                        Activity.putExtra("newCircle", true);
+                                        // Pass this value to Chat.java to identify the circle.
+                                        Activity.putExtra("uuid", uuid);
+                                        // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                        Activity.putExtra("userIsWithinCircle", userIsWithinCircle);
+                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
+                                        Activity.putExtra("latitude", circle.getCenter().latitude);
+                                        Activity.putExtra("longitude", circle.getCenter().longitude);
+                                        Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
+                                        Activity.putExtra("radius", circle.getRadius());
+                                        startActivity(Activity);
+                                    } else {
+
+                                        // Carry the extras all the way to Chat.java.
+                                        Intent Activity = new Intent(Map.this, Chat.class);
+                                        // Pass this boolean value (true) to Chat.java.
+                                        Activity.putExtra("newCircle", true);
+                                        // Pass this value to Chat.java to identify the circle.
+                                        Activity.putExtra("uuid", uuid);
+                                        // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                        Activity.putExtra("userIsWithinCircle", userIsWithinCircle);
+                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
+                                        Activity.putExtra("latitude", circle.getCenter().latitude);
+                                        Activity.putExtra("longitude", circle.getCenter().longitude);
+                                        Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
+                                        Activity.putExtra("radius", circle.getRadius());
+                                        startActivity(Activity);
+                                    }
+                                }
+
+                                @Override
+                                public void onCancelled(@NonNull DatabaseError databaseError) {
+                                }
+                            });
+                        } else {
+
+                            // Go to Chat.java with the boolean value.
+                            Intent Activity = new Intent(Map.this, Chat.class);
+                            // Pass this boolean value (false) to Chat.java.
+                            Activity.putExtra("newCircle", false);
+                            // Pass this value to Chat.java to identify the circle.
+                            Activity.putExtra("uuid", uuid);
+                            // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                            Activity.putExtra("userIsWithinCircle", userIsWithinCircle);
+                            startActivity(Activity);
+                        }
+                    } else {
+
+                        // No user is signed in.
+
+                        // If circle.getTag() == null, the circle is new. Therefore, compare it to the uuids in Firebase to prevent uuid overlap before adding it to Firebase.
+                        if (circle.getTag() == null) {
+
+                            firebaseCircles.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
+
+                                @Override
+                                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                                    // If the uuid already exists in Firebase, generate another uuid and try again.
+                                    if (dataSnapshot.exists()) {
+
+                                        // Generate another UUID and try again.
+                                        uuid = UUID.randomUUID().toString();
+
+                                        // Carry the extras all the way to Chat.java.
+                                        Intent Activity = new Intent(Map.this, SignIn.class);
+                                        // Pass this boolean value (true) to Chat.java.
+                                        Activity.putExtra("newCircle", true);
+                                        // Pass this value to Chat.java to identify the circle.
+                                        Activity.putExtra("uuid", uuid);
+                                        // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                        Activity.putExtra("userIsWithinCircle", userIsWithinCircle);
+                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
+                                        Activity.putExtra("latitude", circle.getCenter().latitude);
+                                        Activity.putExtra("longitude", circle.getCenter().longitude);
+                                        Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
+                                        Activity.putExtra("radius", circle.getRadius());
+                                        startActivity(Activity);
+                                    } else {
+
+                                        // Carry the extras all the way to Chat.java.
+                                        Intent Activity = new Intent(Map.this, SignIn.class);
+                                        // Pass this boolean value (true) to Chat.java.
+                                        Activity.putExtra("newCircle", true);
+                                        // Pass this value to Chat.java to identify the circle.
+                                        Activity.putExtra("uuid", uuid);
+                                        // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                        Activity.putExtra("userIsWithinCircle", userIsWithinCircle);
+                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
+                                        Activity.putExtra("latitude", circle.getCenter().latitude);
+                                        Activity.putExtra("longitude", circle.getCenter().longitude);
+                                        Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
+                                        Activity.putExtra("radius", circle.getRadius());
+                                        startActivity(Activity);
+                                    }
+                                }
+
+                                @Override
+                                public void onCancelled(@NonNull DatabaseError databaseError) {
+                                }
+                            });
+                        } else {
+
+                            // Go to Chat.java with the boolean value.
+                            Intent Activity = new Intent(Map.this, SignIn.class);
+                            // Pass this boolean value (false) to Chat.java.
+                            Activity.putExtra("newCircle", false);
+                            // Pass this value to Chat.java to identify the circle.
+                            Activity.putExtra("uuid", uuid);
+                            // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                            Activity.putExtra("userIsWithinCircle", userIsWithinCircle);
+                            startActivity(Activity);
+                        }
+                    }
+                }
+
+                return true;
             }
         });
 
