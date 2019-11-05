@@ -9,9 +9,9 @@
     <string name="log_out">Log Out</string>
     <string name="new_question">New?</string>
     <string name="show_everything">Show everything</string>
-    <string name="show_large_circles">Show large circles</string>
-    <string name="show_medium_circles">Show medium circles</string>
-    <string name="show_small_circles">Show small circles</string>
+    <string name="show_large_chats">Show large chats</string>
+    <string name="show_medium_chats">Show medium chats</string>
+    <string name="show_small_chats">Show small chats</string>
     <string name="show_points">Show points</string>
     <string name="use_road_map_view">Use road map view</string>
     <string name="use_satellite_view">Use satellite view</string>

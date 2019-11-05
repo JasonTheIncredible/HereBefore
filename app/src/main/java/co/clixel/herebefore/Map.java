@@ -72,25 +72,18 @@ public class Map extends FragmentActivity implements
     private Marker marker0, marker1, marker2, marker3;
     private Circle circle;
     private Polygon polygon;
-    private DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-    private DatabaseReference firebaseCircles = rootRef.child("circles");
-    private SeekBar circleSizeSeekBar;
-    private String uuid;
-    private Button createCircleButton, circleViewsButton, mapTypeButton;
-    private PopupMenu popupMapType, popupCircleViews, popupCreateCircle;
-    boolean firstLoad = true;
-    private Boolean mapTypeMenuIsOpen = false;
-    private Boolean circleViewsMenuIsOpen = false;
-    private Boolean createCircleMenuIsOpen = false;
-    private Boolean usedSeekBar = false;
-    private Boolean userIsWithinCircle;
+    private DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference(), firebaseCircles = rootRef.child("circles");
+    private SeekBar chatSizeSeekBar;
+    private String uuid, marker0ID, marker1ID, marker2ID, marker3ID;
+    private Button createChatButton, chatViewsButton, mapTypeButton;
+    private PopupMenu popupMapType, popupChatViews, popupCreateChat;
+    private Boolean mapTypeMenuIsOpen = false, chatViewsMenuIsOpen = false, createChatMenuIsOpen = false, usedSeekBar = false, userIsWithinCircle, firstLoad = true;
     private LatLng marker0Position, marker1Position, marker2Position, marker3Position;
-    private String marker0ID, marker1ID, marker2ID, marker3ID;
     private Double relativeAngle = 0.0;
 
-    //TODO: Rename circleViewsButton and have it show polygons.
-    //TODO: Have circleSizeSeekBar work with polygons somehow and possibly rename circleSizeSeekBar.
+    //TODO: Have chatSizeSeekBar work with polygons somehow?
     //TODO: Have polygon go to chat.
+    //TODO: Have chatViewsButton show polygons.
     //TODO: Prevent circle overlap.
     //TODO: Give user option to change color of the circles (or just change it outright).
     //TODO: Make points easier to see somehow.
@@ -118,9 +111,9 @@ public class Map extends FragmentActivity implements
         mapFragment.getMapAsync(this);
 
         mapTypeButton = findViewById(R.id.mapTypeButton);
-        createCircleButton = findViewById(R.id.createCircleButton);
-        circleSizeSeekBar = findViewById(R.id.circleSizeSeekBar);
-        circleViewsButton = findViewById(R.id.circleViewsButton);
+        createChatButton = findViewById(R.id.createChatButton);
+        chatSizeSeekBar = findViewById(R.id.chatSizeSeekBar);
+        chatViewsButton = findViewById(R.id.chatViewsButton);
     }
 
     @Override
@@ -166,63 +159,63 @@ public class Map extends FragmentActivity implements
         });
 
         // Shows a menu to filter circle views.
-        circleViewsButton.setOnClickListener(new View.OnClickListener() {
+        chatViewsButton.setOnClickListener(new View.OnClickListener() {
 
             @Override
             public void onClick(View view) {
 
-                popupCircleViews = new PopupMenu(Map.this, circleViewsButton);
-                popupCircleViews.setOnMenuItemClickListener(Map.this);
-                popupCircleViews.inflate(R.menu.circleviews_menu);
-                popupCircleViews.show();
-                circleViewsMenuIsOpen = true;
+                popupChatViews = new PopupMenu(Map.this, chatViewsButton);
+                popupChatViews.setOnMenuItemClickListener(Map.this);
+                popupChatViews.inflate(R.menu.chatviews_menu);
+                popupChatViews.show();
+                chatViewsMenuIsOpen = true;
 
                 // Changes boolean value (used in OnConfigurationChanged) to determine whether menu is currently open.
-                popupCircleViews.setOnDismissListener(new PopupMenu.OnDismissListener(){
+                popupChatViews.setOnDismissListener(new PopupMenu.OnDismissListener(){
                     @Override
                     public void onDismiss(PopupMenu popupMenu) {
 
-                        circleViewsMenuIsOpen = false;
-                        popupCircleViews.setOnDismissListener(null);
+                        chatViewsMenuIsOpen = false;
+                        popupChatViews.setOnDismissListener(null);
                     }
                 });
             }
         });
 
-        // Shows a menu for creating circles.
-        createCircleButton.setOnClickListener(new View.OnClickListener() {
+        // Shows a menu for creating chats.
+        createChatButton.setOnClickListener(new View.OnClickListener() {
 
             @Override
             public void onClick(View view) {
 
-                popupCreateCircle = new PopupMenu(Map.this, createCircleButton);
-                popupCreateCircle.setOnMenuItemClickListener(Map.this);
-                popupCreateCircle.inflate(R.menu.createcircle_menu);
+                popupCreateChat = new PopupMenu(Map.this, createChatButton);
+                popupCreateChat.setOnMenuItemClickListener(Map.this);
+                popupCreateChat.inflate(R.menu.createchat_menu);
                 // Check if the circle exists and adjust the menu items accordingly.
                 if (circle != null || polygon != null) {
 
-                    popupCreateCircle.getMenu().findItem(R.id.createPolygon).setVisible(false);
-                    popupCreateCircle.getMenu().findItem(R.id.createCircle).setVisible(false);
+                    popupCreateChat.getMenu().findItem(R.id.createPolygon).setVisible(false);
+                    popupCreateChat.getMenu().findItem(R.id.createCircle).setVisible(false);
                 } else{
 
-                    popupCreateCircle.getMenu().findItem(R.id.removeShape).setVisible(false);
+                    popupCreateChat.getMenu().findItem(R.id.removeShape).setVisible(false);
                 }
-                popupCreateCircle.show();
-                createCircleMenuIsOpen = true;
+                popupCreateChat.show();
+                createChatMenuIsOpen = true;
 
                 // Changes boolean value (used in OnConfigurationChanged) to determine whether menu is currently open.
-                popupCreateCircle.setOnDismissListener(new PopupMenu.OnDismissListener() {
+                popupCreateChat.setOnDismissListener(new PopupMenu.OnDismissListener() {
                     @Override
                     public void onDismiss(PopupMenu popupMenu) {
 
-                        createCircleMenuIsOpen = false;
-                        popupCreateCircle.setOnDismissListener(null);
+                        createChatMenuIsOpen = false;
+                        popupCreateChat.setOnDismissListener(null);
                     }
                 });
             }
         });
 
-        circleSizeSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+        chatSizeSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
 
             @Override
             public void onStartTrackingTouch(final SeekBar seekBar) {
@@ -244,7 +237,7 @@ public class Map extends FragmentActivity implements
                                     if (location != null) {
 
                                         // Make circle the size set by the seekBar.
-                                        int circleSize = circleSizeSeekBar.getProgress();
+                                        int circleSize = chatSizeSeekBar.getProgress();
 
                                         // Logic to handle location object.
                                         LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
@@ -310,7 +303,7 @@ public class Map extends FragmentActivity implements
 
                     circle.setFillColor(Color.argb(70, 255, 215, 0));
 
-                    marker1.setPosition(latLngGivenDistance(circle.getCenter().latitude, circle.getCenter().longitude, circleSizeSeekBar.getProgress(), relativeAngle));
+                    marker1.setPosition(latLngGivenDistance(circle.getCenter().latitude, circle.getCenter().longitude, chatSizeSeekBar.getProgress(), relativeAngle));
 
                     marker1.setVisible(true);
                 }
@@ -325,7 +318,7 @@ public class Map extends FragmentActivity implements
         Log.i(TAG, "onRestart()");
 
         // Clear map before adding new Firebase circles in onStart() to prevent overlap.
-        // Set shape to null so changing circleSizeSeekBar in onStart() will create a circle and createCircleButton will reset itself.
+        // Set shape to null so changing chatSizeSeekBar in onStart() will create a circle and createChatButton will reset itself.
         if (mMap != null) {
 
             // Remove the polygon and marker.
@@ -367,7 +360,7 @@ public class Map extends FragmentActivity implements
             }
 
             mMap.clear();
-            circleSizeSeekBar.setProgress(0);
+            chatSizeSeekBar.setProgress(0);
             relativeAngle = 0.0;
             usedSeekBar = false;
 
@@ -732,7 +725,7 @@ public class Map extends FragmentActivity implements
                             // Keep the seekBar's progress aligned with the marker.
                             if (circle.getRadius() < 200) {
 
-                                circleSizeSeekBar.setProgress((int) distanceGivenLatLng(circle.getCenter().latitude, circle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude));
+                                chatSizeSeekBar.setProgress((int) distanceGivenLatLng(circle.getCenter().latitude, circle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude));
                             }
 
                             // Limits the size of the circle, keeps marker1's position on the circle's edge at the same angle relative to where the user last left it, and keeps the seekBar's progress aligned with the marker.
@@ -740,7 +733,7 @@ public class Map extends FragmentActivity implements
 
                                 marker.setPosition(latLngGivenDistance(circle.getCenter().latitude, circle.getCenter().longitude, 200, relativeAngle));
 
-                                circleSizeSeekBar.setProgress(200);
+                                chatSizeSeekBar.setProgress(200);
                             }
                         }
                     }
@@ -958,17 +951,17 @@ public class Map extends FragmentActivity implements
         }
 
         // Close any open menus
-        if (popupCircleViews != null) {
+        if (popupChatViews != null) {
 
-            popupCircleViews.dismiss();
-            circleViewsMenuIsOpen = false;
+            popupChatViews.dismiss();
+            chatViewsMenuIsOpen = false;
         }
 
         // Close any open menus
-        if (popupCreateCircle != null) {
+        if (popupCreateChat != null) {
 
-            popupCreateCircle.dismiss();
-            createCircleMenuIsOpen = false;
+            popupCreateChat.dismiss();
+            createChatMenuIsOpen = false;
         }
     }
 
@@ -1018,27 +1011,27 @@ public class Map extends FragmentActivity implements
         }
 
         // Remove the listener.
-        if (circleViewsButton != null) {
+        if (chatViewsButton != null) {
 
-            circleViewsButton.setOnClickListener(null);
+            chatViewsButton.setOnClickListener(null);
         }
 
         // Remove the listener.
-        if (popupCircleViews != null) {
+        if (popupChatViews != null) {
 
-            popupCircleViews.setOnDismissListener(null);
+            popupChatViews.setOnDismissListener(null);
         }
 
         // Remove the listener.
-        if (createCircleButton != null) {
+        if (createChatButton != null) {
 
-            createCircleButton.setOnClickListener(null);
+            createChatButton.setOnClickListener(null);
         }
 
         // Remove the seekBar listener.
-        if (circleSizeSeekBar != null) {
+        if (chatSizeSeekBar != null) {
 
-            circleSizeSeekBar.setOnSeekBarChangeListener(null);
+            chatSizeSeekBar.setOnSeekBarChangeListener(null);
         }
 
         // Remove the listener.
@@ -1592,7 +1585,7 @@ public class Map extends FragmentActivity implements
                         // Keep the seekBar's progress aligned with the marker.
                         if (circle.getRadius() < 200) {
 
-                            circleSizeSeekBar.setProgress((int) distanceGivenLatLng(circle.getCenter().latitude, circle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude));
+                            chatSizeSeekBar.setProgress((int) distanceGivenLatLng(circle.getCenter().latitude, circle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude));
                         }
 
                         // Limits the size of the circle, keeps marker1's position on the circle's edge at the same angle relative to where the user last left it, and keeps the seekBar's progress aligned with the marker.
@@ -1600,7 +1593,7 @@ public class Map extends FragmentActivity implements
 
                             marker.setPosition(latLngGivenDistance(circle.getCenter().latitude, circle.getCenter().longitude, 200, relativeAngle));
 
-                            circleSizeSeekBar.setProgress(200);
+                            chatSizeSeekBar.setProgress(200);
                         }
                     }
                 }
@@ -1848,7 +1841,7 @@ public class Map extends FragmentActivity implements
             popupMapType.dismiss();
             popupMapType.show();
             mapTypeMenuIsOpen = true;
-        } else if ( newConfig.orientation == Configuration.ORIENTATION_PORTRAIT && circleViewsMenuIsOpen){
+        } else if ( newConfig.orientation == Configuration.ORIENTATION_PORTRAIT && chatViewsMenuIsOpen){
 
             popupMapType.dismiss();
             popupMapType.show();
@@ -1856,29 +1849,29 @@ public class Map extends FragmentActivity implements
         }
 
         // Reloads the popup when the orientation changes to prevent viewing issues.
-        if ( newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE && circleViewsMenuIsOpen) {
+        if ( newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE && chatViewsMenuIsOpen) {
 
-            popupCircleViews.dismiss();
-            popupCircleViews.show();
-            circleViewsMenuIsOpen = true;
-        } else if ( newConfig.orientation == Configuration.ORIENTATION_PORTRAIT && circleViewsMenuIsOpen){
+            popupChatViews.dismiss();
+            popupChatViews.show();
+            chatViewsMenuIsOpen = true;
+        } else if ( newConfig.orientation == Configuration.ORIENTATION_PORTRAIT && chatViewsMenuIsOpen){
 
-            popupCircleViews.dismiss();
-            popupCircleViews.show();
-            circleViewsMenuIsOpen = true;
+            popupChatViews.dismiss();
+            popupChatViews.show();
+            chatViewsMenuIsOpen = true;
         }
 
         // Reloads the popup when the orientation changes to prevent viewing issues.
-        if ( newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE && createCircleMenuIsOpen) {
+        if ( newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE && createChatMenuIsOpen) {
 
-            popupCreateCircle.dismiss();
-            popupCreateCircle.show();
-            createCircleMenuIsOpen = true;
-        } else if ( newConfig.orientation == Configuration.ORIENTATION_PORTRAIT && createCircleMenuIsOpen){
+            popupCreateChat.dismiss();
+            popupCreateChat.show();
+            createChatMenuIsOpen = true;
+        } else if ( newConfig.orientation == Configuration.ORIENTATION_PORTRAIT && createChatMenuIsOpen){
 
-            popupCreateCircle.dismiss();
-            popupCreateCircle.show();
-            createCircleMenuIsOpen = true;
+            popupCreateChat.dismiss();
+            popupCreateChat.show();
+            createChatMenuIsOpen = true;
         }
     }
 
@@ -1886,7 +1879,7 @@ public class Map extends FragmentActivity implements
     public boolean onMenuItemClick(MenuItem menuItem) {
 
         Log.i(TAG, "onMenuItemClick()");
-        // Sets the circleviews_menu actions.
+        // Sets the chatviews_menu actions.
         switch(menuItem.getItemId()) {
 
             // maptype_menu
@@ -1961,18 +1954,18 @@ public class Map extends FragmentActivity implements
                 mapTypeMenuIsOpen = false;
                 return true;
 
-            // circleviews_menu
+            // chatviews_menu
             case R.id.showEverything:
 
                 Log.i(TAG, "onMenuItemClick() -> everything");
 
                 mMap.clear();
 
-                // Set circle to null so changing circleSizeSeekBar will create a circle.
+                // Set circle to null so changing chatSizeSeekBar will create a circle.
                 circle = null;
 
                 // Set progress to 0, as no circle exists.
-                circleSizeSeekBar.setProgress(0);
+                chatSizeSeekBar.setProgress(0);
 
                 // Load all Firebase circles.
                 firebaseCircles.addListenerForSingleValueEvent(new ValueEventListener() {
@@ -2011,20 +2004,21 @@ public class Map extends FragmentActivity implements
                     }
                 });
 
-                circleViewsMenuIsOpen = false;
+                chatViewsMenuIsOpen = false;
                 return true;
 
-            case R.id.showLargeCircles:
+            // chatviews_menu
+            case R.id.showLargeChats:
 
                 Log.i(TAG, "onMenuItemClick() -> largeCircles");
 
                 mMap.clear();
 
-                // Set circle to null so changing circleSizeSeekBar will create a circle.
+                // Set circle to null so changing chatSizeSeekBar will create a circle.
                 circle = null;
 
                 // Set progress to 0, as no circle exists.
-                circleSizeSeekBar.setProgress(0);
+                chatSizeSeekBar.setProgress(0);
 
                 // Load Firebase circles.
                 firebaseCircles.addListenerForSingleValueEvent(new ValueEventListener() {
@@ -2067,20 +2061,21 @@ public class Map extends FragmentActivity implements
                     }
                 });
 
-                circleViewsMenuIsOpen = false;
+                chatViewsMenuIsOpen = false;
                 return true;
 
-            case R.id.showMediumCircles:
+            // chatviews_menu
+            case R.id.showMediumChats:
 
                 Log.i(TAG, "onMenuItemClick() -> mediumCircles");
 
                 mMap.clear();
 
-                // Set circle to null so changing circleSizeSeekBar will create a circle.
+                // Set circle to null so changing chatSizeSeekBar will create a circle.
                 circle = null;
 
                 // Set progress to 0, as no circle exists.
-                circleSizeSeekBar.setProgress(0);
+                chatSizeSeekBar.setProgress(0);
 
                 // Load Firebase circles.
                 firebaseCircles.addListenerForSingleValueEvent(new ValueEventListener() {
@@ -2123,20 +2118,21 @@ public class Map extends FragmentActivity implements
                     }
                 });
 
-                circleViewsMenuIsOpen = false;
+                chatViewsMenuIsOpen = false;
                 return true;
 
-            case R.id.showSmallCircles:
+            // chatviews_menu
+            case R.id.showSmallChats:
 
                 Log.i(TAG, "onMenuItemClick() -> smallCircles");
 
                 mMap.clear();
 
-                // Set circle to null so changing circleSizeSeekBar will create a circle.
+                // Set circle to null so changing chatSizeSeekBar will create a circle.
                 circle = null;
 
                 // Set progress to 0, as no circle exists.
-                circleSizeSeekBar.setProgress(0);
+                chatSizeSeekBar.setProgress(0);
 
                 // Load Firebase circles.
                 firebaseCircles.addListenerForSingleValueEvent(new ValueEventListener() {
@@ -2179,20 +2175,21 @@ public class Map extends FragmentActivity implements
                     }
                 });
 
-                circleViewsMenuIsOpen = false;
+                chatViewsMenuIsOpen = false;
                 return true;
 
+            // chatviews_menu
             case R.id.showPoints:
 
                 Log.i(TAG, "onMenuItemClick() -> points");
 
                 mMap.clear();
 
-                // Set circle to null so changing circleSizeSeekBar will create a circle.
+                // Set circle to null so changing chatSizeSeekBar will create a circle.
                 circle = null;
 
                 // Set progress to 0, as no circle exists.
-                circleSizeSeekBar.setProgress(0);
+                chatSizeSeekBar.setProgress(0);
 
                 // Load Firebase circles.
                 firebaseCircles.addListenerForSingleValueEvent(new ValueEventListener() {
@@ -2235,10 +2232,10 @@ public class Map extends FragmentActivity implements
                     }
                 });
 
-                circleViewsMenuIsOpen = false;
+                chatViewsMenuIsOpen = false;
                 return true;
 
-            // createcircle_menu
+            // createchat_menu
             case R.id.createPolygon:
 
                 Log.i(TAG, "onMenuItemClick() -> createPolygon");
@@ -2292,7 +2289,7 @@ public class Map extends FragmentActivity implements
                                 if (location != null) {
 
                                     // Set seekBar to be the same as the polygon's arbitrary size.
-                                    circleSizeSeekBar.setProgress(10);
+                                    chatSizeSeekBar.setProgress(10);
 
                                     // Logic to handle location object.
                                     marker0Position = new LatLng(location.getLatitude() - 0.0001, location.getLongitude());
@@ -2340,10 +2337,10 @@ public class Map extends FragmentActivity implements
                             }
                         });
 
-                createCircleMenuIsOpen = false;
+                createChatMenuIsOpen = false;
                 return true;
 
-            // createcircle_menu
+            // createchat_menu
             case R.id.createCircle:
 
                 Log.i(TAG, "onMenuItemClick() -> createCircle");
@@ -2425,15 +2422,15 @@ public class Map extends FragmentActivity implements
                                     marker1ID = marker1.getId();
 
                                     circle = mMap.addCircle(circleOptions);
-                                    circleSizeSeekBar.setProgress((int) distanceGivenLatLng(location.getLatitude(), location.getLongitude(), marker1Position.latitude, marker1Position.longitude));
+                                    chatSizeSeekBar.setProgress((int) distanceGivenLatLng(location.getLatitude(), location.getLongitude(), marker1Position.latitude, marker1Position.longitude));
                                 }
                             }
                         });
 
-                createCircleMenuIsOpen = false;
+                createChatMenuIsOpen = false;
                 return true;
 
-            // createcircle_menu
+            // createchat_menu
             case R.id.removeShape:
 
                 // Remove the polygon and markers.
@@ -2474,13 +2471,13 @@ public class Map extends FragmentActivity implements
                     marker1ID = null;
                 }
 
-                circleSizeSeekBar.setProgress(0);
+                chatSizeSeekBar.setProgress(0);
                 relativeAngle = 0.0;
 
-                createCircleMenuIsOpen = false;
+                createChatMenuIsOpen = false;
                 return true;
 
-            // createcircle_menu
+            // createchat_menu
             case R.id.createPoint:
 
                 Log.i(TAG, "onMenuItemClick() -> createPoint");
@@ -2632,7 +2629,7 @@ public class Map extends FragmentActivity implements
                             }
                         });
 
-                createCircleMenuIsOpen = false;
+                createChatMenuIsOpen = false;
                 return true;
 
             default:

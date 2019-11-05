@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item android:id="@+id/showEverything"
+        android:title="@string/show_everything"/>
+
+    <item android:id="@+id/showLargeChats"
+        android:title="@string/show_large_chats"/>
+
+    <item android:id="@+id/showMediumChats"
+        android:title="@string/show_medium_chats"/>
+
+    <item android:id="@+id/showSmallChats"
+        android:title="@string/show_small_chats"/>
+
+    <item android:id="@+id/showPoints"
+        android:title="@string/show_points"/>
+</menu>
