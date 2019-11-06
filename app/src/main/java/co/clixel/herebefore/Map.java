@@ -81,7 +81,7 @@ public class Map extends FragmentActivity implements
     private LatLng marker0Position, marker1Position, marker2Position, marker3Position;
     private Double relativeAngle = 0.0;
 
-    //TODO: Have chatSizeSeekBar work with polygons somehow?
+    //TODO: Be able to add or remove a marker on polygon with seekBar, and add an option in createChatButton to do the same.
     //TODO: Have polygon go to chat.
     //TODO: Have chatViewsButton show polygons.
     //TODO: Prevent circle overlap.
