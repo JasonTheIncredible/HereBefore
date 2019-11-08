@@ -81,7 +81,6 @@ public class Map extends FragmentActivity implements
     private Double relativeAngle = 0.0;
     private Location mlocation;
 
-    //TODO: Don't remove polygon in onSeekBarClickListener if the same number of markers already exist.
     //TODO: Add an option in createChatButton to create an x-marker polygon.
     //TODO: Add ability to move the extra polygon markers with the shape.
     //TODO: Have polygon go to chat.
@@ -239,6 +238,8 @@ public class Map extends FragmentActivity implements
                                     // Get last known location. In some rare situations, this can be null.
                                     if (location != null) {
 
+                                        Log.i(TAG, "chatSizeSeekBar -> onStartTrackingTouch -> circle");
+
                                         // Make circle the size set by the seekBar.
                                         int circleSize = chatSizeSeekBar.getProgress();
 
@@ -297,66 +298,73 @@ public class Map extends FragmentActivity implements
                                         // Global variable used in onProgressChanged() so that mFusedLocationClient doesn't need to be continuously called.
                                         mlocation = location;
 
-                                        polygon.remove();
-                                        marker0.remove();
-                                        marker1.remove();
-                                        marker2.remove();
-                                        polygon = null;
-                                        marker0 = null;
-                                        marker1 = null;
-                                        marker2 = null;
-                                        marker0Position = null;
-                                        marker1Position = null;
-                                        marker2Position = null;
-                                        marker0ID = null;
-                                        marker1ID = null;
-                                        marker2ID = null;
-
-                                        if (marker3 != null) {
-
-                                            marker3.remove();
-                                            marker3 = null;
-                                            marker3Position = null;
-                                            marker3ID = null;
-                                        }
-
-                                        if (marker4 != null) {
-
-                                            marker4.remove();
-                                            marker4 = null;
-                                            marker4Position = null;
-                                            marker4ID = null;
-                                        }
-
-                                        if (marker5 != null) {
-
-                                            marker5.remove();
-                                            marker5 = null;
-                                            marker5Position = null;
-                                            marker5ID = null;
-                                        }
-
-                                        if (marker6 != null) {
-
-                                            marker6.remove();
-                                            marker6 = null;
-                                            marker6Position = null;
-                                            marker6ID = null;
-                                        }
-
-                                        if (marker7 != null) {
-
-                                            marker7.remove();
-                                            marker7 = null;
-                                            marker7Position = null;
-                                            marker7ID = null;
-                                        }
-
                                         // 3 markers.
-                                        if (chatSizeSeekBar.getProgress() <= 33) {
+                                        if (chatSizeSeekBar.getProgress() <= 33 && !threeMarkers) {
+
+                                            Log.i(TAG, "chatSizeSeekBar -> onStartTrackingTouch -> polygon -> 3 markers");
+
+                                            polygon.remove();
+                                            marker0.remove();
+                                            marker1.remove();
+                                            marker2.remove();
+                                            polygon = null;
+                                            marker0 = null;
+                                            marker1 = null;
+                                            marker2 = null;
+                                            marker0Position = null;
+                                            marker1Position = null;
+                                            marker2Position = null;
+                                            marker0ID = null;
+                                            marker1ID = null;
+                                            marker2ID = null;
+
+                                            if (marker3 != null) {
+
+                                                marker3.remove();
+                                                marker3 = null;
+                                                marker3Position = null;
+                                                marker3ID = null;
+                                            }
+
+                                            if (marker4 != null) {
+
+                                                marker4.remove();
+                                                marker4 = null;
+                                                marker4Position = null;
+                                                marker4ID = null;
+                                            }
+
+                                            if (marker5 != null) {
+
+                                                marker5.remove();
+                                                marker5 = null;
+                                                marker5Position = null;
+                                                marker5ID = null;
+                                            }
+
+                                            if (marker6 != null) {
+
+                                                marker6.remove();
+                                                marker6 = null;
+                                                marker6Position = null;
+                                                marker6ID = null;
+                                            }
+
+                                            if (marker7 != null) {
+
+                                                marker7.remove();
+                                                marker7 = null;
+                                                marker7Position = null;
+                                                marker7ID = null;
+                                            }
 
                                             // Update the Boolean - used in onProgressChanged().
                                             threeMarkers = true;
+                                            fourMarkers = false;
+                                            fiveMarkers = false;
+                                            sixMarkers = false;
+                                            sevenMarkers = false;
+                                            eightMarkers = false;
 
                                             // Logic to handle location object.
                                             marker0Position = new LatLng(location.getLatitude() + 0.0001, location.getLongitude());
@@ -397,10 +405,72 @@ public class Map extends FragmentActivity implements
                                         }
 
                                         // 4 markers.
-                                        if (chatSizeSeekBar.getProgress() > 33 && chatSizeSeekBar.getProgress() <= 66) {
+                                        if (chatSizeSeekBar.getProgress() > 33 && chatSizeSeekBar.getProgress() <= 66 && !fourMarkers) {
+
+                                            Log.i(TAG, "chatSizeSeekBar -> onStartTrackingTouch -> polygon -> 4 markers");
+
+                                            polygon.remove();
+                                            marker0.remove();
+                                            marker1.remove();
+                                            marker2.remove();
+                                            polygon = null;
+                                            marker0 = null;
+                                            marker1 = null;
+                                            marker2 = null;
+                                            marker0Position = null;
+                                            marker1Position = null;
+                                            marker2Position = null;
+                                            marker0ID = null;
+                                            marker1ID = null;
+                                            marker2ID = null;
+
+                                            if (marker3 != null) {
+
+                                                marker3.remove();
+                                                marker3 = null;
+                                                marker3Position = null;
+                                                marker3ID = null;
+                                            }
+
+                                            if (marker4 != null) {
+
+                                                marker4.remove();
+                                                marker4 = null;
+                                                marker4Position = null;
+                                                marker4ID = null;
+                                            }
+
+                                            if (marker5 != null) {
+
+                                                marker5.remove();
+                                                marker5 = null;
+                                                marker5Position = null;
+                                                marker5ID = null;
+                                            }
+
+                                            if (marker6 != null) {
+
+                                                marker6.remove();
+                                                marker6 = null;
+                                                marker6Position = null;
+                                                marker6ID = null;
+                                            }
+
+                                            if (marker7 != null) {
+
+                                                marker7.remove();
+                                                marker7 = null;
+                                                marker7Position = null;
+                                                marker7ID = null;
+                                            }
 
                                             // Update the Boolean - used in onProgressChanged().
                                             fourMarkers = true;
+                                            threeMarkers = false;
+                                            fiveMarkers = false;
+                                            sixMarkers = false;
+                                            sevenMarkers = false;
+                                            eightMarkers = false;
 
                                             // Logic to handle location object.
                                             marker0Position = new LatLng(location.getLatitude() + 0.0001, location.getLongitude());
@@ -448,10 +518,72 @@ public class Map extends FragmentActivity implements
                                         }
 
                                         // 5 markers.
-                                        if (chatSizeSeekBar.getProgress() > 66 && chatSizeSeekBar.getProgress() <= 99) {
+                                        if (chatSizeSeekBar.getProgress() > 66 && chatSizeSeekBar.getProgress() <= 99 && !fiveMarkers) {
+
+                                            Log.i(TAG, "chatSizeSeekBar -> onStartTrackingTouch -> polygon -> 5 markers");
+
+                                            polygon.remove();
+                                            marker0.remove();
+                                            marker1.remove();
+                                            marker2.remove();
+                                            polygon = null;
+                                            marker0 = null;
+                                            marker1 = null;
+                                            marker2 = null;
+                                            marker0Position = null;
+                                            marker1Position = null;
+                                            marker2Position = null;
+                                            marker0ID = null;
+                                            marker1ID = null;
+                                            marker2ID = null;
+
+                                            if (marker3 != null) {
+
+                                                marker3.remove();
+                                                marker3 = null;
+                                                marker3Position = null;
+                                                marker3ID = null;
+                                            }
+
+                                            if (marker4 != null) {
+
+                                                marker4.remove();
+                                                marker4 = null;
+                                                marker4Position = null;
+                                                marker4ID = null;
+                                            }
+
+                                            if (marker5 != null) {
+
+                                                marker5.remove();
+                                                marker5 = null;
+                                                marker5Position = null;
+                                                marker5ID = null;
+                                            }
+
+                                            if (marker6 != null) {
+
+                                                marker6.remove();
+                                                marker6 = null;
+                                                marker6Position = null;
+                                                marker6ID = null;
+                                            }
+
+                                            if (marker7 != null) {
+
+                                                marker7.remove();
+                                                marker7 = null;
+                                                marker7Position = null;
+                                                marker7ID = null;
+                                            }
 
                                             // Update the Boolean - used in onProgressChanged().
                                             fiveMarkers = true;
+                                            threeMarkers = false;
+                                            fourMarkers = false;
+                                            sixMarkers = false;
+                                            sevenMarkers = false;
+                                            eightMarkers = false;
 
                                             // Logic to handle location object.
                                             marker0Position = new LatLng(location.getLatitude() + 0.0001, location.getLongitude());
@@ -506,10 +638,72 @@ public class Map extends FragmentActivity implements
                                         }
 
                                         // 6 markers.
-                                        if (chatSizeSeekBar.getProgress() > 99 && chatSizeSeekBar.getProgress() <= 132) {
+                                        if (chatSizeSeekBar.getProgress() > 99 && chatSizeSeekBar.getProgress() <= 132 && !sixMarkers) {
+
+                                            Log.i(TAG, "chatSizeSeekBar -> onStartTrackingTouch -> polygon -> 6 markers");
+
+                                            polygon.remove();
+                                            marker0.remove();
+                                            marker1.remove();
+                                            marker2.remove();
+                                            polygon = null;
+                                            marker0 = null;
+                                            marker1 = null;
+                                            marker2 = null;
+                                            marker0Position = null;
+                                            marker1Position = null;
+                                            marker2Position = null;
+                                            marker0ID = null;
+                                            marker1ID = null;
+                                            marker2ID = null;
+
+                                            if (marker3 != null) {
+
+                                                marker3.remove();
+                                                marker3 = null;
+                                                marker3Position = null;
+                                                marker3ID = null;
+                                            }
+
+                                            if (marker4 != null) {
+
+                                                marker4.remove();
+                                                marker4 = null;
+                                                marker4Position = null;
+                                                marker4ID = null;
+                                            }
+
+                                            if (marker5 != null) {
+
+                                                marker5.remove();
+                                                marker5 = null;
+                                                marker5Position = null;
+                                                marker5ID = null;
+                                            }
+
+                                            if (marker6 != null) {
+
+                                                marker6.remove();
+                                                marker6 = null;
+                                                marker6Position = null;
+                                                marker6ID = null;
+                                            }
+
+                                            if (marker7 != null) {
+
+                                                marker7.remove();
+                                                marker7 = null;
+                                                marker7Position = null;
+                                                marker7ID = null;
+                                            }
 
                                             // Update the Boolean - used in onProgressChanged().
                                             sixMarkers = true;
+                                            threeMarkers = false;
+                                            fourMarkers = false;
+                                            fiveMarkers = false;
+                                            sevenMarkers = false;
+                                            eightMarkers = false;
 
                                             // Logic to handle location object.
                                             marker0Position = new LatLng(location.getLatitude() + 0.0001, location.getLongitude());
@@ -571,10 +765,72 @@ public class Map extends FragmentActivity implements
                                         }
 
                                         // 7 markers.
-                                        if (chatSizeSeekBar.getProgress() > 132 && chatSizeSeekBar.getProgress() <= 165) {
+                                        if (chatSizeSeekBar.getProgress() > 132 && chatSizeSeekBar.getProgress() <= 165 && !sevenMarkers) {
+
+                                            Log.i(TAG, "chatSizeSeekBar -> onStartTrackingTouch -> polygon -> 7 markers");
+
+                                            polygon.remove();
+                                            marker0.remove();
+                                            marker1.remove();
+                                            marker2.remove();
+                                            polygon = null;
+                                            marker0 = null;
+                                            marker1 = null;
+                                            marker2 = null;
+                                            marker0Position = null;
+                                            marker1Position = null;
+                                            marker2Position = null;
+                                            marker0ID = null;
+                                            marker1ID = null;
+                                            marker2ID = null;
+
+                                            if (marker3 != null) {
+
+                                                marker3.remove();
+                                                marker3 = null;
+                                                marker3Position = null;
+                                                marker3ID = null;
+                                            }
+
+                                            if (marker4 != null) {
+
+                                                marker4.remove();
+                                                marker4 = null;
+                                                marker4Position = null;
+                                                marker4ID = null;
+                                            }
+
+                                            if (marker5 != null) {
+
+                                                marker5.remove();
+                                                marker5 = null;
+                                                marker5Position = null;
+                                                marker5ID = null;
+                                            }
+
+                                            if (marker6 != null) {
+
+                                                marker6.remove();
+                                                marker6 = null;
+                                                marker6Position = null;
+                                                marker6ID = null;
+                                            }
+
+                                            if (marker7 != null) {
+
+                                                marker7.remove();
+                                                marker7 = null;
+                                                marker7Position = null;
+                                                marker7ID = null;
+                                            }
 
                                             // Update the Boolean - used in onProgressChanged().
                                             sevenMarkers = true;
+                                            threeMarkers = false;
+                                            fourMarkers = false;
+                                            fiveMarkers = false;
+                                            sixMarkers = false;
+                                            eightMarkers = false;
 
                                             // Logic to handle location object.
                                             marker0Position = new LatLng(location.getLatitude() + 0.0001, location.getLongitude());
@@ -643,10 +899,72 @@ public class Map extends FragmentActivity implements
                                         }
 
                                         // 8 markers.
-                                        if (chatSizeSeekBar.getProgress() > 165 && chatSizeSeekBar.getProgress() <= 200) {
+                                        if (chatSizeSeekBar.getProgress() > 165 && chatSizeSeekBar.getProgress() <= 200 && !eightMarkers) {
+
+                                            Log.i(TAG, "chatSizeSeekBar -> onStartTrackingTouch -> polygon -> 8 markers");
+
+                                            polygon.remove();
+                                            marker0.remove();
+                                            marker1.remove();
+                                            marker2.remove();
+                                            polygon = null;
+                                            marker0 = null;
+                                            marker1 = null;
+                                            marker2 = null;
+                                            marker0Position = null;
+                                            marker1Position = null;
+                                            marker2Position = null;
+                                            marker0ID = null;
+                                            marker1ID = null;
+                                            marker2ID = null;
+
+                                            if (marker3 != null) {
+
+                                                marker3.remove();
+                                                marker3 = null;
+                                                marker3Position = null;
+                                                marker3ID = null;
+                                            }
+
+                                            if (marker4 != null) {
+
+                                                marker4.remove();
+                                                marker4 = null;
+                                                marker4Position = null;
+                                                marker4ID = null;
+                                            }
+
+                                            if (marker5 != null) {
+
+                                                marker5.remove();
+                                                marker5 = null;
+                                                marker5Position = null;
+                                                marker5ID = null;
+                                            }
+
+                                            if (marker6 != null) {
+
+                                                marker6.remove();
+                                                marker6 = null;
+                                                marker6Position = null;
+                                                marker6ID = null;
+                                            }
+
+                                            if (marker7 != null) {
+
+                                                marker7.remove();
+                                                marker7 = null;
+                                                marker7Position = null;
+                                                marker7ID = null;
+                                            }
 
                                             // Update the Boolean - used in onProgressChanged().
                                             eightMarkers = true;
+                                            threeMarkers = false;
+                                            fourMarkers = false;
+                                            fiveMarkers = false;
+                                            sixMarkers = false;
+                                            sevenMarkers = false;
 
                                             // Logic to handle location object.
                                             marker0Position = new LatLng(location.getLatitude() + 0.0001, location.getLongitude());
@@ -734,6 +1052,8 @@ public class Map extends FragmentActivity implements
                     // Changes size of the circle, marker1 visibility, and fill color.
                     if (circle != null) {
 
+                        Log.i(TAG, "chatSizeSeekBar -> onProgressChanged -> circle");
+
                         circle.setRadius(progress);
                         marker1.setVisible(false);
                         circle.setFillColor(0);
@@ -747,7 +1067,7 @@ public class Map extends FragmentActivity implements
                             // 3 markers.
                             if (chatSizeSeekBar.getProgress() <= 33 && !threeMarkers) {
 
-                                Log.i(TAG, "threeeee");
+                                Log.i(TAG, "chatSizeSeekBar -> onProgressChanged -> polygon -> 3 markers");
 
                                 polygon.remove();
                                 marker0.remove();
@@ -817,7 +1137,7 @@ public class Map extends FragmentActivity implements
                             // 4 markers.
                             if (chatSizeSeekBar.getProgress() > 33 && chatSizeSeekBar.getProgress() <= 66 && !fourMarkers) {
 
-                                Log.i(TAG, "fourrrrrrr");
+                                Log.i(TAG, "chatSizeSeekBar -> onProgressChanged -> polygon -> 4 markers");
 
                                 polygon.remove();
                                 marker0.remove();
@@ -903,7 +1223,7 @@ public class Map extends FragmentActivity implements
                             // 5 markers.
                             if (chatSizeSeekBar.getProgress() > 66 && chatSizeSeekBar.getProgress() <= 99 && !fiveMarkers) {
 
-                                Log.i(TAG, "fiveeeeeeeeeee");
+                                Log.i(TAG, "chatSizeSeekBar -> onProgressChanged -> polygon -> 5 markers");
 
                                 polygon.remove();
                                 marker0.remove();
@@ -1004,6 +1324,8 @@ public class Map extends FragmentActivity implements
                             // 6 markers.
                             if (chatSizeSeekBar.getProgress() > 99 && chatSizeSeekBar.getProgress() <= 132 && !sixMarkers) {
 
+                                Log.i(TAG, "chatSizeSeekBar -> onProgressChanged -> polygon -> 6 markers");
+
                                 polygon.remove();
                                 marker0.remove();
                                 marker1.remove();
@@ -1053,7 +1375,7 @@ public class Map extends FragmentActivity implements
 
                                 // Update any Boolean.
                                 sixMarkers = true;
-                                fourMarkers = false;
+                                fiveMarkers = false;
                                 sevenMarkers = false;
 
                                 // Logic to handle location object.
@@ -1117,6 +1439,8 @@ public class Map extends FragmentActivity implements
 
                             // 7 markers.
                             if (chatSizeSeekBar.getProgress() > 132 && chatSizeSeekBar.getProgress() <= 165 && !sevenMarkers) {
+
+                                Log.i(TAG, "chatSizeSeekBar -> onProgressChanged -> polygon -> 7 markers");
 
                                 polygon.remove();
                                 marker0.remove();
@@ -1246,6 +1570,8 @@ public class Map extends FragmentActivity implements
 
                             // 8 markers.
                             if (chatSizeSeekBar.getProgress() > 165 && chatSizeSeekBar.getProgress() <= 200 && !eightMarkers) {
+
+                                Log.i(TAG, "chatSizeSeekBar -> onProgressChanged -> polygon -> 8 markers");
 
                                 polygon.remove();
                                 marker0.remove();
@@ -1392,6 +1718,8 @@ public class Map extends FragmentActivity implements
                 // Sets fill color, sets marker1's position on the circle's edge relative to where the user last left it, and sets marker1's visibility.
                 if (circle != null) {
 
+                    Log.i(TAG, "chatSizeSeekBar -> onStopTrackingTouch -> circle");
+
                     circle.setFillColor(Color.argb(70, 255, 215, 0));
 
                     marker1.setPosition(latLngGivenDistance(circle.getCenter().latitude, circle.getCenter().longitude, chatSizeSeekBar.getProgress(), relativeAngle));
@@ -1399,16 +1727,12 @@ public class Map extends FragmentActivity implements
                     marker1.setVisible(true);
                 }
 
-                // Resets the global variables.
+                // Resets the global variable.
                 if (polygon != null) {
 
+                    Log.i(TAG, "chatSizeSeekBar -> onStopTrackingTouch -> polygon");
+
                     mlocation = null;
-                    threeMarkers = false;
-                    fourMarkers = false;
-                    fiveMarkers = false;
-                    sixMarkers = false;
-                    sevenMarkers = false;
-                    eightMarkers = false;
                 }
             }
         });
@@ -3471,6 +3795,9 @@ public class Map extends FragmentActivity implements
 
                                 // Get last known location. In some rare situations, this can be null.
                                 if (location != null) {
+
+                                    // Update the global variable - used in chatSeekBarChangeListener.
+                                    fourMarkers = true;
 
                                     // Set seekBar to be the same as the polygon's arbitrary size.
                                     chatSizeSeekBar.setProgress(50);
