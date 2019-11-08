@@ -59,7 +59,6 @@ import java.util.UUID;
 import static com.google.android.gms.location.LocationServices.getFusedLocationProviderClient;
 import static java.lang.Math.cos;
 import static java.lang.Math.sin;
-import static java.lang.Math.toDegrees;
 
 public class Map extends FragmentActivity implements
         OnMapReadyCallback,
@@ -69,19 +68,22 @@ public class Map extends FragmentActivity implements
     private static final String TAG = "Map";
     private GoogleMap mMap;
     private static final int Request_User_Location_Code = 99;
-    private Marker marker0, marker1, marker2, marker3;
+    private Marker marker0, marker1, marker2, marker3, marker4, marker5, marker6, marker7;
     private Circle circle;
     private Polygon polygon;
     private DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference(), firebaseCircles = rootRef.child("circles");
     private SeekBar chatSizeSeekBar;
-    private String uuid, marker0ID, marker1ID, marker2ID, marker3ID;
+    private String uuid, marker0ID, marker1ID, marker2ID, marker3ID, marker4ID, marker5ID, marker6ID, marker7ID;
     private Button createChatButton, chatViewsButton, mapTypeButton;
     private PopupMenu popupMapType, popupChatViews, popupCreateChat;
-    private Boolean mapTypeMenuIsOpen = false, chatViewsMenuIsOpen = false, createChatMenuIsOpen = false, usedSeekBar = false, userIsWithinCircle, firstLoad = true;
-    private LatLng marker0Position, marker1Position, marker2Position, marker3Position;
+    private Boolean mapTypeMenuIsOpen = false, chatViewsMenuIsOpen = false, createChatMenuIsOpen = false, usedSeekBar = false, userIsWithinCircle, firstLoad = true, threeMarkers = false, fourMarkers = false, fiveMarkers = false, sixMarkers = false, sevenMarkers = false, eightMarkers = false;
+    private LatLng marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position;
     private Double relativeAngle = 0.0;
+    private Location mlocation;
 
-    //TODO: Be able to add or remove a marker on polygon with seekBar, and add an option in createChatButton to do the same.
+    //TODO: Don't remove polygon in onSeekBarClickListener if the same number of markers already exist.
+    //TODO: Add an option in createChatButton to create an x-marker polygon.
+    //TODO: Add ability to move the extra polygon markers with the shape.
     //TODO: Have polygon go to chat.
     //TODO: Have chatViewsButton show polygons.
     //TODO: Prevent circle overlap.
@@ -224,7 +226,7 @@ public class Map extends FragmentActivity implements
                 usedSeekBar = true;
 
                 // Creates circle with markers.
-                if (circle == null) {
+                if (circle == null && polygon == null) {
 
                     FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
 
@@ -233,6 +235,7 @@ public class Map extends FragmentActivity implements
 
                                 @Override
                                 public void onSuccess(Location location) {
+
                                     // Get last known location. In some rare situations, this can be null.
                                     if (location != null) {
 
@@ -241,7 +244,7 @@ public class Map extends FragmentActivity implements
 
                                         // Logic to handle location object.
                                         LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-                                        marker1Position = new LatLng(latLng.latitude  + (circleSize / 6371000) * (180 / Math.PI), latLng.longitude + (circleSize / 6371000) * (180 / Math.PI) / cos(latLng.latitude * Math.PI/180));
+                                        marker1Position = new LatLng(latLng.latitude + (circleSize / 6371000) * (180 / Math.PI), latLng.longitude + (circleSize / 6371000) * (180 / Math.PI) / cos(latLng.latitude * Math.PI / 180));
                                         CircleOptions circleOptions =
                                                 new CircleOptions()
                                                         .center(latLng)
@@ -275,6 +278,452 @@ public class Map extends FragmentActivity implements
                                 }
                             });
                 }
+
+                // Increases / decreases polygon marker count.
+                if (polygon != null) {
+
+                    // Creates a polygon.
+                    FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
+
+                    mFusedLocationClient.getLastLocation()
+                            .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
+
+                                @Override
+                                public void onSuccess(Location location) {
+
+                                    // Get last known location. In some rare situations, this can be null.
+                                    if (location != null) {
+
+                                        // Global variable used in onProgressChanged() so that mFusedLocationClient doesn't need to be continuously called.
+                                        mlocation = location;
+
+                                        polygon.remove();
+                                        marker0.remove();
+                                        marker1.remove();
+                                        marker2.remove();
+                                        polygon = null;
+                                        marker0 = null;
+                                        marker1 = null;
+                                        marker2 = null;
+                                        marker0Position = null;
+                                        marker1Position = null;
+                                        marker2Position = null;
+                                        marker0ID = null;
+                                        marker1ID = null;
+                                        marker2ID = null;
+
+                                        if (marker3 != null) {
+
+                                            marker3.remove();
+                                            marker3 = null;
+                                            marker3Position = null;
+                                            marker3ID = null;
+                                        }
+
+                                        if (marker4 != null) {
+
+                                            marker4.remove();
+                                            marker4 = null;
+                                            marker4Position = null;
+                                            marker4ID = null;
+                                        }
+
+                                        if (marker5 != null) {
+
+                                            marker5.remove();
+                                            marker5 = null;
+                                            marker5Position = null;
+                                            marker5ID = null;
+                                        }
+
+                                        if (marker6 != null) {
+
+                                            marker6.remove();
+                                            marker6 = null;
+                                            marker6Position = null;
+                                            marker6ID = null;
+                                        }
+
+                                        if (marker7 != null) {
+
+                                            marker7.remove();
+                                            marker7 = null;
+                                            marker7Position = null;
+                                            marker7ID = null;
+                                        }
+
+                                        // 3 markers.
+                                        if (chatSizeSeekBar.getProgress() <= 33) {
+
+                                            // Update the Boolean - used in onProgressChanged().
+                                            threeMarkers = true;
+
+                                            // Logic to handle location object.
+                                            marker0Position = new LatLng(location.getLatitude() + 0.0001, location.getLongitude());
+                                            marker2Position = new LatLng(location.getLatitude(), location.getLongitude() + 0.0001);
+                                            marker1Position = new LatLng(location.getLatitude(), location.getLongitude() - 0.0001);
+
+                                            PolygonOptions polygonOptions =
+                                                    new PolygonOptions()
+                                                            .add(marker0Position, marker1Position, marker2Position)
+                                                            .clickable(true)
+                                                            .fillColor(Color.argb(70, 255, 215, 0))
+                                                            .strokeColor(Color.YELLOW)
+                                                            .strokeWidth(3f);
+
+                                            // Create markers when creating the polygon to allow for dragging of the center and vertices.
+                                            MarkerOptions markerOptions0 = new MarkerOptions()
+                                                    .position(marker0Position)
+                                                    .draggable(true);
+
+                                            MarkerOptions markerOptions1 = new MarkerOptions()
+                                                    .position(marker1Position)
+                                                    .draggable(true);
+
+                                            MarkerOptions markerOptions2 = new MarkerOptions()
+                                                    .position(marker2Position)
+                                                    .draggable(true);
+
+                                            marker0 = mMap.addMarker(markerOptions0);
+                                            marker1 = mMap.addMarker(markerOptions1);
+                                            marker2 = mMap.addMarker(markerOptions2);
+
+                                            // Update the global variable to compare with the marker the user clicks on during the dragging process.
+                                            marker0ID = marker0.getId();
+                                            marker1ID = marker1.getId();
+                                            marker2ID = marker2.getId();
+
+                                            polygon = mMap.addPolygon(polygonOptions);
+                                        }
+
+                                        // 4 markers.
+                                        if (chatSizeSeekBar.getProgress() > 33 && chatSizeSeekBar.getProgress() <= 66) {
+
+                                            // Update the Boolean - used in onProgressChanged().
+                                            fourMarkers = true;
+
+                                            // Logic to handle location object.
+                                            marker0Position = new LatLng(location.getLatitude() + 0.0001, location.getLongitude());
+                                            marker1Position = new LatLng(location.getLatitude(), location.getLongitude() + 0.0001);
+                                            marker2Position = new LatLng(location.getLatitude() - 0.0001, location.getLongitude());
+                                            marker3Position = new LatLng(location.getLatitude(), location.getLongitude() - 0.0001);
+
+                                            PolygonOptions polygonOptions =
+                                                    new PolygonOptions()
+                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                                            .clickable(true)
+                                                            .fillColor(Color.argb(70, 255, 215, 0))
+                                                            .strokeColor(Color.YELLOW)
+                                                            .strokeWidth(3f);
+
+                                            // Create markers when creating the polygon to allow for dragging of the center and vertices.
+                                            MarkerOptions markerOptions0 = new MarkerOptions()
+                                                    .position(marker0Position)
+                                                    .draggable(true);
+
+                                            MarkerOptions markerOptions1 = new MarkerOptions()
+                                                    .position(marker1Position)
+                                                    .draggable(true);
+
+                                            MarkerOptions markerOptions2 = new MarkerOptions()
+                                                    .position(marker2Position)
+                                                    .draggable(true);
+
+                                            MarkerOptions markerOptions3 = new MarkerOptions()
+                                                    .position(marker3Position)
+                                                    .draggable(true);
+
+                                            marker0 = mMap.addMarker(markerOptions0);
+                                            marker1 = mMap.addMarker(markerOptions1);
+                                            marker2 = mMap.addMarker(markerOptions2);
+                                            marker3 = mMap.addMarker(markerOptions3);
+
+                                            // Update the global variable to compare with the marker the user clicks on during the dragging process.
+                                            marker0ID = marker0.getId();
+                                            marker1ID = marker1.getId();
+                                            marker2ID = marker2.getId();
+                                            marker3ID = marker3.getId();
+
+                                            polygon = mMap.addPolygon(polygonOptions);
+                                        }
+
+                                        // 5 markers.
+                                        if (chatSizeSeekBar.getProgress() > 66 && chatSizeSeekBar.getProgress() <= 99) {
+
+                                            // Update the Boolean - used in onProgressChanged().
+                                            fiveMarkers = true;
+
+                                            // Logic to handle location object.
+                                            marker0Position = new LatLng(location.getLatitude() + 0.0001, location.getLongitude());
+                                            marker1Position = new LatLng(location.getLatitude() + 0.0001, location.getLongitude() + 0.0001);
+                                            marker2Position = new LatLng(location.getLatitude(), location.getLongitude() + 0.0001);
+                                            marker3Position = new LatLng(location.getLatitude() - 0.0001, location.getLongitude());
+                                            marker4Position = new LatLng(location.getLatitude(), location.getLongitude() - 0.0001);
+
+                                            PolygonOptions polygonOptions =
+                                                    new PolygonOptions()
+                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
+                                                            .clickable(true)
+                                                            .fillColor(Color.argb(70, 255, 215, 0))
+                                                            .strokeColor(Color.YELLOW)
+                                                            .strokeWidth(3f);
+
+                                            // Create markers when creating the polygon to allow for dragging of the center and vertices.
+                                            MarkerOptions markerOptions0 = new MarkerOptions()
+                                                    .position(marker0Position)
+                                                    .draggable(true);
+
+                                            MarkerOptions markerOptions1 = new MarkerOptions()
+                                                    .position(marker1Position)
+                                                    .draggable(true);
+
+                                            MarkerOptions markerOptions2 = new MarkerOptions()
+                                                    .position(marker2Position)
+                                                    .draggable(true);
+
+                                            MarkerOptions markerOptions3 = new MarkerOptions()
+                                                    .position(marker3Position)
+                                                    .draggable(true);
+
+                                            MarkerOptions markerOptions4 = new MarkerOptions()
+                                                    .position(marker4Position)
+                                                    .draggable(true);
+
+                                            marker0 = mMap.addMarker(markerOptions0);
+                                            marker1 = mMap.addMarker(markerOptions1);
+                                            marker2 = mMap.addMarker(markerOptions2);
+                                            marker3 = mMap.addMarker(markerOptions3);
+                                            marker4 = mMap.addMarker(markerOptions4);
+
+                                            // Update the global variable to compare with the marker the user clicks on during the dragging process.
+                                            marker0ID = marker0.getId();
+                                            marker1ID = marker1.getId();
+                                            marker2ID = marker2.getId();
+                                            marker3ID = marker3.getId();
+                                            marker4ID = marker4.getId();
+
+                                            polygon = mMap.addPolygon(polygonOptions);
+                                        }
+
+                                        // 6 markers.
+                                        if (chatSizeSeekBar.getProgress() > 99 && chatSizeSeekBar.getProgress() <= 132) {
+
+                                            // Update the Boolean - used in onProgressChanged().
+                                            sixMarkers = true;
+
+                                            // Logic to handle location object.
+                                            marker0Position = new LatLng(location.getLatitude() + 0.0001, location.getLongitude());
+                                            marker1Position = new LatLng(location.getLatitude() + 0.0001, location.getLongitude() + 0.0001);
+                                            marker2Position = new LatLng(location.getLatitude(), location.getLongitude() + 0.0001);
+                                            marker3Position = new LatLng(location.getLatitude() - 0.0001, location.getLongitude() + 0.0001);
+                                            marker4Position = new LatLng(location.getLatitude() - 0.0001, location.getLongitude());
+                                            marker5Position = new LatLng(location.getLatitude(), location.getLongitude() - 0.0001);
+
+                                            PolygonOptions polygonOptions =
+                                                    new PolygonOptions()
+                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
+                                                            .clickable(true)
+                                                            .fillColor(Color.argb(70, 255, 215, 0))
+                                                            .strokeColor(Color.YELLOW)
+                                                            .strokeWidth(3f);
+
+                                            // Create markers when creating the polygon to allow for dragging of the center and vertices.
+                                            MarkerOptions markerOptions0 = new MarkerOptions()
+                                                    .position(marker0Position)
+                                                    .draggable(true);
+
+                                            MarkerOptions markerOptions1 = new MarkerOptions()
+                                                    .position(marker1Position)
+                                                    .draggable(true);
+
+                                            MarkerOptions markerOptions2 = new MarkerOptions()
+                                                    .position(marker2Position)
+                                                    .draggable(true);
+
+                                            MarkerOptions markerOptions3 = new MarkerOptions()
+                                                    .position(marker3Position)
+                                                    .draggable(true);
+
+                                            MarkerOptions markerOptions4 = new MarkerOptions()
+                                                    .position(marker4Position)
+                                                    .draggable(true);
+
+                                            MarkerOptions markerOptions5 = new MarkerOptions()
+                                                    .position(marker5Position)
+                                                    .draggable(true);
+
+                                            marker0 = mMap.addMarker(markerOptions0);
+                                            marker1 = mMap.addMarker(markerOptions1);
+                                            marker2 = mMap.addMarker(markerOptions2);
+                                            marker3 = mMap.addMarker(markerOptions3);
+                                            marker4 = mMap.addMarker(markerOptions4);
+                                            marker5 = mMap.addMarker(markerOptions5);
+
+                                            // Update the global variable to compare with the marker the user clicks on during the dragging process.
+                                            marker0ID = marker0.getId();
+                                            marker1ID = marker1.getId();
+                                            marker2ID = marker2.getId();
+                                            marker3ID = marker3.getId();
+                                            marker4ID = marker4.getId();
+                                            marker5ID = marker5.getId();
+
+                                            polygon = mMap.addPolygon(polygonOptions);
+                                        }
+
+                                        // 7 markers.
+                                        if (chatSizeSeekBar.getProgress() > 132 && chatSizeSeekBar.getProgress() <= 165) {
+
+                                            // Update the Boolean - used in onProgressChanged().
+                                            sevenMarkers = true;
+
+                                            // Logic to handle location object.
+                                            marker0Position = new LatLng(location.getLatitude() + 0.0001, location.getLongitude());
+                                            marker1Position = new LatLng(location.getLatitude() + 0.0001, location.getLongitude() + 0.0001);
+                                            marker2Position = new LatLng(location.getLatitude(), location.getLongitude() + 0.0001);
+                                            marker3Position = new LatLng(location.getLatitude() - 0.0001, location.getLongitude() + 0.0001);
+                                            marker4Position = new LatLng(location.getLatitude() - 0.0001, location.getLongitude());
+                                            marker5Position = new LatLng(location.getLatitude() - 0.0001, location.getLongitude() - 0.0001);
+                                            marker6Position = new LatLng(location.getLatitude(), location.getLongitude() - 0.0001);
+
+                                            PolygonOptions polygonOptions =
+                                                    new PolygonOptions()
+                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
+                                                            .clickable(true)
+                                                            .fillColor(Color.argb(70, 255, 215, 0))
+                                                            .strokeColor(Color.YELLOW)
+                                                            .strokeWidth(3f);
+
+                                            // Create markers when creating the polygon to allow for dragging of the center and vertices.
+                                            MarkerOptions markerOptions0 = new MarkerOptions()
+                                                    .position(marker0Position)
+                                                    .draggable(true);
+
+                                            MarkerOptions markerOptions1 = new MarkerOptions()
+                                                    .position(marker1Position)
+                                                    .draggable(true);
+
+                                            MarkerOptions markerOptions2 = new MarkerOptions()
+                                                    .position(marker2Position)
+                                                    .draggable(true);
+
+                                            MarkerOptions markerOptions3 = new MarkerOptions()
+                                                    .position(marker3Position)
+                                                    .draggable(true);
+
+                                            MarkerOptions markerOptions4 = new MarkerOptions()
+                                                    .position(marker4Position)
+                                                    .draggable(true);
+
+                                            MarkerOptions markerOptions5 = new MarkerOptions()
+                                                    .position(marker5Position)
+                                                    .draggable(true);
+
+                                            MarkerOptions markerOptions6 = new MarkerOptions()
+                                                    .position(marker6Position)
+                                                    .draggable(true);
+
+                                            marker0 = mMap.addMarker(markerOptions0);
+                                            marker1 = mMap.addMarker(markerOptions1);
+                                            marker2 = mMap.addMarker(markerOptions2);
+                                            marker3 = mMap.addMarker(markerOptions3);
+                                            marker4 = mMap.addMarker(markerOptions4);
+                                            marker5 = mMap.addMarker(markerOptions5);
+                                            marker6 = mMap.addMarker(markerOptions6);
+
+                                            // Update the global variable to compare with the marker the user clicks on during the dragging process.
+                                            marker0ID = marker0.getId();
+                                            marker1ID = marker1.getId();
+                                            marker2ID = marker2.getId();
+                                            marker3ID = marker3.getId();
+                                            marker4ID = marker4.getId();
+                                            marker5ID = marker5.getId();
+                                            marker6ID = marker6.getId();
+
+                                            polygon = mMap.addPolygon(polygonOptions);
+                                        }
+
+                                        // 8 markers.
+                                        if (chatSizeSeekBar.getProgress() > 165 && chatSizeSeekBar.getProgress() <= 200) {
+
+                                            // Update the Boolean - used in onProgressChanged().
+                                            eightMarkers = true;
+
+                                            // Logic to handle location object.
+                                            marker0Position = new LatLng(location.getLatitude() + 0.0001, location.getLongitude());
+                                            marker1Position = new LatLng(location.getLatitude() + 0.0001, location.getLongitude() + 0.0001);
+                                            marker2Position = new LatLng(location.getLatitude(), location.getLongitude() + 0.0001);
+                                            marker3Position = new LatLng(location.getLatitude() - 0.0001, location.getLongitude() + 0.0001);
+                                            marker4Position = new LatLng(location.getLatitude() - 0.0001, location.getLongitude());
+                                            marker5Position = new LatLng(location.getLatitude() - 0.0001, location.getLongitude() - 0.0001);
+                                            marker6Position = new LatLng(location.getLatitude(), location.getLongitude() - 0.0001);
+                                            marker7Position = new LatLng(location.getLatitude() + 0.0001, location.getLongitude() - 0.0001);
+
+                                            PolygonOptions polygonOptions =
+                                                    new PolygonOptions()
+                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                                            .clickable(true)
+                                                            .fillColor(Color.argb(70, 255, 215, 0))
+                                                            .strokeColor(Color.YELLOW)
+                                                            .strokeWidth(3f);
+
+                                            // Create markers when creating the polygon to allow for dragging of the center and vertices.
+                                            MarkerOptions markerOptions0 = new MarkerOptions()
+                                                    .position(marker0Position)
+                                                    .draggable(true);
+
+                                            MarkerOptions markerOptions1 = new MarkerOptions()
+                                                    .position(marker1Position)
+                                                    .draggable(true);
+
+                                            MarkerOptions markerOptions2 = new MarkerOptions()
+                                                    .position(marker2Position)
+                                                    .draggable(true);
+
+                                            MarkerOptions markerOptions3 = new MarkerOptions()
+                                                    .position(marker3Position)
+                                                    .draggable(true);
+
+                                            MarkerOptions markerOptions4 = new MarkerOptions()
+                                                    .position(marker4Position)
+                                                    .draggable(true);
+
+                                            MarkerOptions markerOptions5 = new MarkerOptions()
+                                                    .position(marker5Position)
+                                                    .draggable(true);
+
+                                            MarkerOptions markerOptions6 = new MarkerOptions()
+                                                    .position(marker6Position)
+                                                    .draggable(true);
+
+                                            MarkerOptions markerOptions7 = new MarkerOptions()
+                                                    .position(marker7Position)
+                                                    .draggable(true);
+
+                                            marker0 = mMap.addMarker(markerOptions0);
+                                            marker1 = mMap.addMarker(markerOptions1);
+                                            marker2 = mMap.addMarker(markerOptions2);
+                                            marker3 = mMap.addMarker(markerOptions3);
+                                            marker4 = mMap.addMarker(markerOptions4);
+                                            marker5 = mMap.addMarker(markerOptions5);
+                                            marker6 = mMap.addMarker(markerOptions6);
+                                            marker7 = mMap.addMarker(markerOptions7);
+
+                                            // Update the global variable to compare with the marker the user clicks on during the dragging process.
+                                            marker0ID = marker0.getId();
+                                            marker1ID = marker1.getId();
+                                            marker2ID = marker2.getId();
+                                            marker3ID = marker3.getId();
+                                            marker4ID = marker4.getId();
+                                            marker5ID = marker5.getId();
+                                            marker6ID = marker6.getId();
+                                            marker7ID = marker7.getId();
+
+                                            polygon = mMap.addPolygon(polygonOptions);
+                                        }
+                                    }
+                                }
+                            });
+                }
             }
 
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
@@ -288,6 +737,648 @@ public class Map extends FragmentActivity implements
                         circle.setRadius(progress);
                         marker1.setVisible(false);
                         circle.setFillColor(0);
+                    }
+
+                    if (polygon != null) {
+
+                        // Get last known location. In some rare situations, this can be null.
+                        if (mlocation != null) {
+
+                            // 3 markers.
+                            if (chatSizeSeekBar.getProgress() <= 33 && !threeMarkers) {
+
+                                Log.i(TAG, "threeeee");
+
+                                polygon.remove();
+                                marker0.remove();
+                                marker1.remove();
+                                marker2.remove();
+                                polygon = null;
+                                marker0 = null;
+                                marker1 = null;
+                                marker2 = null;
+                                marker0Position = null;
+                                marker1Position = null;
+                                marker2Position = null;
+                                marker0ID = null;
+                                marker1ID = null;
+                                marker2ID = null;
+
+                                if (marker3 != null) {
+
+                                    marker3.remove();
+                                    marker3 = null;
+                                    marker3Position = null;
+                                    marker3ID = null;
+                                }
+
+                                // Update any Boolean.
+                                threeMarkers = true;
+                                fourMarkers = false;
+
+                                // Logic to handle location object.
+                                marker0Position = new LatLng(mlocation.getLatitude() + 0.0001, mlocation.getLongitude());
+                                marker2Position = new LatLng(mlocation.getLatitude(), mlocation.getLongitude() + 0.0001);
+                                marker1Position = new LatLng(mlocation.getLatitude(), mlocation.getLongitude() - 0.0001);
+
+                                PolygonOptions polygonOptions =
+                                        new PolygonOptions()
+                                                .add(marker0Position, marker1Position, marker2Position)
+                                                .clickable(true)
+                                                .fillColor(Color.argb(70, 255, 215, 0))
+                                                .strokeColor(Color.YELLOW)
+                                                .strokeWidth(3f);
+
+                                // Create markers when creating the polygon to allow for dragging of the center and vertices.
+                                MarkerOptions markerOptions0 = new MarkerOptions()
+                                        .position(marker0Position)
+                                        .draggable(true);
+
+                                MarkerOptions markerOptions1 = new MarkerOptions()
+                                        .position(marker1Position)
+                                        .draggable(true);
+
+                                MarkerOptions markerOptions2 = new MarkerOptions()
+                                        .position(marker2Position)
+                                        .draggable(true);
+
+                                marker0 = mMap.addMarker(markerOptions0);
+                                marker1 = mMap.addMarker(markerOptions1);
+                                marker2 = mMap.addMarker(markerOptions2);
+
+                                // Update the global variable to compare with the marker the user clicks on during the dragging process.
+                                marker0ID = marker0.getId();
+                                marker1ID = marker1.getId();
+                                marker2ID = marker2.getId();
+
+                                polygon = mMap.addPolygon(polygonOptions);
+                            }
+
+                            // 4 markers.
+                            if (chatSizeSeekBar.getProgress() > 33 && chatSizeSeekBar.getProgress() <= 66 && !fourMarkers) {
+
+                                Log.i(TAG, "fourrrrrrr");
+
+                                polygon.remove();
+                                marker0.remove();
+                                marker1.remove();
+                                marker2.remove();
+                                polygon = null;
+                                marker0 = null;
+                                marker1 = null;
+                                marker2 = null;
+                                marker0Position = null;
+                                marker1Position = null;
+                                marker2Position = null;
+                                marker0ID = null;
+                                marker1ID = null;
+                                marker2ID = null;
+
+                                if (marker3 != null) {
+
+                                    marker3.remove();
+                                    marker3 = null;
+                                    marker3Position = null;
+                                    marker3ID = null;
+                                }
+
+                                if (marker4 != null) {
+
+                                    marker4.remove();
+                                    marker4 = null;
+                                    marker4Position = null;
+                                    marker4ID = null;
+                                }
+
+                                // Update any Boolean.
+                                fourMarkers = true;
+                                threeMarkers = false;
+                                fiveMarkers = false;
+
+                                // Logic to handle location object.
+                                marker0Position = new LatLng(mlocation.getLatitude() + 0.0001, mlocation.getLongitude());
+                                marker1Position = new LatLng(mlocation.getLatitude(), mlocation.getLongitude() + 0.0001);
+                                marker2Position = new LatLng(mlocation.getLatitude() - 0.0001, mlocation.getLongitude());
+                                marker3Position = new LatLng(mlocation.getLatitude(), mlocation.getLongitude() - 0.0001);
+
+                                PolygonOptions polygonOptions =
+                                        new PolygonOptions()
+                                                .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                                .clickable(true)
+                                                .fillColor(Color.argb(70, 255, 215, 0))
+                                                .strokeColor(Color.YELLOW)
+                                                .strokeWidth(3f);
+
+                                // Create markers when creating the polygon to allow for dragging of the center and vertices.
+                                MarkerOptions markerOptions0 = new MarkerOptions()
+                                        .position(marker0Position)
+                                        .draggable(true);
+
+                                MarkerOptions markerOptions1 = new MarkerOptions()
+                                        .position(marker1Position)
+                                        .draggable(true);
+
+                                MarkerOptions markerOptions2 = new MarkerOptions()
+                                        .position(marker2Position)
+                                        .draggable(true);
+
+                                MarkerOptions markerOptions3 = new MarkerOptions()
+                                        .position(marker3Position)
+                                        .draggable(true);
+
+                                marker0 = mMap.addMarker(markerOptions0);
+                                marker1 = mMap.addMarker(markerOptions1);
+                                marker2 = mMap.addMarker(markerOptions2);
+                                marker3 = mMap.addMarker(markerOptions3);
+
+                                // Update the global variable to compare with the marker the user clicks on during the dragging process.
+                                marker0ID = marker0.getId();
+                                marker1ID = marker1.getId();
+                                marker2ID = marker2.getId();
+                                marker3ID = marker3.getId();
+
+                                polygon = mMap.addPolygon(polygonOptions);
+                            }
+
+                            // 5 markers.
+                            if (chatSizeSeekBar.getProgress() > 66 && chatSizeSeekBar.getProgress() <= 99 && !fiveMarkers) {
+
+                                Log.i(TAG, "fiveeeeeeeeeee");
+
+                                polygon.remove();
+                                marker0.remove();
+                                marker1.remove();
+                                marker2.remove();
+                                polygon = null;
+                                marker0 = null;
+                                marker1 = null;
+                                marker2 = null;
+                                marker0Position = null;
+                                marker1Position = null;
+                                marker2Position = null;
+                                marker0ID = null;
+                                marker1ID = null;
+                                marker2ID = null;
+
+                                if (marker3 != null) {
+
+                                    marker3.remove();
+                                    marker3 = null;
+                                    marker3Position = null;
+                                    marker3ID = null;
+                                }
+
+                                if (marker4 != null) {
+
+                                    marker4.remove();
+                                    marker4 = null;
+                                    marker4Position = null;
+                                    marker4ID = null;
+                                }
+
+                                if (marker5 != null) {
+
+                                    marker5.remove();
+                                    marker5 = null;
+                                    marker5Position = null;
+                                    marker5ID = null;
+                                }
+
+                                // Update any Boolean.
+                                fiveMarkers = true;
+                                fourMarkers = false;
+                                sixMarkers = false;
+
+                                // Logic to handle location object.
+                                marker0Position = new LatLng(mlocation.getLatitude() + 0.0001, mlocation.getLongitude());
+                                marker1Position = new LatLng(mlocation.getLatitude() + 0.0001, mlocation.getLongitude() + 0.0001);
+                                marker2Position = new LatLng(mlocation.getLatitude(), mlocation.getLongitude() + 0.0001);
+                                marker3Position = new LatLng(mlocation.getLatitude() - 0.0001, mlocation.getLongitude());
+                                marker4Position = new LatLng(mlocation.getLatitude(), mlocation.getLongitude() - 0.0001);
+
+                                PolygonOptions polygonOptions =
+                                        new PolygonOptions()
+                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
+                                                .clickable(true)
+                                                .fillColor(Color.argb(70, 255, 215, 0))
+                                                .strokeColor(Color.YELLOW)
+                                                .strokeWidth(3f);
+
+                                // Create markers when creating the polygon to allow for dragging of the center and vertices.
+                                MarkerOptions markerOptions0 = new MarkerOptions()
+                                        .position(marker0Position)
+                                        .draggable(true);
+
+                                MarkerOptions markerOptions1 = new MarkerOptions()
+                                        .position(marker1Position)
+                                        .draggable(true);
+
+                                MarkerOptions markerOptions2 = new MarkerOptions()
+                                        .position(marker2Position)
+                                        .draggable(true);
+
+                                MarkerOptions markerOptions3 = new MarkerOptions()
+                                        .position(marker3Position)
+                                        .draggable(true);
+
+                                MarkerOptions markerOptions4 = new MarkerOptions()
+                                        .position(marker4Position)
+                                        .draggable(true);
+
+                                marker0 = mMap.addMarker(markerOptions0);
+                                marker1 = mMap.addMarker(markerOptions1);
+                                marker2 = mMap.addMarker(markerOptions2);
+                                marker3 = mMap.addMarker(markerOptions3);
+                                marker4 = mMap.addMarker(markerOptions4);
+
+                                // Update the global variable to compare with the marker the user clicks on during the dragging process.
+                                marker0ID = marker0.getId();
+                                marker1ID = marker1.getId();
+                                marker2ID = marker2.getId();
+                                marker3ID = marker3.getId();
+                                marker4ID = marker4.getId();
+
+                                polygon = mMap.addPolygon(polygonOptions);
+                            }
+
+                            // 6 markers.
+                            if (chatSizeSeekBar.getProgress() > 99 && chatSizeSeekBar.getProgress() <= 132 && !sixMarkers) {
+
+                                polygon.remove();
+                                marker0.remove();
+                                marker1.remove();
+                                marker2.remove();
+                                polygon = null;
+                                marker0 = null;
+                                marker1 = null;
+                                marker2 = null;
+                                marker0Position = null;
+                                marker1Position = null;
+                                marker2Position = null;
+                                marker0ID = null;
+                                marker1ID = null;
+                                marker2ID = null;
+
+                                if (marker3 != null) {
+
+                                    marker3.remove();
+                                    marker3 = null;
+                                    marker3Position = null;
+                                    marker3ID = null;
+                                }
+
+                                if (marker4 != null) {
+
+                                    marker4.remove();
+                                    marker4 = null;
+                                    marker4Position = null;
+                                    marker4ID = null;
+                                }
+
+                                if (marker5 != null) {
+
+                                    marker5.remove();
+                                    marker5 = null;
+                                    marker5Position = null;
+                                    marker5ID = null;
+                                }
+
+                                if (marker6 != null) {
+
+                                    marker6.remove();
+                                    marker6 = null;
+                                    marker6Position = null;
+                                    marker6ID = null;
+                                }
+
+                                // Update any Boolean.
+                                sixMarkers = true;
+                                fourMarkers = false;
+                                sevenMarkers = false;
+
+                                // Logic to handle location object.
+                                marker0Position = new LatLng(mlocation.getLatitude() + 0.0001, mlocation.getLongitude());
+                                marker1Position = new LatLng(mlocation.getLatitude() + 0.0001, mlocation.getLongitude() + 0.0001);
+                                marker2Position = new LatLng(mlocation.getLatitude(), mlocation.getLongitude() + 0.0001);
+                                marker3Position = new LatLng(mlocation.getLatitude() - 0.0001, mlocation.getLongitude() + 0.0001);
+                                marker4Position = new LatLng(mlocation.getLatitude() - 0.0001, mlocation.getLongitude());
+                                marker5Position = new LatLng(mlocation.getLatitude(), mlocation.getLongitude() - 0.0001);
+
+                                PolygonOptions polygonOptions =
+                                        new PolygonOptions()
+                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
+                                                .clickable(true)
+                                                .fillColor(Color.argb(70, 255, 215, 0))
+                                                .strokeColor(Color.YELLOW)
+                                                .strokeWidth(3f);
+
+                                // Create markers when creating the polygon to allow for dragging of the center and vertices.
+                                MarkerOptions markerOptions0 = new MarkerOptions()
+                                        .position(marker0Position)
+                                        .draggable(true);
+
+                                MarkerOptions markerOptions1 = new MarkerOptions()
+                                        .position(marker1Position)
+                                        .draggable(true);
+
+                                MarkerOptions markerOptions2 = new MarkerOptions()
+                                        .position(marker2Position)
+                                        .draggable(true);
+
+                                MarkerOptions markerOptions3 = new MarkerOptions()
+                                        .position(marker3Position)
+                                        .draggable(true);
+
+                                MarkerOptions markerOptions4 = new MarkerOptions()
+                                        .position(marker4Position)
+                                        .draggable(true);
+
+                                MarkerOptions markerOptions5 = new MarkerOptions()
+                                        .position(marker5Position)
+                                        .draggable(true);
+
+                                marker0 = mMap.addMarker(markerOptions0);
+                                marker1 = mMap.addMarker(markerOptions1);
+                                marker2 = mMap.addMarker(markerOptions2);
+                                marker3 = mMap.addMarker(markerOptions3);
+                                marker4 = mMap.addMarker(markerOptions4);
+                                marker5 = mMap.addMarker(markerOptions5);
+
+                                // Update the global variable to compare with the marker the user clicks on during the dragging process.
+                                marker0ID = marker0.getId();
+                                marker1ID = marker1.getId();
+                                marker2ID = marker2.getId();
+                                marker3ID = marker3.getId();
+                                marker4ID = marker4.getId();
+                                marker5ID = marker5.getId();
+
+                                polygon = mMap.addPolygon(polygonOptions);
+                            }
+
+                            // 7 markers.
+                            if (chatSizeSeekBar.getProgress() > 132 && chatSizeSeekBar.getProgress() <= 165 && !sevenMarkers) {
+
+                                polygon.remove();
+                                marker0.remove();
+                                marker1.remove();
+                                marker2.remove();
+                                polygon = null;
+                                marker0 = null;
+                                marker1 = null;
+                                marker2 = null;
+                                marker0Position = null;
+                                marker1Position = null;
+                                marker2Position = null;
+                                marker0ID = null;
+                                marker1ID = null;
+                                marker2ID = null;
+
+                                if (marker3 != null) {
+
+                                    marker3.remove();
+                                    marker3 = null;
+                                    marker3Position = null;
+                                    marker3ID = null;
+                                }
+
+                                if (marker4 != null) {
+
+                                    marker4.remove();
+                                    marker4 = null;
+                                    marker4Position = null;
+                                    marker4ID = null;
+                                }
+
+                                if (marker5 != null) {
+
+                                    marker5.remove();
+                                    marker5 = null;
+                                    marker5Position = null;
+                                    marker5ID = null;
+                                }
+
+                                if (marker6 != null) {
+
+                                    marker6.remove();
+                                    marker6 = null;
+                                    marker6Position = null;
+                                    marker6ID = null;
+                                }
+
+                                if (marker7 != null) {
+
+                                    marker7.remove();
+                                    marker7 = null;
+                                    marker7Position = null;
+                                    marker7ID = null;
+                                }
+
+                                // Update any Boolean.
+                                sevenMarkers = true;
+                                sixMarkers = false;
+                                eightMarkers = false;
+
+                                // Logic to handle location object.
+                                marker0Position = new LatLng(mlocation.getLatitude() + 0.0001, mlocation.getLongitude());
+                                marker1Position = new LatLng(mlocation.getLatitude() + 0.0001, mlocation.getLongitude() + 0.0001);
+                                marker2Position = new LatLng(mlocation.getLatitude(), mlocation.getLongitude() + 0.0001);
+                                marker3Position = new LatLng(mlocation.getLatitude() - 0.0001, mlocation.getLongitude() + 0.0001);
+                                marker4Position = new LatLng(mlocation.getLatitude() - 0.0001, mlocation.getLongitude());
+                                marker5Position = new LatLng(mlocation.getLatitude() - 0.0001, mlocation.getLongitude() - 0.0001);
+                                marker6Position = new LatLng(mlocation.getLatitude(), mlocation.getLongitude() - 0.0001);
+
+                                PolygonOptions polygonOptions =
+                                        new PolygonOptions()
+                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
+                                                .clickable(true)
+                                                .fillColor(Color.argb(70, 255, 215, 0))
+                                                .strokeColor(Color.YELLOW)
+                                                .strokeWidth(3f);
+
+                                // Create markers when creating the polygon to allow for dragging of the center and vertices.
+                                MarkerOptions markerOptions0 = new MarkerOptions()
+                                        .position(marker0Position)
+                                        .draggable(true);
+
+                                MarkerOptions markerOptions1 = new MarkerOptions()
+                                        .position(marker1Position)
+                                        .draggable(true);
+
+                                MarkerOptions markerOptions2 = new MarkerOptions()
+                                        .position(marker2Position)
+                                        .draggable(true);
+
+                                MarkerOptions markerOptions3 = new MarkerOptions()
+                                        .position(marker3Position)
+                                        .draggable(true);
+
+                                MarkerOptions markerOptions4 = new MarkerOptions()
+                                        .position(marker4Position)
+                                        .draggable(true);
+
+                                MarkerOptions markerOptions5 = new MarkerOptions()
+                                        .position(marker5Position)
+                                        .draggable(true);
+
+                                MarkerOptions markerOptions6 = new MarkerOptions()
+                                        .position(marker6Position)
+                                        .draggable(true);
+
+                                marker0 = mMap.addMarker(markerOptions0);
+                                marker1 = mMap.addMarker(markerOptions1);
+                                marker2 = mMap.addMarker(markerOptions2);
+                                marker3 = mMap.addMarker(markerOptions3);
+                                marker4 = mMap.addMarker(markerOptions4);
+                                marker5 = mMap.addMarker(markerOptions5);
+                                marker6 = mMap.addMarker(markerOptions6);
+
+                                // Update the global variable to compare with the marker the user clicks on during the dragging process.
+                                marker0ID = marker0.getId();
+                                marker1ID = marker1.getId();
+                                marker2ID = marker2.getId();
+                                marker3ID = marker3.getId();
+                                marker4ID = marker4.getId();
+                                marker5ID = marker5.getId();
+                                marker6ID = marker6.getId();
+
+                                polygon = mMap.addPolygon(polygonOptions);
+                            }
+
+                            // 8 markers.
+                            if (chatSizeSeekBar.getProgress() > 165 && chatSizeSeekBar.getProgress() <= 200 && !eightMarkers) {
+
+                                polygon.remove();
+                                marker0.remove();
+                                marker1.remove();
+                                marker2.remove();
+                                polygon = null;
+                                marker0 = null;
+                                marker1 = null;
+                                marker2 = null;
+                                marker0Position = null;
+                                marker1Position = null;
+                                marker2Position = null;
+                                marker0ID = null;
+                                marker1ID = null;
+                                marker2ID = null;
+
+                                if (marker3 != null) {
+
+                                    marker3.remove();
+                                    marker3 = null;
+                                    marker3Position = null;
+                                    marker3ID = null;
+                                }
+
+                                if (marker4 != null) {
+
+                                    marker4.remove();
+                                    marker4 = null;
+                                    marker4Position = null;
+                                    marker4ID = null;
+                                }
+
+                                if (marker5 != null) {
+
+                                    marker5.remove();
+                                    marker5 = null;
+                                    marker5Position = null;
+                                    marker5ID = null;
+                                }
+
+                                if (marker6 != null) {
+
+                                    marker6.remove();
+                                    marker6 = null;
+                                    marker6Position = null;
+                                    marker6ID = null;
+                                }
+
+                                if (marker7 != null) {
+
+                                    marker7.remove();
+                                    marker7 = null;
+                                    marker7Position = null;
+                                    marker7ID = null;
+                                }
+
+                                // Update any Boolean.
+                                eightMarkers = true;
+                                sevenMarkers = false;
+
+                                // Logic to handle location object.
+                                marker0Position = new LatLng(mlocation.getLatitude() + 0.0001, mlocation.getLongitude());
+                                marker1Position = new LatLng(mlocation.getLatitude() + 0.0001, mlocation.getLongitude() + 0.0001);
+                                marker2Position = new LatLng(mlocation.getLatitude(), mlocation.getLongitude() + 0.0001);
+                                marker3Position = new LatLng(mlocation.getLatitude() - 0.0001, mlocation.getLongitude() + 0.0001);
+                                marker4Position = new LatLng(mlocation.getLatitude() - 0.0001, mlocation.getLongitude());
+                                marker5Position = new LatLng(mlocation.getLatitude() - 0.0001, mlocation.getLongitude() - 0.0001);
+                                marker6Position = new LatLng(mlocation.getLatitude(), mlocation.getLongitude() - 0.0001);
+                                marker7Position = new LatLng(mlocation.getLatitude() + 0.0001, mlocation.getLongitude() - 0.0001);
+
+                                PolygonOptions polygonOptions =
+                                        new PolygonOptions()
+                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                                .clickable(true)
+                                                .fillColor(Color.argb(70, 255, 215, 0))
+                                                .strokeColor(Color.YELLOW)
+                                                .strokeWidth(3f);
+
+                                // Create markers when creating the polygon to allow for dragging of the center and vertices.
+                                MarkerOptions markerOptions0 = new MarkerOptions()
+                                        .position(marker0Position)
+                                        .draggable(true);
+
+                                MarkerOptions markerOptions1 = new MarkerOptions()
+                                        .position(marker1Position)
+                                        .draggable(true);
+
+                                MarkerOptions markerOptions2 = new MarkerOptions()
+                                        .position(marker2Position)
+                                        .draggable(true);
+
+                                MarkerOptions markerOptions3 = new MarkerOptions()
+                                        .position(marker3Position)
+                                        .draggable(true);
+
+                                MarkerOptions markerOptions4 = new MarkerOptions()
+                                        .position(marker4Position)
+                                        .draggable(true);
+
+                                MarkerOptions markerOptions5 = new MarkerOptions()
+                                        .position(marker5Position)
+                                        .draggable(true);
+
+                                MarkerOptions markerOptions6 = new MarkerOptions()
+                                        .position(marker6Position)
+                                        .draggable(true);
+
+                                MarkerOptions markerOptions7 = new MarkerOptions()
+                                        .position(marker7Position)
+                                        .draggable(true);
+
+                                marker0 = mMap.addMarker(markerOptions0);
+                                marker1 = mMap.addMarker(markerOptions1);
+                                marker2 = mMap.addMarker(markerOptions2);
+                                marker3 = mMap.addMarker(markerOptions3);
+                                marker4 = mMap.addMarker(markerOptions4);
+                                marker5 = mMap.addMarker(markerOptions5);
+                                marker6 = mMap.addMarker(markerOptions6);
+                                marker7 = mMap.addMarker(markerOptions7);
+
+                                // Update the global variable to compare with the marker the user clicks on during the dragging process.
+                                marker0ID = marker0.getId();
+                                marker1ID = marker1.getId();
+                                marker2ID = marker2.getId();
+                                marker3ID = marker3.getId();
+                                marker4ID = marker4.getId();
+                                marker5ID = marker5.getId();
+                                marker6ID = marker6.getId();
+                                marker7ID = marker7.getId();
+
+                                polygon = mMap.addPolygon(polygonOptions);
+                            }
+                        }
                     }
                 }
             }
@@ -307,6 +1398,18 @@ public class Map extends FragmentActivity implements
 
                     marker1.setVisible(true);
                 }
+
+                // Resets the global variables.
+                if (polygon != null) {
+
+                    mlocation = null;
+                    threeMarkers = false;
+                    fourMarkers = false;
+                    fiveMarkers = false;
+                    sixMarkers = false;
+                    sevenMarkers = false;
+                    eightMarkers = false;
+                }
             }
         });
     }
@@ -321,30 +1424,66 @@ public class Map extends FragmentActivity implements
         // Set shape to null so changing chatSizeSeekBar in onStart() will create a circle and createChatButton will reset itself.
         if (mMap != null) {
 
-            // Remove the polygon and marker.
+            // Remove the polygon and markers.
             if (polygon != null) {
 
                 polygon.remove();
                 marker0.remove();
                 marker1.remove();
                 marker2.remove();
-                marker3.remove();
                 polygon = null;
                 marker0 = null;
                 marker1 = null;
                 marker2 = null;
-                marker3 = null;
                 marker0Position = null;
                 marker1Position = null;
                 marker2Position = null;
-                marker3Position = null;
                 marker0ID = null;
                 marker1ID = null;
                 marker2ID = null;
-                marker3ID = null;
+
+                if (marker3 != null) {
+
+                    marker3.remove();
+                    marker3 = null;
+                    marker3Position = null;
+                    marker3ID = null;
+                }
+
+                if (marker4 != null) {
+
+                    marker4.remove();
+                    marker4 = null;
+                    marker4Position = null;
+                    marker4ID = null;
+                }
+
+                if (marker5 != null) {
+
+                    marker5.remove();
+                    marker5 = null;
+                    marker5Position = null;
+                    marker5ID = null;
+                }
+
+                if (marker6 != null) {
+
+                    marker6.remove();
+                    marker6 = null;
+                    marker6Position = null;
+                    marker6ID = null;
+                }
+
+                if (marker7 != null) {
+
+                    marker7.remove();
+                    marker7 = null;
+                    marker7Position = null;
+                    marker7ID = null;
+                }
             }
 
-            // Remove the circle and marker.
+            // Remove the circle and markers.
             if (circle != null) {
 
                 circle.remove();
@@ -363,6 +1502,13 @@ public class Map extends FragmentActivity implements
             chatSizeSeekBar.setProgress(0);
             relativeAngle = 0.0;
             usedSeekBar = false;
+            mlocation = null;
+            threeMarkers = false;
+            fourMarkers = false;
+            fiveMarkers = false;
+            sixMarkers = false;
+            sevenMarkers = false;
+            eightMarkers = false;
 
             // Load Firebase circles, as onMapReady() doesn't get called after onRestart().
             firebaseCircles.addListenerForSingleValueEvent(new ValueEventListener() {
@@ -2240,28 +3386,66 @@ public class Map extends FragmentActivity implements
 
                 Log.i(TAG, "onMenuItemClick() -> createPolygon");
 
+                // Remove the polygon and markers.
                 if (polygon != null) {
 
                     polygon.remove();
                     marker0.remove();
                     marker1.remove();
                     marker2.remove();
-                    marker3.remove();
                     polygon = null;
                     marker0 = null;
                     marker1 = null;
                     marker2 = null;
-                    marker3 = null;
                     marker0Position = null;
                     marker1Position = null;
                     marker2Position = null;
-                    marker3Position = null;
                     marker0ID = null;
                     marker1ID = null;
                     marker2ID = null;
-                    marker3ID = null;
+
+                    if (marker3 != null) {
+
+                        marker3.remove();
+                        marker3 = null;
+                        marker3Position = null;
+                        marker3ID = null;
+                    }
+
+                    if (marker4 != null) {
+
+                        marker4.remove();
+                        marker4 = null;
+                        marker4Position = null;
+                        marker4ID = null;
+                    }
+
+                    if (marker5 != null) {
+
+                        marker5.remove();
+                        marker5 = null;
+                        marker5Position = null;
+                        marker5ID = null;
+                    }
+
+                    if (marker6 != null) {
+
+                        marker6.remove();
+                        marker6 = null;
+                        marker6Position = null;
+                        marker6ID = null;
+                    }
+
+                    if (marker7 != null) {
+
+                        marker7.remove();
+                        marker7 = null;
+                        marker7Position = null;
+                        marker7ID = null;
+                    }
                 }
 
+                // Remove the circle and markers.
                 if (circle != null) {
 
                     circle.remove();
@@ -2289,7 +3473,7 @@ public class Map extends FragmentActivity implements
                                 if (location != null) {
 
                                     // Set seekBar to be the same as the polygon's arbitrary size.
-                                    chatSizeSeekBar.setProgress(10);
+                                    chatSizeSeekBar.setProgress(50);
 
                                     // Logic to handle location object.
                                     marker0Position = new LatLng(location.getLatitude() - 0.0001, location.getLongitude());
@@ -2305,26 +3489,26 @@ public class Map extends FragmentActivity implements
                                                     .strokeWidth(3f);
 
                                     // Create markers when creating the polygon to allow for dragging of the center and vertices.
-                                    MarkerOptions markerOptions1 = new MarkerOptions()
+                                    MarkerOptions markerOptions0 = new MarkerOptions()
                                             .position(marker0Position)
                                             .draggable(true);
 
-                                    MarkerOptions markerOptions2 = new MarkerOptions()
+                                    MarkerOptions markerOptions1 = new MarkerOptions()
                                             .position(marker1Position)
                                             .draggable(true);
 
-                                    MarkerOptions markerOptions3 = new MarkerOptions()
+                                    MarkerOptions markerOptions2 = new MarkerOptions()
                                             .position(marker2Position)
                                             .draggable(true);
 
-                                    MarkerOptions markerOptions4 = new MarkerOptions()
+                                    MarkerOptions markerOptions3 = new MarkerOptions()
                                             .position(marker3Position)
                                             .draggable(true);
 
-                                    marker0 = mMap.addMarker(markerOptions1);
-                                    marker1 = mMap.addMarker(markerOptions2);
-                                    marker2 = mMap.addMarker(markerOptions3);
-                                    marker3 = mMap.addMarker(markerOptions4);
+                                    marker0 = mMap.addMarker(markerOptions0);
+                                    marker1 = mMap.addMarker(markerOptions1);
+                                    marker2 = mMap.addMarker(markerOptions2);
+                                    marker3 = mMap.addMarker(markerOptions3);
 
                                     // Update the global variable to compare with the marker the user clicks on during the dragging process.
                                     marker0ID = marker0.getId();
@@ -2345,28 +3529,66 @@ public class Map extends FragmentActivity implements
 
                 Log.i(TAG, "onMenuItemClick() -> createCircle");
 
+                // Remove the polygon and markers.
                 if (polygon != null) {
 
                     polygon.remove();
                     marker0.remove();
                     marker1.remove();
                     marker2.remove();
-                    marker3.remove();
                     polygon = null;
                     marker0 = null;
                     marker1 = null;
                     marker2 = null;
-                    marker3 = null;
                     marker0Position = null;
                     marker1Position = null;
                     marker2Position = null;
-                    marker3Position = null;
                     marker0ID = null;
                     marker1ID = null;
                     marker2ID = null;
-                    marker3ID = null;
+
+                    if (marker3 != null) {
+
+                        marker3.remove();
+                        marker3 = null;
+                        marker3Position = null;
+                        marker3ID = null;
+                    }
+
+                    if (marker4 != null) {
+
+                        marker4.remove();
+                        marker4 = null;
+                        marker4Position = null;
+                        marker4ID = null;
+                    }
+
+                    if (marker5 != null) {
+
+                        marker5.remove();
+                        marker5 = null;
+                        marker5Position = null;
+                        marker5ID = null;
+                    }
+
+                    if (marker6 != null) {
+
+                        marker6.remove();
+                        marker6 = null;
+                        marker6Position = null;
+                        marker6ID = null;
+                    }
+
+                    if (marker7 != null) {
+
+                        marker7.remove();
+                        marker7 = null;
+                        marker7Position = null;
+                        marker7ID = null;
+                    }
                 }
 
+                // Remove the circle and markers.
                 if (circle != null) {
 
                     circle.remove();
@@ -2391,6 +3613,9 @@ public class Map extends FragmentActivity implements
                             public void onSuccess(Location location) {
                                 // Get last known location. In some rare situations, this can be null.
                                 if (location != null) {
+
+                                    // Set seekBar to be within 75 and 100, as there are 4 markers.
+                                    chatSizeSeekBar.setProgress(88);
 
                                     // Logic to handle location object.
                                     LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
@@ -2433,6 +3658,8 @@ public class Map extends FragmentActivity implements
             // createchat_menu
             case R.id.removeShape:
 
+                Log.i(TAG, "onMenuItemClick() -> removeShape");
+
                 // Remove the polygon and markers.
                 if (polygon != null) {
 
@@ -2440,20 +3667,56 @@ public class Map extends FragmentActivity implements
                     marker0.remove();
                     marker1.remove();
                     marker2.remove();
-                    marker3.remove();
                     polygon = null;
                     marker0 = null;
                     marker1 = null;
                     marker2 = null;
-                    marker3 = null;
                     marker0Position = null;
                     marker1Position = null;
                     marker2Position = null;
-                    marker3Position = null;
                     marker0ID = null;
                     marker1ID = null;
                     marker2ID = null;
-                    marker3ID = null;
+
+                    if (marker3 != null) {
+
+                        marker3.remove();
+                        marker3 = null;
+                        marker3Position = null;
+                        marker3ID = null;
+                    }
+
+                    if (marker4 != null) {
+
+                        marker4.remove();
+                        marker4 = null;
+                        marker4Position = null;
+                        marker4ID = null;
+                    }
+
+                    if (marker5 != null) {
+
+                        marker5.remove();
+                        marker5 = null;
+                        marker5Position = null;
+                        marker5ID = null;
+                    }
+
+                    if (marker6 != null) {
+
+                        marker6.remove();
+                        marker6 = null;
+                        marker6Position = null;
+                        marker6ID = null;
+                    }
+
+                    if (marker7 != null) {
+
+                        marker7.remove();
+                        marker7 = null;
+                        marker7Position = null;
+                        marker7ID = null;
+                    }
                 }
 
                 // Remove the circle and markers.
@@ -2681,7 +3944,7 @@ public class Map extends FragmentActivity implements
         double longitudeResult = (lonRad + a + 3 * Math.PI) % (2 * Math.PI) - Math.PI;
 
 
-        return new LatLng (toDegrees(latitudeResult), toDegrees(longitudeResult));
+        return new LatLng (Math.toDegrees(latitudeResult), Math.toDegrees(longitudeResult));
     }
 
     @Override
