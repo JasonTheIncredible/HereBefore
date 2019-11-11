@@ -47,17 +47,17 @@ public class Chat extends AppCompatActivity {
     private boolean reachedEndOfRecyclerView = false;
     private boolean recyclerViewHasScrolled = false;
     private boolean messageSent = false;
-    private boolean newCircle;
-    private Boolean userIsWithinCircle;
+    private boolean newShape;
+    private Boolean userIsWithinShape;
     private View.OnLayoutChangeListener onLayoutChangeListener;
     private String uuid;
-    private Double latitude;
-    private Double longitude;
+    private Double circleLatitude;
+    private Double circleLongitude;
     private Double radius;
     private int fillColor;
 
     //TODO: Keep checking user's location while user is in chat to see if they can keep messaging?
-    //TODO: Keep users from adding messages if userIsWithinCircle == false, and add a message at the top notifying user of this.
+    //TODO: Keep users from adding messages if userIsWithinShape == false, and add a message at the top notifying user of this.
     //TODO: Too much work on main thread.
     //TODO: Add a username (in message.xml).
     //TODO: Add ability to add pictures and video to RecyclerView.
@@ -84,12 +84,12 @@ public class Chat extends AppCompatActivity {
 
         // Get info from Map.java
         Bundle extras = getIntent().getExtras();
-        newCircle = extras.getBoolean("newCircle");
+        newShape = extras.getBoolean("newShape");
         uuid = extras.getString("uuid");
-        userIsWithinCircle = extras.getBoolean("userIsWithinCircle");
-        // latitude, longitude, fillColor and radius will be null if the circle is not new (as a new circle is not being created).
-        latitude = extras.getDouble("latitude");
-        longitude = extras.getDouble("longitude");
+        userIsWithinShape = extras.getBoolean("userIsWithinShape");
+        // circleLatitude, circleLongitude, fillColor and radius will be null if the circle is not new (as a new circle is not being created).
+        circleLatitude = extras.getDouble("circleLatitude");
+        circleLongitude = extras.getDouble("circleLongitude");
         fillColor = extras.getInt("fillColor");
         radius = extras.getDouble("radius");
 
@@ -110,7 +110,7 @@ public class Chat extends AppCompatActivity {
                 }
 
                 // If the value from Map.java is false, check Firebase and load any existing messages.
-                if (!newCircle) {
+                if (!newShape) {
 
                     for (DataSnapshot ds : dataSnapshot.getChildren()) {
 
@@ -205,7 +205,7 @@ public class Chat extends AppCompatActivity {
                 if ( !input.equals("") ) {
 
                     // Check Boolean value from onStart();
-                    if (newCircle) {
+                    if (newShape) {
 
                         DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
                         DatabaseReference firebaseCircles = rootRef.child("circles");
@@ -216,7 +216,7 @@ public class Chat extends AppCompatActivity {
 
                                 // Since the uuid doesn't already exist in Firebase, add the circle.
                                 CircleOptions circleOptions = new CircleOptions()
-                                        .center(new LatLng(latitude, longitude))
+                                        .center(new LatLng(circleLatitude, circleLongitude))
                                         .clickable(true)
                                         .fillColor(fillColor)
                                         .radius(radius);
@@ -239,7 +239,7 @@ public class Chat extends AppCompatActivity {
                                 DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("messageThreads").push();
                                 newMessage.setValue(messageInformation);
                                 mInput.getText().clear();
-                                newCircle = false;
+                                newShape = false;
                             }
 
                             @Override

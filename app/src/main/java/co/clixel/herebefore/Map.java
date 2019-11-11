@@ -51,6 +51,7 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.google.maps.android.PolyUtil;
 
 import java.util.Arrays;
 import java.util.List;
@@ -76,13 +77,15 @@ public class Map extends FragmentActivity implements
     private String uuid, marker0ID, marker1ID, marker2ID, marker3ID, marker4ID, marker5ID, marker6ID, marker7ID;
     private Button createChatButton, chatViewsButton, mapTypeButton;
     private PopupMenu popupMapType, popupChatViews, popupCreateChat;
-    private Boolean mapTypeMenuIsOpen = false, chatViewsMenuIsOpen = false, createChatMenuIsOpen = false, usedSeekBar = false, userIsWithinCircle, firstLoad = true, threeMarkers = false, fourMarkers = false, fiveMarkers = false, sixMarkers = false, sevenMarkers = false, eightMarkers = false;
+    private Boolean mapTypeMenuIsOpen = false, chatViewsMenuIsOpen = false, createChatMenuIsOpen = false, usedSeekBar = false, userIsWithinShape, firstLoad = true, threeMarkers = false, fourMarkers = false, fiveMarkers = false, sixMarkers = false, sevenMarkers = false, eightMarkers = false;
     private LatLng marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position;
     private Double relativeAngle = 0.0;
     private Location mlocation;
+    private List<LatLng> polygonPointsList;
 
     //TODO: Have polygon go to chat.
     //TODO: Have chatViewsButton show polygons.
+    //TODO Prevent map type reload with orientation change.
     //TODO: Prevent circle overlap.
     //TODO: Give user option to change color of the circles (or just change it outright).
     //TODO: Make points easier to see somehow.
@@ -1165,6 +1168,7 @@ public class Map extends FragmentActivity implements
             sixMarkers = false;
             sevenMarkers = false;
             eightMarkers = false;
+            polygonPointsList = null;
 
             // Load Firebase circles, as onMapReady() doesn't get called after onRestart().
             firebaseCircles.addListenerForSingleValueEvent(new ValueEventListener() {
@@ -1234,7 +1238,7 @@ public class Map extends FragmentActivity implements
                                                         circle.getCenter().latitude, circle.getCenter().longitude, distance);
 
                                                 // Boolean; will be true if user is within the circle upon circle click.
-                                                userIsWithinCircle = !(distance[0] > circle.getRadius());
+                                                userIsWithinShape = !(distance[0] > circle.getRadius());
                                             }
                                         }
                                     });
@@ -1256,14 +1260,14 @@ public class Map extends FragmentActivity implements
                                             // Carry the extras all the way to Chat.java.
                                             Intent Activity = new Intent(Map.this, Chat.class);
                                             // Pass this boolean value (true) to Chat.java.
-                                            Activity.putExtra("newCircle", true);
-                                            // Pass this value to Chat.java to identify the circle.
+                                            Activity.putExtra("newShape", true);
+                                            // Pass this value to Chat.java to identify the shape.
                                             Activity.putExtra("uuid", uuid);
                                             // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                                            Activity.putExtra("userIsWithinCircle", userIsWithinCircle);
+                                            Activity.putExtra("userIsWithinShape", userIsWithinShape);
                                             // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
-                                            Activity.putExtra("latitude", circle.getCenter().latitude);
-                                            Activity.putExtra("longitude", circle.getCenter().longitude);
+                                            Activity.putExtra("circleLatitude", circle.getCenter().latitude);
+                                            Activity.putExtra("circleLongitude", circle.getCenter().longitude);
                                             Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                             Activity.putExtra("radius", circle.getRadius());
                                             startActivity(Activity);
@@ -1272,14 +1276,14 @@ public class Map extends FragmentActivity implements
                                             // Carry the extras all the way to Chat.java.
                                             Intent Activity = new Intent(Map.this, Chat.class);
                                             // Pass this boolean value (true) to Chat.java.
-                                            Activity.putExtra("newCircle", true);
-                                            // Pass this value to Chat.java to identify the circle.
+                                            Activity.putExtra("newShape", true);
+                                            // Pass this value to Chat.java to identify the shape.
                                             Activity.putExtra("uuid", uuid);
                                             // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                                            Activity.putExtra("userIsWithinCircle", userIsWithinCircle);
+                                            Activity.putExtra("userIsWithinShape", userIsWithinShape);
                                             // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
-                                            Activity.putExtra("latitude", circle.getCenter().latitude);
-                                            Activity.putExtra("longitude", circle.getCenter().longitude);
+                                            Activity.putExtra("circleLatitude", circle.getCenter().latitude);
+                                            Activity.putExtra("circleLongitude", circle.getCenter().longitude);
                                             Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                             Activity.putExtra("radius", circle.getRadius());
                                             startActivity(Activity);
@@ -1295,11 +1299,11 @@ public class Map extends FragmentActivity implements
                                 // Go to Chat.java with the boolean value.
                                 Intent Activity = new Intent(Map.this, Chat.class);
                                 // Pass this boolean value (false) to Chat.java.
-                                Activity.putExtra("newCircle", false);
-                                // Pass this value to Chat.java to identify the circle.
+                                Activity.putExtra("newShape", false);
+                                // Pass this value to Chat.java to identify the shape.
                                 Activity.putExtra("uuid", uuid);
                                 // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                                Activity.putExtra("userIsWithinCircle", userIsWithinCircle);
+                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
                                 startActivity(Activity);
                             }
                         } else {
@@ -1323,14 +1327,14 @@ public class Map extends FragmentActivity implements
                                             // Carry the extras all the way to Chat.java.
                                             Intent Activity = new Intent(Map.this, SignIn.class);
                                             // Pass this boolean value (true) to Chat.java.
-                                            Activity.putExtra("newCircle", true);
-                                            // Pass this value to Chat.java to identify the circle.
+                                            Activity.putExtra("newShape", true);
+                                            // Pass this value to Chat.java to identify the shape.
                                             Activity.putExtra("uuid", uuid);
                                             // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                                            Activity.putExtra("userIsWithinCircle", userIsWithinCircle);
+                                            Activity.putExtra("userIsWithinShape", userIsWithinShape);
                                             // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
-                                            Activity.putExtra("latitude", circle.getCenter().latitude);
-                                            Activity.putExtra("longitude", circle.getCenter().longitude);
+                                            Activity.putExtra("circleLatitude", circle.getCenter().latitude);
+                                            Activity.putExtra("circleLongitude", circle.getCenter().longitude);
                                             Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                             Activity.putExtra("radius", circle.getRadius());
                                             startActivity(Activity);
@@ -1339,14 +1343,14 @@ public class Map extends FragmentActivity implements
                                             // Carry the extras all the way to Chat.java.
                                             Intent Activity = new Intent(Map.this, SignIn.class);
                                             // Pass this boolean value (true) to Chat.java.
-                                            Activity.putExtra("newCircle", true);
-                                            // Pass this value to Chat.java to identify the circle.
+                                            Activity.putExtra("newShape", true);
+                                            // Pass this value to Chat.java to identify the shape.
                                             Activity.putExtra("uuid", uuid);
                                             // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                                            Activity.putExtra("userIsWithinCircle", userIsWithinCircle);
+                                            Activity.putExtra("userIsWithinShape", userIsWithinShape);
                                             // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
-                                            Activity.putExtra("latitude", circle.getCenter().latitude);
-                                            Activity.putExtra("longitude", circle.getCenter().longitude);
+                                            Activity.putExtra("circleLatitude", circle.getCenter().latitude);
+                                            Activity.putExtra("circleLongitude", circle.getCenter().longitude);
                                             Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                             Activity.putExtra("radius", circle.getRadius());
                                             startActivity(Activity);
@@ -1362,11 +1366,11 @@ public class Map extends FragmentActivity implements
                                 // Go to Chat.java with the boolean value.
                                 Intent Activity = new Intent(Map.this, SignIn.class);
                                 // Pass this boolean value (false) to Chat.java.
-                                Activity.putExtra("newCircle", false);
-                                // Pass this value to Chat.java to identify the circle.
+                                Activity.putExtra("newShape", false);
+                                // Pass this value to Chat.java to identify the shape.
                                 Activity.putExtra("uuid", uuid);
                                 // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                                Activity.putExtra("userIsWithinCircle", userIsWithinCircle);
+                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
                                 startActivity(Activity);
                             }
                         }
@@ -1397,7 +1401,7 @@ public class Map extends FragmentActivity implements
                         if (marker.getId().equals(marker1ID)) {
 
                             // Limits the size of the circle.
-                            if (circle.getRadius() < 200) {
+                            if (distanceGivenLatLng(circle.getCenter().latitude, circle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude) < 200) {
 
                                 circle.setRadius(distanceGivenLatLng(circle.getCenter().latitude, circle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude));
                             } else {
@@ -1412,29 +1416,253 @@ public class Map extends FragmentActivity implements
 
                         if (marker.getId().equals(marker0ID)) {
 
-                            LatLng[] polygonPoints = new LatLng[] {markerPosition, marker1Position, marker2Position, marker3Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
-                            polygon.setPoints(polygonPointsList);
+                            if (threeMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {markerPosition, marker1Position, marker2Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (fourMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {markerPosition, marker1Position, marker2Position, marker3Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (fiveMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {markerPosition, marker1Position, marker2Position, marker3Position, marker4Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sixMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {markerPosition, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sevenMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {markerPosition, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (eightMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {markerPosition, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
                         }
 
                         if (marker.getId().equals(marker1ID)) {
 
-                            LatLng[] polygonPoints = new LatLng[] {marker0Position, markerPosition, marker2Position, marker3Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
-                            polygon.setPoints(polygonPointsList);
+                            if (threeMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, markerPosition, marker2Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (fourMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, markerPosition, marker2Position, marker3Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (fiveMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, markerPosition, marker2Position, marker3Position, marker4Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sixMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, markerPosition, marker2Position, marker3Position, marker4Position, marker5Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sevenMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, markerPosition, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (eightMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, markerPosition, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
                         }
 
                         if (marker.getId().equals(marker2ID)) {
 
-                            LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, markerPosition, marker3Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
-                            polygon.setPoints(polygonPointsList);
+                            if (threeMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, markerPosition};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (fourMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, markerPosition, marker3Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (fiveMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, markerPosition, marker3Position, marker4Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sixMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, markerPosition, marker3Position, marker4Position, marker5Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sevenMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, markerPosition, marker3Position, marker4Position, marker5Position, marker6Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (eightMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, markerPosition, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
                         }
 
                         if (marker.getId().equals(marker3ID)) {
 
-                            LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, markerPosition};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            if (fourMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, markerPosition};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (fiveMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, markerPosition, marker4Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sixMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, markerPosition, marker4Position, marker5Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sevenMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, markerPosition, marker4Position, marker5Position, marker6Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (eightMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, markerPosition, marker4Position, marker5Position, marker6Position, marker7Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+                        }
+
+                        if (marker.getId().equals(marker4ID)) {
+
+                            if (fiveMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, marker3Position, markerPosition};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sixMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, marker3Position, markerPosition, marker5Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sevenMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, marker3Position, markerPosition, marker5Position, marker6Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (eightMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, marker3Position, markerPosition, marker5Position, marker6Position, marker7Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+                        }
+
+                        if (marker.getId().equals(marker5ID)) {
+
+                            if (sixMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, markerPosition};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sevenMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, markerPosition, marker6Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (eightMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, markerPosition, marker6Position, marker7Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+                        }
+
+                        if (marker.getId().equals(marker6ID)) {
+
+                            if (sevenMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, markerPosition};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (eightMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, markerPosition, marker7Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+                        }
+
+                        if (marker.getId().equals(marker7ID)) {
+
+                            LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, markerPosition};
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
@@ -1474,29 +1702,253 @@ public class Map extends FragmentActivity implements
 
                         if (marker.getId().equals(marker0ID)) {
 
-                            LatLng[] polygonPoints = new LatLng[] {markerPosition, marker1Position, marker2Position, marker3Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
-                            polygon.setPoints(polygonPointsList);
+                            if (threeMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {markerPosition, marker1Position, marker2Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (fourMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {markerPosition, marker1Position, marker2Position, marker3Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (fiveMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {markerPosition, marker1Position, marker2Position, marker3Position, marker4Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sixMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {markerPosition, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sevenMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {markerPosition, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (eightMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {markerPosition, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
                         }
 
                         if (marker.getId().equals(marker1ID)) {
 
-                            LatLng[] polygonPoints = new LatLng[] {marker0Position, markerPosition, marker2Position, marker3Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
-                            polygon.setPoints(polygonPointsList);
+                            if (threeMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, markerPosition, marker2Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (fourMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, markerPosition, marker2Position, marker3Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (fiveMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, markerPosition, marker2Position, marker3Position, marker4Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sixMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, markerPosition, marker2Position, marker3Position, marker4Position, marker5Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sevenMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, markerPosition, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (eightMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, markerPosition, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
                         }
 
                         if (marker.getId().equals(marker2ID)) {
 
-                            LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, markerPosition, marker3Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
-                            polygon.setPoints(polygonPointsList);
+                            if (threeMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, markerPosition};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (fourMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, markerPosition, marker3Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (fiveMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, markerPosition, marker3Position, marker4Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sixMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, markerPosition, marker3Position, marker4Position, marker5Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sevenMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, markerPosition, marker3Position, marker4Position, marker5Position, marker6Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (eightMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, markerPosition, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
                         }
 
                         if (marker.getId().equals(marker3ID)) {
 
-                            LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, markerPosition};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            if (fourMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, markerPosition};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (fiveMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, markerPosition, marker4Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sixMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, markerPosition, marker4Position, marker5Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sevenMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, markerPosition, marker4Position, marker5Position, marker6Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (eightMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, markerPosition, marker4Position, marker5Position, marker6Position, marker7Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+                        }
+
+                        if (marker.getId().equals(marker4ID)) {
+
+                            if (fiveMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, marker3Position, markerPosition};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sixMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, marker3Position, markerPosition, marker5Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sevenMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, marker3Position, markerPosition, marker5Position, marker6Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (eightMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, marker3Position, markerPosition, marker5Position, marker6Position, marker7Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+                        }
+
+                        if (marker.getId().equals(marker5ID)) {
+
+                            if (sixMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, markerPosition};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sevenMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, markerPosition, marker6Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (eightMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, markerPosition, marker6Position, marker7Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+                        }
+
+                        if (marker.getId().equals(marker6ID)) {
+
+                            if (sevenMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, markerPosition};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (eightMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, markerPosition, marker7Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+                        }
+
+                        if (marker.getId().equals(marker7ID)) {
+
+                            LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, markerPosition};
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
                     }
@@ -1511,7 +1963,7 @@ public class Map extends FragmentActivity implements
 
                         circle.setFillColor(Color.argb(70, 255, 215, 0));
 
-                        // Sets marker1's position on the circle's edge at the same angle relative to where the user last left it.
+                        // Sets marker1's position on the circle's edge relative to where the user last left marker1.
                         if (marker.getId().equals(marker0ID)) {
 
                             marker1.setPosition(latLngGivenDistance(circle.getCenter().latitude, circle.getCenter().longitude, circle.getRadius(), relativeAngle));
@@ -1563,6 +2015,26 @@ public class Map extends FragmentActivity implements
                             marker3Position = marker.getPosition();
                         }
 
+                        if (marker.getId().equals(marker4ID)) {
+
+                            marker4Position = marker.getPosition();
+                        }
+
+                        if (marker.getId().equals(marker5ID)) {
+
+                            marker5Position = marker.getPosition();
+                        }
+
+                        if (marker.getId().equals(marker6ID)) {
+
+                            marker6Position = marker.getPosition();
+                        }
+
+                        if (marker.getId().equals(marker7ID)) {
+
+                            marker7Position = marker.getPosition();
+                        }
+
                         polygon.setFillColor(Color.argb(70, 255, 215, 0));
                     }
                 }
@@ -1605,7 +2077,7 @@ public class Map extends FragmentActivity implements
                                                     circle.getCenter().latitude, circle.getCenter().longitude, distance);
 
                                             // Boolean; will be true if user is within the circle upon circle click.
-                                            userIsWithinCircle = !(distance[0] > circle.getRadius());
+                                            userIsWithinShape = !(distance[0] > circle.getRadius());
                                         }
                                     }
                                 });
@@ -1627,14 +2099,14 @@ public class Map extends FragmentActivity implements
                                         // Carry the extras all the way to Chat.java.
                                         Intent Activity = new Intent(Map.this, Chat.class);
                                         // Pass this boolean value (true) to Chat.java.
-                                        Activity.putExtra("newCircle", true);
-                                        // Pass this value to Chat.java to identify the circle.
+                                        Activity.putExtra("newShape", true);
+                                        // Pass this value to Chat.java to identify the shape.
                                         Activity.putExtra("uuid", uuid);
                                         // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                                        Activity.putExtra("userIsWithinCircle", userIsWithinCircle);
+                                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
                                         // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
-                                        Activity.putExtra("latitude", circle.getCenter().latitude);
-                                        Activity.putExtra("longitude", circle.getCenter().longitude);
+                                        Activity.putExtra("circleLatitude", circle.getCenter().latitude);
+                                        Activity.putExtra("circleLongitude", circle.getCenter().longitude);
                                         Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                         Activity.putExtra("radius", circle.getRadius());
                                         startActivity(Activity);
@@ -1643,14 +2115,14 @@ public class Map extends FragmentActivity implements
                                         // Carry the extras all the way to Chat.java.
                                         Intent Activity = new Intent(Map.this, Chat.class);
                                         // Pass this boolean value (true) to Chat.java.
-                                        Activity.putExtra("newCircle", true);
-                                        // Pass this value to Chat.java to identify the circle.
+                                        Activity.putExtra("newShape", true);
+                                        // Pass this value to Chat.java to identify the shape.
                                         Activity.putExtra("uuid", uuid);
                                         // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                                        Activity.putExtra("userIsWithinCircle", userIsWithinCircle);
+                                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
                                         // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
-                                        Activity.putExtra("latitude", circle.getCenter().latitude);
-                                        Activity.putExtra("longitude", circle.getCenter().longitude);
+                                        Activity.putExtra("circleLatitude", circle.getCenter().latitude);
+                                        Activity.putExtra("circleLongitude", circle.getCenter().longitude);
                                         Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                         Activity.putExtra("radius", circle.getRadius());
                                         startActivity(Activity);
@@ -1666,11 +2138,11 @@ public class Map extends FragmentActivity implements
                             // Go to Chat.java with the boolean value.
                             Intent Activity = new Intent(Map.this, Chat.class);
                             // Pass this boolean value (false) to Chat.java.
-                            Activity.putExtra("newCircle", false);
-                            // Pass this value to Chat.java to identify the circle.
+                            Activity.putExtra("newShape", false);
+                            // Pass this value to Chat.java to identify the shape.
                             Activity.putExtra("uuid", uuid);
                             // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                            Activity.putExtra("userIsWithinCircle", userIsWithinCircle);
+                            Activity.putExtra("userIsWithinShape", userIsWithinShape);
                             startActivity(Activity);
                         }
                     } else {
@@ -1694,14 +2166,14 @@ public class Map extends FragmentActivity implements
                                         // Carry the extras all the way to Chat.java.
                                         Intent Activity = new Intent(Map.this, SignIn.class);
                                         // Pass this boolean value (true) to Chat.java.
-                                        Activity.putExtra("newCircle", true);
-                                        // Pass this value to Chat.java to identify the circle.
+                                        Activity.putExtra("newShape", true);
+                                        // Pass this value to Chat.java to identify the shape.
                                         Activity.putExtra("uuid", uuid);
                                         // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                                        Activity.putExtra("userIsWithinCircle", userIsWithinCircle);
+                                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
                                         // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
-                                        Activity.putExtra("latitude", circle.getCenter().latitude);
-                                        Activity.putExtra("longitude", circle.getCenter().longitude);
+                                        Activity.putExtra("circleLatitude", circle.getCenter().latitude);
+                                        Activity.putExtra("circleLongitude", circle.getCenter().longitude);
                                         Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                         Activity.putExtra("radius", circle.getRadius());
                                         startActivity(Activity);
@@ -1710,14 +2182,14 @@ public class Map extends FragmentActivity implements
                                         // Carry the extras all the way to Chat.java.
                                         Intent Activity = new Intent(Map.this, SignIn.class);
                                         // Pass this boolean value (true) to Chat.java.
-                                        Activity.putExtra("newCircle", true);
-                                        // Pass this value to Chat.java to identify the circle.
+                                        Activity.putExtra("newShape", true);
+                                        // Pass this value to Chat.java to identify the shape.
                                         Activity.putExtra("uuid", uuid);
                                         // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                                        Activity.putExtra("userIsWithinCircle", userIsWithinCircle);
+                                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
                                         // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
-                                        Activity.putExtra("latitude", circle.getCenter().latitude);
-                                        Activity.putExtra("longitude", circle.getCenter().longitude);
+                                        Activity.putExtra("circleLatitude", circle.getCenter().latitude);
+                                        Activity.putExtra("circleLongitude", circle.getCenter().longitude);
                                         Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                         Activity.putExtra("radius", circle.getRadius());
                                         startActivity(Activity);
@@ -1733,11 +2205,11 @@ public class Map extends FragmentActivity implements
                             // Go to Chat.java with the boolean value.
                             Intent Activity = new Intent(Map.this, SignIn.class);
                             // Pass this boolean value (false) to Chat.java.
-                            Activity.putExtra("newCircle", false);
-                            // Pass this value to Chat.java to identify the circle.
+                            Activity.putExtra("newShape", false);
+                            // Pass this value to Chat.java to identify the shape.
                             Activity.putExtra("uuid", uuid);
                             // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                            Activity.putExtra("userIsWithinCircle", userIsWithinCircle);
+                            Activity.putExtra("userIsWithinShape", userIsWithinShape);
                             startActivity(Activity);
                         }
                     }
@@ -2094,7 +2566,7 @@ public class Map extends FragmentActivity implements
                                                     circle.getCenter().latitude, circle.getCenter().longitude, distance);
 
                                             // Boolean; will be true if user is within the circle upon circle click.
-                                            userIsWithinCircle = !(distance[0] > circle.getRadius());
+                                            userIsWithinShape = !(distance[0] > circle.getRadius());
                                         }
                                     }
                                 });
@@ -2116,14 +2588,14 @@ public class Map extends FragmentActivity implements
                                         // Carry the extras all the way to Chat.java.
                                         Intent Activity = new Intent(Map.this, Chat.class);
                                         // Pass this boolean value (true) to Chat.java.
-                                        Activity.putExtra("newCircle", true);
-                                        // Pass this value to Chat.java to identify the circle.
+                                        Activity.putExtra("newShape", true);
+                                        // Pass this value to Chat.java to identify the shape.
                                         Activity.putExtra("uuid", uuid);
                                         // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                                        Activity.putExtra("userIsWithinCircle", userIsWithinCircle);
+                                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
                                         // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
-                                        Activity.putExtra("latitude", circle.getCenter().latitude);
-                                        Activity.putExtra("longitude", circle.getCenter().longitude);
+                                        Activity.putExtra("circleLatitude", circle.getCenter().latitude);
+                                        Activity.putExtra("circleLongitude", circle.getCenter().longitude);
                                         Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                         Activity.putExtra("radius", circle.getRadius());
                                         startActivity(Activity);
@@ -2132,14 +2604,14 @@ public class Map extends FragmentActivity implements
                                         // Carry the extras all the way to Chat.java.
                                         Intent Activity = new Intent(Map.this, Chat.class);
                                         // Pass this boolean value (true) to Chat.java.
-                                        Activity.putExtra("newCircle", true);
-                                        // Pass this value to Chat.java to identify the circle.
+                                        Activity.putExtra("newShape", true);
+                                        // Pass this value to Chat.java to identify the shape.
                                         Activity.putExtra("uuid", uuid);
                                         // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                                        Activity.putExtra("userIsWithinCircle", userIsWithinCircle);
+                                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
                                         // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
-                                        Activity.putExtra("latitude", circle.getCenter().latitude);
-                                        Activity.putExtra("longitude", circle.getCenter().longitude);
+                                        Activity.putExtra("circleLatitude", circle.getCenter().latitude);
+                                        Activity.putExtra("circleLongitude", circle.getCenter().longitude);
                                         Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                         Activity.putExtra("radius", circle.getRadius());
                                         startActivity(Activity);
@@ -2155,11 +2627,11 @@ public class Map extends FragmentActivity implements
                             // Go to Chat.java with the boolean value.
                             Intent Activity = new Intent(Map.this, Chat.class);
                             // Pass this boolean value (false) to Chat.java.
-                            Activity.putExtra("newCircle", false);
-                            // Pass this value to Chat.java to identify the circle.
+                            Activity.putExtra("newShape", false);
+                            // Pass this value to Chat.java to identify the shape.
                             Activity.putExtra("uuid", uuid);
                             // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                            Activity.putExtra("userIsWithinCircle", userIsWithinCircle);
+                            Activity.putExtra("userIsWithinShape", userIsWithinShape);
                             startActivity(Activity);
                         }
                     } else {
@@ -2183,14 +2655,14 @@ public class Map extends FragmentActivity implements
                                         // Carry the extras all the way to Chat.java.
                                         Intent Activity = new Intent(Map.this, SignIn.class);
                                         // Pass this boolean value (true) to Chat.java.
-                                        Activity.putExtra("newCircle", true);
-                                        // Pass this value to Chat.java to identify the circle.
+                                        Activity.putExtra("newShape", true);
+                                        // Pass this value to Chat.java to identify the shape.
                                         Activity.putExtra("uuid", uuid);
                                         // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                                        Activity.putExtra("userIsWithinCircle", userIsWithinCircle);
+                                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
                                         // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
-                                        Activity.putExtra("latitude", circle.getCenter().latitude);
-                                        Activity.putExtra("longitude", circle.getCenter().longitude);
+                                        Activity.putExtra("circleLatitude", circle.getCenter().latitude);
+                                        Activity.putExtra("circleLongitude", circle.getCenter().longitude);
                                         Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                         Activity.putExtra("radius", circle.getRadius());
                                         startActivity(Activity);
@@ -2199,14 +2671,14 @@ public class Map extends FragmentActivity implements
                                         // Carry the extras all the way to Chat.java.
                                         Intent Activity = new Intent(Map.this, SignIn.class);
                                         // Pass this boolean value (true) to Chat.java.
-                                        Activity.putExtra("newCircle", true);
-                                        // Pass this value to Chat.java to identify the circle.
+                                        Activity.putExtra("newShape", true);
+                                        // Pass this value to Chat.java to identify the shape.
                                         Activity.putExtra("uuid", uuid);
                                         // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                                        Activity.putExtra("userIsWithinCircle", userIsWithinCircle);
+                                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
                                         // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
-                                        Activity.putExtra("latitude", circle.getCenter().latitude);
-                                        Activity.putExtra("longitude", circle.getCenter().longitude);
+                                        Activity.putExtra("circleLatitude", circle.getCenter().latitude);
+                                        Activity.putExtra("circleLongitude", circle.getCenter().longitude);
                                         Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                         Activity.putExtra("radius", circle.getRadius());
                                         startActivity(Activity);
@@ -2222,11 +2694,11 @@ public class Map extends FragmentActivity implements
                             // Go to Chat.java with the boolean value.
                             Intent Activity = new Intent(Map.this, SignIn.class);
                             // Pass this boolean value (false) to Chat.java.
-                            Activity.putExtra("newCircle", false);
-                            // Pass this value to Chat.java to identify the circle.
+                            Activity.putExtra("newShape", false);
+                            // Pass this value to Chat.java to identify the shape.
                             Activity.putExtra("uuid", uuid);
                             // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                            Activity.putExtra("userIsWithinCircle", userIsWithinCircle);
+                            Activity.putExtra("userIsWithinShape", userIsWithinShape);
                             startActivity(Activity);
                         }
                     }
@@ -2275,42 +2747,42 @@ public class Map extends FragmentActivity implements
                         if (threeMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {markerPosition, marker1Position, marker2Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (fourMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {markerPosition, marker1Position, marker2Position, marker3Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (fiveMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {markerPosition, marker1Position, marker2Position, marker3Position, marker4Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (sixMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {markerPosition, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (sevenMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {markerPosition, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (eightMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {markerPosition, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
                     }
@@ -2320,42 +2792,42 @@ public class Map extends FragmentActivity implements
                         if (threeMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, markerPosition, marker2Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (fourMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, markerPosition, marker2Position, marker3Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (fiveMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, markerPosition, marker2Position, marker3Position, marker4Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (sixMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, markerPosition, marker2Position, marker3Position, marker4Position, marker5Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (sevenMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, markerPosition, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (eightMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, markerPosition, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
                     }
@@ -2365,42 +2837,42 @@ public class Map extends FragmentActivity implements
                         if (threeMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, markerPosition};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (fourMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, markerPosition, marker3Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (fiveMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, markerPosition, marker3Position, marker4Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (sixMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, markerPosition, marker3Position, marker4Position, marker5Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (sevenMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, markerPosition, marker3Position, marker4Position, marker5Position, marker6Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (eightMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, markerPosition, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
                     }
@@ -2410,35 +2882,35 @@ public class Map extends FragmentActivity implements
                         if (fourMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, markerPosition};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (fiveMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, markerPosition, marker4Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (sixMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, markerPosition, marker4Position, marker5Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (sevenMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, markerPosition, marker4Position, marker5Position, marker6Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (eightMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, markerPosition, marker4Position, marker5Position, marker6Position, marker7Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
                     }
@@ -2448,28 +2920,28 @@ public class Map extends FragmentActivity implements
                         if (fiveMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, marker3Position, markerPosition};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (sixMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, marker3Position, markerPosition, marker5Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (sevenMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, marker3Position, markerPosition, marker5Position, marker6Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (eightMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, marker3Position, markerPosition, marker5Position, marker6Position, marker7Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
                     }
@@ -2479,21 +2951,21 @@ public class Map extends FragmentActivity implements
                         if (sixMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, markerPosition};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (sevenMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, markerPosition, marker6Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (eightMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, markerPosition, marker6Position, marker7Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
                     }
@@ -2503,22 +2975,22 @@ public class Map extends FragmentActivity implements
                         if (sevenMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, markerPosition};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (eightMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, markerPosition, marker7Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
                     }
 
                     if (marker.getId().equals(marker7ID)) {
 
-                        LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, markerPosition, marker7Position};
-                        List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                        LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, markerPosition};
+                        polygonPointsList = Arrays.asList(polygonPoints);
                         polygon.setPoints(polygonPointsList);
                     }
 
@@ -2561,42 +3033,42 @@ public class Map extends FragmentActivity implements
                         if (threeMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {markerPosition, marker1Position, marker2Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (fourMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {markerPosition, marker1Position, marker2Position, marker3Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (fiveMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {markerPosition, marker1Position, marker2Position, marker3Position, marker4Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (sixMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {markerPosition, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (sevenMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {markerPosition, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (eightMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {markerPosition, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
                     }
@@ -2606,42 +3078,42 @@ public class Map extends FragmentActivity implements
                         if (threeMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, markerPosition, marker2Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (fourMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, markerPosition, marker2Position, marker3Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (fiveMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, markerPosition, marker2Position, marker3Position, marker4Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (sixMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, markerPosition, marker2Position, marker3Position, marker4Position, marker5Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (sevenMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, markerPosition, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (eightMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, markerPosition, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
                     }
@@ -2651,42 +3123,42 @@ public class Map extends FragmentActivity implements
                         if (threeMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, markerPosition};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (fourMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, markerPosition, marker3Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (fiveMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, markerPosition, marker3Position, marker4Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (sixMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, markerPosition, marker3Position, marker4Position, marker5Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (sevenMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, markerPosition, marker3Position, marker4Position, marker5Position, marker6Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (eightMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, markerPosition, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
                     }
@@ -2696,35 +3168,35 @@ public class Map extends FragmentActivity implements
                         if (fourMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, markerPosition};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (fiveMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, markerPosition, marker4Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (sixMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, markerPosition, marker4Position, marker5Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (sevenMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, markerPosition, marker4Position, marker5Position, marker6Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (eightMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, markerPosition, marker4Position, marker5Position, marker6Position, marker7Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
                     }
@@ -2734,28 +3206,28 @@ public class Map extends FragmentActivity implements
                         if (fiveMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, marker3Position, markerPosition};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (sixMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, marker3Position, markerPosition, marker5Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (sevenMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, marker3Position, markerPosition, marker5Position, marker6Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (eightMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, marker3Position, markerPosition, marker5Position, marker6Position, marker7Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
                     }
@@ -2765,21 +3237,21 @@ public class Map extends FragmentActivity implements
                         if (sixMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, markerPosition};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (sevenMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, markerPosition, marker6Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (eightMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, markerPosition, marker6Position, marker7Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
                     }
@@ -2789,22 +3261,22 @@ public class Map extends FragmentActivity implements
                         if (sevenMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, markerPosition};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
 
                         if (eightMarkers) {
 
                             LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, markerPosition, marker7Position};
-                            List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                            polygonPointsList = Arrays.asList(polygonPoints);
                             polygon.setPoints(polygonPointsList);
                         }
                     }
 
                     if (marker.getId().equals(marker7ID)) {
 
-                        LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, markerPosition, marker7Position};
-                        List<LatLng> polygonPointsList = Arrays.asList(polygonPoints);
+                        LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, markerPosition};
+                        polygonPointsList = Arrays.asList(polygonPoints);
                         polygon.setPoints(polygonPointsList);
                     }
                 }
@@ -2896,7 +3368,109 @@ public class Map extends FragmentActivity implements
             }
         });
 
-        // Go to Chat.java when clicking on the circle.
+        // Go to Chat.java when clicking on a polygon.
+        mMap.setOnPolygonClickListener(new GoogleMap.OnPolygonClickListener() {
+            @Override
+            public void onPolygonClick(Polygon polygon) {
+
+                if (polygon.getTag() != null) {
+
+                    // Get the ID set by Firebase to identify which polygon the user clicked on.
+                    uuid = (String) circle.getTag();
+                } else {
+
+                    // If the polygon is new, it will not have a tag, as the tag is pulled from Firebase. Therefore, generate a uuid.
+                    uuid = UUID.randomUUID().toString();
+                }
+
+                // Check if the user is already signed in.
+                if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+
+                    // User is signed in.
+
+                    // Check if user is within the polygon before going to the chat.
+                    FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
+
+                    mFusedLocationClient.getLastLocation()
+                            .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
+                                @Override
+                                public void onSuccess(Location location) {
+
+                                    if (location != null) {
+
+                                        PolyUtil.containsLocation(location.getLatitude(), location.getLongitude(), polygonPointsList, false);
+                                    }
+                                }
+                            });
+
+                    // If polygon.getTag() == null, the polygon is new. Therefore, compare it to the uuids in Firebase to prevent uuid overlap before adding it to Firebase.
+                    if (polygon.getTag() == null) {
+
+                        firebaseCircles.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
+
+                            @Override
+                            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                                // If the uuid already exists in Firebase, generate another uuid and try again.
+                                if (dataSnapshot.exists()) {
+
+                                    // Generate another UUID and try again.
+                                    uuid = UUID.randomUUID().toString();
+
+                                    // Carry the extras all the way to Chat.java.
+                                    Intent Activity = new Intent(Map.this, Chat.class);
+                                    // Pass this boolean value (true) to Chat.java.
+                                    Activity.putExtra("newShape", true);
+                                    // Pass this value to Chat.java to identify the shape.
+                                    Activity.putExtra("uuid", uuid);
+                                    // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                    Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                    // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
+                                    Activity.putExtra("circleLatitude", circle.getCenter().latitude);
+                                    Activity.putExtra("circleLongitude", circle.getCenter().longitude);
+                                    Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
+                                    Activity.putExtra("radius", circle.getRadius());
+                                    startActivity(Activity);
+                                } else {
+
+                                    // Carry the extras all the way to Chat.java.
+                                    Intent Activity = new Intent(Map.this, Chat.class);
+                                    // Pass this boolean value (true) to Chat.java.
+                                    Activity.putExtra("newShape", true);
+                                    // Pass this value to Chat.java to identify the shape.
+                                    Activity.putExtra("uuid", uuid);
+                                    // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                    Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                    // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
+                                    Activity.putExtra("circleLatitude", circle.getCenter().latitude);
+                                    Activity.putExtra("circleLongitude", circle.getCenter().longitude);
+                                    Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
+                                    Activity.putExtra("radius", circle.getRadius());
+                                    startActivity(Activity);
+                                }
+                            }
+
+                            @Override
+                            public void onCancelled(@NonNull DatabaseError databaseError) {
+                            }
+                        });
+                    } else {
+
+                        // Go to Chat.java with the boolean value.
+                        Intent Activity = new Intent(Map.this, Chat.class);
+                        // Pass this boolean value (false) to Chat.java.
+                        Activity.putExtra("newShape", false);
+                        // Pass this value to Chat.java to identify the shape.
+                        Activity.putExtra("uuid", uuid);
+                        // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                        startActivity(Activity);
+                    }
+                }
+            }
+        });
+
+        // Go to Chat.java when clicking on a circle.
         mMap.setOnCircleClickListener(new GoogleMap.OnCircleClickListener() {
 
             @Override
@@ -2933,7 +3507,7 @@ public class Map extends FragmentActivity implements
                                                 circle.getCenter().latitude, circle.getCenter().longitude, distance);
 
                                         // Boolean; will be true if user is within the circle upon circle click.
-                                        userIsWithinCircle = !(distance[0] > circle.getRadius());
+                                        userIsWithinShape = !(distance[0] > circle.getRadius());
                                     }
                                 }
                             });
@@ -2955,14 +3529,14 @@ public class Map extends FragmentActivity implements
                                     // Carry the extras all the way to Chat.java.
                                     Intent Activity = new Intent(Map.this, Chat.class);
                                     // Pass this boolean value (true) to Chat.java.
-                                    Activity.putExtra("newCircle", true);
-                                    // Pass this value to Chat.java to identify the circle.
+                                    Activity.putExtra("newShape", true);
+                                    // Pass this value to Chat.java to identify the shape.
                                     Activity.putExtra("uuid", uuid);
                                     // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                                    Activity.putExtra("userIsWithinCircle", userIsWithinCircle);
+                                    Activity.putExtra("userIsWithinShape", userIsWithinShape);
                                     // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
-                                    Activity.putExtra("latitude", circle.getCenter().latitude);
-                                    Activity.putExtra("longitude", circle.getCenter().longitude);
+                                    Activity.putExtra("circleLatitude", circle.getCenter().latitude);
+                                    Activity.putExtra("circleLongitude", circle.getCenter().longitude);
                                     Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                     Activity.putExtra("radius", circle.getRadius());
                                     startActivity(Activity);
@@ -2971,14 +3545,14 @@ public class Map extends FragmentActivity implements
                                     // Carry the extras all the way to Chat.java.
                                     Intent Activity = new Intent(Map.this, Chat.class);
                                     // Pass this boolean value (true) to Chat.java.
-                                    Activity.putExtra("newCircle", true);
-                                    // Pass this value to Chat.java to identify the circle.
+                                    Activity.putExtra("newShape", true);
+                                    // Pass this value to Chat.java to identify the shape.
                                     Activity.putExtra("uuid", uuid);
                                     // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                                    Activity.putExtra("userIsWithinCircle", userIsWithinCircle);
+                                    Activity.putExtra("userIsWithinShape", userIsWithinShape);
                                     // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
-                                    Activity.putExtra("latitude", circle.getCenter().latitude);
-                                    Activity.putExtra("longitude", circle.getCenter().longitude);
+                                    Activity.putExtra("circleLatitude", circle.getCenter().latitude);
+                                    Activity.putExtra("circleLongitude", circle.getCenter().longitude);
                                     Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                     Activity.putExtra("radius", circle.getRadius());
                                     startActivity(Activity);
@@ -2994,11 +3568,11 @@ public class Map extends FragmentActivity implements
                         // Go to Chat.java with the boolean value.
                         Intent Activity = new Intent(Map.this, Chat.class);
                         // Pass this boolean value (false) to Chat.java.
-                        Activity.putExtra("newCircle", false);
-                        // Pass this value to Chat.java to identify the circle.
+                        Activity.putExtra("newShape", false);
+                        // Pass this value to Chat.java to identify the shape.
                         Activity.putExtra("uuid", uuid);
                         // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                        Activity.putExtra("userIsWithinCircle", userIsWithinCircle);
+                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
                         startActivity(Activity);
                     }
                 } else {
@@ -3022,14 +3596,14 @@ public class Map extends FragmentActivity implements
                                     // Carry the extras all the way to Chat.java.
                                     Intent Activity = new Intent(Map.this, SignIn.class);
                                     // Pass this boolean value (true) to Chat.java.
-                                    Activity.putExtra("newCircle", true);
-                                    // Pass this value to Chat.java to identify the circle.
+                                    Activity.putExtra("newShape", true);
+                                    // Pass this value to Chat.java to identify the shape.
                                     Activity.putExtra("uuid", uuid);
                                     // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                                    Activity.putExtra("userIsWithinCircle", userIsWithinCircle);
+                                    Activity.putExtra("userIsWithinShape", userIsWithinShape);
                                     // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
-                                    Activity.putExtra("latitude", circle.getCenter().latitude);
-                                    Activity.putExtra("longitude", circle.getCenter().longitude);
+                                    Activity.putExtra("circleLatitude", circle.getCenter().latitude);
+                                    Activity.putExtra("circleLongitude", circle.getCenter().longitude);
                                     Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                     Activity.putExtra("radius", circle.getRadius());
                                     startActivity(Activity);
@@ -3038,14 +3612,14 @@ public class Map extends FragmentActivity implements
                                     // Carry the extras all the way to Chat.java.
                                     Intent Activity = new Intent(Map.this, SignIn.class);
                                     // Pass this boolean value (true) to Chat.java.
-                                    Activity.putExtra("newCircle", true);
-                                    // Pass this value to Chat.java to identify the circle.
+                                    Activity.putExtra("newShape", true);
+                                    // Pass this value to Chat.java to identify the shape.
                                     Activity.putExtra("uuid", uuid);
                                     // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                                    Activity.putExtra("userIsWithinCircle", userIsWithinCircle);
+                                    Activity.putExtra("userIsWithinShape", userIsWithinShape);
                                     // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
-                                    Activity.putExtra("latitude", circle.getCenter().latitude);
-                                    Activity.putExtra("longitude", circle.getCenter().longitude);
+                                    Activity.putExtra("circleLatitude", circle.getCenter().latitude);
+                                    Activity.putExtra("circleLongitude", circle.getCenter().longitude);
                                     Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                     Activity.putExtra("radius", circle.getRadius());
                                     startActivity(Activity);
@@ -3061,11 +3635,11 @@ public class Map extends FragmentActivity implements
                         // Go to Chat.java with the boolean value.
                         Intent Activity = new Intent(Map.this, SignIn.class);
                         // Pass this boolean value (false) to Chat.java.
-                        Activity.putExtra("newCircle", false);
-                        // Pass this value to Chat.java to identify the circle.
+                        Activity.putExtra("newShape", false);
+                        // Pass this value to Chat.java to identify the shape.
                         Activity.putExtra("uuid", uuid);
                         // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                        Activity.putExtra("userIsWithinCircle", userIsWithinCircle);
+                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
                         startActivity(Activity);
                     }
                 }
@@ -3940,12 +4514,12 @@ public class Map extends FragmentActivity implements
                                                         // Carry the extras all the way to Chat.java.
                                                         Intent Activity = new Intent(Map.this, Chat.class);
                                                         // Pass this boolean value (true) to Chat.java.
-                                                        Activity.putExtra("newCircle", true);
-                                                        // Pass this value to Chat.java to identify the circle.
+                                                        Activity.putExtra("newShape", true);
+                                                        // Pass this value to Chat.java to identify the shape.
                                                         Activity.putExtra("uuid", uuid);
                                                         // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
-                                                        Activity.putExtra("latitude", circle.getCenter().latitude);
-                                                        Activity.putExtra("longitude", circle.getCenter().longitude);
+                                                        Activity.putExtra("circleLatitude", circle.getCenter().latitude);
+                                                        Activity.putExtra("circleLongitude", circle.getCenter().longitude);
                                                         Activity.putExtra("fillColor", Color.argb(100, 255, 255, 0));
                                                         Activity.putExtra("radius", circle.getRadius());
                                                         startActivity(Activity);
@@ -3954,12 +4528,12 @@ public class Map extends FragmentActivity implements
                                                         // Carry the extras all the way to Chat.java.
                                                         Intent Activity = new Intent(Map.this, Chat.class);
                                                         // Pass this boolean value (true) to Chat.java.
-                                                        Activity.putExtra("newCircle", true);
-                                                        // Pass this value to Chat.java to identify the circle.
+                                                        Activity.putExtra("newShape", true);
+                                                        // Pass this value to Chat.java to identify the shape.
                                                         Activity.putExtra("uuid", uuid);
                                                         // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
-                                                        Activity.putExtra("latitude", circle.getCenter().latitude);
-                                                        Activity.putExtra("longitude", circle.getCenter().longitude);
+                                                        Activity.putExtra("circleLatitude", circle.getCenter().latitude);
+                                                        Activity.putExtra("circleLongitude", circle.getCenter().longitude);
                                                         Activity.putExtra("fillColor", Color.argb(100, 255, 255, 0));
                                                         Activity.putExtra("radius", circle.getRadius());
                                                         startActivity(Activity);
@@ -3988,12 +4562,12 @@ public class Map extends FragmentActivity implements
                                                         // Carry the extras all the way to Chat.java.
                                                         Intent Activity = new Intent(Map.this, SignIn.class);
                                                         // Pass this boolean value (true) to Chat.java.
-                                                        Activity.putExtra("newCircle", true);
-                                                        // Pass this value to Chat.java to identify the circle.
+                                                        Activity.putExtra("newShape", true);
+                                                        // Pass this value to Chat.java to identify the shape.
                                                         Activity.putExtra("uuid", uuid);
                                                         // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
-                                                        Activity.putExtra("latitude", circle.getCenter().latitude);
-                                                        Activity.putExtra("longitude", circle.getCenter().longitude);
+                                                        Activity.putExtra("circleLatitude", circle.getCenter().latitude);
+                                                        Activity.putExtra("circleLongitude", circle.getCenter().longitude);
                                                         Activity.putExtra("fillColor", Color.argb(100, 255, 255, 0));
                                                         Activity.putExtra("radius", circle.getRadius());
                                                         startActivity(Activity);
@@ -4002,12 +4576,12 @@ public class Map extends FragmentActivity implements
                                                         // Carry the extras all the way to Chat.java.
                                                         Intent Activity = new Intent(Map.this, SignIn.class);
                                                         // Pass this boolean value (true) to Chat.java.
-                                                        Activity.putExtra("newCircle", true);
-                                                        // Pass this value to Chat.java to identify the circle.
+                                                        Activity.putExtra("newShape", true);
+                                                        // Pass this value to Chat.java to identify the shape.
                                                         Activity.putExtra("uuid", uuid);
                                                         // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
-                                                        Activity.putExtra("latitude", circle.getCenter().latitude);
-                                                        Activity.putExtra("longitude", circle.getCenter().longitude);
+                                                        Activity.putExtra("circleLatitude", circle.getCenter().latitude);
+                                                        Activity.putExtra("circleLongitude", circle.getCenter().longitude);
                                                         Activity.putExtra("fillColor", Color.argb(100, 255, 255, 0));
                                                         Activity.putExtra("radius", circle.getRadius());
                                                         startActivity(Activity);

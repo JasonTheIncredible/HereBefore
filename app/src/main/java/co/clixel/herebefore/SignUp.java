@@ -24,11 +24,11 @@ public class SignUp extends AppCompatActivity {
     private EditText mEmail, mPassword;
     private Button btnCreateAccount;
     private String uuid;
-    private Double latitude;
-    private Double longitude;
+    private Double circleLatitude;
+    private Double circleLongitude;
     private Double radius;
-    private boolean newCircle;
-    private boolean userIsWithinCircle;
+    private boolean newShape;
+    private boolean userIsWithinShape;
     private int fillColor;
 
     //TODO: Update signup.xml (visuals and add more user information).
@@ -54,12 +54,12 @@ public class SignUp extends AppCompatActivity {
 
         // Get info from Map.java -> SignIn.java.
         Bundle extras = getIntent().getExtras();
-        newCircle = extras.getBoolean("newCircle");
+        newShape = extras.getBoolean("newShape");
         uuid = extras.getString("uuid");
-        userIsWithinCircle = extras.getBoolean("userIsWithinCircle");
-        // latitude, longitude, and radius will be null if the circle is not new (as a new circle is not being created).
-        latitude = extras.getDouble("latitude");
-        longitude = extras.getDouble("longitude");
+        userIsWithinShape = extras.getBoolean("userIsWithinShape");
+        // circleLatitude, circleLongitude, and radius will be null if the circle is not new (as a new circle is not being created).
+        circleLatitude = extras.getDouble("circleLatitude");
+        circleLongitude = extras.getDouble("circleLongitude");
         fillColor = extras.getInt("fillColor");
         radius = extras.getDouble("radius");
 
@@ -106,11 +106,11 @@ public class SignUp extends AppCompatActivity {
                             // Go to Chat.java with the circleID.
                             toastMessage("Signed up");
                             Intent Activity = new Intent(SignUp.this, Chat.class);
-                            Activity.putExtra("newCircle", newCircle);
+                            Activity.putExtra("newShape", newShape);
                             Activity.putExtra("uuid", uuid);
-                            Activity.putExtra("userIsWithinCircle", userIsWithinCircle);
-                            Activity.putExtra("latitude", latitude);
-                            Activity.putExtra("longitude", longitude);
+                            Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                            Activity.putExtra("circleLatitude", circleLatitude);
+                            Activity.putExtra("circleLongitude", circleLongitude);
                             Activity.putExtra("fillColor", fillColor);
                             Activity.putExtra("radius", radius);
                             startActivity(Activity);
