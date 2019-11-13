@@ -26,7 +26,7 @@ public class SignIn extends AppCompatActivity {
     private Button btnSignIn, btnGoToCreateAccount;
     private String uuid;
     private Double circleLatitude, circleLongitude, radius, marker0Latitude, marker0Longitude, marker1Latitude, marker1Longitude, marker2Latitude, marker2Longitude, marker3Latitude, marker3Longitude, marker4Latitude, marker4Longitude, marker5Latitude, marker5Longitude, marker6Latitude, marker6Longitude, marker7Latitude, marker7Longitude;
-    private boolean newShape, userIsWithinShape, threeMarkers, fourMarkers, fiveMarkers, sixMarkers, sevenMarkers, eightMarkers;
+    private boolean newShape, userIsWithinShape, threeMarkers, fourMarkers, fiveMarkers, sixMarkers, sevenMarkers, eightMarkers, shapeIsCircle;
     private int fillColor;
 
     //TODO: Update signin.xml (visuals).
@@ -61,7 +61,8 @@ public class SignIn extends AppCompatActivity {
         circleLatitude = extras.getDouble("circleLatitude");
         circleLongitude = extras.getDouble("circleLongitude");
         radius = extras.getDouble("radius");
-        // Most of these will be null if the polygon does not have eight markers.
+        // Most of these will be null if the polygon does not have eight markers, or if the polygon is not new.
+        shapeIsCircle = extras.getBoolean("shapeIsCircle");
         threeMarkers = extras.getBoolean("threeMarkers");
         fourMarkers = extras.getBoolean("fourMarkers");
         fiveMarkers = extras.getBoolean("fiveMarkers");

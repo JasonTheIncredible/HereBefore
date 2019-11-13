@@ -1208,6 +1208,166 @@ public class Map extends FragmentActivity implements
                 }
             });
 
+            // Load Firebase polygons, as onMapReady() doesn't get called after onRestart().
+            firebasePolygons.addListenerForSingleValueEvent(new ValueEventListener() {
+
+                @Override
+                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                    for (DataSnapshot ds : dataSnapshot.getChildren()) {
+
+                        if (dataSnapshot.getValue() != null) {
+
+                            if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
+
+                                LatLng marker0Position = new LatLng((Double) ds.child("polygonOptions/points/0/latitude/").getValue(), (Double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                                LatLng marker1Position = new LatLng((Double) ds.child("polygonOptions/points/1/latitude/").getValue(), (Double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                                LatLng marker2Position = new LatLng((Double) ds.child("polygonOptions/points/2/latitude/").getValue(), (Double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                LatLng marker3Position = new LatLng((Double) ds.child("polygonOptions/points/3/latitude/").getValue(), (Double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                                LatLng marker4Position = new LatLng((Double) ds.child("polygonOptions/points/4/latitude/").getValue(), (Double) ds.child("polygonOptions/points/4/longitude/").getValue());
+                                LatLng marker5Position = new LatLng((Double) ds.child("polygonOptions/points/5/latitude/").getValue(), (Double) ds.child("polygonOptions/points/5/longitude/").getValue());
+                                LatLng marker6Position = new LatLng((Double) ds.child("polygonOptions/points/6/latitude/").getValue(), (Double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                                LatLng marker7Position = new LatLng((Double) ds.child("polygonOptions/points/7/latitude/").getValue(), (Double) ds.child("polygonOptions/points/7/longitude/").getValue());
+                                int fillColor = (int) (long) ds.child("polygonOptions/fillColor").getValue();
+                                Polygon polygon = mMap.addPolygon(
+                                        new PolygonOptions()
+                                                .clickable(true)
+                                                .fillColor(fillColor)
+                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                                .strokeColor(Color.YELLOW)
+                                                .strokeWidth(3f)
+                                );
+
+                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                uuid = (String) ds.child("uuid").getValue();
+
+                                polygon.setTag(uuid);
+                            }
+
+                            else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+
+                                LatLng marker0Position = new LatLng((Double) ds.child("polygonOptions/points/0/latitude/").getValue(), (Double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                                LatLng marker1Position = new LatLng((Double) ds.child("polygonOptions/points/1/latitude/").getValue(), (Double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                                LatLng marker2Position = new LatLng((Double) ds.child("polygonOptions/points/2/latitude/").getValue(), (Double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                LatLng marker3Position = new LatLng((Double) ds.child("polygonOptions/points/3/latitude/").getValue(), (Double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                                LatLng marker4Position = new LatLng((Double) ds.child("polygonOptions/points/4/latitude/").getValue(), (Double) ds.child("polygonOptions/points/4/longitude/").getValue());
+                                LatLng marker5Position = new LatLng((Double) ds.child("polygonOptions/points/5/latitude/").getValue(), (Double) ds.child("polygonOptions/points/5/longitude/").getValue());
+                                LatLng marker6Position = new LatLng((Double) ds.child("polygonOptions/points/6/latitude/").getValue(), (Double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                                int fillColor = (int) (long) ds.child("polygonOptions/fillColor").getValue();
+                                Polygon polygon = mMap.addPolygon(
+                                        new PolygonOptions()
+                                                .clickable(true)
+                                                .fillColor(fillColor)
+                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
+                                                .strokeColor(Color.YELLOW)
+                                                .strokeWidth(3f)
+                                );
+
+                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                uuid = (String) ds.child("uuid").getValue();
+
+                                polygon.setTag(uuid);
+                            }
+
+                            else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+
+                                LatLng marker0Position = new LatLng((Double) ds.child("polygonOptions/points/0/latitude/").getValue(), (Double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                                LatLng marker1Position = new LatLng((Double) ds.child("polygonOptions/points/1/latitude/").getValue(), (Double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                                LatLng marker2Position = new LatLng((Double) ds.child("polygonOptions/points/2/latitude/").getValue(), (Double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                LatLng marker3Position = new LatLng((Double) ds.child("polygonOptions/points/3/latitude/").getValue(), (Double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                                LatLng marker4Position = new LatLng((Double) ds.child("polygonOptions/points/4/latitude/").getValue(), (Double) ds.child("polygonOptions/points/4/longitude/").getValue());
+                                LatLng marker5Position = new LatLng((Double) ds.child("polygonOptions/points/5/latitude/").getValue(), (Double) ds.child("polygonOptions/points/5/longitude/").getValue());
+                                int fillColor = (int) (long) ds.child("polygonOptions/fillColor").getValue();
+                                Polygon polygon = mMap.addPolygon(
+                                        new PolygonOptions()
+                                                .clickable(true)
+                                                .fillColor(fillColor)
+                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
+                                                .strokeColor(Color.YELLOW)
+                                                .strokeWidth(3f)
+                                );
+
+                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                uuid = (String) ds.child("uuid").getValue();
+
+                                polygon.setTag(uuid);
+                            }
+
+                            else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+
+                                LatLng marker0Position = new LatLng((Double) ds.child("polygonOptions/points/0/latitude/").getValue(), (Double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                                LatLng marker1Position = new LatLng((Double) ds.child("polygonOptions/points/1/latitude/").getValue(), (Double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                                LatLng marker2Position = new LatLng((Double) ds.child("polygonOptions/points/2/latitude/").getValue(), (Double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                LatLng marker3Position = new LatLng((Double) ds.child("polygonOptions/points/3/latitude/").getValue(), (Double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                                LatLng marker4Position = new LatLng((Double) ds.child("polygonOptions/points/4/latitude/").getValue(), (Double) ds.child("polygonOptions/points/4/longitude/").getValue());
+                                int fillColor = (int) (long) ds.child("polygonOptions/fillColor").getValue();
+                                Polygon polygon = mMap.addPolygon(
+                                        new PolygonOptions()
+                                                .clickable(true)
+                                                .fillColor(fillColor)
+                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
+                                                .strokeColor(Color.YELLOW)
+                                                .strokeWidth(3f)
+                                );
+
+                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                uuid = (String) ds.child("uuid").getValue();
+
+                                polygon.setTag(uuid);
+                            }
+
+                            else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+
+                                LatLng marker0Position = new LatLng((Double) ds.child("polygonOptions/points/0/latitude/").getValue(), (Double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                                LatLng marker1Position = new LatLng((Double) ds.child("polygonOptions/points/1/latitude/").getValue(), (Double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                                LatLng marker2Position = new LatLng((Double) ds.child("polygonOptions/points/2/latitude/").getValue(), (Double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                LatLng marker3Position = new LatLng((Double) ds.child("polygonOptions/points/3/latitude/").getValue(), (Double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                                int fillColor = (int) (long) ds.child("polygonOptions/fillColor").getValue();
+                                Polygon polygon = mMap.addPolygon(
+                                        new PolygonOptions()
+                                                .clickable(true)
+                                                .fillColor(fillColor)
+                                                .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                                .strokeColor(Color.YELLOW)
+                                                .strokeWidth(3f)
+                                );
+
+                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                uuid = (String) ds.child("uuid").getValue();
+
+                                polygon.setTag(uuid);
+                            }
+
+                            else {
+
+                                LatLng marker0Position = new LatLng((Double) ds.child("polygonOptions/points/0/latitude/").getValue(), (Double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                                LatLng marker1Position = new LatLng((Double) ds.child("polygonOptions/points/1/latitude/").getValue(), (Double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                                LatLng marker2Position = new LatLng((Double) ds.child("polygonOptions/points/2/latitude/").getValue(), (Double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                int fillColor = (int) (long) ds.child("polygonOptions/fillColor").getValue();
+                                Polygon polygon = mMap.addPolygon(
+                                        new PolygonOptions()
+                                                .clickable(true)
+                                                .fillColor(fillColor)
+                                                .add(marker0Position, marker1Position, marker2Position)
+                                                .strokeColor(Color.YELLOW)
+                                                .strokeWidth(3f)
+                                );
+
+                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                uuid = (String) ds.child("uuid").getValue();
+
+                                polygon.setTag(uuid);
+                            }
+                        }
+                    }
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                }
+            });
+
             // Go to Chat.java after clicking on a circle's middle marker.
             mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
                 @Override
@@ -1260,7 +1420,7 @@ public class Map extends FragmentActivity implements
 
                                             // Carry the extras all the way to Chat.java.
                                             Intent Activity = new Intent(Map.this, Chat.class);
-                                            // Pass this boolean value (true) to Chat.java.
+                                            // Pass this boolean value to Chat.java.
                                             Activity.putExtra("newShape", true);
                                             // Pass this value to Chat.java to identify the shape.
                                             Activity.putExtra("uuid", uuid);
@@ -1276,7 +1436,7 @@ public class Map extends FragmentActivity implements
 
                                             // Carry the extras all the way to Chat.java.
                                             Intent Activity = new Intent(Map.this, Chat.class);
-                                            // Pass this boolean value (true) to Chat.java.
+                                            // Pass this boolean value to Chat.java.
                                             Activity.putExtra("newShape", true);
                                             // Pass this value to Chat.java to identify the shape.
                                             Activity.putExtra("uuid", uuid);
@@ -1299,7 +1459,7 @@ public class Map extends FragmentActivity implements
 
                                 // Go to Chat.java with the boolean value.
                                 Intent Activity = new Intent(Map.this, Chat.class);
-                                // Pass this boolean value (false) to Chat.java.
+                                // Pass this boolean value to Chat.java.
                                 Activity.putExtra("newShape", false);
                                 // Pass this value to Chat.java to identify the shape.
                                 Activity.putExtra("uuid", uuid);
@@ -1327,7 +1487,7 @@ public class Map extends FragmentActivity implements
 
                                             // Carry the extras all the way to Chat.java.
                                             Intent Activity = new Intent(Map.this, SignIn.class);
-                                            // Pass this boolean value (true) to Chat.java.
+                                            // Pass this boolean value to Chat.java.
                                             Activity.putExtra("newShape", true);
                                             // Pass this value to Chat.java to identify the shape.
                                             Activity.putExtra("uuid", uuid);
@@ -1343,7 +1503,7 @@ public class Map extends FragmentActivity implements
 
                                             // Carry the extras all the way to Chat.java.
                                             Intent Activity = new Intent(Map.this, SignIn.class);
-                                            // Pass this boolean value (true) to Chat.java.
+                                            // Pass this boolean value to Chat.java.
                                             Activity.putExtra("newShape", true);
                                             // Pass this value to Chat.java to identify the shape.
                                             Activity.putExtra("uuid", uuid);
@@ -1366,7 +1526,7 @@ public class Map extends FragmentActivity implements
 
                                 // Go to Chat.java with the boolean value.
                                 Intent Activity = new Intent(Map.this, SignIn.class);
-                                // Pass this boolean value (false) to Chat.java.
+                                // Pass this boolean value to Chat.java.
                                 Activity.putExtra("newShape", false);
                                 // Pass this value to Chat.java to identify the shape.
                                 Activity.putExtra("uuid", uuid);
@@ -2044,12 +2204,12 @@ public class Map extends FragmentActivity implements
             // Go to Chat.java when clicking on a polygon.
             mMap.setOnPolygonClickListener(new GoogleMap.OnPolygonClickListener() {
                 @Override
-                public void onPolygonClick(Polygon polygon) {
+                public void onPolygonClick(final Polygon polygon) {
 
                     if (polygon.getTag() != null) {
 
                         // Get the ID set by Firebase to identify which polygon the user clicked on.
-                        uuid = (String) circle.getTag();
+                        uuid = (String) polygon.getTag();
                     } else {
 
                         // If the polygon is new, it will not have a tag, as the tag is pulled from Firebase. Therefore, generate a uuid.
@@ -2072,7 +2232,7 @@ public class Map extends FragmentActivity implements
                                         if (location != null) {
 
                                             // Boolean; will be true if user is within the circle upon circle click.
-                                            userIsWithinShape = PolyUtil.containsLocation(location.getLatitude(), location.getLongitude(), polygonPointsList, false);
+                                            userIsWithinShape = PolyUtil.containsLocation(location.getLatitude(), location.getLongitude(), polygon.getPoints(), false);
                                         }
                                     }
                                 });
@@ -2095,8 +2255,9 @@ public class Map extends FragmentActivity implements
 
                                         // Carry the extras all the way to Chat.java.
                                         Intent Activity = new Intent(Map.this, Chat.class);
-                                        // Pass this boolean value (true) to Chat.java.
+                                        // Pass this boolean value to Chat.java.
                                         Activity.putExtra("newShape", true);
+                                        Activity.putExtra("shapeIsCircle", false);
                                         // Pass this value to Chat.java to identify the shape.
                                         Activity.putExtra("uuid", uuid);
                                         // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
@@ -2198,8 +2359,9 @@ public class Map extends FragmentActivity implements
 
                                         // Carry the extras all the way to Chat.java.
                                         Intent Activity = new Intent(Map.this, Chat.class);
-                                        // Pass this boolean value (true) to Chat.java.
+                                        // Pass this boolean value to Chat.java.
                                         Activity.putExtra("newShape", true);
+                                        Activity.putExtra("shapeIsCircle", false);
                                         // Pass this value to Chat.java to identify the shape.
                                         Activity.putExtra("uuid", uuid);
                                         // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
@@ -2308,102 +2470,14 @@ public class Map extends FragmentActivity implements
 
                             // Carry the extras all the way to Chat.java.
                             Intent Activity = new Intent(Map.this, Chat.class);
-                            // Pass this boolean value (true) to Chat.java.
+                            // Pass this boolean value to Chat.java.
                             Activity.putExtra("newShape", false);
+                            Activity.putExtra("shapeIsCircle", false);
                             // Pass this value to Chat.java to identify the shape.
                             Activity.putExtra("uuid", uuid);
                             // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                             Activity.putExtra("userIsWithinShape", userIsWithinShape);
                             // Pass this information to Chat.java to create a new shape in Firebase after someone writes a message.
-                            if (threeMarkers) {
-                                Activity.putExtra("threeMarkers", true);
-                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                            }
-
-                            if (fourMarkers) {
-                                Activity.putExtra("fourMarkers", true);
-                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
-                            }
-
-                            if (fiveMarkers) {
-                                Activity.putExtra("fiveMarkers", true);
-                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
-                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
-                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
-                            }
-
-                            if (sixMarkers) {
-                                Activity.putExtra("sixMarkers", true);
-                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
-                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
-                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
-                                Activity.putExtra("marker5Latitude", marker5Position.latitude);
-                                Activity.putExtra("marker5Longitude", marker5Position.longitude);
-                            }
-
-                            if (sevenMarkers) {
-                                Activity.putExtra("sevenMarkers", true);
-                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
-                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
-                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
-                                Activity.putExtra("marker5Latitude", marker5Position.latitude);
-                                Activity.putExtra("marker5Longitude", marker5Position.longitude);
-                                Activity.putExtra("marker6Latitude", marker6Position.latitude);
-                                Activity.putExtra("marker6Longitude", marker6Position.longitude);
-                            }
-
-                            if (eightMarkers) {
-                                Activity.putExtra("eightMarkers", true);
-                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
-                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
-                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
-                                Activity.putExtra("marker5Latitude", marker5Position.latitude);
-                                Activity.putExtra("marker5Longitude", marker5Position.longitude);
-                                Activity.putExtra("marker6Latitude", marker6Position.latitude);
-                                Activity.putExtra("marker6Longitude", marker6Position.longitude);
-                            }
-
-                            Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                             startActivity(Activity);
                         }
                     } else {
@@ -2428,8 +2502,9 @@ public class Map extends FragmentActivity implements
 
                                         // Carry the extras all the way to Chat.java.
                                         Intent Activity = new Intent(Map.this, SignIn.class);
-                                        // Pass this boolean value (true) to Chat.java.
+                                        // Pass this boolean value to Chat.java.
                                         Activity.putExtra("newShape", true);
+                                        Activity.putExtra("shapeIsCircle", false);
                                         // Pass this value to Chat.java to identify the shape.
                                         Activity.putExtra("uuid", uuid);
                                         // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
@@ -2531,8 +2606,9 @@ public class Map extends FragmentActivity implements
 
                                         // Carry the extras all the way to Chat.java.
                                         Intent Activity = new Intent(Map.this, SignIn.class);
-                                        // Pass this boolean value (true) to Chat.java.
+                                        // Pass this boolean value to Chat.java.
                                         Activity.putExtra("newShape", true);
+                                        Activity.putExtra("shapeIsCircle", false);
                                         // Pass this value to Chat.java to identify the shape.
                                         Activity.putExtra("uuid", uuid);
                                         // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
@@ -2641,102 +2717,14 @@ public class Map extends FragmentActivity implements
 
                             // Carry the extras all the way to Chat.java.
                             Intent Activity = new Intent(Map.this, SignIn.class);
-                            // Pass this boolean value (true) to Chat.java.
+                            // Pass this boolean value to Chat.java.
                             Activity.putExtra("newShape", false);
+                            Activity.putExtra("shapeIsCircle", false);
                             // Pass this value to Chat.java to identify the shape.
                             Activity.putExtra("uuid", uuid);
                             // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                             Activity.putExtra("userIsWithinShape", userIsWithinShape);
                             // Pass this information to Chat.java to create a new shape in Firebase after someone writes a message.
-                            if (threeMarkers) {
-                                Activity.putExtra("threeMarkers", true);
-                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                            }
-
-                            if (fourMarkers) {
-                                Activity.putExtra("fourMarkers", true);
-                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
-                            }
-
-                            if (fiveMarkers) {
-                                Activity.putExtra("fiveMarkers", true);
-                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
-                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
-                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
-                            }
-
-                            if (sixMarkers) {
-                                Activity.putExtra("sixMarkers", true);
-                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
-                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
-                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
-                                Activity.putExtra("marker5Latitude", marker5Position.latitude);
-                                Activity.putExtra("marker5Longitude", marker5Position.longitude);
-                            }
-
-                            if (sevenMarkers) {
-                                Activity.putExtra("sevenMarkers", true);
-                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
-                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
-                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
-                                Activity.putExtra("marker5Latitude", marker5Position.latitude);
-                                Activity.putExtra("marker5Longitude", marker5Position.longitude);
-                                Activity.putExtra("marker6Latitude", marker6Position.latitude);
-                                Activity.putExtra("marker6Longitude", marker6Position.longitude);
-                            }
-
-                            if (eightMarkers) {
-                                Activity.putExtra("eightMarkers", true);
-                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
-                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
-                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
-                                Activity.putExtra("marker5Latitude", marker5Position.latitude);
-                                Activity.putExtra("marker5Longitude", marker5Position.longitude);
-                                Activity.putExtra("marker6Latitude", marker6Position.latitude);
-                                Activity.putExtra("marker6Longitude", marker6Position.longitude);
-                            }
-
-                            Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                             startActivity(Activity);
                         }
                     }
@@ -2803,8 +2791,9 @@ public class Map extends FragmentActivity implements
 
                                         // Carry the extras all the way to Chat.java.
                                         Intent Activity = new Intent(Map.this, Chat.class);
-                                        // Pass this boolean value (true) to Chat.java.
+                                        // Pass this boolean value to Chat.java.
                                         Activity.putExtra("newShape", true);
+                                        Activity.putExtra("shapeIsCircle", true);
                                         // Pass this value to Chat.java to identify the shape.
                                         Activity.putExtra("uuid", uuid);
                                         // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
@@ -2821,8 +2810,9 @@ public class Map extends FragmentActivity implements
 
                                         // Carry the extras all the way to Chat.java.
                                         Intent Activity = new Intent(Map.this, Chat.class);
-                                        // Pass this boolean value (true) to Chat.java.
+                                        // Pass this boolean value to Chat.java.
                                         Activity.putExtra("newShape", true);
+                                        Activity.putExtra("shapeIsCircle", true);
                                         // Pass this value to Chat.java to identify the shape.
                                         Activity.putExtra("uuid", uuid);
                                         // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
@@ -2846,8 +2836,9 @@ public class Map extends FragmentActivity implements
 
                             // Go to Chat.java with the boolean value.
                             Intent Activity = new Intent(Map.this, Chat.class);
-                            // Pass this boolean value (false) to Chat.java.
+                            // Pass this boolean value to Chat.java.
                             Activity.putExtra("newShape", false);
+                            Activity.putExtra("shapeIsCircle", true);
                             // Pass this value to Chat.java to identify the shape.
                             Activity.putExtra("uuid", uuid);
                             // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
@@ -2876,8 +2867,9 @@ public class Map extends FragmentActivity implements
 
                                         // Carry the extras all the way to Chat.java.
                                         Intent Activity = new Intent(Map.this, SignIn.class);
-                                        // Pass this boolean value (true) to Chat.java.
+                                        // Pass this boolean value to Chat.java.
                                         Activity.putExtra("newShape", true);
+                                        Activity.putExtra("shapeIsCircle", true);
                                         // Pass this value to Chat.java to identify the shape.
                                         Activity.putExtra("uuid", uuid);
                                         // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
@@ -2894,8 +2886,9 @@ public class Map extends FragmentActivity implements
 
                                         // Carry the extras all the way to Chat.java.
                                         Intent Activity = new Intent(Map.this, SignIn.class);
-                                        // Pass this boolean value (true) to Chat.java.
+                                        // Pass this boolean value to Chat.java.
                                         Activity.putExtra("newShape", true);
+                                        Activity.putExtra("shapeIsCircle", true);
                                         // Pass this value to Chat.java to identify the shape.
                                         Activity.putExtra("uuid", uuid);
                                         // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
@@ -2919,8 +2912,9 @@ public class Map extends FragmentActivity implements
 
                             // Go to Chat.java with the boolean value.
                             Intent Activity = new Intent(Map.this, SignIn.class);
-                            // Pass this boolean value (false) to Chat.java.
+                            // Pass this boolean value to Chat.java.
                             Activity.putExtra("newShape", false);
+                            Activity.putExtra("shapeIsCircle", true);
                             // Pass this value to Chat.java to identify the shape.
                             Activity.putExtra("uuid", uuid);
                             // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
@@ -3027,6 +3021,7 @@ public class Map extends FragmentActivity implements
         if (mMap != null) {
 
             mMap.setOnCircleClickListener(null);
+            mMap.setOnPolygonClickListener(null);
             mMap.setOnMarkerDragListener(null);
         }
 
@@ -3250,6 +3245,166 @@ public class Map extends FragmentActivity implements
             }
         });
 
+        // Load Firebase polygons.
+        firebasePolygons.addListenerForSingleValueEvent(new ValueEventListener() {
+
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                for (DataSnapshot ds : dataSnapshot.getChildren()) {
+
+                    if (dataSnapshot.getValue() != null) {
+
+                        if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
+
+                            LatLng marker0Position = new LatLng((Double) ds.child("polygonOptions/points/0/latitude/").getValue(), (Double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                            LatLng marker1Position = new LatLng((Double) ds.child("polygonOptions/points/1/latitude/").getValue(), (Double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                            LatLng marker2Position = new LatLng((Double) ds.child("polygonOptions/points/2/latitude/").getValue(), (Double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                            LatLng marker3Position = new LatLng((Double) ds.child("polygonOptions/points/3/latitude/").getValue(), (Double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                            LatLng marker4Position = new LatLng((Double) ds.child("polygonOptions/points/4/latitude/").getValue(), (Double) ds.child("polygonOptions/points/4/longitude/").getValue());
+                            LatLng marker5Position = new LatLng((Double) ds.child("polygonOptions/points/5/latitude/").getValue(), (Double) ds.child("polygonOptions/points/5/longitude/").getValue());
+                            LatLng marker6Position = new LatLng((Double) ds.child("polygonOptions/points/6/latitude/").getValue(), (Double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                            LatLng marker7Position = new LatLng((Double) ds.child("polygonOptions/points/7/latitude/").getValue(), (Double) ds.child("polygonOptions/points/7/longitude/").getValue());
+                            int fillColor = (int) (long) ds.child("polygonOptions/fillColor").getValue();
+                            Polygon polygon = mMap.addPolygon(
+                                    new PolygonOptions()
+                                            .clickable(true)
+                                            .fillColor(fillColor)
+                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                            .strokeColor(Color.YELLOW)
+                                            .strokeWidth(3f)
+                            );
+
+                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                            uuid = (String) ds.child("uuid").getValue();
+
+                            polygon.setTag(uuid);
+                        }
+
+                        else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+
+                            LatLng marker0Position = new LatLng((Double) ds.child("polygonOptions/points/0/latitude/").getValue(), (Double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                            LatLng marker1Position = new LatLng((Double) ds.child("polygonOptions/points/1/latitude/").getValue(), (Double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                            LatLng marker2Position = new LatLng((Double) ds.child("polygonOptions/points/2/latitude/").getValue(), (Double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                            LatLng marker3Position = new LatLng((Double) ds.child("polygonOptions/points/3/latitude/").getValue(), (Double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                            LatLng marker4Position = new LatLng((Double) ds.child("polygonOptions/points/4/latitude/").getValue(), (Double) ds.child("polygonOptions/points/4/longitude/").getValue());
+                            LatLng marker5Position = new LatLng((Double) ds.child("polygonOptions/points/5/latitude/").getValue(), (Double) ds.child("polygonOptions/points/5/longitude/").getValue());
+                            LatLng marker6Position = new LatLng((Double) ds.child("polygonOptions/points/6/latitude/").getValue(), (Double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                            int fillColor = (int) (long) ds.child("polygonOptions/fillColor").getValue();
+                            Polygon polygon = mMap.addPolygon(
+                                    new PolygonOptions()
+                                            .clickable(true)
+                                            .fillColor(fillColor)
+                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
+                                            .strokeColor(Color.YELLOW)
+                                            .strokeWidth(3f)
+                            );
+
+                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                            uuid = (String) ds.child("uuid").getValue();
+
+                            polygon.setTag(uuid);
+                        }
+
+                        else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+
+                            LatLng marker0Position = new LatLng((Double) ds.child("polygonOptions/points/0/latitude/").getValue(), (Double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                            LatLng marker1Position = new LatLng((Double) ds.child("polygonOptions/points/1/latitude/").getValue(), (Double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                            LatLng marker2Position = new LatLng((Double) ds.child("polygonOptions/points/2/latitude/").getValue(), (Double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                            LatLng marker3Position = new LatLng((Double) ds.child("polygonOptions/points/3/latitude/").getValue(), (Double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                            LatLng marker4Position = new LatLng((Double) ds.child("polygonOptions/points/4/latitude/").getValue(), (Double) ds.child("polygonOptions/points/4/longitude/").getValue());
+                            LatLng marker5Position = new LatLng((Double) ds.child("polygonOptions/points/5/latitude/").getValue(), (Double) ds.child("polygonOptions/points/5/longitude/").getValue());
+                            int fillColor = (int) (long) ds.child("polygonOptions/fillColor").getValue();
+                            Polygon polygon = mMap.addPolygon(
+                                    new PolygonOptions()
+                                            .clickable(true)
+                                            .fillColor(fillColor)
+                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
+                                            .strokeColor(Color.YELLOW)
+                                            .strokeWidth(3f)
+                            );
+
+                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                            uuid = (String) ds.child("uuid").getValue();
+
+                            polygon.setTag(uuid);
+                        }
+
+                        else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+
+                            LatLng marker0Position = new LatLng((Double) ds.child("polygonOptions/points/0/latitude/").getValue(), (Double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                            LatLng marker1Position = new LatLng((Double) ds.child("polygonOptions/points/1/latitude/").getValue(), (Double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                            LatLng marker2Position = new LatLng((Double) ds.child("polygonOptions/points/2/latitude/").getValue(), (Double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                            LatLng marker3Position = new LatLng((Double) ds.child("polygonOptions/points/3/latitude/").getValue(), (Double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                            LatLng marker4Position = new LatLng((Double) ds.child("polygonOptions/points/4/latitude/").getValue(), (Double) ds.child("polygonOptions/points/4/longitude/").getValue());
+                            int fillColor = (int) (long) ds.child("polygonOptions/fillColor").getValue();
+                            Polygon polygon = mMap.addPolygon(
+                                    new PolygonOptions()
+                                            .clickable(true)
+                                            .fillColor(fillColor)
+                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
+                                            .strokeColor(Color.YELLOW)
+                                            .strokeWidth(3f)
+                            );
+
+                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                            uuid = (String) ds.child("uuid").getValue();
+
+                            polygon.setTag(uuid);
+                        }
+
+                        else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+
+                            LatLng marker0Position = new LatLng((Double) ds.child("polygonOptions/points/0/latitude/").getValue(), (Double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                            LatLng marker1Position = new LatLng((Double) ds.child("polygonOptions/points/1/latitude/").getValue(), (Double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                            LatLng marker2Position = new LatLng((Double) ds.child("polygonOptions/points/2/latitude/").getValue(), (Double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                            LatLng marker3Position = new LatLng((Double) ds.child("polygonOptions/points/3/latitude/").getValue(), (Double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                            int fillColor = (int) (long) ds.child("polygonOptions/fillColor").getValue();
+                            Polygon polygon = mMap.addPolygon(
+                                    new PolygonOptions()
+                                            .clickable(true)
+                                            .fillColor(fillColor)
+                                            .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                            .strokeColor(Color.YELLOW)
+                                            .strokeWidth(3f)
+                            );
+
+                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                            uuid = (String) ds.child("uuid").getValue();
+
+                            polygon.setTag(uuid);
+                        }
+
+                        else {
+
+                            LatLng marker0Position = new LatLng((Double) ds.child("polygonOptions/points/0/latitude/").getValue(), (Double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                            LatLng marker1Position = new LatLng((Double) ds.child("polygonOptions/points/1/latitude/").getValue(), (Double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                            LatLng marker2Position = new LatLng((Double) ds.child("polygonOptions/points/2/latitude/").getValue(), (Double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                            int fillColor = (int) (long) ds.child("polygonOptions/fillColor").getValue();
+                            Polygon polygon = mMap.addPolygon(
+                                    new PolygonOptions()
+                                            .clickable(true)
+                                            .fillColor(fillColor)
+                                            .add(marker0Position, marker1Position, marker2Position)
+                                            .strokeColor(Color.YELLOW)
+                                            .strokeWidth(3f)
+                            );
+
+                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                            uuid = (String) ds.child("uuid").getValue();
+
+                            polygon.setTag(uuid);
+                        }
+                    }
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        });
+
         // Go to Chat.java after clicking on a circle's middle marker.
         mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
             @Override
@@ -3302,7 +3457,7 @@ public class Map extends FragmentActivity implements
 
                                         // Carry the extras all the way to Chat.java.
                                         Intent Activity = new Intent(Map.this, Chat.class);
-                                        // Pass this boolean value (true) to Chat.java.
+                                        // Pass this boolean value to Chat.java.
                                         Activity.putExtra("newShape", true);
                                         // Pass this value to Chat.java to identify the shape.
                                         Activity.putExtra("uuid", uuid);
@@ -3318,7 +3473,7 @@ public class Map extends FragmentActivity implements
 
                                         // Carry the extras all the way to Chat.java.
                                         Intent Activity = new Intent(Map.this, Chat.class);
-                                        // Pass this boolean value (true) to Chat.java.
+                                        // Pass this boolean value to Chat.java.
                                         Activity.putExtra("newShape", true);
                                         // Pass this value to Chat.java to identify the shape.
                                         Activity.putExtra("uuid", uuid);
@@ -3341,7 +3496,7 @@ public class Map extends FragmentActivity implements
 
                             // Go to Chat.java with the boolean value.
                             Intent Activity = new Intent(Map.this, Chat.class);
-                            // Pass this boolean value (false) to Chat.java.
+                            // Pass this boolean value to Chat.java.
                             Activity.putExtra("newShape", false);
                             // Pass this value to Chat.java to identify the shape.
                             Activity.putExtra("uuid", uuid);
@@ -3369,7 +3524,7 @@ public class Map extends FragmentActivity implements
 
                                         // Carry the extras all the way to Chat.java.
                                         Intent Activity = new Intent(Map.this, SignIn.class);
-                                        // Pass this boolean value (true) to Chat.java.
+                                        // Pass this boolean value to Chat.java.
                                         Activity.putExtra("newShape", true);
                                         // Pass this value to Chat.java to identify the shape.
                                         Activity.putExtra("uuid", uuid);
@@ -3385,7 +3540,7 @@ public class Map extends FragmentActivity implements
 
                                         // Carry the extras all the way to Chat.java.
                                         Intent Activity = new Intent(Map.this, SignIn.class);
-                                        // Pass this boolean value (true) to Chat.java.
+                                        // Pass this boolean value to Chat.java.
                                         Activity.putExtra("newShape", true);
                                         // Pass this value to Chat.java to identify the shape.
                                         Activity.putExtra("uuid", uuid);
@@ -3408,7 +3563,7 @@ public class Map extends FragmentActivity implements
 
                             // Go to Chat.java with the boolean value.
                             Intent Activity = new Intent(Map.this, SignIn.class);
-                            // Pass this boolean value (false) to Chat.java.
+                            // Pass this boolean value to Chat.java.
                             Activity.putExtra("newShape", false);
                             // Pass this value to Chat.java to identify the shape.
                             Activity.putExtra("uuid", uuid);
@@ -4086,12 +4241,12 @@ public class Map extends FragmentActivity implements
         // Go to Chat.java when clicking on a polygon.
         mMap.setOnPolygonClickListener(new GoogleMap.OnPolygonClickListener() {
             @Override
-            public void onPolygonClick(Polygon polygon) {
+            public void onPolygonClick(final Polygon polygon) {
 
                 if (polygon.getTag() != null) {
 
                     // Get the ID set by Firebase to identify which polygon the user clicked on.
-                    uuid = (String) circle.getTag();
+                    uuid = (String) polygon.getTag();
                 } else {
 
                     // If the polygon is new, it will not have a tag, as the tag is pulled from Firebase. Therefore, generate a uuid.
@@ -4114,7 +4269,7 @@ public class Map extends FragmentActivity implements
                                     if (location != null) {
 
                                         // Boolean; will be true if user is within the circle upon circle click.
-                                        userIsWithinShape = PolyUtil.containsLocation(location.getLatitude(), location.getLongitude(), polygonPointsList, false);
+                                        userIsWithinShape = PolyUtil.containsLocation(location.getLatitude(), location.getLongitude(), polygon.getPoints(), false);
                                     }
                                 }
                             });
@@ -4137,7 +4292,8 @@ public class Map extends FragmentActivity implements
 
                                     // Carry the extras all the way to Chat.java.
                                     Intent Activity = new Intent(Map.this, Chat.class);
-                                    // Pass this boolean value (true) to Chat.java.
+                                    Activity.putExtra("shapeIsCircle", false);
+                                    // Pass this boolean value to Chat.java.
                                     Activity.putExtra("newShape", true);
                                     // Pass this value to Chat.java to identify the shape.
                                     Activity.putExtra("uuid", uuid);
@@ -4240,7 +4396,8 @@ public class Map extends FragmentActivity implements
 
                                     // Carry the extras all the way to Chat.java.
                                     Intent Activity = new Intent(Map.this, Chat.class);
-                                    // Pass this boolean value (true) to Chat.java.
+                                    Activity.putExtra("shapeIsCircle", false);
+                                    // Pass this boolean value Chat.java.
                                     Activity.putExtra("newShape", true);
                                     // Pass this value to Chat.java to identify the shape.
                                     Activity.putExtra("uuid", uuid);
@@ -4350,102 +4507,14 @@ public class Map extends FragmentActivity implements
 
                         // Carry the extras all the way to Chat.java.
                         Intent Activity = new Intent(Map.this, Chat.class);
-                        // Pass this boolean value (true) to Chat.java.
+                        Activity.putExtra("shapeIsCircle", false);
+                        // Pass this boolean value to Chat.java.
                         Activity.putExtra("newShape", false);
                         // Pass this value to Chat.java to identify the shape.
                         Activity.putExtra("uuid", uuid);
                         // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                         Activity.putExtra("userIsWithinShape", userIsWithinShape);
                         // Pass this information to Chat.java to create a new shape in Firebase after someone writes a message.
-                        if (threeMarkers) {
-                            Activity.putExtra("threeMarkers", true);
-                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                        }
-
-                        if (fourMarkers) {
-                            Activity.putExtra("fourMarkers", true);
-                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                            Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                            Activity.putExtra("marker3Longitude", marker3Position.longitude);
-                        }
-
-                        if (fiveMarkers) {
-                            Activity.putExtra("fiveMarkers", true);
-                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                            Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                            Activity.putExtra("marker3Longitude", marker3Position.longitude);
-                            Activity.putExtra("marker4Latitude", marker4Position.latitude);
-                            Activity.putExtra("marker4Longitude", marker4Position.longitude);
-                        }
-
-                        if (sixMarkers) {
-                            Activity.putExtra("sixMarkers", true);
-                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                            Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                            Activity.putExtra("marker3Longitude", marker3Position.longitude);
-                            Activity.putExtra("marker4Latitude", marker4Position.latitude);
-                            Activity.putExtra("marker4Longitude", marker4Position.longitude);
-                            Activity.putExtra("marker5Latitude", marker5Position.latitude);
-                            Activity.putExtra("marker5Longitude", marker5Position.longitude);
-                        }
-
-                        if (sevenMarkers) {
-                            Activity.putExtra("sevenMarkers", true);
-                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                            Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                            Activity.putExtra("marker3Longitude", marker3Position.longitude);
-                            Activity.putExtra("marker4Latitude", marker4Position.latitude);
-                            Activity.putExtra("marker4Longitude", marker4Position.longitude);
-                            Activity.putExtra("marker5Latitude", marker5Position.latitude);
-                            Activity.putExtra("marker5Longitude", marker5Position.longitude);
-                            Activity.putExtra("marker6Latitude", marker6Position.latitude);
-                            Activity.putExtra("marker6Longitude", marker6Position.longitude);
-                        }
-
-                        if (eightMarkers) {
-                            Activity.putExtra("eightMarkers", true);
-                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                            Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                            Activity.putExtra("marker3Longitude", marker3Position.longitude);
-                            Activity.putExtra("marker4Latitude", marker4Position.latitude);
-                            Activity.putExtra("marker4Longitude", marker4Position.longitude);
-                            Activity.putExtra("marker5Latitude", marker5Position.latitude);
-                            Activity.putExtra("marker5Longitude", marker5Position.longitude);
-                            Activity.putExtra("marker6Latitude", marker6Position.latitude);
-                            Activity.putExtra("marker6Longitude", marker6Position.longitude);
-                        }
-
-                        Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                         startActivity(Activity);
                     }
                 } else {
@@ -4470,7 +4539,8 @@ public class Map extends FragmentActivity implements
 
                                         // Carry the extras all the way to Chat.java.
                                         Intent Activity = new Intent(Map.this, SignIn.class);
-                                        // Pass this boolean value (true) to Chat.java.
+                                        Activity.putExtra("shapeIsCircle", false);
+                                        // Pass this boolean value to Chat.java.
                                         Activity.putExtra("newShape", true);
                                         // Pass this value to Chat.java to identify the shape.
                                         Activity.putExtra("uuid", uuid);
@@ -4573,7 +4643,8 @@ public class Map extends FragmentActivity implements
 
                                         // Carry the extras all the way to Chat.java.
                                         Intent Activity = new Intent(Map.this, SignIn.class);
-                                        // Pass this boolean value (true) to Chat.java.
+                                        Activity.putExtra("shapeIsCircle", false);
+                                        // Pass this boolean value to Chat.java.
                                         Activity.putExtra("newShape", true);
                                         // Pass this value to Chat.java to identify the shape.
                                         Activity.putExtra("uuid", uuid);
@@ -4683,102 +4754,15 @@ public class Map extends FragmentActivity implements
 
                             // Carry the extras all the way to Chat.java.
                             Intent Activity = new Intent(Map.this, SignIn.class);
-                            // Pass this boolean value (true) to Chat.java.
+                            Activity.putExtra("shapeIsCircle", false);
+                            // Pass this boolean value to Chat.java.
                             Activity.putExtra("newShape", false);
+                            Activity.putExtra("shapeIsCircle", false);
                             // Pass this value to Chat.java to identify the shape.
                             Activity.putExtra("uuid", uuid);
                             // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                             Activity.putExtra("userIsWithinShape", userIsWithinShape);
                             // Pass this information to Chat.java to create a new shape in Firebase after someone writes a message.
-                            if (threeMarkers) {
-                                Activity.putExtra("threeMarkers", true);
-                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                            }
-
-                            if (fourMarkers) {
-                                Activity.putExtra("fourMarkers", true);
-                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
-                            }
-
-                            if (fiveMarkers) {
-                                Activity.putExtra("fiveMarkers", true);
-                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
-                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
-                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
-                            }
-
-                            if (sixMarkers) {
-                                Activity.putExtra("sixMarkers", true);
-                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
-                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
-                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
-                                Activity.putExtra("marker5Latitude", marker5Position.latitude);
-                                Activity.putExtra("marker5Longitude", marker5Position.longitude);
-                            }
-
-                            if (sevenMarkers) {
-                                Activity.putExtra("sevenMarkers", true);
-                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
-                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
-                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
-                                Activity.putExtra("marker5Latitude", marker5Position.latitude);
-                                Activity.putExtra("marker5Longitude", marker5Position.longitude);
-                                Activity.putExtra("marker6Latitude", marker6Position.latitude);
-                                Activity.putExtra("marker6Longitude", marker6Position.longitude);
-                            }
-
-                            if (eightMarkers) {
-                                Activity.putExtra("eightMarkers", true);
-                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
-                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
-                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
-                                Activity.putExtra("marker5Latitude", marker5Position.latitude);
-                                Activity.putExtra("marker5Longitude", marker5Position.longitude);
-                                Activity.putExtra("marker6Latitude", marker6Position.latitude);
-                                Activity.putExtra("marker6Longitude", marker6Position.longitude);
-                            }
-
-                            Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                             startActivity(Activity);
                         }
                 }
@@ -4845,7 +4829,8 @@ public class Map extends FragmentActivity implements
 
                                     // Carry the extras all the way to Chat.java.
                                     Intent Activity = new Intent(Map.this, Chat.class);
-                                    // Pass this boolean value (true) to Chat.java.
+                                    Activity.putExtra("shapeIsCircle", true);
+                                    // Pass this boolean value to Chat.java.
                                     Activity.putExtra("newShape", true);
                                     // Pass this value to Chat.java to identify the shape.
                                     Activity.putExtra("uuid", uuid);
@@ -4863,7 +4848,8 @@ public class Map extends FragmentActivity implements
 
                                     // Carry the extras all the way to Chat.java.
                                     Intent Activity = new Intent(Map.this, Chat.class);
-                                    // Pass this boolean value (true) to Chat.java.
+                                    Activity.putExtra("shapeIsCircle", true);
+                                    // Pass this boolean value to Chat.java.
                                     Activity.putExtra("newShape", true);
                                     // Pass this value to Chat.java to identify the shape.
                                     Activity.putExtra("uuid", uuid);
@@ -4888,7 +4874,8 @@ public class Map extends FragmentActivity implements
 
                         // Go to Chat.java with the boolean value.
                         Intent Activity = new Intent(Map.this, Chat.class);
-                        // Pass this boolean value (false) to Chat.java.
+                        Activity.putExtra("shapeIsCircle", true);
+                        // Pass this boolean value to Chat.java.
                         Activity.putExtra("newShape", false);
                         // Pass this value to Chat.java to identify the shape.
                         Activity.putExtra("uuid", uuid);
@@ -4918,7 +4905,8 @@ public class Map extends FragmentActivity implements
 
                                     // Carry the extras all the way to Chat.java.
                                     Intent Activity = new Intent(Map.this, SignIn.class);
-                                    // Pass this boolean value (true) to Chat.java.
+                                    Activity.putExtra("shapeIsCircle", true);
+                                    // Pass this boolean value to Chat.java.
                                     Activity.putExtra("newShape", true);
                                     // Pass this value to Chat.java to identify the shape.
                                     Activity.putExtra("uuid", uuid);
@@ -4936,7 +4924,8 @@ public class Map extends FragmentActivity implements
 
                                     // Carry the extras all the way to Chat.java.
                                     Intent Activity = new Intent(Map.this, SignIn.class);
-                                    // Pass this boolean value (true) to Chat.java.
+                                    Activity.putExtra("shapeIsCircle", true);
+                                    // Pass this boolean value to Chat.java.
                                     Activity.putExtra("newShape", true);
                                     // Pass this value to Chat.java to identify the shape.
                                     Activity.putExtra("uuid", uuid);
@@ -4961,7 +4950,8 @@ public class Map extends FragmentActivity implements
 
                         // Go to Chat.java with the boolean value.
                         Intent Activity = new Intent(Map.this, SignIn.class);
-                        // Pass this boolean value (false) to Chat.java.
+                        Activity.putExtra("shapeIsCircle", true);
+                        // Pass this boolean value to Chat.java.
                         Activity.putExtra("newShape", false);
                         // Pass this value to Chat.java to identify the shape.
                         Activity.putExtra("uuid", uuid);
@@ -5547,6 +5537,10 @@ public class Map extends FragmentActivity implements
                                     marker2ID = marker2.getId();
                                     marker3ID = marker3.getId();
 
+                                    // Update the global variable for use when a user clicks on the polygon to go to chat without updating the marker locations.
+                                    LatLng[] polygonPoints = new LatLng[] {marker0Position, marker1Position, marker2Position};
+                                    polygonPointsList = Arrays.asList(polygonPoints);
+
                                     polygon = mMap.addPolygon(polygonOptions);
                                 }
                             }
@@ -5840,7 +5834,7 @@ public class Map extends FragmentActivity implements
 
                                                         // Carry the extras all the way to Chat.java.
                                                         Intent Activity = new Intent(Map.this, Chat.class);
-                                                        // Pass this boolean value (true) to Chat.java.
+                                                        // Pass this boolean value to Chat.java.
                                                         Activity.putExtra("newShape", true);
                                                         // Pass this value to Chat.java to identify the shape.
                                                         Activity.putExtra("uuid", uuid);
@@ -5854,7 +5848,7 @@ public class Map extends FragmentActivity implements
 
                                                         // Carry the extras all the way to Chat.java.
                                                         Intent Activity = new Intent(Map.this, Chat.class);
-                                                        // Pass this boolean value (true) to Chat.java.
+                                                        // Pass this boolean value to Chat.java.
                                                         Activity.putExtra("newShape", true);
                                                         // Pass this value to Chat.java to identify the shape.
                                                         Activity.putExtra("uuid", uuid);
@@ -5888,7 +5882,7 @@ public class Map extends FragmentActivity implements
 
                                                         // Carry the extras all the way to Chat.java.
                                                         Intent Activity = new Intent(Map.this, SignIn.class);
-                                                        // Pass this boolean value (true) to Chat.java.
+                                                        // Pass this boolean value to Chat.java.
                                                         Activity.putExtra("newShape", true);
                                                         // Pass this value to Chat.java to identify the shape.
                                                         Activity.putExtra("uuid", uuid);
@@ -5902,7 +5896,7 @@ public class Map extends FragmentActivity implements
 
                                                         // Carry the extras all the way to Chat.java.
                                                         Intent Activity = new Intent(Map.this, SignIn.class);
-                                                        // Pass this boolean value (true) to Chat.java.
+                                                        // Pass this boolean value to Chat.java.
                                                         Activity.putExtra("newShape", true);
                                                         // Pass this value to Chat.java to identify the shape.
                                                         Activity.putExtra("uuid", uuid);
