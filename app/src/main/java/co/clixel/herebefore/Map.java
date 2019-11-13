@@ -51,6 +51,8 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+
+// https://googlemaps.github.io/android-maps-utils/javadoc/com/google/maps/android/PolyUtil.html
 import com.google.maps.android.PolyUtil;
 
 import java.util.Arrays;
@@ -72,7 +74,7 @@ public class Map extends FragmentActivity implements
     private Marker marker0, marker1, marker2, marker3, marker4, marker5, marker6, marker7;
     private Circle circle;
     private Polygon polygon;
-    private DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference(), firebaseCircles = rootRef.child("circles");
+    private DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference(), firebaseCircles = rootRef.child("circles"), firebasePolygons = rootRef.child("polygons");
     private SeekBar chatSizeSeekBar;
     private String uuid, marker0ID, marker1ID, marker2ID, marker3ID, marker4ID, marker5ID, marker6ID, marker7ID;
     private Button createChatButton, chatViewsButton, mapTypeButton;
@@ -83,7 +85,6 @@ public class Map extends FragmentActivity implements
     private Location mlocation;
     private List<LatLng> polygonPointsList;
 
-    //TODO: Have polygon go to chat.
     //TODO: Have chatViewsButton show polygons.
     //TODO Prevent map type reload with orientation change.
     //TODO: Prevent circle overlap.
@@ -2040,7 +2041,709 @@ public class Map extends FragmentActivity implements
                 }
             });
 
-            // Go to Chat.java when clicking on the circle. A listener exists in onMapReady() but that is not called after restarting app and is set to null in onStop().
+            // Go to Chat.java when clicking on a polygon.
+            mMap.setOnPolygonClickListener(new GoogleMap.OnPolygonClickListener() {
+                @Override
+                public void onPolygonClick(Polygon polygon) {
+
+                    if (polygon.getTag() != null) {
+
+                        // Get the ID set by Firebase to identify which polygon the user clicked on.
+                        uuid = (String) circle.getTag();
+                    } else {
+
+                        // If the polygon is new, it will not have a tag, as the tag is pulled from Firebase. Therefore, generate a uuid.
+                        uuid = UUID.randomUUID().toString();
+                    }
+
+                    // Check if the user is already signed in.
+                    if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+
+                        // User is signed in.
+
+                        // Check if user is within the polygon before going to the chat.
+                        FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
+
+                        mFusedLocationClient.getLastLocation()
+                                .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
+                                    @Override
+                                    public void onSuccess(Location location) {
+
+                                        if (location != null) {
+
+                                            // Boolean; will be true if user is within the circle upon circle click.
+                                            userIsWithinShape = PolyUtil.containsLocation(location.getLatitude(), location.getLongitude(), polygonPointsList, false);
+                                        }
+                                    }
+                                });
+
+                        // If polygon.getTag() == null, the polygon is new. Therefore, compare it to the uuids in Firebase to prevent uuid overlap before adding it to Firebase.
+                        if (polygon.getTag() == null) {
+
+                            firebasePolygons.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
+
+                                @Override
+                                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                                    // If the uuid already exists in Firebase, generate another uuid and try again.
+                                    if (dataSnapshot.exists()) {
+
+                                        // uuid exists in Firebase. Generate another and try again.
+
+                                        // Generate another UUID and try again.
+                                        uuid = UUID.randomUUID().toString();
+
+                                        // Carry the extras all the way to Chat.java.
+                                        Intent Activity = new Intent(Map.this, Chat.class);
+                                        // Pass this boolean value (true) to Chat.java.
+                                        Activity.putExtra("newShape", true);
+                                        // Pass this value to Chat.java to identify the shape.
+                                        Activity.putExtra("uuid", uuid);
+                                        // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                        // Pass this information to Chat.java to create a new shape in Firebase after someone writes a message.
+                                        if (threeMarkers) {
+                                            Activity.putExtra("threeMarkers", true);
+                                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                        }
+
+                                        if (fourMarkers) {
+                                            Activity.putExtra("fourMarkers", true);
+                                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                            Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                            Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                        }
+
+                                        if (fiveMarkers) {
+                                            Activity.putExtra("fiveMarkers", true);
+                                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                            Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                            Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                            Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                            Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                        }
+
+                                        if (sixMarkers) {
+                                            Activity.putExtra("sixMarkers", true);
+                                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                            Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                            Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                            Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                            Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                            Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                            Activity.putExtra("marker5Longitude", marker5Position.longitude);
+                                        }
+
+                                        if (sevenMarkers) {
+                                            Activity.putExtra("sevenMarkers", true);
+                                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                            Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                            Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                            Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                            Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                            Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                            Activity.putExtra("marker5Longitude", marker5Position.longitude);
+                                            Activity.putExtra("marker6Latitude", marker6Position.latitude);
+                                            Activity.putExtra("marker6Longitude", marker6Position.longitude);
+                                        }
+
+                                        if (eightMarkers) {
+                                            Activity.putExtra("eightMarkers", true);
+                                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                            Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                            Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                            Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                            Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                            Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                            Activity.putExtra("marker5Longitude", marker5Position.longitude);
+                                            Activity.putExtra("marker6Latitude", marker6Position.latitude);
+                                            Activity.putExtra("marker6Longitude", marker6Position.longitude);
+                                        }
+
+                                        Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
+                                        startActivity(Activity);
+                                    } else {
+
+                                        // uuid does not already exist in Firebase. Go to Chat.java with the uuid.
+
+                                        // Carry the extras all the way to Chat.java.
+                                        Intent Activity = new Intent(Map.this, Chat.class);
+                                        // Pass this boolean value (true) to Chat.java.
+                                        Activity.putExtra("newShape", true);
+                                        // Pass this value to Chat.java to identify the shape.
+                                        Activity.putExtra("uuid", uuid);
+                                        // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                        // Pass this information to Chat.java to create a new shape in Firebase after someone writes a message.
+                                        if (threeMarkers) {
+                                            Activity.putExtra("threeMarkers", true);
+                                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                        }
+
+                                        if (fourMarkers) {
+                                            Activity.putExtra("fourMarkers", true);
+                                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                            Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                            Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                        }
+
+                                        if (fiveMarkers) {
+                                            Activity.putExtra("fiveMarkers", true);
+                                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                            Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                            Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                            Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                            Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                        }
+
+                                        if (sixMarkers) {
+                                            Activity.putExtra("sixMarkers", true);
+                                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                            Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                            Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                            Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                            Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                            Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                            Activity.putExtra("marker5Longitude", marker5Position.longitude);
+                                        }
+
+                                        if (sevenMarkers) {
+                                            Activity.putExtra("sevenMarkers", true);
+                                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                            Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                            Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                            Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                            Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                            Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                            Activity.putExtra("marker5Longitude", marker5Position.longitude);
+                                            Activity.putExtra("marker6Latitude", marker6Position.latitude);
+                                            Activity.putExtra("marker6Longitude", marker6Position.longitude);
+                                        }
+
+                                        if (eightMarkers) {
+                                            Activity.putExtra("eightMarkers", true);
+                                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                            Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                            Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                            Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                            Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                            Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                            Activity.putExtra("marker5Longitude", marker5Position.longitude);
+                                            Activity.putExtra("marker6Latitude", marker6Position.latitude);
+                                            Activity.putExtra("marker6Longitude", marker6Position.longitude);
+                                        }
+
+                                        Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
+                                        startActivity(Activity);
+                                    }
+                                }
+
+                                @Override
+                                public void onCancelled(@NonNull DatabaseError databaseError) {
+                                }
+                            });
+                        } else {
+
+                            // The polygon is not new, so go to Chat.java.
+
+                            // Carry the extras all the way to Chat.java.
+                            Intent Activity = new Intent(Map.this, Chat.class);
+                            // Pass this boolean value (true) to Chat.java.
+                            Activity.putExtra("newShape", false);
+                            // Pass this value to Chat.java to identify the shape.
+                            Activity.putExtra("uuid", uuid);
+                            // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                            Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                            // Pass this information to Chat.java to create a new shape in Firebase after someone writes a message.
+                            if (threeMarkers) {
+                                Activity.putExtra("threeMarkers", true);
+                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                            }
+
+                            if (fourMarkers) {
+                                Activity.putExtra("fourMarkers", true);
+                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                            }
+
+                            if (fiveMarkers) {
+                                Activity.putExtra("fiveMarkers", true);
+                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                            }
+
+                            if (sixMarkers) {
+                                Activity.putExtra("sixMarkers", true);
+                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                Activity.putExtra("marker5Longitude", marker5Position.longitude);
+                            }
+
+                            if (sevenMarkers) {
+                                Activity.putExtra("sevenMarkers", true);
+                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                Activity.putExtra("marker5Longitude", marker5Position.longitude);
+                                Activity.putExtra("marker6Latitude", marker6Position.latitude);
+                                Activity.putExtra("marker6Longitude", marker6Position.longitude);
+                            }
+
+                            if (eightMarkers) {
+                                Activity.putExtra("eightMarkers", true);
+                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                Activity.putExtra("marker5Longitude", marker5Position.longitude);
+                                Activity.putExtra("marker6Latitude", marker6Position.latitude);
+                                Activity.putExtra("marker6Longitude", marker6Position.longitude);
+                            }
+
+                            Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
+                            startActivity(Activity);
+                        }
+                    } else {
+
+                        // No user is signed in.
+
+                        // If polygon.getTag() == null, the circle is new. Therefore, compare it to the uuids in Firebase to prevent uuid overlap before adding it to Firebase.
+                        if (circle.getTag() == null) {
+
+                            firebasePolygons.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
+
+                                @Override
+                                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                                    // If the uuid already exists in Firebase, generate another uuid and try again.
+                                    if (dataSnapshot.exists()) {
+
+                                        // uuid exists in Firebase. Generate another and try again.
+
+                                        // Generate another UUID and try again.
+                                        uuid = UUID.randomUUID().toString();
+
+                                        // Carry the extras all the way to Chat.java.
+                                        Intent Activity = new Intent(Map.this, SignIn.class);
+                                        // Pass this boolean value (true) to Chat.java.
+                                        Activity.putExtra("newShape", true);
+                                        // Pass this value to Chat.java to identify the shape.
+                                        Activity.putExtra("uuid", uuid);
+                                        // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                        // Pass this information to Chat.java to create a new shape in Firebase after someone writes a message.
+                                        if (threeMarkers) {
+                                            Activity.putExtra("threeMarkers", true);
+                                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                        }
+
+                                        if (fourMarkers) {
+                                            Activity.putExtra("fourMarkers", true);
+                                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                            Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                            Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                        }
+
+                                        if (fiveMarkers) {
+                                            Activity.putExtra("fiveMarkers", true);
+                                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                            Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                            Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                            Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                            Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                        }
+
+                                        if (sixMarkers) {
+                                            Activity.putExtra("sixMarkers", true);
+                                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                            Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                            Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                            Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                            Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                            Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                            Activity.putExtra("marker5Longitude", marker5Position.longitude);
+                                        }
+
+                                        if (sevenMarkers) {
+                                            Activity.putExtra("sevenMarkers", true);
+                                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                            Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                            Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                            Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                            Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                            Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                            Activity.putExtra("marker5Longitude", marker5Position.longitude);
+                                            Activity.putExtra("marker6Latitude", marker6Position.latitude);
+                                            Activity.putExtra("marker6Longitude", marker6Position.longitude);
+                                        }
+
+                                        if (eightMarkers) {
+                                            Activity.putExtra("eightMarkers", true);
+                                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                            Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                            Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                            Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                            Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                            Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                            Activity.putExtra("marker5Longitude", marker5Position.longitude);
+                                            Activity.putExtra("marker6Latitude", marker6Position.latitude);
+                                            Activity.putExtra("marker6Longitude", marker6Position.longitude);
+                                        }
+
+                                        Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
+                                        startActivity(Activity);
+                                    } else {
+
+                                        // uuid does not already exist in Firebase. Go to SignIn.java with the uuid.
+
+                                        // Carry the extras all the way to Chat.java.
+                                        Intent Activity = new Intent(Map.this, SignIn.class);
+                                        // Pass this boolean value (true) to Chat.java.
+                                        Activity.putExtra("newShape", true);
+                                        // Pass this value to Chat.java to identify the shape.
+                                        Activity.putExtra("uuid", uuid);
+                                        // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                        // Pass this information to Chat.java to create a new shape in Firebase after someone writes a message.
+                                        if (threeMarkers) {
+                                            Activity.putExtra("threeMarkers", true);
+                                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                        }
+
+                                        if (fourMarkers) {
+                                            Activity.putExtra("fourMarkers", true);
+                                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                            Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                            Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                        }
+
+                                        if (fiveMarkers) {
+                                            Activity.putExtra("fiveMarkers", true);
+                                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                            Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                            Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                            Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                            Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                        }
+
+                                        if (sixMarkers) {
+                                            Activity.putExtra("sixMarkers", true);
+                                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                            Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                            Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                            Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                            Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                            Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                            Activity.putExtra("marker5Longitude", marker5Position.longitude);
+                                        }
+
+                                        if (sevenMarkers) {
+                                            Activity.putExtra("sevenMarkers", true);
+                                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                            Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                            Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                            Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                            Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                            Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                            Activity.putExtra("marker5Longitude", marker5Position.longitude);
+                                            Activity.putExtra("marker6Latitude", marker6Position.latitude);
+                                            Activity.putExtra("marker6Longitude", marker6Position.longitude);
+                                        }
+
+                                        if (eightMarkers) {
+                                            Activity.putExtra("eightMarkers", true);
+                                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                            Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                            Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                            Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                            Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                            Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                            Activity.putExtra("marker5Longitude", marker5Position.longitude);
+                                            Activity.putExtra("marker6Latitude", marker6Position.latitude);
+                                            Activity.putExtra("marker6Longitude", marker6Position.longitude);
+                                        }
+
+                                        Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
+                                        startActivity(Activity);
+                                    }
+                                }
+
+                                @Override
+                                public void onCancelled(@NonNull DatabaseError databaseError) {
+                                }
+                            });
+                        } else {
+
+                            // The polygon is not new, so go to SignIn.java.
+
+                            // Carry the extras all the way to Chat.java.
+                            Intent Activity = new Intent(Map.this, SignIn.class);
+                            // Pass this boolean value (true) to Chat.java.
+                            Activity.putExtra("newShape", false);
+                            // Pass this value to Chat.java to identify the shape.
+                            Activity.putExtra("uuid", uuid);
+                            // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                            Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                            // Pass this information to Chat.java to create a new shape in Firebase after someone writes a message.
+                            if (threeMarkers) {
+                                Activity.putExtra("threeMarkers", true);
+                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                            }
+
+                            if (fourMarkers) {
+                                Activity.putExtra("fourMarkers", true);
+                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                            }
+
+                            if (fiveMarkers) {
+                                Activity.putExtra("fiveMarkers", true);
+                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                            }
+
+                            if (sixMarkers) {
+                                Activity.putExtra("sixMarkers", true);
+                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                Activity.putExtra("marker5Longitude", marker5Position.longitude);
+                            }
+
+                            if (sevenMarkers) {
+                                Activity.putExtra("sevenMarkers", true);
+                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                Activity.putExtra("marker5Longitude", marker5Position.longitude);
+                                Activity.putExtra("marker6Latitude", marker6Position.latitude);
+                                Activity.putExtra("marker6Longitude", marker6Position.longitude);
+                            }
+
+                            if (eightMarkers) {
+                                Activity.putExtra("eightMarkers", true);
+                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                Activity.putExtra("marker5Longitude", marker5Position.longitude);
+                                Activity.putExtra("marker6Latitude", marker6Position.latitude);
+                                Activity.putExtra("marker6Longitude", marker6Position.longitude);
+                            }
+
+                            Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
+                            startActivity(Activity);
+                        }
+                    }
+                }
+            });
+
+            // Go to Chat.java when clicking on a circle.
             mMap.setOnCircleClickListener(new GoogleMap.OnCircleClickListener() {
 
                 @Override
@@ -2093,6 +2796,8 @@ public class Map extends FragmentActivity implements
                                     // If the uuid already exists in Firebase, generate another uuid and try again.
                                     if (dataSnapshot.exists()) {
 
+                                        // uuid exists in Firebase. Generate another and try again.
+
                                         // Generate another UUID and try again.
                                         uuid = UUID.randomUUID().toString();
 
@@ -2111,6 +2816,8 @@ public class Map extends FragmentActivity implements
                                         Activity.putExtra("radius", circle.getRadius());
                                         startActivity(Activity);
                                     } else {
+
+                                        // uuid does not already exist in Firebase. Go to Chat.java with the uuid.
 
                                         // Carry the extras all the way to Chat.java.
                                         Intent Activity = new Intent(Map.this, Chat.class);
@@ -2134,6 +2841,8 @@ public class Map extends FragmentActivity implements
                                 }
                             });
                         } else {
+
+                            // The circle is not new, so go to Chat.java.
 
                             // Go to Chat.java with the boolean value.
                             Intent Activity = new Intent(Map.this, Chat.class);
@@ -2160,6 +2869,8 @@ public class Map extends FragmentActivity implements
                                     // If the uuid already exists in Firebase, generate another uuid and try again.
                                     if (dataSnapshot.exists()) {
 
+                                        // uuid exists in Firebase. Generate another and try again.
+
                                         // Generate another UUID and try again.
                                         uuid = UUID.randomUUID().toString();
 
@@ -2178,6 +2889,8 @@ public class Map extends FragmentActivity implements
                                         Activity.putExtra("radius", circle.getRadius());
                                         startActivity(Activity);
                                     } else {
+
+                                        // uuid does not already exist in Firebase. Go to Chat.java with the uuid.
 
                                         // Carry the extras all the way to Chat.java.
                                         Intent Activity = new Intent(Map.this, SignIn.class);
@@ -2201,6 +2914,8 @@ public class Map extends FragmentActivity implements
                                 }
                             });
                         } else {
+
+                            // The polygon is not new, so go to SignIn.java.
 
                             // Go to Chat.java with the boolean value.
                             Intent Activity = new Intent(Map.this, SignIn.class);
@@ -3398,7 +4113,8 @@ public class Map extends FragmentActivity implements
 
                                     if (location != null) {
 
-                                        PolyUtil.containsLocation(location.getLatitude(), location.getLongitude(), polygonPointsList, false);
+                                        // Boolean; will be true if user is within the circle upon circle click.
+                                        userIsWithinShape = PolyUtil.containsLocation(location.getLatitude(), location.getLongitude(), polygonPointsList, false);
                                     }
                                 }
                             });
@@ -3406,13 +4122,15 @@ public class Map extends FragmentActivity implements
                     // If polygon.getTag() == null, the polygon is new. Therefore, compare it to the uuids in Firebase to prevent uuid overlap before adding it to Firebase.
                     if (polygon.getTag() == null) {
 
-                        firebaseCircles.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
+                        firebasePolygons.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
 
                             @Override
                             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
 
                                 // If the uuid already exists in Firebase, generate another uuid and try again.
                                 if (dataSnapshot.exists()) {
+
+                                    // uuid exists in Firebase. Generate another and try again.
 
                                     // Generate another UUID and try again.
                                     uuid = UUID.randomUUID().toString();
@@ -3425,13 +4143,100 @@ public class Map extends FragmentActivity implements
                                     Activity.putExtra("uuid", uuid);
                                     // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                     Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                    // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
-                                    Activity.putExtra("circleLatitude", circle.getCenter().latitude);
-                                    Activity.putExtra("circleLongitude", circle.getCenter().longitude);
+                                    // Pass this information to Chat.java to create a new shape in Firebase after someone writes a message.
+                                    if (threeMarkers) {
+                                        Activity.putExtra("threeMarkers", true);
+                                        Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                        Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                        Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                        Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                        Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                        Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                    }
+
+                                    if (fourMarkers) {
+                                        Activity.putExtra("fourMarkers", true);
+                                        Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                        Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                        Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                        Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                        Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                        Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                        Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                        Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                    }
+
+                                    if (fiveMarkers) {
+                                        Activity.putExtra("fiveMarkers", true);
+                                        Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                        Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                        Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                        Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                        Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                        Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                        Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                        Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                        Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                        Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                    }
+
+                                    if (sixMarkers) {
+                                        Activity.putExtra("sixMarkers", true);
+                                        Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                        Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                        Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                        Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                        Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                        Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                        Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                        Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                        Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                        Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                        Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                        Activity.putExtra("marker5Longitude", marker5Position.longitude);
+                                    }
+
+                                    if (sevenMarkers) {
+                                        Activity.putExtra("sevenMarkers", true);
+                                        Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                        Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                        Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                        Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                        Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                        Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                        Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                        Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                        Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                        Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                        Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                        Activity.putExtra("marker5Longitude", marker5Position.longitude);
+                                        Activity.putExtra("marker6Latitude", marker6Position.latitude);
+                                        Activity.putExtra("marker6Longitude", marker6Position.longitude);
+                                    }
+
+                                    if (eightMarkers) {
+                                        Activity.putExtra("eightMarkers", true);
+                                        Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                        Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                        Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                        Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                        Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                        Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                        Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                        Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                        Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                        Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                        Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                        Activity.putExtra("marker5Longitude", marker5Position.longitude);
+                                        Activity.putExtra("marker6Latitude", marker6Position.latitude);
+                                        Activity.putExtra("marker6Longitude", marker6Position.longitude);
+                                    }
+
                                     Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
-                                    Activity.putExtra("radius", circle.getRadius());
                                     startActivity(Activity);
                                 } else {
+
+                                    // uuid does not already exist in Firebase. Go to Chat.java with the uuid.
 
                                     // Carry the extras all the way to Chat.java.
                                     Intent Activity = new Intent(Map.this, Chat.class);
@@ -3441,11 +4246,96 @@ public class Map extends FragmentActivity implements
                                     Activity.putExtra("uuid", uuid);
                                     // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                     Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                    // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
-                                    Activity.putExtra("circleLatitude", circle.getCenter().latitude);
-                                    Activity.putExtra("circleLongitude", circle.getCenter().longitude);
+                                    // Pass this information to Chat.java to create a new shape in Firebase after someone writes a message.
+                                    if (threeMarkers) {
+                                        Activity.putExtra("threeMarkers", true);
+                                        Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                        Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                        Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                        Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                        Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                        Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                    }
+
+                                    if (fourMarkers) {
+                                        Activity.putExtra("fourMarkers", true);
+                                        Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                        Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                        Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                        Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                        Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                        Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                        Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                        Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                    }
+
+                                    if (fiveMarkers) {
+                                        Activity.putExtra("fiveMarkers", true);
+                                        Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                        Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                        Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                        Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                        Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                        Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                        Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                        Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                        Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                        Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                    }
+
+                                    if (sixMarkers) {
+                                        Activity.putExtra("sixMarkers", true);
+                                        Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                        Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                        Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                        Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                        Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                        Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                        Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                        Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                        Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                        Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                        Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                        Activity.putExtra("marker5Longitude", marker5Position.longitude);
+                                    }
+
+                                    if (sevenMarkers) {
+                                        Activity.putExtra("sevenMarkers", true);
+                                        Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                        Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                        Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                        Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                        Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                        Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                        Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                        Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                        Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                        Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                        Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                        Activity.putExtra("marker5Longitude", marker5Position.longitude);
+                                        Activity.putExtra("marker6Latitude", marker6Position.latitude);
+                                        Activity.putExtra("marker6Longitude", marker6Position.longitude);
+                                    }
+
+                                    if (eightMarkers) {
+                                        Activity.putExtra("eightMarkers", true);
+                                        Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                        Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                        Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                        Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                        Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                        Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                        Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                        Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                        Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                        Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                        Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                        Activity.putExtra("marker5Longitude", marker5Position.longitude);
+                                        Activity.putExtra("marker6Latitude", marker6Position.latitude);
+                                        Activity.putExtra("marker6Longitude", marker6Position.longitude);
+                                    }
+
                                     Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
-                                    Activity.putExtra("radius", circle.getRadius());
                                     startActivity(Activity);
                                 }
                             }
@@ -3456,16 +4346,441 @@ public class Map extends FragmentActivity implements
                         });
                     } else {
 
-                        // Go to Chat.java with the boolean value.
+                        // The polygon is not new, so go to Chat.java.
+
+                        // Carry the extras all the way to Chat.java.
                         Intent Activity = new Intent(Map.this, Chat.class);
-                        // Pass this boolean value (false) to Chat.java.
+                        // Pass this boolean value (true) to Chat.java.
                         Activity.putExtra("newShape", false);
                         // Pass this value to Chat.java to identify the shape.
                         Activity.putExtra("uuid", uuid);
                         // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                         Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                        // Pass this information to Chat.java to create a new shape in Firebase after someone writes a message.
+                        if (threeMarkers) {
+                            Activity.putExtra("threeMarkers", true);
+                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                        }
+
+                        if (fourMarkers) {
+                            Activity.putExtra("fourMarkers", true);
+                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                            Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                            Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                        }
+
+                        if (fiveMarkers) {
+                            Activity.putExtra("fiveMarkers", true);
+                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                            Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                            Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                            Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                            Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                        }
+
+                        if (sixMarkers) {
+                            Activity.putExtra("sixMarkers", true);
+                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                            Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                            Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                            Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                            Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                            Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                            Activity.putExtra("marker5Longitude", marker5Position.longitude);
+                        }
+
+                        if (sevenMarkers) {
+                            Activity.putExtra("sevenMarkers", true);
+                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                            Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                            Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                            Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                            Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                            Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                            Activity.putExtra("marker5Longitude", marker5Position.longitude);
+                            Activity.putExtra("marker6Latitude", marker6Position.latitude);
+                            Activity.putExtra("marker6Longitude", marker6Position.longitude);
+                        }
+
+                        if (eightMarkers) {
+                            Activity.putExtra("eightMarkers", true);
+                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                            Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                            Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                            Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                            Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                            Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                            Activity.putExtra("marker5Longitude", marker5Position.longitude);
+                            Activity.putExtra("marker6Latitude", marker6Position.latitude);
+                            Activity.putExtra("marker6Longitude", marker6Position.longitude);
+                        }
+
+                        Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                         startActivity(Activity);
                     }
+                } else {
+
+                        // No user is signed in.
+
+                        // If polygon.getTag() == null, the circle is new. Therefore, compare it to the uuids in Firebase to prevent uuid overlap before adding it to Firebase.
+                        if (circle.getTag() == null) {
+
+                            firebasePolygons.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
+
+                                @Override
+                                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                                    // If the uuid already exists in Firebase, generate another uuid and try again.
+                                    if (dataSnapshot.exists()) {
+
+                                        // uuid exists in Firebase. Generate another and try again.
+
+                                        // Generate another UUID and try again.
+                                        uuid = UUID.randomUUID().toString();
+
+                                        // Carry the extras all the way to Chat.java.
+                                        Intent Activity = new Intent(Map.this, SignIn.class);
+                                        // Pass this boolean value (true) to Chat.java.
+                                        Activity.putExtra("newShape", true);
+                                        // Pass this value to Chat.java to identify the shape.
+                                        Activity.putExtra("uuid", uuid);
+                                        // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                        // Pass this information to Chat.java to create a new shape in Firebase after someone writes a message.
+                                        if (threeMarkers) {
+                                            Activity.putExtra("threeMarkers", true);
+                                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                        }
+
+                                        if (fourMarkers) {
+                                            Activity.putExtra("fourMarkers", true);
+                                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                            Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                            Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                        }
+
+                                        if (fiveMarkers) {
+                                            Activity.putExtra("fiveMarkers", true);
+                                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                            Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                            Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                            Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                            Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                        }
+
+                                        if (sixMarkers) {
+                                            Activity.putExtra("sixMarkers", true);
+                                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                            Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                            Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                            Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                            Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                            Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                            Activity.putExtra("marker5Longitude", marker5Position.longitude);
+                                        }
+
+                                        if (sevenMarkers) {
+                                            Activity.putExtra("sevenMarkers", true);
+                                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                            Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                            Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                            Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                            Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                            Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                            Activity.putExtra("marker5Longitude", marker5Position.longitude);
+                                            Activity.putExtra("marker6Latitude", marker6Position.latitude);
+                                            Activity.putExtra("marker6Longitude", marker6Position.longitude);
+                                        }
+
+                                        if (eightMarkers) {
+                                            Activity.putExtra("eightMarkers", true);
+                                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                            Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                            Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                            Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                            Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                            Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                            Activity.putExtra("marker5Longitude", marker5Position.longitude);
+                                            Activity.putExtra("marker6Latitude", marker6Position.latitude);
+                                            Activity.putExtra("marker6Longitude", marker6Position.longitude);
+                                        }
+
+                                        Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
+                                        startActivity(Activity);
+                                    } else {
+
+                                        // uuid does not already exist in Firebase. Go to SignIn.java with the uuid.
+
+                                        // Carry the extras all the way to Chat.java.
+                                        Intent Activity = new Intent(Map.this, SignIn.class);
+                                        // Pass this boolean value (true) to Chat.java.
+                                        Activity.putExtra("newShape", true);
+                                        // Pass this value to Chat.java to identify the shape.
+                                        Activity.putExtra("uuid", uuid);
+                                        // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                        // Pass this information to Chat.java to create a new shape in Firebase after someone writes a message.
+                                        if (threeMarkers) {
+                                            Activity.putExtra("threeMarkers", true);
+                                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                        }
+
+                                        if (fourMarkers) {
+                                            Activity.putExtra("fourMarkers", true);
+                                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                            Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                            Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                        }
+
+                                        if (fiveMarkers) {
+                                            Activity.putExtra("fiveMarkers", true);
+                                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                            Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                            Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                            Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                            Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                        }
+
+                                        if (sixMarkers) {
+                                            Activity.putExtra("sixMarkers", true);
+                                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                            Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                            Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                            Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                            Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                            Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                            Activity.putExtra("marker5Longitude", marker5Position.longitude);
+                                        }
+
+                                        if (sevenMarkers) {
+                                            Activity.putExtra("sevenMarkers", true);
+                                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                            Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                            Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                            Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                            Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                            Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                            Activity.putExtra("marker5Longitude", marker5Position.longitude);
+                                            Activity.putExtra("marker6Latitude", marker6Position.latitude);
+                                            Activity.putExtra("marker6Longitude", marker6Position.longitude);
+                                        }
+
+                                        if (eightMarkers) {
+                                            Activity.putExtra("eightMarkers", true);
+                                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                            Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                            Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                            Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                            Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                            Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                            Activity.putExtra("marker5Longitude", marker5Position.longitude);
+                                            Activity.putExtra("marker6Latitude", marker6Position.latitude);
+                                            Activity.putExtra("marker6Longitude", marker6Position.longitude);
+                                        }
+
+                                        Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
+                                        startActivity(Activity);
+                                    }
+                                }
+
+                                @Override
+                                public void onCancelled(@NonNull DatabaseError databaseError) {
+                                }
+                            });
+                        } else {
+
+                            // The polygon is not new, so go to SignIn.java.
+
+                            // Carry the extras all the way to Chat.java.
+                            Intent Activity = new Intent(Map.this, SignIn.class);
+                            // Pass this boolean value (true) to Chat.java.
+                            Activity.putExtra("newShape", false);
+                            // Pass this value to Chat.java to identify the shape.
+                            Activity.putExtra("uuid", uuid);
+                            // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                            Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                            // Pass this information to Chat.java to create a new shape in Firebase after someone writes a message.
+                            if (threeMarkers) {
+                                Activity.putExtra("threeMarkers", true);
+                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                            }
+
+                            if (fourMarkers) {
+                                Activity.putExtra("fourMarkers", true);
+                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                            }
+
+                            if (fiveMarkers) {
+                                Activity.putExtra("fiveMarkers", true);
+                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                            }
+
+                            if (sixMarkers) {
+                                Activity.putExtra("sixMarkers", true);
+                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                Activity.putExtra("marker5Longitude", marker5Position.longitude);
+                            }
+
+                            if (sevenMarkers) {
+                                Activity.putExtra("sevenMarkers", true);
+                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                Activity.putExtra("marker5Longitude", marker5Position.longitude);
+                                Activity.putExtra("marker6Latitude", marker6Position.latitude);
+                                Activity.putExtra("marker6Longitude", marker6Position.longitude);
+                            }
+
+                            if (eightMarkers) {
+                                Activity.putExtra("eightMarkers", true);
+                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                Activity.putExtra("marker5Longitude", marker5Position.longitude);
+                                Activity.putExtra("marker6Latitude", marker6Position.latitude);
+                                Activity.putExtra("marker6Longitude", marker6Position.longitude);
+                            }
+
+                            Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
+                            startActivity(Activity);
+                        }
                 }
             }
         });
@@ -3523,6 +4838,8 @@ public class Map extends FragmentActivity implements
                                 // If the uuid already exists in Firebase, generate another uuid and try again.
                                 if (dataSnapshot.exists()) {
 
+                                    // uuid exists in Firebase. Generate another and try again.
+
                                     // Generate another UUID and try again.
                                     uuid = UUID.randomUUID().toString();
 
@@ -3541,6 +4858,8 @@ public class Map extends FragmentActivity implements
                                     Activity.putExtra("radius", circle.getRadius());
                                     startActivity(Activity);
                                 } else {
+
+                                    // uuid does not already exist in Firebase. Go to Chat.java with the uuid.
 
                                     // Carry the extras all the way to Chat.java.
                                     Intent Activity = new Intent(Map.this, Chat.class);
@@ -3564,6 +4883,8 @@ public class Map extends FragmentActivity implements
                             }
                         });
                     } else {
+
+                        // The circle is not new, so go to Chat.java.
 
                         // Go to Chat.java with the boolean value.
                         Intent Activity = new Intent(Map.this, Chat.class);
@@ -3590,6 +4911,8 @@ public class Map extends FragmentActivity implements
                                 // If the uuid already exists in Firebase, generate another uuid and try again.
                                 if (dataSnapshot.exists()) {
 
+                                    // uuid exists in Firebase. Generate another and try again.
+
                                     // Generate another UUID and try again.
                                     uuid = UUID.randomUUID().toString();
 
@@ -3608,6 +4931,8 @@ public class Map extends FragmentActivity implements
                                     Activity.putExtra("radius", circle.getRadius());
                                     startActivity(Activity);
                                 } else {
+
+                                    // uuid does not already exist in Firebase. Go to Chat.java with the uuid.
 
                                     // Carry the extras all the way to Chat.java.
                                     Intent Activity = new Intent(Map.this, SignIn.class);
@@ -3631,6 +4956,8 @@ public class Map extends FragmentActivity implements
                             }
                         });
                     } else {
+
+                        // The polygon is not new, so go to SignIn.java.
 
                         // Go to Chat.java with the boolean value.
                         Intent Activity = new Intent(Map.this, SignIn.class);

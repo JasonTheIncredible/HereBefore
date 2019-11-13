@@ -47,15 +47,14 @@ public class Chat extends AppCompatActivity {
     private boolean reachedEndOfRecyclerView = false;
     private boolean recyclerViewHasScrolled = false;
     private boolean messageSent = false;
-    private boolean newShape;
+    private boolean newShape, threeMarkers, fourMarkers, fiveMarkers, sixMarkers, sevenMarkers, eightMarkers;
     private Boolean userIsWithinShape;
     private View.OnLayoutChangeListener onLayoutChangeListener;
     private String uuid;
-    private Double circleLatitude;
-    private Double circleLongitude;
-    private Double radius;
+    private Double circleLatitude, circleLongitude, radius, marker0Latitude, marker0Longitude, marker1Latitude, marker1Longitude, marker2Latitude, marker2Longitude, marker3Latitude, marker3Longitude, marker4Latitude, marker4Longitude, marker5Latitude, marker5Longitude, marker6Latitude, marker6Longitude, marker7Latitude, marker7Longitude;
     private int fillColor;
 
+    //TODO: Add polygon to Firebase.
     //TODO: Keep checking user's location while user is in chat to see if they can keep messaging?
     //TODO: Keep users from adding messages if userIsWithinShape == false, and add a message at the top notifying user of this.
     //TODO: Too much work on main thread.
@@ -87,11 +86,34 @@ public class Chat extends AppCompatActivity {
         newShape = extras.getBoolean("newShape");
         uuid = extras.getString("uuid");
         userIsWithinShape = extras.getBoolean("userIsWithinShape");
-        // circleLatitude, circleLongitude, fillColor and radius will be null if the circle is not new (as a new circle is not being created).
+        fillColor = extras.getInt("fillColor");
+        // circleLatitude, circleLongitude, and radius will be null if the circle is not new (as a new circle is not being created).
         circleLatitude = extras.getDouble("circleLatitude");
         circleLongitude = extras.getDouble("circleLongitude");
-        fillColor = extras.getInt("fillColor");
         radius = extras.getDouble("radius");
+        // Most of these will be null if the polygon does not have eight markers.
+        threeMarkers = extras.getBoolean("threeMarkers");
+        fourMarkers = extras.getBoolean("fourMarkers");
+        fiveMarkers = extras.getBoolean("fiveMarkers");
+        sixMarkers = extras.getBoolean("sixMarkers");
+        sevenMarkers = extras.getBoolean("sevenMarkers");
+        eightMarkers = extras.getBoolean("eightMarkers");
+        marker0Latitude = extras.getDouble("marker0Latitude");
+        marker0Longitude = extras.getDouble("marker0Longitude");
+        marker1Latitude = extras.getDouble("marker1Latitude");
+        marker1Longitude = extras.getDouble("marker1Longitude");
+        marker2Latitude = extras.getDouble("marker2Latitude");
+        marker2Longitude = extras.getDouble("marker2Longitude");
+        marker3Latitude = extras.getDouble("marker3Latitude");
+        marker3Longitude = extras.getDouble("marker3Longitude");
+        marker4Latitude = extras.getDouble("marker4Latitude");
+        marker4Longitude = extras.getDouble("marker4Longitude");
+        marker5Latitude = extras.getDouble("marker5Latitude");
+        marker5Longitude = extras.getDouble("marker5Longitude");
+        marker6Latitude = extras.getDouble("marker6Latitude");
+        marker6Longitude = extras.getDouble("marker6Longitude");
+        marker7Latitude = extras.getDouble("marker7Latitude");
+        marker7Longitude = extras.getDouble("marker7Longitude");
 
         // Connect to Firebase.
         DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
