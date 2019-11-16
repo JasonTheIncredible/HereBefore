@@ -87,12 +87,12 @@ public class Map extends FragmentActivity implements
 
     //TODO: Prevent polygon overlapping itself.
     //TODO: Have chatViewsButton show polygons.
-    //TODO: Implement Firebase caching?
     //TODO: Prevent map type reload with orientation change.
     //TODO: Prevent circle overlap.
     //TODO: Give user option to change color of the circles (or just change it outright).
     //TODO: Make points easier to see somehow.
     //TODO: Have circles spread if they are too close when clicking.
+    //TODO: Implement Firebase caching?
     //TODO: Only load Firebase circles if they're within camera view (in onMapReady) (getMap().getProjection().getVisibleRegion().latLangBounds). If this works, can possibly replace singleValueEventListener in onMapReady() and onRestart() with a valueEventListener.
     //TODO: Make sure Firebase listener is always updating map properly.
     //TODO: Optimize Firebase loading.
@@ -3025,6 +3025,7 @@ public class Map extends FragmentActivity implements
             mMap.setOnCircleClickListener(null);
             mMap.setOnPolygonClickListener(null);
             mMap.setOnMarkerDragListener(null);
+            mMap.setOnMarkerClickListener(null);
         }
 
         super.onStop();
