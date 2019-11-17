@@ -24,6 +24,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.PopupMenu;
 import android.widget.SeekBar;
+import android.widget.Toast;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
@@ -55,6 +56,13 @@ import com.google.firebase.database.ValueEventListener;
 // https://googlemaps.github.io/android-maps-utils/javadoc/com/google/maps/android/PolyUtil.html
 import com.google.maps.android.PolyUtil;
 
+// http://www.tsusiatsoftware.net/jts/javadoc//com/vividsolutions/jts/geom/Polygon.html
+import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.GeometryFactory;
+import com.vividsolutions.jts.geom.LinearRing;
+import com.vividsolutions.jts.geom.impl.CoordinateArraySequence;
+
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -85,9 +93,9 @@ public class Map extends FragmentActivity implements
     private Location mlocation;
     private List<LatLng> polygonPointsList;
 
-    //TODO: Prevent polygon overlapping itself.
     //TODO: Have chatViewsButton show polygons.
     //TODO: Prevent map type reload with orientation change.
+    //TODO: Prevent touching a shape twice while waiting for Chat.java to load.
     //TODO: Prevent circle overlap.
     //TODO: Give user option to change color of the circles (or just change it outright).
     //TODO: Make points easier to see somehow.
@@ -2257,13 +2265,14 @@ public class Map extends FragmentActivity implements
 
                                         // Carry the extras all the way to Chat.java.
                                         Intent Activity = new Intent(Map.this, Chat.class);
-                                        // Pass this boolean value to Chat.java.
-                                        Activity.putExtra("newShape", true);
                                         Activity.putExtra("shapeIsCircle", false);
+                                        // Pass this boolean value Chat.java.
+                                        Activity.putExtra("newShape", true);
                                         // Pass this value to Chat.java to identify the shape.
                                         Activity.putExtra("uuid", uuid);
                                         // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                         Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                        Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                         // Pass this information to Chat.java to create a new shape in Firebase after someone writes a message.
                                         if (threeMarkers) {
                                             Activity.putExtra("threeMarkers", true);
@@ -2273,6 +2282,8 @@ public class Map extends FragmentActivity implements
                                             Activity.putExtra("marker1Longitude", marker1Position.longitude);
                                             Activity.putExtra("marker2Latitude", marker2Position.latitude);
                                             Activity.putExtra("marker2Longitude", marker2Position.longitude);
+
+                                            startActivity(Activity);
                                         }
 
                                         if (fourMarkers) {
@@ -2285,6 +2296,24 @@ public class Map extends FragmentActivity implements
                                             Activity.putExtra("marker2Longitude", marker2Position.longitude);
                                             Activity.putExtra("marker3Latitude", marker3Position.latitude);
                                             Activity.putExtra("marker3Longitude", marker3Position.longitude);
+
+                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                            GeometryFactory gf = new GeometryFactory();
+
+                                            ArrayList<Coordinate> points = new ArrayList<>();
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                    .toArray(new Coordinate[5])), gf), null);
+                                            if (polygon1.isSimple()) {
+                                                startActivity(Activity);
+                                            } else {
+
+                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                            }
                                         }
 
                                         if (fiveMarkers) {
@@ -2299,6 +2328,25 @@ public class Map extends FragmentActivity implements
                                             Activity.putExtra("marker3Longitude", marker3Position.longitude);
                                             Activity.putExtra("marker4Latitude", marker4Position.latitude);
                                             Activity.putExtra("marker4Longitude", marker4Position.longitude);
+
+                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                            GeometryFactory gf = new GeometryFactory();
+
+                                            ArrayList<Coordinate> points = new ArrayList<>();
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                    .toArray(new Coordinate[6])), gf), null);
+                                            if (polygon1.isSimple()) {
+                                                startActivity(Activity);
+                                            } else {
+
+                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                            }
                                         }
 
                                         if (sixMarkers) {
@@ -2315,6 +2363,26 @@ public class Map extends FragmentActivity implements
                                             Activity.putExtra("marker4Longitude", marker4Position.longitude);
                                             Activity.putExtra("marker5Latitude", marker5Position.latitude);
                                             Activity.putExtra("marker5Longitude", marker5Position.longitude);
+
+                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                            GeometryFactory gf = new GeometryFactory();
+
+                                            ArrayList<Coordinate> points = new ArrayList<>();
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
+                                            points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                    .toArray(new Coordinate[7])), gf), null);
+                                            if (polygon1.isSimple()) {
+                                                startActivity(Activity);
+                                            } else {
+
+                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                            }
                                         }
 
                                         if (sevenMarkers) {
@@ -2333,6 +2401,27 @@ public class Map extends FragmentActivity implements
                                             Activity.putExtra("marker5Longitude", marker5Position.longitude);
                                             Activity.putExtra("marker6Latitude", marker6Position.latitude);
                                             Activity.putExtra("marker6Longitude", marker6Position.longitude);
+
+                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                            GeometryFactory gf = new GeometryFactory();
+
+                                            ArrayList<Coordinate> points = new ArrayList<>();
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
+                                            points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
+                                            points.add(new Coordinate(marker6Position.latitude, marker6Position.longitude));
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                    .toArray(new Coordinate[8])), gf), null);
+                                            if (polygon1.isSimple()) {
+                                                startActivity(Activity);
+                                            } else {
+
+                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                            }
                                         }
 
                                         if (eightMarkers) {
@@ -2351,23 +2440,43 @@ public class Map extends FragmentActivity implements
                                             Activity.putExtra("marker5Longitude", marker5Position.longitude);
                                             Activity.putExtra("marker6Latitude", marker6Position.latitude);
                                             Activity.putExtra("marker6Longitude", marker6Position.longitude);
-                                        }
 
-                                        Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
-                                        startActivity(Activity);
+                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                            GeometryFactory gf = new GeometryFactory();
+
+                                            ArrayList<Coordinate> points = new ArrayList<>();
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
+                                            points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
+                                            points.add(new Coordinate(marker6Position.latitude, marker6Position.longitude));
+                                            points.add(new Coordinate(marker7Position.latitude, marker7Position.longitude));
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                    .toArray(new Coordinate[9])), gf), null);
+                                            if (polygon1.isSimple()) {
+                                                startActivity(Activity);
+                                            } else {
+
+                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                            }
+                                        }
                                     } else {
 
                                         // uuid does not already exist in Firebase. Go to Chat.java with the uuid.
 
                                         // Carry the extras all the way to Chat.java.
                                         Intent Activity = new Intent(Map.this, Chat.class);
-                                        // Pass this boolean value to Chat.java.
-                                        Activity.putExtra("newShape", true);
                                         Activity.putExtra("shapeIsCircle", false);
+                                        // Pass this boolean value Chat.java.
+                                        Activity.putExtra("newShape", true);
                                         // Pass this value to Chat.java to identify the shape.
                                         Activity.putExtra("uuid", uuid);
                                         // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                         Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                        Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                         // Pass this information to Chat.java to create a new shape in Firebase after someone writes a message.
                                         if (threeMarkers) {
                                             Activity.putExtra("threeMarkers", true);
@@ -2377,6 +2486,8 @@ public class Map extends FragmentActivity implements
                                             Activity.putExtra("marker1Longitude", marker1Position.longitude);
                                             Activity.putExtra("marker2Latitude", marker2Position.latitude);
                                             Activity.putExtra("marker2Longitude", marker2Position.longitude);
+
+                                            startActivity(Activity);
                                         }
 
                                         if (fourMarkers) {
@@ -2389,6 +2500,24 @@ public class Map extends FragmentActivity implements
                                             Activity.putExtra("marker2Longitude", marker2Position.longitude);
                                             Activity.putExtra("marker3Latitude", marker3Position.latitude);
                                             Activity.putExtra("marker3Longitude", marker3Position.longitude);
+
+                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                            GeometryFactory gf = new GeometryFactory();
+
+                                            ArrayList<Coordinate> points = new ArrayList<>();
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                    .toArray(new Coordinate[5])), gf), null);
+                                            if (polygon1.isSimple()) {
+                                                startActivity(Activity);
+                                            } else {
+
+                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                            }
                                         }
 
                                         if (fiveMarkers) {
@@ -2403,6 +2532,25 @@ public class Map extends FragmentActivity implements
                                             Activity.putExtra("marker3Longitude", marker3Position.longitude);
                                             Activity.putExtra("marker4Latitude", marker4Position.latitude);
                                             Activity.putExtra("marker4Longitude", marker4Position.longitude);
+
+                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                            GeometryFactory gf = new GeometryFactory();
+
+                                            ArrayList<Coordinate> points = new ArrayList<>();
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                    .toArray(new Coordinate[6])), gf), null);
+                                            if (polygon1.isSimple()) {
+                                                startActivity(Activity);
+                                            } else {
+
+                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                            }
                                         }
 
                                         if (sixMarkers) {
@@ -2419,6 +2567,26 @@ public class Map extends FragmentActivity implements
                                             Activity.putExtra("marker4Longitude", marker4Position.longitude);
                                             Activity.putExtra("marker5Latitude", marker5Position.latitude);
                                             Activity.putExtra("marker5Longitude", marker5Position.longitude);
+
+                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                            GeometryFactory gf = new GeometryFactory();
+
+                                            ArrayList<Coordinate> points = new ArrayList<>();
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
+                                            points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                    .toArray(new Coordinate[7])), gf), null);
+                                            if (polygon1.isSimple()) {
+                                                startActivity(Activity);
+                                            } else {
+
+                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                            }
                                         }
 
                                         if (sevenMarkers) {
@@ -2437,6 +2605,27 @@ public class Map extends FragmentActivity implements
                                             Activity.putExtra("marker5Longitude", marker5Position.longitude);
                                             Activity.putExtra("marker6Latitude", marker6Position.latitude);
                                             Activity.putExtra("marker6Longitude", marker6Position.longitude);
+
+                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                            GeometryFactory gf = new GeometryFactory();
+
+                                            ArrayList<Coordinate> points = new ArrayList<>();
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
+                                            points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
+                                            points.add(new Coordinate(marker6Position.latitude, marker6Position.longitude));
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                    .toArray(new Coordinate[8])), gf), null);
+                                            if (polygon1.isSimple()) {
+                                                startActivity(Activity);
+                                            } else {
+
+                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                            }
                                         }
 
                                         if (eightMarkers) {
@@ -2455,10 +2644,29 @@ public class Map extends FragmentActivity implements
                                             Activity.putExtra("marker5Longitude", marker5Position.longitude);
                                             Activity.putExtra("marker6Latitude", marker6Position.latitude);
                                             Activity.putExtra("marker6Longitude", marker6Position.longitude);
-                                        }
 
-                                        Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
-                                        startActivity(Activity);
+                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                            GeometryFactory gf = new GeometryFactory();
+
+                                            ArrayList<Coordinate> points = new ArrayList<>();
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
+                                            points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
+                                            points.add(new Coordinate(marker6Position.latitude, marker6Position.longitude));
+                                            points.add(new Coordinate(marker7Position.latitude, marker7Position.longitude));
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                    .toArray(new Coordinate[9])), gf), null);
+                                            if (polygon1.isSimple()) {
+                                                startActivity(Activity);
+                                            } else {
+
+                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                            }
+                                        }
                                     }
                                 }
 
@@ -2472,9 +2680,9 @@ public class Map extends FragmentActivity implements
 
                             // Carry the extras all the way to Chat.java.
                             Intent Activity = new Intent(Map.this, Chat.class);
+                            Activity.putExtra("shapeIsCircle", false);
                             // Pass this boolean value to Chat.java.
                             Activity.putExtra("newShape", false);
-                            Activity.putExtra("shapeIsCircle", false);
                             // Pass this value to Chat.java to identify the shape.
                             Activity.putExtra("uuid", uuid);
                             // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
@@ -2503,14 +2711,15 @@ public class Map extends FragmentActivity implements
                                         uuid = UUID.randomUUID().toString();
 
                                         // Carry the extras all the way to Chat.java.
-                                        Intent Activity = new Intent(Map.this, SignIn.class);
-                                        // Pass this boolean value to Chat.java.
-                                        Activity.putExtra("newShape", true);
+                                        Intent Activity = new Intent(Map.this, Chat.class);
                                         Activity.putExtra("shapeIsCircle", false);
+                                        // Pass this boolean value Chat.java.
+                                        Activity.putExtra("newShape", true);
                                         // Pass this value to Chat.java to identify the shape.
                                         Activity.putExtra("uuid", uuid);
                                         // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                         Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                        Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                         // Pass this information to Chat.java to create a new shape in Firebase after someone writes a message.
                                         if (threeMarkers) {
                                             Activity.putExtra("threeMarkers", true);
@@ -2520,6 +2729,8 @@ public class Map extends FragmentActivity implements
                                             Activity.putExtra("marker1Longitude", marker1Position.longitude);
                                             Activity.putExtra("marker2Latitude", marker2Position.latitude);
                                             Activity.putExtra("marker2Longitude", marker2Position.longitude);
+
+                                            startActivity(Activity);
                                         }
 
                                         if (fourMarkers) {
@@ -2532,6 +2743,24 @@ public class Map extends FragmentActivity implements
                                             Activity.putExtra("marker2Longitude", marker2Position.longitude);
                                             Activity.putExtra("marker3Latitude", marker3Position.latitude);
                                             Activity.putExtra("marker3Longitude", marker3Position.longitude);
+
+                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                            GeometryFactory gf = new GeometryFactory();
+
+                                            ArrayList<Coordinate> points = new ArrayList<>();
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                    .toArray(new Coordinate[5])), gf), null);
+                                            if (polygon1.isSimple()) {
+                                                startActivity(Activity);
+                                            } else {
+
+                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                            }
                                         }
 
                                         if (fiveMarkers) {
@@ -2546,6 +2775,25 @@ public class Map extends FragmentActivity implements
                                             Activity.putExtra("marker3Longitude", marker3Position.longitude);
                                             Activity.putExtra("marker4Latitude", marker4Position.latitude);
                                             Activity.putExtra("marker4Longitude", marker4Position.longitude);
+
+                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                            GeometryFactory gf = new GeometryFactory();
+
+                                            ArrayList<Coordinate> points = new ArrayList<>();
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                    .toArray(new Coordinate[6])), gf), null);
+                                            if (polygon1.isSimple()) {
+                                                startActivity(Activity);
+                                            } else {
+
+                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                            }
                                         }
 
                                         if (sixMarkers) {
@@ -2562,6 +2810,26 @@ public class Map extends FragmentActivity implements
                                             Activity.putExtra("marker4Longitude", marker4Position.longitude);
                                             Activity.putExtra("marker5Latitude", marker5Position.latitude);
                                             Activity.putExtra("marker5Longitude", marker5Position.longitude);
+
+                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                            GeometryFactory gf = new GeometryFactory();
+
+                                            ArrayList<Coordinate> points = new ArrayList<>();
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
+                                            points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                    .toArray(new Coordinate[7])), gf), null);
+                                            if (polygon1.isSimple()) {
+                                                startActivity(Activity);
+                                            } else {
+
+                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                            }
                                         }
 
                                         if (sevenMarkers) {
@@ -2580,6 +2848,27 @@ public class Map extends FragmentActivity implements
                                             Activity.putExtra("marker5Longitude", marker5Position.longitude);
                                             Activity.putExtra("marker6Latitude", marker6Position.latitude);
                                             Activity.putExtra("marker6Longitude", marker6Position.longitude);
+
+                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                            GeometryFactory gf = new GeometryFactory();
+
+                                            ArrayList<Coordinate> points = new ArrayList<>();
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
+                                            points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
+                                            points.add(new Coordinate(marker6Position.latitude, marker6Position.longitude));
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                    .toArray(new Coordinate[8])), gf), null);
+                                            if (polygon1.isSimple()) {
+                                                startActivity(Activity);
+                                            } else {
+
+                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                            }
                                         }
 
                                         if (eightMarkers) {
@@ -2598,23 +2887,43 @@ public class Map extends FragmentActivity implements
                                             Activity.putExtra("marker5Longitude", marker5Position.longitude);
                                             Activity.putExtra("marker6Latitude", marker6Position.latitude);
                                             Activity.putExtra("marker6Longitude", marker6Position.longitude);
-                                        }
 
-                                        Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
-                                        startActivity(Activity);
+                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                            GeometryFactory gf = new GeometryFactory();
+
+                                            ArrayList<Coordinate> points = new ArrayList<>();
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
+                                            points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
+                                            points.add(new Coordinate(marker6Position.latitude, marker6Position.longitude));
+                                            points.add(new Coordinate(marker7Position.latitude, marker7Position.longitude));
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                    .toArray(new Coordinate[9])), gf), null);
+                                            if (polygon1.isSimple()) {
+                                                startActivity(Activity);
+                                            } else {
+
+                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                            }
+                                        }
                                     } else {
 
                                         // uuid does not already exist in Firebase. Go to SignIn.java with the uuid.
 
                                         // Carry the extras all the way to Chat.java.
-                                        Intent Activity = new Intent(Map.this, SignIn.class);
-                                        // Pass this boolean value to Chat.java.
-                                        Activity.putExtra("newShape", true);
+                                        Intent Activity = new Intent(Map.this, Chat.class);
                                         Activity.putExtra("shapeIsCircle", false);
+                                        // Pass this boolean value Chat.java.
+                                        Activity.putExtra("newShape", true);
                                         // Pass this value to Chat.java to identify the shape.
                                         Activity.putExtra("uuid", uuid);
                                         // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                         Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                        Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                         // Pass this information to Chat.java to create a new shape in Firebase after someone writes a message.
                                         if (threeMarkers) {
                                             Activity.putExtra("threeMarkers", true);
@@ -2624,6 +2933,8 @@ public class Map extends FragmentActivity implements
                                             Activity.putExtra("marker1Longitude", marker1Position.longitude);
                                             Activity.putExtra("marker2Latitude", marker2Position.latitude);
                                             Activity.putExtra("marker2Longitude", marker2Position.longitude);
+
+                                            startActivity(Activity);
                                         }
 
                                         if (fourMarkers) {
@@ -2636,6 +2947,24 @@ public class Map extends FragmentActivity implements
                                             Activity.putExtra("marker2Longitude", marker2Position.longitude);
                                             Activity.putExtra("marker3Latitude", marker3Position.latitude);
                                             Activity.putExtra("marker3Longitude", marker3Position.longitude);
+
+                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                            GeometryFactory gf = new GeometryFactory();
+
+                                            ArrayList<Coordinate> points = new ArrayList<>();
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                    .toArray(new Coordinate[5])), gf), null);
+                                            if (polygon1.isSimple()) {
+                                                startActivity(Activity);
+                                            } else {
+
+                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                            }
                                         }
 
                                         if (fiveMarkers) {
@@ -2650,6 +2979,25 @@ public class Map extends FragmentActivity implements
                                             Activity.putExtra("marker3Longitude", marker3Position.longitude);
                                             Activity.putExtra("marker4Latitude", marker4Position.latitude);
                                             Activity.putExtra("marker4Longitude", marker4Position.longitude);
+
+                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                            GeometryFactory gf = new GeometryFactory();
+
+                                            ArrayList<Coordinate> points = new ArrayList<>();
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                    .toArray(new Coordinate[6])), gf), null);
+                                            if (polygon1.isSimple()) {
+                                                startActivity(Activity);
+                                            } else {
+
+                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                            }
                                         }
 
                                         if (sixMarkers) {
@@ -2666,6 +3014,26 @@ public class Map extends FragmentActivity implements
                                             Activity.putExtra("marker4Longitude", marker4Position.longitude);
                                             Activity.putExtra("marker5Latitude", marker5Position.latitude);
                                             Activity.putExtra("marker5Longitude", marker5Position.longitude);
+
+                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                            GeometryFactory gf = new GeometryFactory();
+
+                                            ArrayList<Coordinate> points = new ArrayList<>();
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
+                                            points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                    .toArray(new Coordinate[7])), gf), null);
+                                            if (polygon1.isSimple()) {
+                                                startActivity(Activity);
+                                            } else {
+
+                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                            }
                                         }
 
                                         if (sevenMarkers) {
@@ -2684,6 +3052,27 @@ public class Map extends FragmentActivity implements
                                             Activity.putExtra("marker5Longitude", marker5Position.longitude);
                                             Activity.putExtra("marker6Latitude", marker6Position.latitude);
                                             Activity.putExtra("marker6Longitude", marker6Position.longitude);
+
+                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                            GeometryFactory gf = new GeometryFactory();
+
+                                            ArrayList<Coordinate> points = new ArrayList<>();
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
+                                            points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
+                                            points.add(new Coordinate(marker6Position.latitude, marker6Position.longitude));
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                    .toArray(new Coordinate[8])), gf), null);
+                                            if (polygon1.isSimple()) {
+                                                startActivity(Activity);
+                                            } else {
+
+                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                            }
                                         }
 
                                         if (eightMarkers) {
@@ -2702,10 +3091,29 @@ public class Map extends FragmentActivity implements
                                             Activity.putExtra("marker5Longitude", marker5Position.longitude);
                                             Activity.putExtra("marker6Latitude", marker6Position.latitude);
                                             Activity.putExtra("marker6Longitude", marker6Position.longitude);
-                                        }
 
-                                        Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
-                                        startActivity(Activity);
+                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                            GeometryFactory gf = new GeometryFactory();
+
+                                            ArrayList<Coordinate> points = new ArrayList<>();
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
+                                            points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
+                                            points.add(new Coordinate(marker6Position.latitude, marker6Position.longitude));
+                                            points.add(new Coordinate(marker7Position.latitude, marker7Position.longitude));
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                    .toArray(new Coordinate[9])), gf), null);
+                                            if (polygon1.isSimple()) {
+                                                startActivity(Activity);
+                                            } else {
+
+                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                            }
+                                        }
                                     }
                                 }
 
@@ -2719,6 +3127,7 @@ public class Map extends FragmentActivity implements
 
                             // Carry the extras all the way to Chat.java.
                             Intent Activity = new Intent(Map.this, SignIn.class);
+                            Activity.putExtra("shapeIsCircle", false);
                             // Pass this boolean value to Chat.java.
                             Activity.putExtra("newShape", false);
                             Activity.putExtra("shapeIsCircle", false);
@@ -4296,12 +4705,13 @@ public class Map extends FragmentActivity implements
                                     // Carry the extras all the way to Chat.java.
                                     Intent Activity = new Intent(Map.this, Chat.class);
                                     Activity.putExtra("shapeIsCircle", false);
-                                    // Pass this boolean value to Chat.java.
+                                    // Pass this boolean value Chat.java.
                                     Activity.putExtra("newShape", true);
                                     // Pass this value to Chat.java to identify the shape.
                                     Activity.putExtra("uuid", uuid);
                                     // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                     Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                    Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                     // Pass this information to Chat.java to create a new shape in Firebase after someone writes a message.
                                     if (threeMarkers) {
                                         Activity.putExtra("threeMarkers", true);
@@ -4311,6 +4721,8 @@ public class Map extends FragmentActivity implements
                                         Activity.putExtra("marker1Longitude", marker1Position.longitude);
                                         Activity.putExtra("marker2Latitude", marker2Position.latitude);
                                         Activity.putExtra("marker2Longitude", marker2Position.longitude);
+
+                                        startActivity(Activity);
                                     }
 
                                     if (fourMarkers) {
@@ -4323,6 +4735,24 @@ public class Map extends FragmentActivity implements
                                         Activity.putExtra("marker2Longitude", marker2Position.longitude);
                                         Activity.putExtra("marker3Latitude", marker3Position.latitude);
                                         Activity.putExtra("marker3Longitude", marker3Position.longitude);
+
+                                        // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                        GeometryFactory gf = new GeometryFactory();
+
+                                        ArrayList<Coordinate> points = new ArrayList<>();
+                                        points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                        points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                        points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                        points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                        points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                        com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                .toArray(new Coordinate[5])), gf), null);
+                                        if (polygon1.isSimple()) {
+                                            startActivity(Activity);
+                                        } else {
+
+                                            Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                        }
                                     }
 
                                     if (fiveMarkers) {
@@ -4337,6 +4767,25 @@ public class Map extends FragmentActivity implements
                                         Activity.putExtra("marker3Longitude", marker3Position.longitude);
                                         Activity.putExtra("marker4Latitude", marker4Position.latitude);
                                         Activity.putExtra("marker4Longitude", marker4Position.longitude);
+
+                                        // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                        GeometryFactory gf = new GeometryFactory();
+
+                                        ArrayList<Coordinate> points = new ArrayList<>();
+                                        points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                        points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                        points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                        points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                        points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
+                                        points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                        com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                .toArray(new Coordinate[6])), gf), null);
+                                        if (polygon1.isSimple()) {
+                                            startActivity(Activity);
+                                        } else {
+
+                                            Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                        }
                                     }
 
                                     if (sixMarkers) {
@@ -4353,6 +4802,26 @@ public class Map extends FragmentActivity implements
                                         Activity.putExtra("marker4Longitude", marker4Position.longitude);
                                         Activity.putExtra("marker5Latitude", marker5Position.latitude);
                                         Activity.putExtra("marker5Longitude", marker5Position.longitude);
+
+                                        // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                        GeometryFactory gf = new GeometryFactory();
+
+                                        ArrayList<Coordinate> points = new ArrayList<>();
+                                        points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                        points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                        points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                        points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                        points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
+                                        points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
+                                        points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                        com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                .toArray(new Coordinate[7])), gf), null);
+                                        if (polygon1.isSimple()) {
+                                            startActivity(Activity);
+                                        } else {
+
+                                            Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                        }
                                     }
 
                                     if (sevenMarkers) {
@@ -4371,6 +4840,27 @@ public class Map extends FragmentActivity implements
                                         Activity.putExtra("marker5Longitude", marker5Position.longitude);
                                         Activity.putExtra("marker6Latitude", marker6Position.latitude);
                                         Activity.putExtra("marker6Longitude", marker6Position.longitude);
+
+                                        // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                        GeometryFactory gf = new GeometryFactory();
+
+                                        ArrayList<Coordinate> points = new ArrayList<>();
+                                        points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                        points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                        points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                        points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                        points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
+                                        points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
+                                        points.add(new Coordinate(marker6Position.latitude, marker6Position.longitude));
+                                        points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                        com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                .toArray(new Coordinate[8])), gf), null);
+                                        if (polygon1.isSimple()) {
+                                            startActivity(Activity);
+                                        } else {
+
+                                            Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                        }
                                     }
 
                                     if (eightMarkers) {
@@ -4389,10 +4879,29 @@ public class Map extends FragmentActivity implements
                                         Activity.putExtra("marker5Longitude", marker5Position.longitude);
                                         Activity.putExtra("marker6Latitude", marker6Position.latitude);
                                         Activity.putExtra("marker6Longitude", marker6Position.longitude);
-                                    }
 
-                                    Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
-                                    startActivity(Activity);
+                                        // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                        GeometryFactory gf = new GeometryFactory();
+
+                                        ArrayList<Coordinate> points = new ArrayList<>();
+                                        points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                        points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                        points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                        points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                        points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
+                                        points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
+                                        points.add(new Coordinate(marker6Position.latitude, marker6Position.longitude));
+                                        points.add(new Coordinate(marker7Position.latitude, marker7Position.longitude));
+                                        points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                        com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                .toArray(new Coordinate[9])), gf), null);
+                                        if (polygon1.isSimple()) {
+                                            startActivity(Activity);
+                                        } else {
+
+                                            Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                        }
+                                    }
                                 } else {
 
                                     // uuid does not already exist in Firebase. Go to Chat.java with the uuid.
@@ -4406,6 +4915,7 @@ public class Map extends FragmentActivity implements
                                     Activity.putExtra("uuid", uuid);
                                     // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                     Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                    Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                     // Pass this information to Chat.java to create a new shape in Firebase after someone writes a message.
                                     if (threeMarkers) {
                                         Activity.putExtra("threeMarkers", true);
@@ -4415,6 +4925,8 @@ public class Map extends FragmentActivity implements
                                         Activity.putExtra("marker1Longitude", marker1Position.longitude);
                                         Activity.putExtra("marker2Latitude", marker2Position.latitude);
                                         Activity.putExtra("marker2Longitude", marker2Position.longitude);
+
+                                        startActivity(Activity);
                                     }
 
                                     if (fourMarkers) {
@@ -4427,6 +4939,24 @@ public class Map extends FragmentActivity implements
                                         Activity.putExtra("marker2Longitude", marker2Position.longitude);
                                         Activity.putExtra("marker3Latitude", marker3Position.latitude);
                                         Activity.putExtra("marker3Longitude", marker3Position.longitude);
+
+                                        // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                        GeometryFactory gf = new GeometryFactory();
+
+                                        ArrayList<Coordinate> points = new ArrayList<>();
+                                        points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                        points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                        points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                        points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                        points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                        com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                .toArray(new Coordinate[5])), gf), null);
+                                        if (polygon1.isSimple()) {
+                                            startActivity(Activity);
+                                        } else {
+
+                                            Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                        }
                                     }
 
                                     if (fiveMarkers) {
@@ -4441,6 +4971,25 @@ public class Map extends FragmentActivity implements
                                         Activity.putExtra("marker3Longitude", marker3Position.longitude);
                                         Activity.putExtra("marker4Latitude", marker4Position.latitude);
                                         Activity.putExtra("marker4Longitude", marker4Position.longitude);
+
+                                        // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                        GeometryFactory gf = new GeometryFactory();
+
+                                        ArrayList<Coordinate> points = new ArrayList<>();
+                                        points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                        points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                        points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                        points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                        points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
+                                        points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                        com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                .toArray(new Coordinate[6])), gf), null);
+                                        if (polygon1.isSimple()) {
+                                            startActivity(Activity);
+                                        } else {
+
+                                            Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                        }
                                     }
 
                                     if (sixMarkers) {
@@ -4457,6 +5006,26 @@ public class Map extends FragmentActivity implements
                                         Activity.putExtra("marker4Longitude", marker4Position.longitude);
                                         Activity.putExtra("marker5Latitude", marker5Position.latitude);
                                         Activity.putExtra("marker5Longitude", marker5Position.longitude);
+
+                                        // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                        GeometryFactory gf = new GeometryFactory();
+
+                                        ArrayList<Coordinate> points = new ArrayList<>();
+                                        points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                        points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                        points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                        points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                        points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
+                                        points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
+                                        points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                        com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                .toArray(new Coordinate[7])), gf), null);
+                                        if (polygon1.isSimple()) {
+                                            startActivity(Activity);
+                                        } else {
+
+                                            Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                        }
                                     }
 
                                     if (sevenMarkers) {
@@ -4475,6 +5044,27 @@ public class Map extends FragmentActivity implements
                                         Activity.putExtra("marker5Longitude", marker5Position.longitude);
                                         Activity.putExtra("marker6Latitude", marker6Position.latitude);
                                         Activity.putExtra("marker6Longitude", marker6Position.longitude);
+
+                                        // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                        GeometryFactory gf = new GeometryFactory();
+
+                                        ArrayList<Coordinate> points = new ArrayList<>();
+                                        points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                        points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                        points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                        points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                        points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
+                                        points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
+                                        points.add(new Coordinate(marker6Position.latitude, marker6Position.longitude));
+                                        points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                        com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                .toArray(new Coordinate[8])), gf), null);
+                                        if (polygon1.isSimple()) {
+                                            startActivity(Activity);
+                                        } else {
+
+                                            Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                        }
                                     }
 
                                     if (eightMarkers) {
@@ -4493,10 +5083,29 @@ public class Map extends FragmentActivity implements
                                         Activity.putExtra("marker5Longitude", marker5Position.longitude);
                                         Activity.putExtra("marker6Latitude", marker6Position.latitude);
                                         Activity.putExtra("marker6Longitude", marker6Position.longitude);
-                                    }
 
-                                    Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
-                                    startActivity(Activity);
+                                        // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                        GeometryFactory gf = new GeometryFactory();
+
+                                        ArrayList<Coordinate> points = new ArrayList<>();
+                                        points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                        points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                        points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                        points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                        points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
+                                        points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
+                                        points.add(new Coordinate(marker6Position.latitude, marker6Position.longitude));
+                                        points.add(new Coordinate(marker7Position.latitude, marker7Position.longitude));
+                                        points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                        com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                .toArray(new Coordinate[9])), gf), null);
+                                        if (polygon1.isSimple()) {
+                                            startActivity(Activity);
+                                        } else {
+
+                                            Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                        }
+                                    }
                                 }
                             }
 
@@ -4541,14 +5150,15 @@ public class Map extends FragmentActivity implements
                                         uuid = UUID.randomUUID().toString();
 
                                         // Carry the extras all the way to Chat.java.
-                                        Intent Activity = new Intent(Map.this, SignIn.class);
+                                        Intent Activity = new Intent(Map.this, Chat.class);
                                         Activity.putExtra("shapeIsCircle", false);
-                                        // Pass this boolean value to Chat.java.
+                                        // Pass this boolean value Chat.java.
                                         Activity.putExtra("newShape", true);
                                         // Pass this value to Chat.java to identify the shape.
                                         Activity.putExtra("uuid", uuid);
                                         // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                         Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                        Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                         // Pass this information to Chat.java to create a new shape in Firebase after someone writes a message.
                                         if (threeMarkers) {
                                             Activity.putExtra("threeMarkers", true);
@@ -4558,6 +5168,8 @@ public class Map extends FragmentActivity implements
                                             Activity.putExtra("marker1Longitude", marker1Position.longitude);
                                             Activity.putExtra("marker2Latitude", marker2Position.latitude);
                                             Activity.putExtra("marker2Longitude", marker2Position.longitude);
+
+                                            startActivity(Activity);
                                         }
 
                                         if (fourMarkers) {
@@ -4570,6 +5182,24 @@ public class Map extends FragmentActivity implements
                                             Activity.putExtra("marker2Longitude", marker2Position.longitude);
                                             Activity.putExtra("marker3Latitude", marker3Position.latitude);
                                             Activity.putExtra("marker3Longitude", marker3Position.longitude);
+
+                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                            GeometryFactory gf = new GeometryFactory();
+
+                                            ArrayList<Coordinate> points = new ArrayList<>();
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                    .toArray(new Coordinate[5])), gf), null);
+                                            if (polygon1.isSimple()) {
+                                                startActivity(Activity);
+                                            } else {
+
+                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                            }
                                         }
 
                                         if (fiveMarkers) {
@@ -4584,6 +5214,25 @@ public class Map extends FragmentActivity implements
                                             Activity.putExtra("marker3Longitude", marker3Position.longitude);
                                             Activity.putExtra("marker4Latitude", marker4Position.latitude);
                                             Activity.putExtra("marker4Longitude", marker4Position.longitude);
+
+                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                            GeometryFactory gf = new GeometryFactory();
+
+                                            ArrayList<Coordinate> points = new ArrayList<>();
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                    .toArray(new Coordinate[6])), gf), null);
+                                            if (polygon1.isSimple()) {
+                                                startActivity(Activity);
+                                            } else {
+
+                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                            }
                                         }
 
                                         if (sixMarkers) {
@@ -4600,6 +5249,26 @@ public class Map extends FragmentActivity implements
                                             Activity.putExtra("marker4Longitude", marker4Position.longitude);
                                             Activity.putExtra("marker5Latitude", marker5Position.latitude);
                                             Activity.putExtra("marker5Longitude", marker5Position.longitude);
+
+                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                            GeometryFactory gf = new GeometryFactory();
+
+                                            ArrayList<Coordinate> points = new ArrayList<>();
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
+                                            points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                    .toArray(new Coordinate[7])), gf), null);
+                                            if (polygon1.isSimple()) {
+                                                startActivity(Activity);
+                                            } else {
+
+                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                            }
                                         }
 
                                         if (sevenMarkers) {
@@ -4618,6 +5287,27 @@ public class Map extends FragmentActivity implements
                                             Activity.putExtra("marker5Longitude", marker5Position.longitude);
                                             Activity.putExtra("marker6Latitude", marker6Position.latitude);
                                             Activity.putExtra("marker6Longitude", marker6Position.longitude);
+
+                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                            GeometryFactory gf = new GeometryFactory();
+
+                                            ArrayList<Coordinate> points = new ArrayList<>();
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
+                                            points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
+                                            points.add(new Coordinate(marker6Position.latitude, marker6Position.longitude));
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                    .toArray(new Coordinate[8])), gf), null);
+                                            if (polygon1.isSimple()) {
+                                                startActivity(Activity);
+                                            } else {
+
+                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                            }
                                         }
 
                                         if (eightMarkers) {
@@ -4636,23 +5326,43 @@ public class Map extends FragmentActivity implements
                                             Activity.putExtra("marker5Longitude", marker5Position.longitude);
                                             Activity.putExtra("marker6Latitude", marker6Position.latitude);
                                             Activity.putExtra("marker6Longitude", marker6Position.longitude);
-                                        }
 
-                                        Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
-                                        startActivity(Activity);
+                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                            GeometryFactory gf = new GeometryFactory();
+
+                                            ArrayList<Coordinate> points = new ArrayList<>();
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
+                                            points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
+                                            points.add(new Coordinate(marker6Position.latitude, marker6Position.longitude));
+                                            points.add(new Coordinate(marker7Position.latitude, marker7Position.longitude));
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                    .toArray(new Coordinate[9])), gf), null);
+                                            if (polygon1.isSimple()) {
+                                                startActivity(Activity);
+                                            } else {
+
+                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                            }
+                                        }
                                     } else {
 
                                         // uuid does not already exist in Firebase. Go to SignIn.java with the uuid.
 
                                         // Carry the extras all the way to Chat.java.
-                                        Intent Activity = new Intent(Map.this, SignIn.class);
+                                        Intent Activity = new Intent(Map.this, Chat.class);
                                         Activity.putExtra("shapeIsCircle", false);
-                                        // Pass this boolean value to Chat.java.
+                                        // Pass this boolean value Chat.java.
                                         Activity.putExtra("newShape", true);
                                         // Pass this value to Chat.java to identify the shape.
                                         Activity.putExtra("uuid", uuid);
                                         // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                         Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                        Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                         // Pass this information to Chat.java to create a new shape in Firebase after someone writes a message.
                                         if (threeMarkers) {
                                             Activity.putExtra("threeMarkers", true);
@@ -4662,6 +5372,8 @@ public class Map extends FragmentActivity implements
                                             Activity.putExtra("marker1Longitude", marker1Position.longitude);
                                             Activity.putExtra("marker2Latitude", marker2Position.latitude);
                                             Activity.putExtra("marker2Longitude", marker2Position.longitude);
+
+                                            startActivity(Activity);
                                         }
 
                                         if (fourMarkers) {
@@ -4674,6 +5386,24 @@ public class Map extends FragmentActivity implements
                                             Activity.putExtra("marker2Longitude", marker2Position.longitude);
                                             Activity.putExtra("marker3Latitude", marker3Position.latitude);
                                             Activity.putExtra("marker3Longitude", marker3Position.longitude);
+
+                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                            GeometryFactory gf = new GeometryFactory();
+
+                                            ArrayList<Coordinate> points = new ArrayList<>();
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                    .toArray(new Coordinate[5])), gf), null);
+                                            if (polygon1.isSimple()) {
+                                                startActivity(Activity);
+                                            } else {
+
+                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                            }
                                         }
 
                                         if (fiveMarkers) {
@@ -4688,6 +5418,25 @@ public class Map extends FragmentActivity implements
                                             Activity.putExtra("marker3Longitude", marker3Position.longitude);
                                             Activity.putExtra("marker4Latitude", marker4Position.latitude);
                                             Activity.putExtra("marker4Longitude", marker4Position.longitude);
+
+                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                            GeometryFactory gf = new GeometryFactory();
+
+                                            ArrayList<Coordinate> points = new ArrayList<>();
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                    .toArray(new Coordinate[6])), gf), null);
+                                            if (polygon1.isSimple()) {
+                                                startActivity(Activity);
+                                            } else {
+
+                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                            }
                                         }
 
                                         if (sixMarkers) {
@@ -4704,6 +5453,26 @@ public class Map extends FragmentActivity implements
                                             Activity.putExtra("marker4Longitude", marker4Position.longitude);
                                             Activity.putExtra("marker5Latitude", marker5Position.latitude);
                                             Activity.putExtra("marker5Longitude", marker5Position.longitude);
+
+                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                            GeometryFactory gf = new GeometryFactory();
+
+                                            ArrayList<Coordinate> points = new ArrayList<>();
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
+                                            points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                    .toArray(new Coordinate[7])), gf), null);
+                                            if (polygon1.isSimple()) {
+                                                startActivity(Activity);
+                                            } else {
+
+                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                            }
                                         }
 
                                         if (sevenMarkers) {
@@ -4722,6 +5491,27 @@ public class Map extends FragmentActivity implements
                                             Activity.putExtra("marker5Longitude", marker5Position.longitude);
                                             Activity.putExtra("marker6Latitude", marker6Position.latitude);
                                             Activity.putExtra("marker6Longitude", marker6Position.longitude);
+
+                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                            GeometryFactory gf = new GeometryFactory();
+
+                                            ArrayList<Coordinate> points = new ArrayList<>();
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
+                                            points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
+                                            points.add(new Coordinate(marker6Position.latitude, marker6Position.longitude));
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                    .toArray(new Coordinate[8])), gf), null);
+                                            if (polygon1.isSimple()) {
+                                                startActivity(Activity);
+                                            } else {
+
+                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                            }
                                         }
 
                                         if (eightMarkers) {
@@ -4740,10 +5530,29 @@ public class Map extends FragmentActivity implements
                                             Activity.putExtra("marker5Longitude", marker5Position.longitude);
                                             Activity.putExtra("marker6Latitude", marker6Position.latitude);
                                             Activity.putExtra("marker6Longitude", marker6Position.longitude);
-                                        }
 
-                                        Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
-                                        startActivity(Activity);
+                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                            GeometryFactory gf = new GeometryFactory();
+
+                                            ArrayList<Coordinate> points = new ArrayList<>();
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
+                                            points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
+                                            points.add(new Coordinate(marker6Position.latitude, marker6Position.longitude));
+                                            points.add(new Coordinate(marker7Position.latitude, marker7Position.longitude));
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                    .toArray(new Coordinate[9])), gf), null);
+                                            if (polygon1.isSimple()) {
+                                                startActivity(Activity);
+                                            } else {
+
+                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                            }
+                                        }
                                     }
                                 }
 

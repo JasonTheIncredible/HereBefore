@@ -48,5 +48,7 @@ dependencies {
 
     implementation 'com.android.support:multidex:1.0.3'
 
+    // http://www.tsusiatsoftware.net/jts/javadoc//com/vividsolutions/jts/geom/Polygon.html
+    implementation 'com.vividsolutions:jts-core:1.14.0'
 }
 apply plugin: 'com.google.gms.google-services'
