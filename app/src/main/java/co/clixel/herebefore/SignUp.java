@@ -24,7 +24,7 @@ public class SignUp extends AppCompatActivity {
     private EditText mEmail, mPassword;
     private Button btnCreateAccount;
     private String uuid;
-    private Double circleLatitude, circleLongitude, radius, marker0Latitude, marker0Longitude, marker1Latitude, marker1Longitude, marker2Latitude, marker2Longitude, marker3Latitude, marker3Longitude, marker4Latitude, marker4Longitude, marker5Latitude, marker5Longitude, marker6Latitude, marker6Longitude, marker7Latitude, marker7Longitude;
+    private Double polygonArea, circleLatitude, circleLongitude, radius, marker0Latitude, marker0Longitude, marker1Latitude, marker1Longitude, marker2Latitude, marker2Longitude, marker3Latitude, marker3Longitude, marker4Latitude, marker4Longitude, marker5Latitude, marker5Longitude, marker6Latitude, marker6Longitude, marker7Latitude, marker7Longitude;
     private boolean newShape, userIsWithinShape, threeMarkers, fourMarkers, fiveMarkers, sixMarkers, sevenMarkers, eightMarkers, shapeIsCircle;
     private int fillColor;
 
@@ -61,6 +61,7 @@ public class SignUp extends AppCompatActivity {
         radius = extras.getDouble("radius");
         // Most of these will be null if the polygon does not have eight markers, or if the polygon is not new.
         shapeIsCircle = extras.getBoolean("shapeIsCircle");
+        polygonArea = extras.getDouble("polygonArea");
         threeMarkers = extras.getBoolean("threeMarkers");
         fourMarkers = extras.getBoolean("fourMarkers");
         fiveMarkers = extras.getBoolean("fiveMarkers");
@@ -133,7 +134,31 @@ public class SignUp extends AppCompatActivity {
                             Activity.putExtra("circleLatitude", circleLatitude);
                             Activity.putExtra("circleLongitude", circleLongitude);
                             Activity.putExtra("fillColor", fillColor);
+                            Activity.putExtra("polygonArea", polygonArea);
                             Activity.putExtra("radius", radius);
+                            Activity.putExtra("shapeIsCircle", shapeIsCircle);
+                            Activity.putExtra("threeMarkers", threeMarkers);
+                            Activity.putExtra("fourMarkers", fourMarkers);
+                            Activity.putExtra("fiveMarkers", fiveMarkers);
+                            Activity.putExtra("sixMarkers", sixMarkers);
+                            Activity.putExtra("sevenMarkers", sevenMarkers);
+                            Activity.putExtra("eightMarkers", eightMarkers);
+                            Activity.putExtra("marker0Latitude", marker0Latitude);
+                            Activity.putExtra("marker0Longitude", marker0Longitude);
+                            Activity.putExtra("marker1Latitude", marker1Latitude);
+                            Activity.putExtra("marker1Longitude", marker1Longitude);
+                            Activity.putExtra("marker2Latitude", marker2Latitude);
+                            Activity.putExtra("marker2Longitude", marker2Longitude);
+                            Activity.putExtra("marker3Latitude", marker3Latitude);
+                            Activity.putExtra("marker3Longitude", marker3Longitude);
+                            Activity.putExtra("marker4Latitude", marker4Latitude);
+                            Activity.putExtra("marker4Longitude", marker4Longitude);
+                            Activity.putExtra("marker5Latitude", marker5Latitude);
+                            Activity.putExtra("marker5Longitude", marker5Longitude);
+                            Activity.putExtra("marker6Latitude", marker6Latitude);
+                            Activity.putExtra("marker6Longitude", marker6Longitude);
+                            Activity.putExtra("marker7Latitude", marker7Latitude);
+                            Activity.putExtra("marker7Longitude", marker7Longitude);
                             startActivity(Activity);
                             finish();
                         } if (task.getException() != null) {

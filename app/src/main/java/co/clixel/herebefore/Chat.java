@@ -52,7 +52,7 @@ public class Chat extends AppCompatActivity {
     private Boolean userIsWithinShape;
     private View.OnLayoutChangeListener onLayoutChangeListener;
     private String uuid;
-    private Double circleLatitude, circleLongitude, radius, marker0Latitude, marker0Longitude, marker1Latitude, marker1Longitude, marker2Latitude, marker2Longitude, marker3Latitude, marker3Longitude, marker4Latitude, marker4Longitude, marker5Latitude, marker5Longitude, marker6Latitude, marker6Longitude, marker7Latitude, marker7Longitude;
+    private Double polygonArea, circleLatitude, circleLongitude, radius, marker0Latitude, marker0Longitude, marker1Latitude, marker1Longitude, marker2Latitude, marker2Longitude, marker3Latitude, marker3Longitude, marker4Latitude, marker4Longitude, marker5Latitude, marker5Longitude, marker6Latitude, marker6Longitude, marker7Latitude, marker7Longitude;
     private int fillColor;
 
     //TODO: Keep checking user's location while user is in chat to see if they can keep messaging?
@@ -93,6 +93,7 @@ public class Chat extends AppCompatActivity {
         radius = extras.getDouble("radius");
         // Most of these will be null if the polygon does not have eight markers, or if the polygon is not new.
         shapeIsCircle = extras.getBoolean("shapeIsCircle");
+        polygonArea = extras.getDouble("polygonArea");
         threeMarkers = extras.getBoolean("threeMarkers");
         fourMarkers = extras.getBoolean("fourMarkers");
         fiveMarkers = extras.getBoolean("fiveMarkers");
@@ -291,6 +292,7 @@ public class Chat extends AppCompatActivity {
                                                 .fillColor(fillColor);
                                         PolygonInformation polygonInformation = new PolygonInformation();
                                         polygonInformation.setPolygonOptions(polygonOptions);
+                                        polygonInformation.setArea(polygonArea);
                                         polygonInformation.setUUID(uuid);
                                         DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
                                         newFirebasePolygon.setValue(polygonInformation);
@@ -303,6 +305,7 @@ public class Chat extends AppCompatActivity {
                                                 .fillColor(fillColor);
                                         PolygonInformation polygonInformation = new PolygonInformation();
                                         polygonInformation.setPolygonOptions(polygonOptions);
+                                        polygonInformation.setArea(polygonArea);
                                         polygonInformation.setUUID(uuid);
                                         DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
                                         newFirebasePolygon.setValue(polygonInformation);
@@ -315,6 +318,7 @@ public class Chat extends AppCompatActivity {
                                                 .fillColor(fillColor);
                                         PolygonInformation polygonInformation = new PolygonInformation();
                                         polygonInformation.setPolygonOptions(polygonOptions);
+                                        polygonInformation.setArea(polygonArea);
                                         polygonInformation.setUUID(uuid);
                                         DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
                                         newFirebasePolygon.setValue(polygonInformation);
@@ -327,6 +331,7 @@ public class Chat extends AppCompatActivity {
                                                 .fillColor(fillColor);
                                         PolygonInformation polygonInformation = new PolygonInformation();
                                         polygonInformation.setPolygonOptions(polygonOptions);
+                                        polygonInformation.setArea(polygonArea);
                                         polygonInformation.setUUID(uuid);
                                         DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
                                         newFirebasePolygon.setValue(polygonInformation);
@@ -339,6 +344,7 @@ public class Chat extends AppCompatActivity {
                                                 .fillColor(fillColor);
                                         PolygonInformation polygonInformation = new PolygonInformation();
                                         polygonInformation.setPolygonOptions(polygonOptions);
+                                        polygonInformation.setArea(polygonArea);
                                         polygonInformation.setUUID(uuid);
                                         DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
                                         newFirebasePolygon.setValue(polygonInformation);
@@ -351,6 +357,7 @@ public class Chat extends AppCompatActivity {
                                                 .fillColor(fillColor);
                                         PolygonInformation polygonInformation = new PolygonInformation();
                                         polygonInformation.setPolygonOptions(polygonOptions);
+                                        polygonInformation.setArea(polygonArea);
                                         polygonInformation.setUUID(uuid);
                                         DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
                                         newFirebasePolygon.setValue(polygonInformation);
