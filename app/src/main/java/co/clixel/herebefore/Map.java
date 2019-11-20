@@ -95,7 +95,6 @@ public class Map extends FragmentActivity implements
     private LatLng markerPositionAtVertexOfPolygon;
     private List<LatLng> polygonPointsList;
 
-    //TODO: Prevent map type reload with orientation change.
     //TODO: Prevent touching a shape twice while waiting for Chat.java to load.
     //TODO: Prevent circle overlap.
     //TODO: Give user option to change color of the circles (or just change it outright).
@@ -3721,17 +3720,13 @@ public class Map extends FragmentActivity implements
         if (mapTypeButton != null) {
 
             mapTypeButton.setOnClickListener(null);
+            popupMapType.setOnDismissListener(null);
         }
 
         // Remove the listener.
         if (chatViewsButton != null) {
 
             chatViewsButton.setOnClickListener(null);
-        }
-
-        // Remove the listener.
-        if (popupChatViews != null) {
-
             popupChatViews.setOnDismissListener(null);
         }
 
@@ -3739,6 +3734,7 @@ public class Map extends FragmentActivity implements
         if (createChatButton != null) {
 
             createChatButton.setOnClickListener(null);
+            popupCreateChat.setOnDismissListener(null);
         }
 
         // Remove the seekBar listener.
@@ -6439,42 +6435,72 @@ public class Map extends FragmentActivity implements
         Log.i(TAG, "onConfigurationChanged()");
 
         // Reloads the popup when the orientation changes to prevent viewing issues.
-        if ( newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE && mapTypeMenuIsOpen) {
+        if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE && mapTypeMenuIsOpen) {
 
             popupMapType.dismiss();
-            popupMapType.show();
-            mapTypeMenuIsOpen = true;
-        } else if ( newConfig.orientation == Configuration.ORIENTATION_PORTRAIT && chatViewsMenuIsOpen){
+            mapTypeButton.performClick();
+        } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT && mapTypeMenuIsOpen){
 
             popupMapType.dismiss();
-            popupMapType.show();
-            mapTypeMenuIsOpen = true;
+            mapTypeButton.performClick();
         }
 
         // Reloads the popup when the orientation changes to prevent viewing issues.
-        if ( newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE && chatViewsMenuIsOpen) {
+        if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE && chatViewsMenuIsOpen) {
 
             popupChatViews.dismiss();
-            popupChatViews.show();
-            chatViewsMenuIsOpen = true;
-        } else if ( newConfig.orientation == Configuration.ORIENTATION_PORTRAIT && chatViewsMenuIsOpen){
+            chatViewsButton.performClick();
+        } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT && chatViewsMenuIsOpen){
 
             popupChatViews.dismiss();
-            popupChatViews.show();
-            chatViewsMenuIsOpen = true;
+            chatViewsButton.performClick();
         }
 
         // Reloads the popup when the orientation changes to prevent viewing issues.
-        if ( newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE && createChatMenuIsOpen) {
+        if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE && createChatMenuIsOpen) {
 
             popupCreateChat.dismiss();
-            popupCreateChat.show();
-            createChatMenuIsOpen = true;
-        } else if ( newConfig.orientation == Configuration.ORIENTATION_PORTRAIT && createChatMenuIsOpen){
+            createChatButton.performClick();
+        } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT && createChatMenuIsOpen){
 
             popupCreateChat.dismiss();
-            popupCreateChat.show();
-            createChatMenuIsOpen = true;
+            createChatButton.performClick();
+        }
+
+        // Keep map type the same.
+        if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE && mMap.getMapType() == 1) {
+
+            mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
+        } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT && mMap.getMapType() == 1) {
+
+            mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
+        }
+
+        // Keep map type the same.
+        if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE && mMap.getMapType() == 2) {
+
+            mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
+        } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT && mMap.getMapType() == 2) {
+
+            mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
+        }
+
+        // Keep map type the same.
+        if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE && mMap.getMapType() == 4) {
+
+            mMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
+        } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT && mMap.getMapType() == 4) {
+
+            mMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
+        }
+
+        // Keep map type the same.
+        if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE && mMap.getMapType() == 3) {
+
+            mMap.setMapType(GoogleMap.MAP_TYPE_TERRAIN);
+        } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT && mMap.getMapType() == 3) {
+
+            mMap.setMapType(GoogleMap.MAP_TYPE_TERRAIN);
         }
     }
 
