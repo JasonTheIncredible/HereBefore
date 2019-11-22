@@ -89,17 +89,14 @@ public class Map extends FragmentActivity implements
     private Button createChatButton, chatViewsButton, mapTypeButton;
     private PopupMenu popupMapType, popupChatViews, popupCreateChat;
     private Boolean waitingForShapeInformationToProcess = false, markerOutsidePolygon = false, mapTypeMenuIsOpen = false, chatViewsMenuIsOpen = false, createChatMenuIsOpen = false, usedSeekBar = false, userIsWithinShape, firstLoad = true, threeMarkers = false, fourMarkers = false, fiveMarkers = false, sixMarkers = false, sevenMarkers = false, eightMarkers = false;
-    private LatLng marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position;
+    private LatLng markerPositionAtVertexOfPolygon, marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position;
     private Double relativeAngle = 0.0;
     private Location mlocation;
-    private LatLng markerPositionAtVertexOfPolygon;
     private List<LatLng> polygonPointsList;
 
-    //TODO: Investigate circle shape appearance bug.
-    //TODO: Prevent circle overlap.
+    //TODO: Give warning about circle overlap and create popup menu for selecting circle.
     //TODO: Give user option to change color of the circles (or just change it outright).
     //TODO: Make points easier to see somehow.
-    //TODO: Have circles spread if they are too close when clicking.
     //TODO: Implement Firebase caching?
     //TODO: Only load Firebase circles if they're within camera view (in onMapReady) (getMap().getProjection().getVisibleRegion().latLangBounds). If this works, can possibly replace singleValueEventListener in onMapReady() and onRestart() with a valueEventListener.
     //TODO: Make sure Firebase listener is always updating map properly.
@@ -107,7 +104,6 @@ public class Map extends FragmentActivity implements
     //TODO: Too much work on main thread.
     //TODO: Change map type on different thread - check without wifi and maybe load map type in background or only if internet is good enough.
     //TODO: Make checkLocationPermission Async / create loading animations.
-    //TODO: Send message without entering app.
     //TODO: Work on possible NullPointerExceptions (try/catch).
     //TODO: Check updating in different states with another device - make sure uuids never overlap.
 
