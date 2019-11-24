@@ -56,6 +56,7 @@ public class SignIn extends AppCompatActivity {
         newShape = extras.getBoolean("newShape");
         uuid = extras.getString("uuid");
         userIsWithinShape = extras.getBoolean("userIsWithinShape");
+        // fillColor will be null if the shape is not a point.
         fillColor = extras.getInt("fillColor");
         // circleLatitude, circleLongitude, and radius will be null if the circle is not new (as a new circle is not being created).
         circleLatitude = extras.getDouble("circleLatitude");

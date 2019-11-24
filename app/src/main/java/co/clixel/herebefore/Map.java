@@ -96,7 +96,8 @@ public class Map extends FragmentActivity implements
     private Location mlocation;
     private List<LatLng> polygonPointsList;
 
-    //TODO: Change circle color depending on map type and get rid of circle fill color unless it is a point for easier viewing.
+    //TODO: Change circle color depending on map type.
+    //TODO: Change menu colors.
     //TODO: Give warning about circle overlap and create popup menu for selecting circle.
     //TODO: Change map type on different thread. Also, save user map type preference.
     //TODO: Implement Firebase caching?
@@ -259,7 +260,6 @@ public class Map extends FragmentActivity implements
                                                 new CircleOptions()
                                                         .center(latLng)
                                                         .clickable(true)
-                                                        .fillColor(0)
                                                         .radius(circleSize)
                                                         .strokeColor(Color.YELLOW)
                                                         .strokeWidth(3f);
@@ -295,14 +295,13 @@ public class Map extends FragmentActivity implements
                 // Global variable used to prevent conflicts when the user updates the circle's radius with the marker rather than the seekBar.
                 if (usedSeekBar) {
 
-                    // Changes size of the circle, marker1 visibility, and fill color.
+                    // Changes size of the circle and marker1 visibility.
                     if (circle != null) {
 
                         Log.i(TAG, "chatSizeSeekBar -> onProgressChanged -> circle");
 
                         circle.setRadius(progress);
                         marker1.setVisible(false);
-                        circle.setFillColor(0);
                     }
 
                     if (polygon != null) {
@@ -387,7 +386,6 @@ public class Map extends FragmentActivity implements
                                         new PolygonOptions()
                                                 .add(marker0Position, marker1Position, marker2Position)
                                                 .clickable(true)
-                                                .fillColor(Color.argb(70, 255, 215, 0))
                                                 .strokeColor(Color.YELLOW)
                                                 .strokeWidth(3f);
 
@@ -494,7 +492,6 @@ public class Map extends FragmentActivity implements
                                         new PolygonOptions()
                                                 .add(marker0Position, marker1Position, marker2Position, marker3Position)
                                                 .clickable(true)
-                                                .fillColor(Color.argb(70, 255, 215, 0))
                                                 .strokeColor(Color.YELLOW)
                                                 .strokeWidth(3f);
 
@@ -608,7 +605,6 @@ public class Map extends FragmentActivity implements
                                         new PolygonOptions()
                                                 .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
                                                 .clickable(true)
-                                                .fillColor(Color.argb(70, 255, 215, 0))
                                                 .strokeColor(Color.YELLOW)
                                                 .strokeWidth(3f);
 
@@ -729,7 +725,6 @@ public class Map extends FragmentActivity implements
                                         new PolygonOptions()
                                                 .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
                                                 .clickable(true)
-                                                .fillColor(Color.argb(70, 255, 215, 0))
                                                 .strokeColor(Color.YELLOW)
                                                 .strokeWidth(3f);
 
@@ -857,7 +852,6 @@ public class Map extends FragmentActivity implements
                                         new PolygonOptions()
                                                 .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
                                                 .clickable(true)
-                                                .fillColor(Color.argb(70, 255, 215, 0))
                                                 .strokeColor(Color.YELLOW)
                                                 .strokeWidth(3f);
 
@@ -992,7 +986,6 @@ public class Map extends FragmentActivity implements
                                         new PolygonOptions()
                                                 .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
                                                 .clickable(true)
-                                                .fillColor(Color.argb(70, 255, 215, 0))
                                                 .strokeColor(Color.YELLOW)
                                                 .strokeWidth(3f);
 
@@ -1061,12 +1054,10 @@ public class Map extends FragmentActivity implements
                 // Global variable used to prevent conflicts when the user updates the circle's radius with the marker rather than the seekBar.
                 usedSeekBar = false;
 
-                // Sets fill color, sets marker1's position on the circle's edge relative to where the user last left it, and sets marker1's visibility.
+                // Sets marker1's position on the circle's edge relative to where the user last left it, and sets marker1's visibility.
                 if (circle != null) {
 
                     Log.i(TAG, "chatSizeSeekBar -> onStopTrackingTouch -> circle");
-
-                    circle.setFillColor(Color.argb(0, 255, 215, 0));
 
                     marker1.setPosition(latLngGivenDistance(circle.getCenter().latitude, circle.getCenter().longitude, chatSizeSeekBar.getProgress(), relativeAngle));
 
@@ -1256,11 +1247,9 @@ public class Map extends FragmentActivity implements
                                 LatLng marker5Position = new LatLng((Double) ds.child("polygonOptions/points/5/latitude/").getValue(), (Double) ds.child("polygonOptions/points/5/longitude/").getValue());
                                 LatLng marker6Position = new LatLng((Double) ds.child("polygonOptions/points/6/latitude/").getValue(), (Double) ds.child("polygonOptions/points/6/longitude/").getValue());
                                 LatLng marker7Position = new LatLng((Double) ds.child("polygonOptions/points/7/latitude/").getValue(), (Double) ds.child("polygonOptions/points/7/longitude/").getValue());
-                                int fillColor = (int) (long) ds.child("polygonOptions/fillColor").getValue();
                                 Polygon polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .fillColor(fillColor)
                                                 .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
                                                 .strokeColor(Color.YELLOW)
                                                 .strokeWidth(3f)
@@ -1281,11 +1270,9 @@ public class Map extends FragmentActivity implements
                                 LatLng marker4Position = new LatLng((Double) ds.child("polygonOptions/points/4/latitude/").getValue(), (Double) ds.child("polygonOptions/points/4/longitude/").getValue());
                                 LatLng marker5Position = new LatLng((Double) ds.child("polygonOptions/points/5/latitude/").getValue(), (Double) ds.child("polygonOptions/points/5/longitude/").getValue());
                                 LatLng marker6Position = new LatLng((Double) ds.child("polygonOptions/points/6/latitude/").getValue(), (Double) ds.child("polygonOptions/points/6/longitude/").getValue());
-                                int fillColor = (int) (long) ds.child("polygonOptions/fillColor").getValue();
                                 Polygon polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .fillColor(fillColor)
                                                 .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
                                                 .strokeColor(Color.YELLOW)
                                                 .strokeWidth(3f)
@@ -1305,11 +1292,9 @@ public class Map extends FragmentActivity implements
                                 LatLng marker3Position = new LatLng((Double) ds.child("polygonOptions/points/3/latitude/").getValue(), (Double) ds.child("polygonOptions/points/3/longitude/").getValue());
                                 LatLng marker4Position = new LatLng((Double) ds.child("polygonOptions/points/4/latitude/").getValue(), (Double) ds.child("polygonOptions/points/4/longitude/").getValue());
                                 LatLng marker5Position = new LatLng((Double) ds.child("polygonOptions/points/5/latitude/").getValue(), (Double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                int fillColor = (int) (long) ds.child("polygonOptions/fillColor").getValue();
                                 Polygon polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .fillColor(fillColor)
                                                 .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
                                                 .strokeColor(Color.YELLOW)
                                                 .strokeWidth(3f)
@@ -1328,11 +1313,9 @@ public class Map extends FragmentActivity implements
                                 LatLng marker2Position = new LatLng((Double) ds.child("polygonOptions/points/2/latitude/").getValue(), (Double) ds.child("polygonOptions/points/2/longitude/").getValue());
                                 LatLng marker3Position = new LatLng((Double) ds.child("polygonOptions/points/3/latitude/").getValue(), (Double) ds.child("polygonOptions/points/3/longitude/").getValue());
                                 LatLng marker4Position = new LatLng((Double) ds.child("polygonOptions/points/4/latitude/").getValue(), (Double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                int fillColor = (int) (long) ds.child("polygonOptions/fillColor").getValue();
                                 Polygon polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .fillColor(fillColor)
                                                 .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
                                                 .strokeColor(Color.YELLOW)
                                                 .strokeWidth(3f)
@@ -1350,11 +1333,9 @@ public class Map extends FragmentActivity implements
                                 LatLng marker1Position = new LatLng((Double) ds.child("polygonOptions/points/1/latitude/").getValue(), (Double) ds.child("polygonOptions/points/1/longitude/").getValue());
                                 LatLng marker2Position = new LatLng((Double) ds.child("polygonOptions/points/2/latitude/").getValue(), (Double) ds.child("polygonOptions/points/2/longitude/").getValue());
                                 LatLng marker3Position = new LatLng((Double) ds.child("polygonOptions/points/3/latitude/").getValue(), (Double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                int fillColor = (int) (long) ds.child("polygonOptions/fillColor").getValue();
                                 Polygon polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .fillColor(fillColor)
                                                 .add(marker0Position, marker1Position, marker2Position, marker3Position)
                                                 .strokeColor(Color.YELLOW)
                                                 .strokeWidth(3f)
@@ -1371,11 +1352,9 @@ public class Map extends FragmentActivity implements
                                 LatLng marker0Position = new LatLng((Double) ds.child("polygonOptions/points/0/latitude/").getValue(), (Double) ds.child("polygonOptions/points/0/longitude/").getValue());
                                 LatLng marker1Position = new LatLng((Double) ds.child("polygonOptions/points/1/latitude/").getValue(), (Double) ds.child("polygonOptions/points/1/longitude/").getValue());
                                 LatLng marker2Position = new LatLng((Double) ds.child("polygonOptions/points/2/latitude/").getValue(), (Double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                int fillColor = (int) (long) ds.child("polygonOptions/fillColor").getValue();
                                 Polygon polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .fillColor(fillColor)
                                                 .add(marker0Position, marker1Position, marker2Position)
                                                 .strokeColor(Color.YELLOW)
                                                 .strokeWidth(3f)
@@ -1484,7 +1463,6 @@ public class Map extends FragmentActivity implements
                                             // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
                                             Activity.putExtra("circleLatitude", circle.getCenter().latitude);
                                             Activity.putExtra("circleLongitude", circle.getCenter().longitude);
-                                            Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                             Activity.putExtra("radius", circle.getRadius());
                                             startActivity(Activity);
                                         } else {
@@ -1503,7 +1481,6 @@ public class Map extends FragmentActivity implements
                                             // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
                                             Activity.putExtra("circleLatitude", circle.getCenter().latitude);
                                             Activity.putExtra("circleLongitude", circle.getCenter().longitude);
-                                            Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                             Activity.putExtra("radius", circle.getRadius());
                                             startActivity(Activity);
                                         }
@@ -1568,7 +1545,6 @@ public class Map extends FragmentActivity implements
                                             // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
                                             Activity.putExtra("circleLatitude", circle.getCenter().latitude);
                                             Activity.putExtra("circleLongitude", circle.getCenter().longitude);
-                                            Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                             Activity.putExtra("radius", circle.getRadius());
                                             startActivity(Activity);
                                         } else {
@@ -1587,7 +1563,6 @@ public class Map extends FragmentActivity implements
                                             // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
                                             Activity.putExtra("circleLatitude", circle.getCenter().latitude);
                                             Activity.putExtra("circleLongitude", circle.getCenter().longitude);
-                                            Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                             Activity.putExtra("radius", circle.getRadius());
                                             startActivity(Activity);
                                         }
@@ -1628,8 +1603,6 @@ public class Map extends FragmentActivity implements
 
                     // If user holds the center marker, update the circle's position. Else, update the circle's radius.
                     if (circle != null) {
-
-                        circle.setFillColor(0);
 
                         if (marker.getId().equals(marker0ID)) {
 
@@ -1911,9 +1884,6 @@ public class Map extends FragmentActivity implements
                                 polygon.setPoints(polygonPointsList);
                             }
                         }
-
-                        // Prevent the fill color from flashing by setting it to 0 and then re-adding it in onMarkerDragEnd().
-                        polygon.setFillColor(0);
                     }
                 }
 
@@ -2478,8 +2448,6 @@ public class Map extends FragmentActivity implements
 
                     if (circle != null) {
 
-                        circle.setFillColor(Color.argb(70, 255, 215, 0));
-
                         // Sets marker1's position on the circle's edge relative to where the user last left marker1.
                         if (marker.getId().equals(marker0ID)) {
 
@@ -2557,8 +2525,6 @@ public class Map extends FragmentActivity implements
 
                             marker7Position = marker.getPosition();
                         }
-
-                        polygon.setFillColor(Color.argb(70, 255, 215, 0));
                     }
                 }
             });
@@ -2643,7 +2609,6 @@ public class Map extends FragmentActivity implements
                                                 Activity.putExtra("uuid", uuid);
                                                 // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                                 Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                                 // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                                                 Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
                                                 Activity.putExtra("threeMarkers", true);
@@ -2680,7 +2645,6 @@ public class Map extends FragmentActivity implements
                                                     Activity.putExtra("uuid", uuid);
                                                     // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                                     Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                    Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                                     // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                                                     Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
                                                     Activity.putExtra("fourMarkers", true);
@@ -2725,7 +2689,6 @@ public class Map extends FragmentActivity implements
                                                     Activity.putExtra("uuid", uuid);
                                                     // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                                     Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                    Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                                     // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                                                     Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
                                                     Activity.putExtra("fiveMarkers", true);
@@ -2773,7 +2736,6 @@ public class Map extends FragmentActivity implements
                                                     Activity.putExtra("uuid", uuid);
                                                     // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                                     Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                    Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                                     // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                                                     Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
                                                     Activity.putExtra("sixMarkers", true);
@@ -2824,7 +2786,6 @@ public class Map extends FragmentActivity implements
                                                     Activity.putExtra("uuid", uuid);
                                                     // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                                     Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                    Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                                     // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                                                     Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
                                                     Activity.putExtra("sevenMarkers", true);
@@ -2879,7 +2840,6 @@ public class Map extends FragmentActivity implements
                                                     Activity.putExtra("uuid", uuid);
                                                     // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                                     Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                    Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                                     // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                                                     Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
                                                     Activity.putExtra("eightMarkers", true);
@@ -2924,7 +2884,6 @@ public class Map extends FragmentActivity implements
                                                 Activity.putExtra("uuid", uuid);
                                                 // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                                 Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                                 // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                                                 Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
                                                 Activity.putExtra("threeMarkers", true);
@@ -2961,7 +2920,6 @@ public class Map extends FragmentActivity implements
                                                     Activity.putExtra("uuid", uuid);
                                                     // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                                     Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                    Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                                     // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                                                     Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
                                                     Activity.putExtra("fourMarkers", true);
@@ -3006,7 +2964,6 @@ public class Map extends FragmentActivity implements
                                                     Activity.putExtra("uuid", uuid);
                                                     // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                                     Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                    Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                                     // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                                                     Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
                                                     Activity.putExtra("fiveMarkers", true);
@@ -3054,7 +3011,6 @@ public class Map extends FragmentActivity implements
                                                     Activity.putExtra("uuid", uuid);
                                                     // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                                     Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                    Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                                     // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                                                     Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
                                                     Activity.putExtra("sixMarkers", true);
@@ -3105,7 +3061,6 @@ public class Map extends FragmentActivity implements
                                                     Activity.putExtra("uuid", uuid);
                                                     // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                                     Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                    Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                                     // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                                                     Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
                                                     Activity.putExtra("sevenMarkers", true);
@@ -3160,7 +3115,6 @@ public class Map extends FragmentActivity implements
                                                     Activity.putExtra("uuid", uuid);
                                                     // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                                     Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                    Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                                     // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                                                     Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
                                                     Activity.putExtra("eightMarkers", true);
@@ -3244,7 +3198,6 @@ public class Map extends FragmentActivity implements
                                                 Activity.putExtra("uuid", uuid);
                                                 // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                                 Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                                 // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                                                 Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
                                                 Activity.putExtra("threeMarkers", true);
@@ -3281,7 +3234,6 @@ public class Map extends FragmentActivity implements
                                                     Activity.putExtra("uuid", uuid);
                                                     // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                                     Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                    Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                                     // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                                                     Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
                                                     Activity.putExtra("fourMarkers", true);
@@ -3326,7 +3278,6 @@ public class Map extends FragmentActivity implements
                                                     Activity.putExtra("uuid", uuid);
                                                     // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                                     Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                    Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                                     // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                                                     Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
                                                     Activity.putExtra("fiveMarkers", true);
@@ -3374,7 +3325,6 @@ public class Map extends FragmentActivity implements
                                                     Activity.putExtra("uuid", uuid);
                                                     // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                                     Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                    Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                                     // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                                                     Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
                                                     Activity.putExtra("sixMarkers", true);
@@ -3425,7 +3375,6 @@ public class Map extends FragmentActivity implements
                                                     Activity.putExtra("uuid", uuid);
                                                     // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                                     Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                    Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                                     // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                                                     Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
                                                     Activity.putExtra("sevenMarkers", true);
@@ -3480,7 +3429,6 @@ public class Map extends FragmentActivity implements
                                                     Activity.putExtra("uuid", uuid);
                                                     // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                                     Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                    Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                                     // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                                                     Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
                                                     Activity.putExtra("eightMarkers", true);
@@ -3525,7 +3473,6 @@ public class Map extends FragmentActivity implements
                                                 Activity.putExtra("uuid", uuid);
                                                 // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                                 Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                                 // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                                                 Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
                                                 Activity.putExtra("threeMarkers", true);
@@ -3562,7 +3509,6 @@ public class Map extends FragmentActivity implements
                                                     Activity.putExtra("uuid", uuid);
                                                     // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                                     Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                    Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                                     // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                                                     Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
                                                     Activity.putExtra("fourMarkers", true);
@@ -3607,7 +3553,6 @@ public class Map extends FragmentActivity implements
                                                     Activity.putExtra("uuid", uuid);
                                                     // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                                     Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                    Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                                     // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                                                     Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
                                                     Activity.putExtra("fiveMarkers", true);
@@ -3655,7 +3600,6 @@ public class Map extends FragmentActivity implements
                                                     Activity.putExtra("uuid", uuid);
                                                     // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                                     Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                    Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                                     // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                                                     Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
                                                     Activity.putExtra("sixMarkers", true);
@@ -3706,7 +3650,6 @@ public class Map extends FragmentActivity implements
                                                     Activity.putExtra("uuid", uuid);
                                                     // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                                     Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                    Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                                     // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                                                     Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
                                                     Activity.putExtra("sevenMarkers", true);
@@ -3761,7 +3704,6 @@ public class Map extends FragmentActivity implements
                                                     Activity.putExtra("uuid", uuid);
                                                     // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                                     Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                    Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                                     // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                                                     Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
                                                     Activity.putExtra("eightMarkers", true);
@@ -3907,7 +3849,6 @@ public class Map extends FragmentActivity implements
                                         // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
                                         Activity.putExtra("circleLatitude", circle.getCenter().latitude);
                                         Activity.putExtra("circleLongitude", circle.getCenter().longitude);
-                                        Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                         Activity.putExtra("radius", circle.getRadius());
                                         startActivity(Activity);
                                     } else {
@@ -3926,7 +3867,6 @@ public class Map extends FragmentActivity implements
                                         // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
                                         Activity.putExtra("circleLatitude", circle.getCenter().latitude);
                                         Activity.putExtra("circleLongitude", circle.getCenter().longitude);
-                                        Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                         Activity.putExtra("radius", circle.getRadius());
                                         startActivity(Activity);
                                     }
@@ -3991,7 +3931,6 @@ public class Map extends FragmentActivity implements
                                         // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
                                         Activity.putExtra("circleLatitude", circle.getCenter().latitude);
                                         Activity.putExtra("circleLongitude", circle.getCenter().longitude);
-                                        Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                         Activity.putExtra("radius", circle.getRadius());
                                         startActivity(Activity);
                                     } else {
@@ -4010,7 +3949,6 @@ public class Map extends FragmentActivity implements
                                         // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
                                         Activity.putExtra("circleLatitude", circle.getCenter().latitude);
                                         Activity.putExtra("circleLongitude", circle.getCenter().longitude);
-                                        Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                         Activity.putExtra("radius", circle.getRadius());
                                         startActivity(Activity);
                                     }
@@ -4391,11 +4329,9 @@ public class Map extends FragmentActivity implements
                             LatLng marker5Position = new LatLng((Double) ds.child("polygonOptions/points/5/latitude/").getValue(), (Double) ds.child("polygonOptions/points/5/longitude/").getValue());
                             LatLng marker6Position = new LatLng((Double) ds.child("polygonOptions/points/6/latitude/").getValue(), (Double) ds.child("polygonOptions/points/6/longitude/").getValue());
                             LatLng marker7Position = new LatLng((Double) ds.child("polygonOptions/points/7/latitude/").getValue(), (Double) ds.child("polygonOptions/points/7/longitude/").getValue());
-                            int fillColor = (int) (long) ds.child("polygonOptions/fillColor").getValue();
                             Polygon polygon = mMap.addPolygon(
                                     new PolygonOptions()
                                             .clickable(true)
-                                            .fillColor(fillColor)
                                             .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
                                             .strokeColor(Color.YELLOW)
                                             .strokeWidth(3f)
@@ -4416,11 +4352,9 @@ public class Map extends FragmentActivity implements
                             LatLng marker4Position = new LatLng((Double) ds.child("polygonOptions/points/4/latitude/").getValue(), (Double) ds.child("polygonOptions/points/4/longitude/").getValue());
                             LatLng marker5Position = new LatLng((Double) ds.child("polygonOptions/points/5/latitude/").getValue(), (Double) ds.child("polygonOptions/points/5/longitude/").getValue());
                             LatLng marker6Position = new LatLng((Double) ds.child("polygonOptions/points/6/latitude/").getValue(), (Double) ds.child("polygonOptions/points/6/longitude/").getValue());
-                            int fillColor = (int) (long) ds.child("polygonOptions/fillColor").getValue();
                             Polygon polygon = mMap.addPolygon(
                                     new PolygonOptions()
                                             .clickable(true)
-                                            .fillColor(fillColor)
                                             .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
                                             .strokeColor(Color.YELLOW)
                                             .strokeWidth(3f)
@@ -4440,11 +4374,9 @@ public class Map extends FragmentActivity implements
                             LatLng marker3Position = new LatLng((Double) ds.child("polygonOptions/points/3/latitude/").getValue(), (Double) ds.child("polygonOptions/points/3/longitude/").getValue());
                             LatLng marker4Position = new LatLng((Double) ds.child("polygonOptions/points/4/latitude/").getValue(), (Double) ds.child("polygonOptions/points/4/longitude/").getValue());
                             LatLng marker5Position = new LatLng((Double) ds.child("polygonOptions/points/5/latitude/").getValue(), (Double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                            int fillColor = (int) (long) ds.child("polygonOptions/fillColor").getValue();
                             Polygon polygon = mMap.addPolygon(
                                     new PolygonOptions()
                                             .clickable(true)
-                                            .fillColor(fillColor)
                                             .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
                                             .strokeColor(Color.YELLOW)
                                             .strokeWidth(3f)
@@ -4463,11 +4395,9 @@ public class Map extends FragmentActivity implements
                             LatLng marker2Position = new LatLng((Double) ds.child("polygonOptions/points/2/latitude/").getValue(), (Double) ds.child("polygonOptions/points/2/longitude/").getValue());
                             LatLng marker3Position = new LatLng((Double) ds.child("polygonOptions/points/3/latitude/").getValue(), (Double) ds.child("polygonOptions/points/3/longitude/").getValue());
                             LatLng marker4Position = new LatLng((Double) ds.child("polygonOptions/points/4/latitude/").getValue(), (Double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                            int fillColor = (int) (long) ds.child("polygonOptions/fillColor").getValue();
                             Polygon polygon = mMap.addPolygon(
                                     new PolygonOptions()
                                             .clickable(true)
-                                            .fillColor(fillColor)
                                             .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
                                             .strokeColor(Color.YELLOW)
                                             .strokeWidth(3f)
@@ -4485,11 +4415,9 @@ public class Map extends FragmentActivity implements
                             LatLng marker1Position = new LatLng((Double) ds.child("polygonOptions/points/1/latitude/").getValue(), (Double) ds.child("polygonOptions/points/1/longitude/").getValue());
                             LatLng marker2Position = new LatLng((Double) ds.child("polygonOptions/points/2/latitude/").getValue(), (Double) ds.child("polygonOptions/points/2/longitude/").getValue());
                             LatLng marker3Position = new LatLng((Double) ds.child("polygonOptions/points/3/latitude/").getValue(), (Double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                            int fillColor = (int) (long) ds.child("polygonOptions/fillColor").getValue();
                             Polygon polygon = mMap.addPolygon(
                                     new PolygonOptions()
                                             .clickable(true)
-                                            .fillColor(fillColor)
                                             .add(marker0Position, marker1Position, marker2Position, marker3Position)
                                             .strokeColor(Color.YELLOW)
                                             .strokeWidth(3f)
@@ -4506,11 +4434,9 @@ public class Map extends FragmentActivity implements
                             LatLng marker0Position = new LatLng((Double) ds.child("polygonOptions/points/0/latitude/").getValue(), (Double) ds.child("polygonOptions/points/0/longitude/").getValue());
                             LatLng marker1Position = new LatLng((Double) ds.child("polygonOptions/points/1/latitude/").getValue(), (Double) ds.child("polygonOptions/points/1/longitude/").getValue());
                             LatLng marker2Position = new LatLng((Double) ds.child("polygonOptions/points/2/latitude/").getValue(), (Double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                            int fillColor = (int) (long) ds.child("polygonOptions/fillColor").getValue();
                             Polygon polygon = mMap.addPolygon(
                                     new PolygonOptions()
                                             .clickable(true)
-                                            .fillColor(fillColor)
                                             .add(marker0Position, marker1Position, marker2Position)
                                             .strokeColor(Color.YELLOW)
                                             .strokeWidth(3f)
@@ -4619,7 +4545,6 @@ public class Map extends FragmentActivity implements
                                         // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
                                         Activity.putExtra("circleLatitude", circle.getCenter().latitude);
                                         Activity.putExtra("circleLongitude", circle.getCenter().longitude);
-                                        Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                         Activity.putExtra("radius", circle.getRadius());
                                         startActivity(Activity);
                                     } else {
@@ -4638,7 +4563,6 @@ public class Map extends FragmentActivity implements
                                         // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
                                         Activity.putExtra("circleLatitude", circle.getCenter().latitude);
                                         Activity.putExtra("circleLongitude", circle.getCenter().longitude);
-                                        Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                         Activity.putExtra("radius", circle.getRadius());
                                         startActivity(Activity);
                                     }
@@ -4703,7 +4627,6 @@ public class Map extends FragmentActivity implements
                                         // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
                                         Activity.putExtra("circleLatitude", circle.getCenter().latitude);
                                         Activity.putExtra("circleLongitude", circle.getCenter().longitude);
-                                        Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                         Activity.putExtra("radius", circle.getRadius());
                                         startActivity(Activity);
                                     } else {
@@ -4722,7 +4645,6 @@ public class Map extends FragmentActivity implements
                                         // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
                                         Activity.putExtra("circleLatitude", circle.getCenter().latitude);
                                         Activity.putExtra("circleLongitude", circle.getCenter().longitude);
-                                        Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                         Activity.putExtra("radius", circle.getRadius());
                                         startActivity(Activity);
                                     }
@@ -4763,8 +4685,6 @@ public class Map extends FragmentActivity implements
 
                 // If user holds the center marker, update the circle's position. Else, update the circle's radius.
                 if (circle != null) {
-
-                    circle.setFillColor(0);
 
                     if (marker.getId().equals(marker0ID)) {
 
@@ -5046,9 +4966,6 @@ public class Map extends FragmentActivity implements
                             polygon.setPoints(polygonPointsList);
                         }
                     }
-
-                    // Prevent the fill color from flashing by setting it to 0 and then re-adding it in onMarkerDragEnd().
-                    polygon.setFillColor(0);
                 }
             }
 
@@ -5613,8 +5530,6 @@ public class Map extends FragmentActivity implements
 
                 if (circle != null) {
 
-                    circle.setFillColor(Color.argb(70, 255, 215, 0));
-
                     // Sets marker1's position on the circle's edge relative to where the user last left marker1.
                     if (marker.getId().equals(marker0ID)) {
 
@@ -5692,8 +5607,6 @@ public class Map extends FragmentActivity implements
 
                         marker7Position = marker.getPosition();
                     }
-
-                    polygon.setFillColor(Color.argb(70, 255, 215, 0));
                 }
             }
         });
@@ -5778,7 +5691,6 @@ public class Map extends FragmentActivity implements
                                             Activity.putExtra("uuid", uuid);
                                             // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                             Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                            Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                             // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                                             Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
                                             Activity.putExtra("threeMarkers", true);
@@ -5815,7 +5727,6 @@ public class Map extends FragmentActivity implements
                                                 Activity.putExtra("uuid", uuid);
                                                 // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                                 Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                                 // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                                                 Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
                                                 Activity.putExtra("fourMarkers", true);
@@ -5860,7 +5771,6 @@ public class Map extends FragmentActivity implements
                                                 Activity.putExtra("uuid", uuid);
                                                 // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                                 Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                                 // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                                                 Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
                                                 Activity.putExtra("fiveMarkers", true);
@@ -5908,7 +5818,6 @@ public class Map extends FragmentActivity implements
                                                 Activity.putExtra("uuid", uuid);
                                                 // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                                 Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                                 // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                                                 Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
                                                 Activity.putExtra("sixMarkers", true);
@@ -5959,7 +5868,6 @@ public class Map extends FragmentActivity implements
                                                 Activity.putExtra("uuid", uuid);
                                                 // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                                 Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                                 // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                                                 Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
                                                 Activity.putExtra("sevenMarkers", true);
@@ -6014,7 +5922,6 @@ public class Map extends FragmentActivity implements
                                                 Activity.putExtra("uuid", uuid);
                                                 // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                                 Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                                 // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                                                 Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
                                                 Activity.putExtra("eightMarkers", true);
@@ -6059,7 +5966,6 @@ public class Map extends FragmentActivity implements
                                             Activity.putExtra("uuid", uuid);
                                             // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                             Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                            Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                             // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                                             Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
                                             Activity.putExtra("threeMarkers", true);
@@ -6096,7 +6002,6 @@ public class Map extends FragmentActivity implements
                                                 Activity.putExtra("uuid", uuid);
                                                 // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                                 Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                                 // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                                                 Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
                                                 Activity.putExtra("fourMarkers", true);
@@ -6141,7 +6046,6 @@ public class Map extends FragmentActivity implements
                                                 Activity.putExtra("uuid", uuid);
                                                 // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                                 Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                                 // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                                                 Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
                                                 Activity.putExtra("fiveMarkers", true);
@@ -6189,7 +6093,6 @@ public class Map extends FragmentActivity implements
                                                 Activity.putExtra("uuid", uuid);
                                                 // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                                 Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                                 // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                                                 Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
                                                 Activity.putExtra("sixMarkers", true);
@@ -6240,7 +6143,6 @@ public class Map extends FragmentActivity implements
                                                 Activity.putExtra("uuid", uuid);
                                                 // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                                 Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                                 // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                                                 Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
                                                 Activity.putExtra("sevenMarkers", true);
@@ -6295,7 +6197,6 @@ public class Map extends FragmentActivity implements
                                                 Activity.putExtra("uuid", uuid);
                                                 // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                                 Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                                 // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                                                 Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
                                                 Activity.putExtra("eightMarkers", true);
@@ -6379,7 +6280,6 @@ public class Map extends FragmentActivity implements
                                             Activity.putExtra("uuid", uuid);
                                             // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                             Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                            Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                             // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                                             Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
                                             Activity.putExtra("threeMarkers", true);
@@ -6416,7 +6316,6 @@ public class Map extends FragmentActivity implements
                                                 Activity.putExtra("uuid", uuid);
                                                 // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                                 Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                                 // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                                                 Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
                                                 Activity.putExtra("fourMarkers", true);
@@ -6461,7 +6360,6 @@ public class Map extends FragmentActivity implements
                                                 Activity.putExtra("uuid", uuid);
                                                 // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                                 Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                                 // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                                                 Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
                                                 Activity.putExtra("fiveMarkers", true);
@@ -6509,7 +6407,6 @@ public class Map extends FragmentActivity implements
                                                 Activity.putExtra("uuid", uuid);
                                                 // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                                 Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                                 // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                                                 Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
                                                 Activity.putExtra("sixMarkers", true);
@@ -6560,7 +6457,6 @@ public class Map extends FragmentActivity implements
                                                 Activity.putExtra("uuid", uuid);
                                                 // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                                 Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                                 // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                                                 Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
                                                 Activity.putExtra("sevenMarkers", true);
@@ -6615,7 +6511,6 @@ public class Map extends FragmentActivity implements
                                                 Activity.putExtra("uuid", uuid);
                                                 // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                                 Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                                 // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                                                 Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
                                                 Activity.putExtra("eightMarkers", true);
@@ -6660,7 +6555,6 @@ public class Map extends FragmentActivity implements
                                             Activity.putExtra("uuid", uuid);
                                             // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                             Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                            Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                             // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                                             Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
                                             Activity.putExtra("threeMarkers", true);
@@ -6697,7 +6591,6 @@ public class Map extends FragmentActivity implements
                                                 Activity.putExtra("uuid", uuid);
                                                 // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                                 Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                                 // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                                                 Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
                                                 Activity.putExtra("fourMarkers", true);
@@ -6742,7 +6635,6 @@ public class Map extends FragmentActivity implements
                                                 Activity.putExtra("uuid", uuid);
                                                 // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                                 Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                                 // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                                                 Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
                                                 Activity.putExtra("fiveMarkers", true);
@@ -6790,7 +6682,6 @@ public class Map extends FragmentActivity implements
                                                 Activity.putExtra("uuid", uuid);
                                                 // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                                 Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                                 // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                                                 Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
                                                 Activity.putExtra("sixMarkers", true);
@@ -6841,7 +6732,6 @@ public class Map extends FragmentActivity implements
                                                 Activity.putExtra("uuid", uuid);
                                                 // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                                 Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                                 // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                                                 Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
                                                 Activity.putExtra("sevenMarkers", true);
@@ -6896,7 +6786,6 @@ public class Map extends FragmentActivity implements
                                                 Activity.putExtra("uuid", uuid);
                                                 // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                                 Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                                 // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                                                 Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
                                                 Activity.putExtra("eightMarkers", true);
@@ -7042,7 +6931,6 @@ public class Map extends FragmentActivity implements
                                     // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
                                     Activity.putExtra("circleLatitude", circle.getCenter().latitude);
                                     Activity.putExtra("circleLongitude", circle.getCenter().longitude);
-                                    Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                     Activity.putExtra("radius", circle.getRadius());
                                     startActivity(Activity);
                                 } else {
@@ -7061,7 +6949,6 @@ public class Map extends FragmentActivity implements
                                     // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
                                     Activity.putExtra("circleLatitude", circle.getCenter().latitude);
                                     Activity.putExtra("circleLongitude", circle.getCenter().longitude);
-                                    Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                     Activity.putExtra("radius", circle.getRadius());
                                     startActivity(Activity);
                                 }
@@ -7126,7 +7013,6 @@ public class Map extends FragmentActivity implements
                                     // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
                                     Activity.putExtra("circleLatitude", circle.getCenter().latitude);
                                     Activity.putExtra("circleLongitude", circle.getCenter().longitude);
-                                    Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                     Activity.putExtra("radius", circle.getRadius());
                                     startActivity(Activity);
                                 } else {
@@ -7145,7 +7031,6 @@ public class Map extends FragmentActivity implements
                                     // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
                                     Activity.putExtra("circleLatitude", circle.getCenter().latitude);
                                     Activity.putExtra("circleLongitude", circle.getCenter().longitude);
-                                    Activity.putExtra("fillColor", Color.argb(70, 255, 215, 0));
                                     Activity.putExtra("radius", circle.getRadius());
                                     startActivity(Activity);
                                 }
@@ -7509,11 +7394,9 @@ public class Map extends FragmentActivity implements
                                     LatLng marker5Position = new LatLng((Double) ds.child("polygonOptions/points/5/latitude/").getValue(), (Double) ds.child("polygonOptions/points/5/longitude/").getValue());
                                     LatLng marker6Position = new LatLng((Double) ds.child("polygonOptions/points/6/latitude/").getValue(), (Double) ds.child("polygonOptions/points/6/longitude/").getValue());
                                     LatLng marker7Position = new LatLng((Double) ds.child("polygonOptions/points/7/latitude/").getValue(), (Double) ds.child("polygonOptions/points/7/longitude/").getValue());
-                                    int fillColor = (int) (long) ds.child("polygonOptions/fillColor").getValue();
                                     Polygon polygon = mMap.addPolygon(
                                             new PolygonOptions()
                                                     .clickable(true)
-                                                    .fillColor(fillColor)
                                                     .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
                                                     .strokeColor(Color.YELLOW)
                                                     .strokeWidth(3f)
@@ -7534,11 +7417,9 @@ public class Map extends FragmentActivity implements
                                     LatLng marker4Position = new LatLng((Double) ds.child("polygonOptions/points/4/latitude/").getValue(), (Double) ds.child("polygonOptions/points/4/longitude/").getValue());
                                     LatLng marker5Position = new LatLng((Double) ds.child("polygonOptions/points/5/latitude/").getValue(), (Double) ds.child("polygonOptions/points/5/longitude/").getValue());
                                     LatLng marker6Position = new LatLng((Double) ds.child("polygonOptions/points/6/latitude/").getValue(), (Double) ds.child("polygonOptions/points/6/longitude/").getValue());
-                                    int fillColor = (int) (long) ds.child("polygonOptions/fillColor").getValue();
                                     Polygon polygon = mMap.addPolygon(
                                             new PolygonOptions()
                                                     .clickable(true)
-                                                    .fillColor(fillColor)
                                                     .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
                                                     .strokeColor(Color.YELLOW)
                                                     .strokeWidth(3f)
@@ -7558,11 +7439,9 @@ public class Map extends FragmentActivity implements
                                     LatLng marker3Position = new LatLng((Double) ds.child("polygonOptions/points/3/latitude/").getValue(), (Double) ds.child("polygonOptions/points/3/longitude/").getValue());
                                     LatLng marker4Position = new LatLng((Double) ds.child("polygonOptions/points/4/latitude/").getValue(), (Double) ds.child("polygonOptions/points/4/longitude/").getValue());
                                     LatLng marker5Position = new LatLng((Double) ds.child("polygonOptions/points/5/latitude/").getValue(), (Double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                    int fillColor = (int) (long) ds.child("polygonOptions/fillColor").getValue();
                                     Polygon polygon = mMap.addPolygon(
                                             new PolygonOptions()
                                                     .clickable(true)
-                                                    .fillColor(fillColor)
                                                     .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
                                                     .strokeColor(Color.YELLOW)
                                                     .strokeWidth(3f)
@@ -7581,11 +7460,9 @@ public class Map extends FragmentActivity implements
                                     LatLng marker2Position = new LatLng((Double) ds.child("polygonOptions/points/2/latitude/").getValue(), (Double) ds.child("polygonOptions/points/2/longitude/").getValue());
                                     LatLng marker3Position = new LatLng((Double) ds.child("polygonOptions/points/3/latitude/").getValue(), (Double) ds.child("polygonOptions/points/3/longitude/").getValue());
                                     LatLng marker4Position = new LatLng((Double) ds.child("polygonOptions/points/4/latitude/").getValue(), (Double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                    int fillColor = (int) (long) ds.child("polygonOptions/fillColor").getValue();
                                     Polygon polygon = mMap.addPolygon(
                                             new PolygonOptions()
                                                     .clickable(true)
-                                                    .fillColor(fillColor)
                                                     .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
                                                     .strokeColor(Color.YELLOW)
                                                     .strokeWidth(3f)
@@ -7603,11 +7480,9 @@ public class Map extends FragmentActivity implements
                                     LatLng marker1Position = new LatLng((Double) ds.child("polygonOptions/points/1/latitude/").getValue(), (Double) ds.child("polygonOptions/points/1/longitude/").getValue());
                                     LatLng marker2Position = new LatLng((Double) ds.child("polygonOptions/points/2/latitude/").getValue(), (Double) ds.child("polygonOptions/points/2/longitude/").getValue());
                                     LatLng marker3Position = new LatLng((Double) ds.child("polygonOptions/points/3/latitude/").getValue(), (Double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                    int fillColor = (int) (long) ds.child("polygonOptions/fillColor").getValue();
                                     Polygon polygon = mMap.addPolygon(
                                             new PolygonOptions()
                                                     .clickable(true)
-                                                    .fillColor(fillColor)
                                                     .add(marker0Position, marker1Position, marker2Position, marker3Position)
                                                     .strokeColor(Color.YELLOW)
                                                     .strokeWidth(3f)
@@ -7624,11 +7499,9 @@ public class Map extends FragmentActivity implements
                                     LatLng marker0Position = new LatLng((Double) ds.child("polygonOptions/points/0/latitude/").getValue(), (Double) ds.child("polygonOptions/points/0/longitude/").getValue());
                                     LatLng marker1Position = new LatLng((Double) ds.child("polygonOptions/points/1/latitude/").getValue(), (Double) ds.child("polygonOptions/points/1/longitude/").getValue());
                                     LatLng marker2Position = new LatLng((Double) ds.child("polygonOptions/points/2/latitude/").getValue(), (Double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                    int fillColor = (int) (long) ds.child("polygonOptions/fillColor").getValue();
                                     Polygon polygon = mMap.addPolygon(
                                             new PolygonOptions()
                                                     .clickable(true)
-                                                    .fillColor(fillColor)
                                                     .add(marker0Position, marker1Position, marker2Position)
                                                     .strokeColor(Color.YELLOW)
                                                     .strokeWidth(3f)
@@ -7752,13 +7625,11 @@ public class Map extends FragmentActivity implements
                                 if ((double) (long) ds.child("circleOptions/radius").getValue() >  50) {
 
                                     LatLng center = new LatLng((Double) ds.child("circleOptions/center/latitude/").getValue(), (Double) ds.child("circleOptions/center/longitude/").getValue());
-                                    int fillColor = (int) (long) ds.child("circleOptions/fillColor").getValue();
                                     double radius = (double) (long) ds.child("circleOptions/radius").getValue();
                                     Circle circle = mMap.addCircle(
                                             new CircleOptions()
                                                     .center(center)
                                                     .clickable(true)
-                                                    .fillColor(fillColor)
                                                     .radius(radius)
                                                     .strokeColor(Color.YELLOW)
                                                     .strokeWidth(3f)
@@ -7801,11 +7672,9 @@ public class Map extends FragmentActivity implements
                                         LatLng marker5Position = new LatLng((Double) ds.child("polygonOptions/points/5/latitude/").getValue(), (Double) ds.child("polygonOptions/points/5/longitude/").getValue());
                                         LatLng marker6Position = new LatLng((Double) ds.child("polygonOptions/points/6/latitude/").getValue(), (Double) ds.child("polygonOptions/points/6/longitude/").getValue());
                                         LatLng marker7Position = new LatLng((Double) ds.child("polygonOptions/points/7/latitude/").getValue(), (Double) ds.child("polygonOptions/points/7/longitude/").getValue());
-                                        int fillColor = (int) (long) ds.child("polygonOptions/fillColor").getValue();
                                         Polygon polygon = mMap.addPolygon(
                                                 new PolygonOptions()
                                                         .clickable(true)
-                                                        .fillColor(fillColor)
                                                         .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
                                                         .strokeColor(Color.YELLOW)
                                                         .strokeWidth(3f)
@@ -7824,11 +7693,9 @@ public class Map extends FragmentActivity implements
                                         LatLng marker4Position = new LatLng((Double) ds.child("polygonOptions/points/4/latitude/").getValue(), (Double) ds.child("polygonOptions/points/4/longitude/").getValue());
                                         LatLng marker5Position = new LatLng((Double) ds.child("polygonOptions/points/5/latitude/").getValue(), (Double) ds.child("polygonOptions/points/5/longitude/").getValue());
                                         LatLng marker6Position = new LatLng((Double) ds.child("polygonOptions/points/6/latitude/").getValue(), (Double) ds.child("polygonOptions/points/6/longitude/").getValue());
-                                        int fillColor = (int) (long) ds.child("polygonOptions/fillColor").getValue();
                                         Polygon polygon = mMap.addPolygon(
                                                 new PolygonOptions()
                                                         .clickable(true)
-                                                        .fillColor(fillColor)
                                                         .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
                                                         .strokeColor(Color.YELLOW)
                                                         .strokeWidth(3f)
@@ -7846,11 +7713,9 @@ public class Map extends FragmentActivity implements
                                         LatLng marker3Position = new LatLng((Double) ds.child("polygonOptions/points/3/latitude/").getValue(), (Double) ds.child("polygonOptions/points/3/longitude/").getValue());
                                         LatLng marker4Position = new LatLng((Double) ds.child("polygonOptions/points/4/latitude/").getValue(), (Double) ds.child("polygonOptions/points/4/longitude/").getValue());
                                         LatLng marker5Position = new LatLng((Double) ds.child("polygonOptions/points/5/latitude/").getValue(), (Double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                        int fillColor = (int) (long) ds.child("polygonOptions/fillColor").getValue();
                                         Polygon polygon = mMap.addPolygon(
                                                 new PolygonOptions()
                                                         .clickable(true)
-                                                        .fillColor(fillColor)
                                                         .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
                                                         .strokeColor(Color.YELLOW)
                                                         .strokeWidth(3f)
@@ -7867,11 +7732,9 @@ public class Map extends FragmentActivity implements
                                         LatLng marker2Position = new LatLng((Double) ds.child("polygonOptions/points/2/latitude/").getValue(), (Double) ds.child("polygonOptions/points/2/longitude/").getValue());
                                         LatLng marker3Position = new LatLng((Double) ds.child("polygonOptions/points/3/latitude/").getValue(), (Double) ds.child("polygonOptions/points/3/longitude/").getValue());
                                         LatLng marker4Position = new LatLng((Double) ds.child("polygonOptions/points/4/latitude/").getValue(), (Double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                        int fillColor = (int) (long) ds.child("polygonOptions/fillColor").getValue();
                                         Polygon polygon = mMap.addPolygon(
                                                 new PolygonOptions()
                                                         .clickable(true)
-                                                        .fillColor(fillColor)
                                                         .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
                                                         .strokeColor(Color.YELLOW)
                                                         .strokeWidth(3f)
@@ -7887,11 +7750,9 @@ public class Map extends FragmentActivity implements
                                         LatLng marker1Position = new LatLng((Double) ds.child("polygonOptions/points/1/latitude/").getValue(), (Double) ds.child("polygonOptions/points/1/longitude/").getValue());
                                         LatLng marker2Position = new LatLng((Double) ds.child("polygonOptions/points/2/latitude/").getValue(), (Double) ds.child("polygonOptions/points/2/longitude/").getValue());
                                         LatLng marker3Position = new LatLng((Double) ds.child("polygonOptions/points/3/latitude/").getValue(), (Double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                        int fillColor = (int) (long) ds.child("polygonOptions/fillColor").getValue();
                                         Polygon polygon = mMap.addPolygon(
                                                 new PolygonOptions()
                                                         .clickable(true)
-                                                        .fillColor(fillColor)
                                                         .add(marker0Position, marker1Position, marker2Position, marker3Position)
                                                         .strokeColor(Color.YELLOW)
                                                         .strokeWidth(3f)
@@ -7906,11 +7767,9 @@ public class Map extends FragmentActivity implements
                                         LatLng marker0Position = new LatLng((Double) ds.child("polygonOptions/points/0/latitude/").getValue(), (Double) ds.child("polygonOptions/points/0/longitude/").getValue());
                                         LatLng marker1Position = new LatLng((Double) ds.child("polygonOptions/points/1/latitude/").getValue(), (Double) ds.child("polygonOptions/points/1/longitude/").getValue());
                                         LatLng marker2Position = new LatLng((Double) ds.child("polygonOptions/points/2/latitude/").getValue(), (Double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                        int fillColor = (int) (long) ds.child("polygonOptions/fillColor").getValue();
                                         Polygon polygon = mMap.addPolygon(
                                                 new PolygonOptions()
                                                         .clickable(true)
-                                                        .fillColor(fillColor)
                                                         .add(marker0Position, marker1Position, marker2Position)
                                                         .strokeColor(Color.YELLOW)
                                                         .strokeWidth(3f)
@@ -8035,13 +7894,11 @@ public class Map extends FragmentActivity implements
                                 if ((double) (long) ds.child("circleOptions/radius").getValue() > 10 && (double) (long) ds.child("circleOptions/radius").getValue() <= 50) {
 
                                     LatLng center = new LatLng((Double) ds.child("circleOptions/center/latitude/").getValue(), (Double) ds.child("circleOptions/center/longitude/").getValue());
-                                    int fillColor = (int) (long) ds.child("circleOptions/fillColor").getValue();
                                     double radius = (double) (long) ds.child("circleOptions/radius").getValue();
                                     Circle circle = mMap.addCircle(
                                             new CircleOptions()
                                                     .center(center)
                                                     .clickable(true)
-                                                    .fillColor(fillColor)
                                                     .radius(radius)
                                                     .strokeColor(Color.YELLOW)
                                                     .strokeWidth(3f)
@@ -8084,11 +7941,9 @@ public class Map extends FragmentActivity implements
                                         LatLng marker5Position = new LatLng((Double) ds.child("polygonOptions/points/5/latitude/").getValue(), (Double) ds.child("polygonOptions/points/5/longitude/").getValue());
                                         LatLng marker6Position = new LatLng((Double) ds.child("polygonOptions/points/6/latitude/").getValue(), (Double) ds.child("polygonOptions/points/6/longitude/").getValue());
                                         LatLng marker7Position = new LatLng((Double) ds.child("polygonOptions/points/7/latitude/").getValue(), (Double) ds.child("polygonOptions/points/7/longitude/").getValue());
-                                        int fillColor = (int) (long) ds.child("polygonOptions/fillColor").getValue();
                                         Polygon polygon = mMap.addPolygon(
                                                 new PolygonOptions()
                                                         .clickable(true)
-                                                        .fillColor(fillColor)
                                                         .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
                                                         .strokeColor(Color.YELLOW)
                                                         .strokeWidth(3f)
@@ -8107,11 +7962,9 @@ public class Map extends FragmentActivity implements
                                         LatLng marker4Position = new LatLng((Double) ds.child("polygonOptions/points/4/latitude/").getValue(), (Double) ds.child("polygonOptions/points/4/longitude/").getValue());
                                         LatLng marker5Position = new LatLng((Double) ds.child("polygonOptions/points/5/latitude/").getValue(), (Double) ds.child("polygonOptions/points/5/longitude/").getValue());
                                         LatLng marker6Position = new LatLng((Double) ds.child("polygonOptions/points/6/latitude/").getValue(), (Double) ds.child("polygonOptions/points/6/longitude/").getValue());
-                                        int fillColor = (int) (long) ds.child("polygonOptions/fillColor").getValue();
                                         Polygon polygon = mMap.addPolygon(
                                                 new PolygonOptions()
                                                         .clickable(true)
-                                                        .fillColor(fillColor)
                                                         .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
                                                         .strokeColor(Color.YELLOW)
                                                         .strokeWidth(3f)
@@ -8129,11 +7982,9 @@ public class Map extends FragmentActivity implements
                                         LatLng marker3Position = new LatLng((Double) ds.child("polygonOptions/points/3/latitude/").getValue(), (Double) ds.child("polygonOptions/points/3/longitude/").getValue());
                                         LatLng marker4Position = new LatLng((Double) ds.child("polygonOptions/points/4/latitude/").getValue(), (Double) ds.child("polygonOptions/points/4/longitude/").getValue());
                                         LatLng marker5Position = new LatLng((Double) ds.child("polygonOptions/points/5/latitude/").getValue(), (Double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                        int fillColor = (int) (long) ds.child("polygonOptions/fillColor").getValue();
                                         Polygon polygon = mMap.addPolygon(
                                                 new PolygonOptions()
                                                         .clickable(true)
-                                                        .fillColor(fillColor)
                                                         .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
                                                         .strokeColor(Color.YELLOW)
                                                         .strokeWidth(3f)
@@ -8150,11 +8001,9 @@ public class Map extends FragmentActivity implements
                                         LatLng marker2Position = new LatLng((Double) ds.child("polygonOptions/points/2/latitude/").getValue(), (Double) ds.child("polygonOptions/points/2/longitude/").getValue());
                                         LatLng marker3Position = new LatLng((Double) ds.child("polygonOptions/points/3/latitude/").getValue(), (Double) ds.child("polygonOptions/points/3/longitude/").getValue());
                                         LatLng marker4Position = new LatLng((Double) ds.child("polygonOptions/points/4/latitude/").getValue(), (Double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                        int fillColor = (int) (long) ds.child("polygonOptions/fillColor").getValue();
                                         Polygon polygon = mMap.addPolygon(
                                                 new PolygonOptions()
                                                         .clickable(true)
-                                                        .fillColor(fillColor)
                                                         .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
                                                         .strokeColor(Color.YELLOW)
                                                         .strokeWidth(3f)
@@ -8170,11 +8019,9 @@ public class Map extends FragmentActivity implements
                                         LatLng marker1Position = new LatLng((Double) ds.child("polygonOptions/points/1/latitude/").getValue(), (Double) ds.child("polygonOptions/points/1/longitude/").getValue());
                                         LatLng marker2Position = new LatLng((Double) ds.child("polygonOptions/points/2/latitude/").getValue(), (Double) ds.child("polygonOptions/points/2/longitude/").getValue());
                                         LatLng marker3Position = new LatLng((Double) ds.child("polygonOptions/points/3/latitude/").getValue(), (Double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                        int fillColor = (int) (long) ds.child("polygonOptions/fillColor").getValue();
                                         Polygon polygon = mMap.addPolygon(
                                                 new PolygonOptions()
                                                         .clickable(true)
-                                                        .fillColor(fillColor)
                                                         .add(marker0Position, marker1Position, marker2Position, marker3Position)
                                                         .strokeColor(Color.YELLOW)
                                                         .strokeWidth(3f)
@@ -8189,11 +8036,9 @@ public class Map extends FragmentActivity implements
                                         LatLng marker0Position = new LatLng((Double) ds.child("polygonOptions/points/0/latitude/").getValue(), (Double) ds.child("polygonOptions/points/0/longitude/").getValue());
                                         LatLng marker1Position = new LatLng((Double) ds.child("polygonOptions/points/1/latitude/").getValue(), (Double) ds.child("polygonOptions/points/1/longitude/").getValue());
                                         LatLng marker2Position = new LatLng((Double) ds.child("polygonOptions/points/2/latitude/").getValue(), (Double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                        int fillColor = (int) (long) ds.child("polygonOptions/fillColor").getValue();
                                         Polygon polygon = mMap.addPolygon(
                                                 new PolygonOptions()
                                                         .clickable(true)
-                                                        .fillColor(fillColor)
                                                         .add(marker0Position, marker1Position, marker2Position)
                                                         .strokeColor(Color.YELLOW)
                                                         .strokeWidth(3f)
@@ -8318,13 +8163,11 @@ public class Map extends FragmentActivity implements
                                 if ((double) (long) ds.child("circleOptions/radius").getValue() > 1 && (double) (long) ds.child("circleOptions/radius").getValue() <= 10 ) {
 
                                     LatLng center = new LatLng((Double) ds.child("circleOptions/center/latitude/").getValue(), (Double) ds.child("circleOptions/center/longitude/").getValue());
-                                    int fillColor = (int) (long) ds.child("circleOptions/fillColor").getValue();
                                     double radius = (double) (long) ds.child("circleOptions/radius").getValue();
                                     Circle circle = mMap.addCircle(
                                             new CircleOptions()
                                                     .center(center)
                                                     .clickable(true)
-                                                    .fillColor(fillColor)
                                                     .radius(radius)
                                                     .strokeColor(Color.YELLOW)
                                                     .strokeWidth(3f)
@@ -8367,11 +8210,9 @@ public class Map extends FragmentActivity implements
                                         LatLng marker5Position = new LatLng((Double) ds.child("polygonOptions/points/5/latitude/").getValue(), (Double) ds.child("polygonOptions/points/5/longitude/").getValue());
                                         LatLng marker6Position = new LatLng((Double) ds.child("polygonOptions/points/6/latitude/").getValue(), (Double) ds.child("polygonOptions/points/6/longitude/").getValue());
                                         LatLng marker7Position = new LatLng((Double) ds.child("polygonOptions/points/7/latitude/").getValue(), (Double) ds.child("polygonOptions/points/7/longitude/").getValue());
-                                        int fillColor = (int) (long) ds.child("polygonOptions/fillColor").getValue();
                                         Polygon polygon = mMap.addPolygon(
                                                 new PolygonOptions()
                                                         .clickable(true)
-                                                        .fillColor(fillColor)
                                                         .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
                                                         .strokeColor(Color.YELLOW)
                                                         .strokeWidth(3f)
@@ -8390,11 +8231,9 @@ public class Map extends FragmentActivity implements
                                         LatLng marker4Position = new LatLng((Double) ds.child("polygonOptions/points/4/latitude/").getValue(), (Double) ds.child("polygonOptions/points/4/longitude/").getValue());
                                         LatLng marker5Position = new LatLng((Double) ds.child("polygonOptions/points/5/latitude/").getValue(), (Double) ds.child("polygonOptions/points/5/longitude/").getValue());
                                         LatLng marker6Position = new LatLng((Double) ds.child("polygonOptions/points/6/latitude/").getValue(), (Double) ds.child("polygonOptions/points/6/longitude/").getValue());
-                                        int fillColor = (int) (long) ds.child("polygonOptions/fillColor").getValue();
                                         Polygon polygon = mMap.addPolygon(
                                                 new PolygonOptions()
                                                         .clickable(true)
-                                                        .fillColor(fillColor)
                                                         .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
                                                         .strokeColor(Color.YELLOW)
                                                         .strokeWidth(3f)
@@ -8412,11 +8251,9 @@ public class Map extends FragmentActivity implements
                                         LatLng marker3Position = new LatLng((Double) ds.child("polygonOptions/points/3/latitude/").getValue(), (Double) ds.child("polygonOptions/points/3/longitude/").getValue());
                                         LatLng marker4Position = new LatLng((Double) ds.child("polygonOptions/points/4/latitude/").getValue(), (Double) ds.child("polygonOptions/points/4/longitude/").getValue());
                                         LatLng marker5Position = new LatLng((Double) ds.child("polygonOptions/points/5/latitude/").getValue(), (Double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                        int fillColor = (int) (long) ds.child("polygonOptions/fillColor").getValue();
                                         Polygon polygon = mMap.addPolygon(
                                                 new PolygonOptions()
                                                         .clickable(true)
-                                                        .fillColor(fillColor)
                                                         .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
                                                         .strokeColor(Color.YELLOW)
                                                         .strokeWidth(3f)
@@ -8433,11 +8270,9 @@ public class Map extends FragmentActivity implements
                                         LatLng marker2Position = new LatLng((Double) ds.child("polygonOptions/points/2/latitude/").getValue(), (Double) ds.child("polygonOptions/points/2/longitude/").getValue());
                                         LatLng marker3Position = new LatLng((Double) ds.child("polygonOptions/points/3/latitude/").getValue(), (Double) ds.child("polygonOptions/points/3/longitude/").getValue());
                                         LatLng marker4Position = new LatLng((Double) ds.child("polygonOptions/points/4/latitude/").getValue(), (Double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                        int fillColor = (int) (long) ds.child("polygonOptions/fillColor").getValue();
                                         Polygon polygon = mMap.addPolygon(
                                                 new PolygonOptions()
                                                         .clickable(true)
-                                                        .fillColor(fillColor)
                                                         .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
                                                         .strokeColor(Color.YELLOW)
                                                         .strokeWidth(3f)
@@ -8453,11 +8288,9 @@ public class Map extends FragmentActivity implements
                                         LatLng marker1Position = new LatLng((Double) ds.child("polygonOptions/points/1/latitude/").getValue(), (Double) ds.child("polygonOptions/points/1/longitude/").getValue());
                                         LatLng marker2Position = new LatLng((Double) ds.child("polygonOptions/points/2/latitude/").getValue(), (Double) ds.child("polygonOptions/points/2/longitude/").getValue());
                                         LatLng marker3Position = new LatLng((Double) ds.child("polygonOptions/points/3/latitude/").getValue(), (Double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                        int fillColor = (int) (long) ds.child("polygonOptions/fillColor").getValue();
                                         Polygon polygon = mMap.addPolygon(
                                                 new PolygonOptions()
                                                         .clickable(true)
-                                                        .fillColor(fillColor)
                                                         .add(marker0Position, marker1Position, marker2Position, marker3Position)
                                                         .strokeColor(Color.YELLOW)
                                                         .strokeWidth(3f)
@@ -8472,11 +8305,9 @@ public class Map extends FragmentActivity implements
                                         LatLng marker0Position = new LatLng((Double) ds.child("polygonOptions/points/0/latitude/").getValue(), (Double) ds.child("polygonOptions/points/0/longitude/").getValue());
                                         LatLng marker1Position = new LatLng((Double) ds.child("polygonOptions/points/1/latitude/").getValue(), (Double) ds.child("polygonOptions/points/1/longitude/").getValue());
                                         LatLng marker2Position = new LatLng((Double) ds.child("polygonOptions/points/2/latitude/").getValue(), (Double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                        int fillColor = (int) (long) ds.child("polygonOptions/fillColor").getValue();
                                         Polygon polygon = mMap.addPolygon(
                                                 new PolygonOptions()
                                                         .clickable(true)
-                                                        .fillColor(fillColor)
                                                         .add(marker0Position, marker1Position, marker2Position)
                                                         .strokeColor(Color.YELLOW)
                                                         .strokeWidth(3f)
@@ -8601,14 +8432,12 @@ public class Map extends FragmentActivity implements
                                 if ((double) (long) ds.child("circleOptions/radius").getValue() == 1) {
 
                                     LatLng center = new LatLng((Double) ds.child("circleOptions/center/latitude/").getValue(), (Double) ds.child("circleOptions/center/longitude/").getValue());
-                                    int fillColor = (int) (long) ds.child("circleOptions/fillColor").getValue();
-                                    double radius = (double) (long) ds.child("circleOptions/radius").getValue();
                                     Circle circle = mMap.addCircle(
                                             new CircleOptions()
                                                     .center(center)
                                                     .clickable(true)
-                                                    .fillColor(fillColor)
-                                                    .radius(radius)
+                                                    .fillColor(Color.argb(100, 255, 255, 0))
+                                                    .radius(1)
                                                     .strokeColor(Color.YELLOW)
                                                     .strokeWidth(3f)
                                     );
@@ -8740,7 +8569,6 @@ public class Map extends FragmentActivity implements
                                             new PolygonOptions()
                                                     .add(marker0Position, marker1Position, marker2Position, marker3Position)
                                                     .clickable(true)
-                                                    .fillColor(Color.argb(70, 255, 215, 0))
                                                     .strokeColor(Color.YELLOW)
                                                     .strokeWidth(3f);
 
@@ -8885,7 +8713,6 @@ public class Map extends FragmentActivity implements
                                             new CircleOptions()
                                                     .center(latLng)
                                                     .clickable(true)
-                                                    .fillColor(Color.argb(70, 255, 215, 0))
                                                     .radius(circleRadius)
                                                     .strokeColor(Color.YELLOW)
                                                     .strokeWidth(3f);
@@ -9014,24 +8841,13 @@ public class Map extends FragmentActivity implements
                         .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
 
                             @Override
-                            public void onSuccess(Location location) {
+                            public void onSuccess(final Location location) {
 
                                 // Get last known location. In some rare situations, this can be null.
                                 if (location != null) {
 
                                     // Make circle the size set by the seekBar.
                                     int circleSize = 1;
-
-                                    // Logic to handle location object.
-                                    LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-                                    CircleOptions circleOptions =
-                                            new CircleOptions()
-                                                    .center(latLng)
-                                                    .clickable(true)
-                                                    .fillColor(Color.argb(100, 255, 255, 0))
-                                                    .radius(circleSize)
-                                                    .strokeColor(Color.YELLOW)
-                                                    .strokeWidth(3f);
 
                                     // Remove any other shape before adding the circle to Firebase.
                                     if (circle != null) {
@@ -9048,8 +8864,6 @@ public class Map extends FragmentActivity implements
 
                                     // Add circle to the map and go to chat.
                                     if (mMap != null) {
-
-                                        circle = mMap.addCircle(circleOptions);
 
                                         uuid = UUID.randomUUID().toString();
 
@@ -9075,10 +8889,10 @@ public class Map extends FragmentActivity implements
                                                         // Pass this value to Chat.java to identify the shape.
                                                         Activity.putExtra("uuid", uuid);
                                                         // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
-                                                        Activity.putExtra("circleLatitude", circle.getCenter().latitude);
-                                                        Activity.putExtra("circleLongitude", circle.getCenter().longitude);
+                                                        Activity.putExtra("circleLatitude", location.getLatitude());
+                                                        Activity.putExtra("circleLongitude", location.getLongitude());
                                                         Activity.putExtra("fillColor", Color.argb(100, 255, 255, 0));
-                                                        Activity.putExtra("radius", circle.getRadius());
+                                                        Activity.putExtra("radius", 1.0);
                                                         startActivity(Activity);
                                                     } else {
 
@@ -9090,10 +8904,10 @@ public class Map extends FragmentActivity implements
                                                         // Pass this value to Chat.java to identify the shape.
                                                         Activity.putExtra("uuid", uuid);
                                                         // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
-                                                        Activity.putExtra("circleLatitude", circle.getCenter().latitude);
-                                                        Activity.putExtra("circleLongitude", circle.getCenter().longitude);
+                                                        Activity.putExtra("circleLatitude", location.getLatitude());
+                                                        Activity.putExtra("circleLongitude", location.getLongitude());
                                                         Activity.putExtra("fillColor", Color.argb(100, 255, 255, 0));
-                                                        Activity.putExtra("radius", circle.getRadius());
+                                                        Activity.putExtra("radius", 1.0);
                                                         startActivity(Activity);
                                                     }
                                                 }
@@ -9125,10 +8939,10 @@ public class Map extends FragmentActivity implements
                                                         // Pass this value to Chat.java to identify the shape.
                                                         Activity.putExtra("uuid", uuid);
                                                         // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
-                                                        Activity.putExtra("circleLatitude", circle.getCenter().latitude);
-                                                        Activity.putExtra("circleLongitude", circle.getCenter().longitude);
+                                                        Activity.putExtra("circleLatitude", location.getLatitude());
+                                                        Activity.putExtra("circleLongitude", location.getLongitude());
                                                         Activity.putExtra("fillColor", Color.argb(100, 255, 255, 0));
-                                                        Activity.putExtra("radius", circle.getRadius());
+                                                        Activity.putExtra("radius", 1.0);
                                                         startActivity(Activity);
                                                     } else {
 
@@ -9140,10 +8954,10 @@ public class Map extends FragmentActivity implements
                                                         // Pass this value to Chat.java to identify the shape.
                                                         Activity.putExtra("uuid", uuid);
                                                         // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
-                                                        Activity.putExtra("circleLatitude", circle.getCenter().latitude);
-                                                        Activity.putExtra("circleLongitude", circle.getCenter().longitude);
+                                                        Activity.putExtra("circleLatitude", location.getLatitude());
+                                                        Activity.putExtra("circleLongitude", location.getLongitude());
                                                         Activity.putExtra("fillColor", Color.argb(100, 255, 255, 0));
-                                                        Activity.putExtra("radius", circle.getRadius());
+                                                        Activity.putExtra("radius", 1.0);
                                                         startActivity(Activity);
                                                     }
                                                 }
