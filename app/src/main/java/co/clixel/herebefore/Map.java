@@ -11,6 +11,8 @@ import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Looper;
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
@@ -94,15 +96,14 @@ public class Map extends FragmentActivity implements
     private Location mlocation;
     private List<LatLng> polygonPointsList;
 
+    //TODO: Change circle color depending on map type and get rid of circle fill color unless it is a point for easier viewing.
     //TODO: Give warning about circle overlap and create popup menu for selecting circle.
-    //TODO: Give user option to change color of the circles (or just change it outright).
-    //TODO: Make points easier to see somehow.
+    //TODO: Change map type on different thread. Also, save user map type preference.
     //TODO: Implement Firebase caching?
     //TODO: Only load Firebase circles if they're within camera view (in onMapReady) (getMap().getProjection().getVisibleRegion().latLangBounds). If this works, can possibly replace singleValueEventListener in onMapReady() and onRestart() with a valueEventListener.
     //TODO: Make sure Firebase listener is always updating map properly.
     //TODO: Optimize Firebase loading.
     //TODO: Too much work on main thread.
-    //TODO: Change map type on different thread - check without wifi and maybe load map type in background or only if internet is good enough.
     //TODO: Make checkLocationPermission Async / create loading animations.
     //TODO: Work on possible NullPointerExceptions (try/catch).
     //TODO: Check updating in different states with another device - make sure uuids never overlap.
@@ -1065,7 +1066,7 @@ public class Map extends FragmentActivity implements
 
                     Log.i(TAG, "chatSizeSeekBar -> onStopTrackingTouch -> circle");
 
-                    circle.setFillColor(Color.argb(70, 255, 215, 0));
+                    circle.setFillColor(Color.argb(0, 255, 215, 0));
 
                     marker1.setPosition(latLngGivenDistance(circle.getCenter().latitude, circle.getCenter().longitude, chatSizeSeekBar.getProgress(), relativeAngle));
 
@@ -1091,6 +1092,18 @@ public class Map extends FragmentActivity implements
         // Clear map before adding new Firebase circles in onStart() to prevent overlap.
         // Set shape to null so changing chatSizeSeekBar in onStart() will create a circle and createChatButton will reset itself.
         if (mMap != null) {
+
+            // Use the NORMAL map type if the user is not connected to WIFI for easier loading.
+            ConnectivityManager connManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+            NetworkInfo mWifi = connManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
+
+            if (mWifi.isConnected()) {
+
+                mMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
+            } else {
+
+                mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
+            }
 
             // Remove the polygon and markers.
             if (polygon != null) {
@@ -4315,7 +4328,6 @@ public class Map extends FragmentActivity implements
         Log.i(TAG, "onMapReady()");
 
         mMap = googleMap;
-        mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
 
@@ -7181,8 +7193,19 @@ public class Map extends FragmentActivity implements
                     .build();                   // Creates a CameraPosition from the builder
             // Instantly move the camera to the user's location once the map is available.
             mMap.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
-            // Change the map type to hybrid once the camera has adjusted for quicker initial loading.
-            mMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
+
+            // Use the NORMAL map type if the user is not connected to WIFI for easier loading.
+            ConnectivityManager connManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+            NetworkInfo mWifi = connManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
+
+            if (mWifi.isConnected()) {
+
+                mMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
+            } else {
+
+                mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
+            }
+
             // Set Boolean to false to prevent unnecessary animation, as the camera should already be set on the user's location.
             firstLoad = false;
         }
