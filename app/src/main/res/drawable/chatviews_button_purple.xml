@@ -16,7 +16,7 @@
                         android:height="40dp" />
                     <stroke
                         android:width="3px"
-                        android:color="#ffff00" />
+                        android:color="#ff00ff" />
                 </shape>
             </item>
 
@@ -33,7 +33,7 @@
                         android:height="40dp" />
                     <stroke
                         android:width="7dp"
-                        android:color="#00ffd700" />
+                        android:color="#00ff00d7" />
                 </shape>
             </item>
 
@@ -50,7 +50,7 @@
                         android:height="40dp" />
                     <stroke
                         android:width="3px"
-                        android:color="#ffff00" />
+                        android:color="#ff00ff" />
                 </shape>
             </item>
 
@@ -60,7 +60,7 @@
                     <size
                         android:width="1dp"
                         android:height="1dp" />
-                    <solid android:color="#66ffff00" />
+                    <solid android:color="#66ff00ff" />
                 </shape>
             </item>
 
@@ -83,7 +83,7 @@
                         android:height="40dp" />
                     <stroke
                         android:width="3px"
-                        android:color="#b4a000" />
+                        android:color="#b400a0" />
                 </shape>
             </item>
 
@@ -100,7 +100,7 @@
                         android:height="40dp" />
                     <stroke
                         android:width="7dp"
-                        android:color="#00b4a000" />
+                        android:color="#00b400a0" />
                 </shape>
             </item>
 
@@ -117,7 +117,7 @@
                         android:height="40dp" />
                     <stroke
                         android:width="3px"
-                        android:color="#b4a000" />
+                        android:color="#b400a0" />
                 </shape>
             </item>
 
@@ -127,7 +127,7 @@
                     <size
                         android:width="1dp"
                         android:height="1dp" />
-                    <solid android:color="#ffb4a000" />
+                    <solid android:color="#ffb400a0" />
                 </shape>
             </item>
 

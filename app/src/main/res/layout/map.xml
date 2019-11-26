@@ -38,7 +38,7 @@
         android:id="@+id/createChatButton"
         android:layout_width="30dp"
         android:layout_height="30dp"
-        android:background="@drawable/point_button"
+        android:background="@drawable/createchat_button"
         android:layout_marginStart="25dp"
         android:layout_marginLeft="25dp"
         android:layout_marginBottom="25dp"
