@@ -98,7 +98,6 @@ public class Map extends FragmentActivity implements
     private Location mlocation;
     private List<LatLng> polygonPointsList;
 
-    //TODO: Consolidate code by creating separate methods.
     //TODO: Give warning about circle overlap and create popup menu for selecting circle.
     //TODO: Change map type on different thread. Also, save user map type preference.
     //TODO: Implement Firebase caching?
@@ -107,6 +106,7 @@ public class Map extends FragmentActivity implements
     //TODO: Optimize Firebase loading.
     //TODO: Too much work on main thread.
     //TODO: Make checkLocationPermission Async / create loading animations.
+    //TODO: Consolidate code by creating separate methods.
     //TODO: Work on possible NullPointerExceptions (try/catch).
     //TODO: Check updating in different states with another device - make sure uuids never overlap.
 
