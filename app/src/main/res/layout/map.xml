@@ -63,4 +63,21 @@
         android:layout_toEndOf="@+id/createChatButton"
         android:layout_toRightOf="@+id/createChatButton" />
 
+    <SeekBar
+        android:id="@+id/chatSelectorSeekBar"
+        android:layout_width="fill_parent"
+        android:layout_height="60dp"
+        android:progress="0"
+        android:max="10"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="10dp"
+        android:layout_marginRight="10dp"
+        android:layout_marginEnd="10dp"
+        android:layout_toEndOf="@+id/createChatButton"
+        android:layout_toRightOf="@+id/createChatButton"
+        android:theme="@style/Widget.AppCompat.SeekBar.Discrete"
+        android:visibility="gone"/>
+
 </RelativeLayout>
