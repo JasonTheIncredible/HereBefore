@@ -91,21 +91,22 @@ public class Map extends FragmentActivity implements
     private Polygon polygon;
     private DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference(), firebaseCircles = rootRef.child("circles"), firebasePolygons = rootRef.child("polygons");
     private SeekBar chatSizeSeekBar, chatSelectorSeekBar;
-    private String uuid, marker0ID, marker1ID, marker2ID, marker3ID, marker4ID, marker5ID, marker6ID, marker7ID, selectedOverlappingShape;
+    private String uuid, marker0ID, marker1ID, marker2ID, marker3ID, marker4ID, marker5ID, marker6ID, marker7ID, selectedOverlappingShapeUUID;
     private Button createChatButton, chatViewsButton, mapTypeButton;
     private PopupMenu popupMapType, popupChatViews, popupCreateChat;
-    private Boolean waitingForShapeInformationToProcess = false, markerOutsidePolygon = false, mapTypeMenuIsOpen = false, chatViewsMenuIsOpen = false, createChatMenuIsOpen = false, usedSeekBar = false, userIsWithinShape, firstLoad = true, threeMarkers = false, fourMarkers = false, fiveMarkers = false, sixMarkers = false, sevenMarkers = false, eightMarkers = false;
+    private Boolean waitingForShapeInformationToProcess = false, markerOutsidePolygon = false, mapTypeMenuIsOpen = false, chatViewsMenuIsOpen = false, createChatMenuIsOpen = false, usedSeekBar = false, userIsWithinShape, selectingShape = false, firstLoad = true, threeMarkers = false, fourMarkers = false, fiveMarkers = false, sixMarkers = false, sevenMarkers = false, eightMarkers = false;
     private LatLng markerPositionAtVertexOfPolygon, marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position, selectedOverlappingShapeCircleLocation;
     private Double relativeAngle = 0.0, selectedOverlappingShapeCircleRadius;
     private Location mlocation;
     private List<LatLng> polygonPointsList;
-    private ArrayList<String> overlappingShapesUUID = new ArrayList<String>();
-    private ArrayList<LatLng> overlappingShapesCircleLocation = new ArrayList<LatLng>();
-    private ArrayList<Double> overlappingShapesCircleRadius = new ArrayList<Double>();
+    private ArrayList<String> overlappingShapesUUID;
+    private ArrayList<LatLng> overlappingShapesCircleLocation;
+    private ArrayList<Double> overlappingShapesCircleRadius;
     private float x, y;
     private int chatsSize;
 
     //TODO: Give warning about circle overlap and create popup menu for selecting circle.
+    //TODO: Go directly to chat if it is a new shape.
     //TODO: Change map type on different thread. Also, save user map type preference.
     //TODO: Implement Firebase caching?
     //TODO: Only load Firebase circles if they're within camera view (in onMapReady) (getMap().getProjection().getVisibleRegion().latLangBounds). If this works, can possibly replace singleValueEventListener in onMapReady() and onRestart() with a valueEventListener.
@@ -115,6 +116,7 @@ public class Map extends FragmentActivity implements
     //TODO: Make checkLocationPermission Async / create loading animations.
     //TODO: Consolidate code by creating separate methods.
     //TODO: Work on possible NullPointerExceptions (try/catch).
+    //TODO: Work on onTrimMemory() and onPause() / onStart() interaction.
     //TODO: Check updating in different states with another device - make sure uuids never overlap.
 
     @Override
@@ -1866,11 +1868,11 @@ public class Map extends FragmentActivity implements
 
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
 
-                selectedOverlappingShape = overlappingShapesUUID.get(chatSelectorSeekBar.getProgress());
+                selectedOverlappingShapeUUID = overlappingShapesUUID.get(chatSelectorSeekBar.getProgress());
                 selectedOverlappingShapeCircleLocation = overlappingShapesCircleLocation.get(chatSelectorSeekBar.getProgress());
                 selectedOverlappingShapeCircleRadius = overlappingShapesCircleRadius.get(chatSelectorSeekBar.getProgress());
 
-                if (selectedOverlappingShape != null) {
+                if (selectedOverlappingShapeUUID != null) {
 
                     if (circle0 != null) {
 
@@ -1888,6 +1890,8 @@ public class Map extends FragmentActivity implements
                                     .zIndex(2)
                     );
                 }
+
+                selectingShape = true;
             }
 
             @Override
@@ -1995,6 +1999,7 @@ public class Map extends FragmentActivity implements
             chatSizeSeekBar.setProgress(0);
             relativeAngle = 0.0;
             usedSeekBar = false;
+            selectingShape = false;
             mlocation = null;
             threeMarkers = false;
             fourMarkers = false;
@@ -2008,25 +2013,38 @@ public class Map extends FragmentActivity implements
             onMapReadyAndRestart();
         }
 
-        // Close any open menus
+        // Close any open menus.
         if (popupMapType != null) {
 
             popupMapType.dismiss();
             mapTypeMenuIsOpen = false;
         }
 
-        // Close any open menus
+        // Close any open menus.
         if (popupChatViews != null) {
 
             popupChatViews.dismiss();
             chatViewsMenuIsOpen = false;
         }
 
-        // Close any open menus
+        // Close any open menus.
         if (popupCreateChat != null) {
 
             popupCreateChat.dismiss();
             createChatMenuIsOpen = false;
+        }
+
+        overlappingShapesUUID = new ArrayList<>();
+        overlappingShapesCircleLocation = new ArrayList<>();
+        overlappingShapesCircleRadius = new ArrayList<>();
+
+        // Get rid of the chatSelectorSeekBar.
+        if (chatSelectorSeekBar.getVisibility() != View.INVISIBLE) {
+
+            // Change chatsSize so that this value is changed when a used clicks on a circle, resulting in onProgressChanged() on chatSelectorSeekBar and the circle getting highlighted.
+            chatsSize = 0;
+            chatSelectorSeekBar.setVisibility(View.INVISIBLE);
+            chatSizeSeekBar.setVisibility(View.VISIBLE);
         }
     }
 
@@ -8899,6 +8917,231 @@ public class Map extends FragmentActivity implements
             public void onCircleClick(final Circle circle) {
 
                 Log.i(TAG, "onCircleClick");
+
+                if (selectingShape) {
+
+                    // End this method if the method is already being processed from another shape clicking event.
+                    if (waitingForShapeInformationToProcess) {
+
+                        return;
+                    }
+
+                    // Update boolean to prevent double clicking a shape.
+                    waitingForShapeInformationToProcess = true;
+
+                    if (!selectedOverlappingShapeUUID.equals("new")) {
+
+                        // Get the ID set by Firebase to identify which circle the user clicked on.
+                        uuid = selectedOverlappingShapeUUID;
+                    } else {
+
+                        // If the circle is new, it will not have a tag, as the tag is pulled from Firebase. Therefore, generate a uuid.
+                        uuid = UUID.randomUUID().toString();
+                    }
+
+                    // Check if the user is already signed in.
+                    if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+
+                        // User is signed in.
+
+                        // Check if user is within the circle before going to the chat.
+                        FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
+
+                        mFusedLocationClient.getLastLocation()
+                                .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
+                                    @Override
+                                    public void onSuccess(Location location) {
+
+                                        if (location != null) {
+
+                                            float[] distance = new float[2];
+
+                                            Location.distanceBetween(location.getLatitude(), location.getLongitude(),
+                                                    circle.getCenter().latitude, circle.getCenter().longitude, distance);
+
+                                            // Boolean; will be true if user is within the circle upon circle click.
+                                            userIsWithinShape = !(distance[0] > circle.getRadius());
+                                        }
+                                    }
+                                });
+
+                        // If selectedOverlappingShapeUUID.equals("new"), the circle is new. Therefore, compare it to the uuids in Firebase to prevent uuid overlap before adding it to Firebase.
+                        if (selectedOverlappingShapeUUID.equals("new")) {
+
+                            // Inform the user is the circle is too small.
+                            if (circle.getRadius() < 1) {
+
+                                Toast.makeText(Map.this, "Please make the shape larger", Toast.LENGTH_SHORT).show();
+                                waitingForShapeInformationToProcess = false;
+                                return;
+                            }
+
+                            firebaseCircles.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
+
+                                @Override
+                                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                                    // If the uuid already exists in Firebase, generate another uuid and try again.
+                                    if (dataSnapshot.exists()) {
+
+                                        // uuid exists in Firebase. Generate another and try again.
+
+                                        // Generate another UUID and try again.
+                                        uuid = UUID.randomUUID().toString();
+
+                                        // Carry the extras all the way to Chat.java.
+                                        Intent Activity = new Intent(Map.this, Chat.class);
+                                        Activity.putExtra("shapeIsCircle", true);
+                                        // Pass this boolean value to Chat.java.
+                                        Activity.putExtra("newShape", true);
+                                        // Pass this value to Chat.java to identify the shape.
+                                        Activity.putExtra("uuid", uuid);
+                                        // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
+                                        Activity.putExtra("circleLatitude", circle.getCenter().latitude);
+                                        Activity.putExtra("circleLongitude", circle.getCenter().longitude);
+                                        Activity.putExtra("radius", circle.getRadius());
+                                        circle0.remove();
+                                        startActivity(Activity);
+                                    } else {
+
+                                        // uuid does not already exist in Firebase. Go to Chat.java with the uuid.
+
+                                        // Carry the extras all the way to Chat.java.
+                                        Intent Activity = new Intent(Map.this, Chat.class);
+                                        Activity.putExtra("shapeIsCircle", true);
+                                        // Pass this boolean value to Chat.java.
+                                        Activity.putExtra("newShape", true);
+                                        // Pass this value to Chat.java to identify the shape.
+                                        Activity.putExtra("uuid", uuid);
+                                        // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
+                                        Activity.putExtra("circleLatitude", circle.getCenter().latitude);
+                                        Activity.putExtra("circleLongitude", circle.getCenter().longitude);
+                                        Activity.putExtra("radius", circle.getRadius());
+                                        circle0.remove();
+                                        startActivity(Activity);
+                                    }
+                                }
+
+                                @Override
+                                public void onCancelled(@NonNull DatabaseError databaseError) {
+                                }
+                            });
+                        } else {
+
+                            // The circle is not new, so go to Chat.java.
+
+                            // Go to Chat.java with the boolean value.
+                            Intent Activity = new Intent(Map.this, Chat.class);
+                            Activity.putExtra("shapeIsCircle", true);
+                            // Pass this boolean value to Chat.java.
+                            Activity.putExtra("newShape", false);
+                            // Pass this value to Chat.java to identify the shape.
+                            Activity.putExtra("uuid", uuid);
+                            // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                            Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                            circle0.remove();
+                            startActivity(Activity);
+                        }
+                    } else {
+
+                        // No user is signed in.
+
+                        // If circle.getTag() == null, the circle is new. Therefore, compare it to the uuids in Firebase to prevent uuid overlap before adding it to Firebase.
+                        if (circle.getTag() == null) {
+
+                            // Inform the user is the circle is too small.
+                            if (circle.getRadius() < 1) {
+
+                                Toast.makeText(Map.this, "Please make the shape larger", Toast.LENGTH_SHORT).show();
+                                waitingForShapeInformationToProcess = false;
+                                return;
+                            }
+
+                            firebaseCircles.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
+
+                                @Override
+                                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                                    // If the uuid already exists in Firebase, generate another uuid and try again.
+                                    if (dataSnapshot.exists()) {
+
+                                        // uuid exists in Firebase. Generate another and try again.
+
+                                        // Generate another UUID and try again.
+                                        uuid = UUID.randomUUID().toString();
+
+                                        // Carry the extras all the way to Chat.java.
+                                        Intent Activity = new Intent(Map.this, SignIn.class);
+                                        Activity.putExtra("shapeIsCircle", true);
+                                        // Pass this boolean value to Chat.java.
+                                        Activity.putExtra("newShape", true);
+                                        // Pass this value to Chat.java to identify the shape.
+                                        Activity.putExtra("uuid", uuid);
+                                        // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
+                                        Activity.putExtra("circleLatitude", circle.getCenter().latitude);
+                                        Activity.putExtra("circleLongitude", circle.getCenter().longitude);
+                                        Activity.putExtra("radius", circle.getRadius());
+                                        circle0.remove();
+                                        startActivity(Activity);
+                                    } else {
+
+                                        // uuid does not already exist in Firebase. Go to Chat.java with the uuid.
+
+                                        // Carry the extras all the way to Chat.java.
+                                        Intent Activity = new Intent(Map.this, SignIn.class);
+                                        Activity.putExtra("shapeIsCircle", true);
+                                        // Pass this boolean value to Chat.java.
+                                        Activity.putExtra("newShape", true);
+                                        // Pass this value to Chat.java to identify the shape.
+                                        Activity.putExtra("uuid", uuid);
+                                        // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
+                                        Activity.putExtra("circleLatitude", circle.getCenter().latitude);
+                                        Activity.putExtra("circleLongitude", circle.getCenter().longitude);
+                                        Activity.putExtra("radius", circle.getRadius());
+                                        circle0.remove();
+                                        startActivity(Activity);
+                                    }
+                                }
+
+                                @Override
+                                public void onCancelled(@NonNull DatabaseError databaseError) {
+                                }
+                            });
+                        } else {
+
+                            // The polygon is not new, so go to SignIn.java.
+
+                            // Go to Chat.java with the boolean value.
+                            Intent Activity = new Intent(Map.this, SignIn.class);
+                            Activity.putExtra("shapeIsCircle", true);
+                            // Pass this boolean value to Chat.java.
+                            Activity.putExtra("newShape", false);
+                            // Pass this value to Chat.java to identify the shape.
+                            Activity.putExtra("uuid", uuid);
+                            // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                            Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                            circle0.remove();
+                            startActivity(Activity);
+                        }
+                    }
+
+                    return;
+                }
+
+                if (overlappingShapesUUID == null) {
+
+                    overlappingShapesUUID = new ArrayList<>();
+                    overlappingShapesCircleLocation = new ArrayList<>();
+                    overlappingShapesCircleRadius = new ArrayList<>();
+                }
 
                 if (circle.getZIndex() == 0 && circle.getTag() == null) {
 
