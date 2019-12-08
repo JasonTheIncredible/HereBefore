@@ -87,7 +87,7 @@ public class Map extends FragmentActivity implements
     private GoogleMap mMap;
     private static final int Request_User_Location_Code = 99;
     private Marker marker0, marker1, marker2, marker3, marker4, marker5, marker6, marker7;
-    private Circle circle, circleTemp;
+    private Circle newCircle, circleTemp;
     private Polygon polygon;
     private DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference(), firebaseCircles = rootRef.child("circles"), firebasePolygons = rootRef.child("polygons");
     private SeekBar chatSizeSeekBar, chatSelectorSeekBar;
@@ -105,7 +105,6 @@ public class Map extends FragmentActivity implements
     private float x, y;
     private int chatsSize;
 
-    //TODO: Get rid of "new" circle if the user did not click on it.
     //TODO: If possible, get rid of inner circles while highlighting if the user did not click on them.
     //TODO: Check multiple clicking logic if user clicks somewhere else.
     //TODO: Reset arrayLists and whatnot if user clicks away from the shapes, reset chatsSize, don't go into circle if user clicks on non-highlighted circle, and check logic with an orientation change.
@@ -216,7 +215,7 @@ public class Map extends FragmentActivity implements
                 popupCreateChat.setOnMenuItemClickListener(Map.this);
                 popupCreateChat.inflate(R.menu.createchat_menu);
                 // Check if the circle exists and adjust the menu items accordingly.
-                if (circle != null || polygon != null) {
+                if (newCircle != null || polygon != null) {
 
                     popupCreateChat.getMenu().findItem(R.id.createPolygon).setVisible(false);
                     popupCreateChat.getMenu().findItem(R.id.createCircle).setVisible(false);
@@ -248,7 +247,7 @@ public class Map extends FragmentActivity implements
                 usedSeekBar = true;
 
                 // Creates circle with markers.
-                if (circle == null && polygon == null) {
+                if (newCircle == null && polygon == null) {
 
                     FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
 
@@ -298,7 +297,7 @@ public class Map extends FragmentActivity implements
 
                                             marker1.setVisible(false);
 
-                                            circle = mMap.addCircle(circleOptions);
+                                            newCircle = mMap.addCircle(circleOptions);
                                         } else {
 
                                             // Make circle the size set by the seekBar.
@@ -333,7 +332,7 @@ public class Map extends FragmentActivity implements
 
                                             marker1.setVisible(false);
 
-                                            circle = mMap.addCircle(circleOptions);
+                                            newCircle = mMap.addCircle(circleOptions);
                                         }
                                     }
                                 }
@@ -347,11 +346,11 @@ public class Map extends FragmentActivity implements
                 if (usedSeekBar) {
 
                     // Changes size of the circle and marker1 visibility.
-                    if (circle != null) {
+                    if (newCircle != null) {
 
                         Log.i(TAG, "chatSizeSeekBar -> onProgressChanged -> circle");
 
-                        circle.setRadius(progress);
+                        newCircle.setRadius(progress);
                         marker1.setVisible(false);
                     }
 
@@ -1846,11 +1845,11 @@ public class Map extends FragmentActivity implements
                 usedSeekBar = false;
 
                 // Sets marker1's position on the circle's edge relative to where the user last left it, and sets marker1's visibility.
-                if (circle != null) {
+                if (newCircle != null) {
 
                     Log.i(TAG, "chatSizeSeekBar -> onStopTrackingTouch -> circle");
 
-                    marker1.setPosition(latLngGivenDistance(circle.getCenter().latitude, circle.getCenter().longitude, chatSizeSeekBar.getProgress(), relativeAngle));
+                    marker1.setPosition(latLngGivenDistance(newCircle.getCenter().latitude, newCircle.getCenter().longitude, chatSizeSeekBar.getProgress(), relativeAngle));
 
                     marker1.setVisible(true);
                 }
@@ -1977,9 +1976,9 @@ public class Map extends FragmentActivity implements
             }
 
             // Remove the circle and markers.
-            if (circle != null) {
+            if (newCircle != null) {
 
-                circle.remove();
+                newCircle.remove();
                 if (marker0 != null) {
 
                     marker0.remove();
@@ -1989,7 +1988,7 @@ public class Map extends FragmentActivity implements
                     marker1.remove();
                 }
 
-                circle = null;
+                newCircle = null;
                 marker0 = null;
                 marker1 = null;
                 marker0Position = null;
@@ -2518,9 +2517,9 @@ public class Map extends FragmentActivity implements
                             }
 
                             // Remove the circle and markers.
-                            if (circle != null) {
+                            if (newCircle != null) {
 
-                                circle.remove();
+                                newCircle.remove();
                                 if (marker0 != null) {
 
                                     marker0.remove();
@@ -2530,7 +2529,7 @@ public class Map extends FragmentActivity implements
                                     marker1.remove();
                                 }
 
-                                circle = null;
+                                newCircle = null;
                                 marker0 = null;
                                 marker1 = null;
                                 marker0Position = null;
@@ -2858,9 +2857,9 @@ public class Map extends FragmentActivity implements
                             }
 
                             // Remove the circle and markers.
-                            if (circle != null) {
+                            if (newCircle != null) {
 
-                                circle.remove();
+                                newCircle.remove();
                                 if (marker0 != null) {
 
                                     marker0.remove();
@@ -2870,7 +2869,7 @@ public class Map extends FragmentActivity implements
                                     marker1.remove();
                                 }
 
-                                circle = null;
+                                newCircle = null;
                                 marker0 = null;
                                 marker1 = null;
                                 marker0Position = null;
@@ -3198,9 +3197,9 @@ public class Map extends FragmentActivity implements
                             }
 
                             // Remove the circle and markers.
-                            if (circle != null) {
+                            if (newCircle != null) {
 
-                                circle.remove();
+                                newCircle.remove();
                                 if (marker0 != null) {
 
                                     marker0.remove();
@@ -3210,7 +3209,7 @@ public class Map extends FragmentActivity implements
                                     marker1.remove();
                                 }
 
-                                circle = null;
+                                newCircle = null;
                                 marker0 = null;
                                 marker1 = null;
                                 marker0Position = null;
@@ -3538,9 +3537,9 @@ public class Map extends FragmentActivity implements
                             }
 
                             // Remove the circle and markers.
-                            if (circle != null) {
+                            if (newCircle != null) {
 
-                                circle.remove();
+                                newCircle.remove();
                                 if (marker0 != null) {
 
                                     marker0.remove();
@@ -3550,7 +3549,7 @@ public class Map extends FragmentActivity implements
                                     marker1.remove();
                                 }
 
-                                circle = null;
+                                newCircle = null;
                                 marker0 = null;
                                 marker1 = null;
                                 marker0Position = null;
@@ -3866,12 +3865,12 @@ public class Map extends FragmentActivity implements
                 }
 
                 // Remove the circle and markers.
-                if (circle != null) {
+                if (newCircle != null) {
 
-                    circle.remove();
+                    newCircle.remove();
                     marker0.remove();
                     marker1.remove();
-                    circle = null;
+                    newCircle = null;
                     marker0 = null;
                     marker1 = null;
                     marker0Position = null;
@@ -4394,12 +4393,12 @@ public class Map extends FragmentActivity implements
                 }
 
                 // Remove the circle and markers.
-                if (circle != null) {
+                if (newCircle != null) {
 
-                    circle.remove();
+                    newCircle.remove();
                     marker0.remove();
                     marker1.remove();
-                    circle = null;
+                    newCircle = null;
                     marker0 = null;
                     marker1 = null;
                     marker0Position = null;
@@ -4848,12 +4847,12 @@ public class Map extends FragmentActivity implements
                 }
 
                 // Remove the circle and markers.
-                if (circle != null) {
+                if (newCircle != null) {
 
-                    circle.remove();
+                    newCircle.remove();
                     marker0.remove();
                     marker1.remove();
-                    circle = null;
+                    newCircle = null;
                     marker0 = null;
                     marker1 = null;
                     marker0Position = null;
@@ -5302,12 +5301,12 @@ public class Map extends FragmentActivity implements
                 }
 
                 // Remove the circle and markers.
-                if (circle != null) {
+                if (newCircle != null) {
 
-                    circle.remove();
+                    newCircle.remove();
                     marker0.remove();
                     marker1.remove();
-                    circle = null;
+                    newCircle = null;
                     marker0 = null;
                     marker1 = null;
                     marker0Position = null;
@@ -5756,12 +5755,12 @@ public class Map extends FragmentActivity implements
                 }
 
                 // Remove the circle and markers.
-                if (circle != null) {
+                if (newCircle != null) {
 
-                    circle.remove();
+                    newCircle.remove();
                     marker0.remove();
                     marker1.remove();
-                    circle = null;
+                    newCircle = null;
                     marker0 = null;
                     marker1 = null;
                     marker0Position = null;
@@ -5925,12 +5924,12 @@ public class Map extends FragmentActivity implements
                 }
 
                 // Remove the circle and markers.
-                if (circle != null) {
+                if (newCircle != null) {
 
-                    circle.remove();
+                    newCircle.remove();
                     marker0.remove();
                     marker1.remove();
-                    circle = null;
+                    newCircle = null;
                     marker0 = null;
                     marker1 = null;
                     marker0Position = null;
@@ -6137,12 +6136,12 @@ public class Map extends FragmentActivity implements
                 }
 
                 // Remove the circle and markers.
-                if (circle != null) {
+                if (newCircle != null) {
 
-                    circle.remove();
+                    newCircle.remove();
                     marker0.remove();
                     marker1.remove();
-                    circle = null;
+                    newCircle = null;
                     marker0 = null;
                     marker1 = null;
                     marker0Position = null;
@@ -6196,7 +6195,7 @@ public class Map extends FragmentActivity implements
                                         marker0ID = marker0.getId();
                                         marker1ID = marker1.getId();
 
-                                        circle = mMap.addCircle(circleOptions);
+                                        newCircle = mMap.addCircle(circleOptions);
                                         chatSizeSeekBar.setProgress((int) distanceGivenLatLng(location.getLatitude(), location.getLongitude(), marker1Position.latitude, marker1Position.longitude));
                                     } else {
 
@@ -6231,7 +6230,7 @@ public class Map extends FragmentActivity implements
                                         marker0ID = marker0.getId();
                                         marker1ID = marker1.getId();
 
-                                        circle = mMap.addCircle(circleOptions);
+                                        newCircle = mMap.addCircle(circleOptions);
                                         chatSizeSeekBar.setProgress((int) distanceGivenLatLng(location.getLatitude(), location.getLongitude(), marker1Position.latitude, marker1Position.longitude));
                                     }
                                 }
@@ -6308,12 +6307,12 @@ public class Map extends FragmentActivity implements
                 }
 
                 // Remove the circle and markers.
-                if (circle != null) {
+                if (newCircle != null) {
 
-                    circle.remove();
+                    newCircle.remove();
                     marker0.remove();
                     marker1.remove();
-                    circle = null;
+                    newCircle = null;
                     marker0 = null;
                     marker1 = null;
                     marker0Position = null;
@@ -6346,10 +6345,10 @@ public class Map extends FragmentActivity implements
                                 if (location != null) {
 
                                     // Remove any other shape before adding the circle to Firebase.
-                                    if (circle != null) {
+                                    if (newCircle != null) {
 
-                                        circle.remove();
-                                        circle = null;
+                                        newCircle.remove();
+                                        newCircle = null;
                                     }
 
                                     if (polygon != null) {
@@ -6488,23 +6487,23 @@ public class Map extends FragmentActivity implements
                 LatLng markerPosition = marker.getPosition();
 
                 // If user holds the center marker, update the circle's position. Else, update the circle's radius.
-                if (circle != null) {
+                if (newCircle != null) {
 
                     if (marker.getId().equals(marker0ID)) {
 
-                        circle.setCenter(markerPosition);
+                        newCircle.setCenter(markerPosition);
                         marker1.setVisible(false);
                     }
 
                     if (marker.getId().equals(marker1ID)) {
 
                         // Limits the size of the circle.
-                        if (distanceGivenLatLng(circle.getCenter().latitude, circle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude) < 200) {
+                        if (distanceGivenLatLng(newCircle.getCenter().latitude, newCircle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude) < 200) {
 
-                            circle.setRadius(distanceGivenLatLng(circle.getCenter().latitude, circle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude));
+                            newCircle.setRadius(distanceGivenLatLng(newCircle.getCenter().latitude, newCircle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude));
                         } else {
 
-                            circle.setRadius(200);
+                            newCircle.setRadius(200);
                         }
                     }
                 }
@@ -6779,22 +6778,22 @@ public class Map extends FragmentActivity implements
                 LatLng markerPosition = marker.getPosition();
 
                 // If user holds the center marker, update the circle's position. Else, update the circle's radius.
-                if (circle != null) {
+                if (newCircle != null) {
 
                     if (marker.getId().equals(marker0ID)) {
 
-                        circle.setCenter(markerPosition);
+                        newCircle.setCenter(markerPosition);
                     }
 
                     if (marker.getId().equals(marker1ID)) {
 
                         // Limits the size of the circle.
-                        if (distanceGivenLatLng(markerPosition.latitude, markerPosition.longitude, circle.getCenter().latitude, circle.getCenter().longitude) < 200) {
+                        if (distanceGivenLatLng(markerPosition.latitude, markerPosition.longitude, newCircle.getCenter().latitude, newCircle.getCenter().longitude) < 200) {
 
-                            circle.setRadius(distanceGivenLatLng(circle.getCenter().latitude, circle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude));
+                            newCircle.setRadius(distanceGivenLatLng(newCircle.getCenter().latitude, newCircle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude));
                         } else {
 
-                            circle.setRadius(200);
+                            newCircle.setRadius(200);
                         }
                     }
                 }
@@ -7332,12 +7331,12 @@ public class Map extends FragmentActivity implements
 
                 LatLng markerPosition = marker.getPosition();
 
-                if (circle != null) {
+                if (newCircle != null) {
 
                     // Sets marker1's position on the circle's edge relative to where the user last left marker1.
                     if (marker.getId().equals(marker0ID)) {
 
-                        marker1.setPosition(latLngGivenDistance(circle.getCenter().latitude, circle.getCenter().longitude, circle.getRadius(), relativeAngle));
+                        marker1.setPosition(latLngGivenDistance(newCircle.getCenter().latitude, newCircle.getCenter().longitude, newCircle.getRadius(), relativeAngle));
 
                         marker1.setVisible(true);
                     }
@@ -7345,18 +7344,18 @@ public class Map extends FragmentActivity implements
                     if (marker.getId().equals(marker1ID)) {
 
                         // Update the global variable with the angle the user left the marker's position. This is used if the user drags the center marker.
-                        relativeAngle = angleFromCoordinate(circle.getCenter().latitude, circle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude);
+                        relativeAngle = angleFromCoordinate(newCircle.getCenter().latitude, newCircle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude);
 
                         // Keep the seekBar's progress aligned with the marker.
-                        if (circle.getRadius() < 200) {
+                        if (newCircle.getRadius() < 200) {
 
-                            chatSizeSeekBar.setProgress((int) distanceGivenLatLng(circle.getCenter().latitude, circle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude));
+                            chatSizeSeekBar.setProgress((int) distanceGivenLatLng(newCircle.getCenter().latitude, newCircle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude));
                         }
 
                         // Limits the size of the circle, keeps marker1's position on the circle's edge at the same angle relative to where the user last left it, and keeps the seekBar's progress aligned with the marker.
-                        if (circle.getRadius() >= 200) {
+                        if (newCircle.getRadius() >= 200) {
 
-                            marker.setPosition(latLngGivenDistance(circle.getCenter().latitude, circle.getCenter().longitude, 200, relativeAngle));
+                            marker.setPosition(latLngGivenDistance(newCircle.getCenter().latitude, newCircle.getCenter().longitude, 200, relativeAngle));
 
                             chatSizeSeekBar.setProgress(200);
                         }
@@ -7420,19 +7419,19 @@ public class Map extends FragmentActivity implements
             @Override
             public boolean onMarkerClick(Marker marker) {
 
-                if (circle.getZIndex() == 0 && circle.getTag() == null) {
+                if (newCircle.getZIndex() == 0 && newCircle.getTag() == null) {
 
                     overlappingShapesUUID.add("new circle");
-                } else if (circle.getZIndex() == 0 && circle.getTag() != null) {
+                } else if (newCircle.getZIndex() == 0 && newCircle.getTag() != null) {
 
-                    overlappingShapesUUID.add(circle.getTag().toString());
+                    overlappingShapesUUID.add(newCircle.getTag().toString());
                 }
 
-                if (circle.getZIndex() == 0) {
+                if (newCircle.getZIndex() == 0) {
 
                     Log.i(TAG, "Dropping z-index of a circle from a marker click");
 
-                    circle.setZIndex(-1);
+                    newCircle.setZIndex(-1);
 
                     marker.remove();
 
@@ -7450,12 +7449,12 @@ public class Map extends FragmentActivity implements
                 // Update boolean to prevent double clicking a shape.
                 waitingForShapeInformationToProcess = true;
 
-                if (circle != null && marker.getId().equals(marker0ID)) {
+                if (newCircle != null && marker.getId().equals(marker0ID)) {
 
-                    if (circle.getTag() != null) {
+                    if (newCircle.getTag() != null) {
 
                         // Get the ID set by Firebase to identify which circle the user clicked on.
-                        uuid = (String) circle.getTag();
+                        uuid = (String) newCircle.getTag();
                     } else {
 
                         // If the circle is new, it will not have a tag, as the tag is pulled from Firebase. Therefore, generate a uuid.
@@ -7480,19 +7479,19 @@ public class Map extends FragmentActivity implements
                                             float[] distance = new float[2];
 
                                             Location.distanceBetween(location.getLatitude(), location.getLongitude(),
-                                                    circle.getCenter().latitude, circle.getCenter().longitude, distance);
+                                                    newCircle.getCenter().latitude, newCircle.getCenter().longitude, distance);
 
                                             // Boolean; will be true if user is within the circle upon circle click.
-                                            userIsWithinShape = !(distance[0] > circle.getRadius());
+                                            userIsWithinShape = !(distance[0] > newCircle.getRadius());
                                         }
                                     }
                                 });
 
                         // If circle.getTag() == null, the circle is new. Therefore, compare it to the uuids in Firebase to prevent uuid overlap before adding it to Firebase.
-                        if (circle.getTag() == null) {
+                        if (newCircle.getTag() == null) {
 
                             // Inform the user is the circle is too small.
-                            if (circle.getRadius() < 1) {
+                            if (newCircle.getRadius() < 1) {
 
                                 Toast.makeText(Map.this, "Please make the shape larger", Toast.LENGTH_SHORT).show();
                                 waitingForShapeInformationToProcess = false;
@@ -7522,9 +7521,9 @@ public class Map extends FragmentActivity implements
                                         // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                         Activity.putExtra("userIsWithinShape", userIsWithinShape);
                                         // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
-                                        Activity.putExtra("circleLatitude", circle.getCenter().latitude);
-                                        Activity.putExtra("circleLongitude", circle.getCenter().longitude);
-                                        Activity.putExtra("radius", circle.getRadius());
+                                        Activity.putExtra("circleLatitude", newCircle.getCenter().latitude);
+                                        Activity.putExtra("circleLongitude", newCircle.getCenter().longitude);
+                                        Activity.putExtra("radius", newCircle.getRadius());
                                         startActivity(Activity);
                                     } else {
 
@@ -7540,9 +7539,9 @@ public class Map extends FragmentActivity implements
                                         // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                         Activity.putExtra("userIsWithinShape", userIsWithinShape);
                                         // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
-                                        Activity.putExtra("circleLatitude", circle.getCenter().latitude);
-                                        Activity.putExtra("circleLongitude", circle.getCenter().longitude);
-                                        Activity.putExtra("radius", circle.getRadius());
+                                        Activity.putExtra("circleLatitude", newCircle.getCenter().latitude);
+                                        Activity.putExtra("circleLongitude", newCircle.getCenter().longitude);
+                                        Activity.putExtra("radius", newCircle.getRadius());
                                         startActivity(Activity);
                                     }
                                 }
@@ -7571,10 +7570,10 @@ public class Map extends FragmentActivity implements
                         // No user is signed in.
 
                         // If circle.getTag() == null, the circle is new. Therefore, compare it to the uuids in Firebase to prevent uuid overlap before adding it to Firebase.
-                        if (circle.getTag() == null) {
+                        if (newCircle.getTag() == null) {
 
                             // Inform the user is the circle is too small.
-                            if (circle.getRadius() < 1) {
+                            if (newCircle.getRadius() < 1) {
 
                                 Toast.makeText(Map.this, "Please make the shape larger", Toast.LENGTH_SHORT).show();
                                 waitingForShapeInformationToProcess = false;
@@ -7604,9 +7603,9 @@ public class Map extends FragmentActivity implements
                                         // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                         Activity.putExtra("userIsWithinShape", userIsWithinShape);
                                         // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
-                                        Activity.putExtra("circleLatitude", circle.getCenter().latitude);
-                                        Activity.putExtra("circleLongitude", circle.getCenter().longitude);
-                                        Activity.putExtra("radius", circle.getRadius());
+                                        Activity.putExtra("circleLatitude", newCircle.getCenter().latitude);
+                                        Activity.putExtra("circleLongitude", newCircle.getCenter().longitude);
+                                        Activity.putExtra("radius", newCircle.getRadius());
                                         startActivity(Activity);
                                     } else {
 
@@ -7622,9 +7621,9 @@ public class Map extends FragmentActivity implements
                                         // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
                                         Activity.putExtra("userIsWithinShape", userIsWithinShape);
                                         // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
-                                        Activity.putExtra("circleLatitude", circle.getCenter().latitude);
-                                        Activity.putExtra("circleLongitude", circle.getCenter().longitude);
-                                        Activity.putExtra("radius", circle.getRadius());
+                                        Activity.putExtra("circleLatitude", newCircle.getCenter().latitude);
+                                        Activity.putExtra("circleLongitude", newCircle.getCenter().longitude);
+                                        Activity.putExtra("radius", newCircle.getRadius());
                                         startActivity(Activity);
                                     }
                                 }
@@ -8319,7 +8318,7 @@ public class Map extends FragmentActivity implements
                         // No user is signed in.
 
                         // If polygon.getTag() == null, the circle is new. Therefore, compare it to the uuids in Firebase to prevent uuid overlap before adding it to Firebase.
-                        if (circle.getTag() == null) {
+                        if (newCircle.getTag() == null) {
 
                             firebasePolygons.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
 
@@ -8940,6 +8939,91 @@ public class Map extends FragmentActivity implements
 
                 // This will get called after the last shape is programmatically clicked.
                 chatsSize = overlappingShapesUUID.size();
+
+                // If none of the clicked shapes are new, get rid of any new shapes.
+                if (!overlappingShapesUUID.contains("new")) {
+
+                    // Remove the polygon and markers.
+                    if (polygon != null) {
+
+                        polygon.remove();
+                        marker0.remove();
+                        marker1.remove();
+                        marker2.remove();
+                        polygon = null;
+                        marker0 = null;
+                        marker1 = null;
+                        marker2 = null;
+                        marker0Position = null;
+                        marker1Position = null;
+                        marker2Position = null;
+                        marker0ID = null;
+                        marker1ID = null;
+                        marker2ID = null;
+
+                        if (marker3 != null) {
+
+                            marker3.remove();
+                            marker3 = null;
+                            marker3Position = null;
+                            marker3ID = null;
+                        }
+
+                        if (marker4 != null) {
+
+                            marker4.remove();
+                            marker4 = null;
+                            marker4Position = null;
+                            marker4ID = null;
+                        }
+
+                        if (marker5 != null) {
+
+                            marker5.remove();
+                            marker5 = null;
+                            marker5Position = null;
+                            marker5ID = null;
+                        }
+
+                        if (marker6 != null) {
+
+                            marker6.remove();
+                            marker6 = null;
+                            marker6Position = null;
+                            marker6ID = null;
+                        }
+
+                        if (marker7 != null) {
+
+                            marker7.remove();
+                            marker7 = null;
+                            marker7Position = null;
+                            marker7ID = null;
+                        }
+                    }
+
+                    // Remove the circle and markers.
+                    if (newCircle != null) {
+
+                        newCircle.remove();
+                        if (marker0 != null) {
+
+                            marker0.remove();
+                        }
+
+                        if (marker1 != null) {
+                            marker1.remove();
+                        }
+
+                        newCircle = null;
+                        marker0 = null;
+                        marker1 = null;
+                        marker0Position = null;
+                        marker1Position = null;
+                        marker0ID = null;
+                        marker1ID = null;
+                    }
+                }
 
                 // If selectingShape, user has selected a highlighted shape. Similar logic applies to originally only clicking on one circle.
                 if (selectingShape || (chatsSize == 1 && circle.getTag() != null)) {
