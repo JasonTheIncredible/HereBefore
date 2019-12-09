@@ -94,7 +94,7 @@ public class Map extends FragmentActivity implements
     private String uuid, marker0ID, marker1ID, marker2ID, marker3ID, marker4ID, marker5ID, marker6ID, marker7ID, selectedOverlappingShapeUUID;
     private Button createChatButton, chatViewsButton, mapTypeButton;
     private PopupMenu popupMapType, popupChatViews, popupCreateChat;
-    private Boolean waitingForShapeInformationToProcess = false, markerOutsidePolygon = false, mapTypeMenuIsOpen = false, chatViewsMenuIsOpen = false, createChatMenuIsOpen = false, usedSeekBar = false, userIsWithinShape, selectingShape = false, firstLoad = true, threeMarkers = false, fourMarkers = false, fiveMarkers = false, sixMarkers = false, sevenMarkers = false, eightMarkers = false;
+    private Boolean waitingForClicksToProcess = false, waitingForShapeInformationToProcess = false, markerOutsidePolygon = false, mapTypeMenuIsOpen = false, chatViewsMenuIsOpen = false, createChatMenuIsOpen = false, usedSeekBar = false, userIsWithinShape, selectingShape = false, firstLoad = true, threeMarkers = false, fourMarkers = false, fiveMarkers = false, sixMarkers = false, sevenMarkers = false, eightMarkers = false;
     private LatLng markerPositionAtVertexOfPolygon, marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position, selectedOverlappingShapeCircleLocation;
     private Double relativeAngle = 0.0, selectedOverlappingShapeCircleRadius;
     private Location mlocation;
@@ -105,9 +105,8 @@ public class Map extends FragmentActivity implements
     private float x, y;
     private int chatsSize;
 
-    //TODO: If possible, get rid of inner circles while highlighting if the user did not click on them.
-    //TODO: Check multiple clicking logic if user clicks somewhere else.
-    //TODO: Reset arrayLists and whatnot if user clicks away from the shapes, reset chatsSize, don't go into circle if user clicks on non-highlighted circle, and check logic with an orientation change.
+    //TODO: Check logic with an orientation change.
+    //TODO: Disable changing map types (and other menus) if circles are being added.
     //TODO: Give warning about circle overlap and create popup menu for selecting circle.
     //TODO: Change map type on different thread. Also, save user map type preference.
     //TODO: Implement Firebase caching?
@@ -115,9 +114,11 @@ public class Map extends FragmentActivity implements
     //TODO: Make sure Firebase listener is always updating map properly.
     //TODO: Optimize Firebase loading.
     //TODO: Too much work on main thread.
+    //TODO: Make sure booleans and other values are reset in onRestart().
     //TODO: Make checkLocationPermission Async / create loading animations.
     //TODO: Consolidate code by creating separate methods.
     //TODO: Work on possible NullPointerExceptions (try/catch).
+    //TODO: Create loading icon while map scroll is locked and program is clicking on a stack of shapes.
     //TODO: Work on onTrimMemory() and onPause() / onStart() interaction.
     //TODO: Check updating in different states with another device - make sure uuids never overlap.
 
@@ -1881,16 +1882,42 @@ public class Map extends FragmentActivity implements
                         circleTemp.remove();
                     }
 
-                    circleTemp = mMap.addCircle(
-                            new CircleOptions()
-                                    .center(selectedOverlappingShapeCircleLocation)
-                                    .clickable(true)
-                                    .fillColor(Color.argb(70, 255, 255, 0))
-                                    .radius(selectedOverlappingShapeCircleRadius)
-                                    .strokeColor(Color.rgb(255, 255, 0))
-                                    .strokeWidth(3f)
-                                    .zIndex(2)
-                    );
+                    // Change the circle color depending on the map type.
+                    if (mMap.getMapType() == 2 || mMap.getMapType() == 4) {
+
+                        circleTemp = mMap.addCircle(
+                                new CircleOptions()
+                                        .center(selectedOverlappingShapeCircleLocation)
+                                        .clickable(true)
+                                        .fillColor(Color.argb(100, 255, 255, 0))
+                                        .radius(selectedOverlappingShapeCircleRadius)
+                                        .strokeColor(Color.rgb(255, 255, 0))
+                                        .strokeWidth(3f)
+                                        .zIndex(2)
+                        );
+
+                        // Used when raising the z-index of the shapes.
+                        circleTemp.setTag(selectedOverlappingShapeUUID);
+                        circleTemp.setCenter(selectedOverlappingShapeCircleLocation);
+                        circleTemp.setRadius(selectedOverlappingShapeCircleRadius);
+                    } else {
+
+                        circleTemp = mMap.addCircle(
+                                new CircleOptions()
+                                        .center(selectedOverlappingShapeCircleLocation)
+                                        .clickable(true)
+                                        .fillColor(Color.argb(100, 255, 0, 255))
+                                        .radius(selectedOverlappingShapeCircleRadius)
+                                        .strokeColor(Color.rgb(255, 0, 255))
+                                        .strokeWidth(3f)
+                                        .zIndex(2)
+                        );
+
+                        // Used when raising the z-index of the shapes.
+                        circleTemp.setTag(selectedOverlappingShapeUUID);
+                        circleTemp.setCenter(selectedOverlappingShapeCircleLocation);
+                        circleTemp.setRadius(selectedOverlappingShapeCircleRadius);
+                    }
                 }
 
                 selectingShape = true;
@@ -1911,10 +1938,15 @@ public class Map extends FragmentActivity implements
         Log.i(TAG, "onRestart()");
 
         waitingForShapeInformationToProcess = false;
+        waitingForClicksToProcess = false;
+        selectingShape = false;
+        chatsSize = 0;
 
         // Clear map before adding new Firebase circles in onStart() to prevent overlap.
         // Set shape to null so changing chatSizeSeekBar in onStart() will create a circle and createChatButton will reset itself.
         if (mMap != null) {
+
+            mMap.getUiSettings().setScrollGesturesEnabled(true);
 
             // Remove the polygon and markers.
             if (polygon != null) {
@@ -2142,6 +2174,7 @@ public class Map extends FragmentActivity implements
             mMap.setOnPolygonClickListener(null);
             mMap.setOnMarkerDragListener(null);
             mMap.setOnMarkerClickListener(null);
+            mMap.setOnMapClickListener(null);
         }
 
         super.onStop();
@@ -2350,6 +2383,2908 @@ public class Map extends FragmentActivity implements
             // Set Boolean to false to prevent unnecessary animation, as the camera should already be set on the user's location.
             firstLoad = false;
         }
+    }
+
+    // Cut down on code by using one method for the shared code from onMapReady() and onRestart().
+    private void onMapReadyAndRestart() {
+
+        Log.i(TAG, "onMapReadyAndRestart()");
+
+        // Use the NORMAL map type if the user is not connected to WIFI for easier loading.
+        changeMapTypeDependingOnConnection();
+
+        // Keep the marker on the shapes to allow for dragging.
+        mMap.setOnMarkerDragListener(new GoogleMap.OnMarkerDragListener() {
+            @Override
+            public void onMarkerDragStart(Marker marker) {
+
+                LatLng markerPosition = marker.getPosition();
+
+                // If user holds the center marker, update the circle's position. Else, update the circle's radius.
+                if (newCircle != null) {
+
+                    if (marker.getId().equals(marker0ID)) {
+
+                        newCircle.setCenter(markerPosition);
+                        marker1.setVisible(false);
+                    }
+
+                    if (marker.getId().equals(marker1ID)) {
+
+                        // Limits the size of the circle.
+                        if (distanceGivenLatLng(newCircle.getCenter().latitude, newCircle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude) < 200) {
+
+                            newCircle.setRadius(distanceGivenLatLng(newCircle.getCenter().latitude, newCircle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude));
+                        } else {
+
+                            newCircle.setRadius(200);
+                        }
+                    }
+                }
+
+                // Update the polygon shape as the marker positions get updated.
+                if (polygon != null) {
+
+                    // Limit polygon size.
+                    if (SphericalUtil.computeArea(polygonPointsList) >= Math.PI*Math.pow(200, 2)) {
+
+                        // Do nothing, as polygon should not be smaller than pi or larger than pi(200^2).
+                    } else {
+
+                        if (marker.getId().equals(marker0ID)) {
+
+                            if (threeMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{markerPosition, marker1Position, marker2Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (fourMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{markerPosition, marker1Position, marker2Position, marker3Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (fiveMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{markerPosition, marker1Position, marker2Position, marker3Position, marker4Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sixMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{markerPosition, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sevenMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{markerPosition, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (eightMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{markerPosition, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+                        }
+
+                        if (marker.getId().equals(marker1ID)) {
+
+                            if (threeMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, markerPosition, marker2Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (fourMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, markerPosition, marker2Position, marker3Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (fiveMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, markerPosition, marker2Position, marker3Position, marker4Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sixMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, markerPosition, marker2Position, marker3Position, marker4Position, marker5Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sevenMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, markerPosition, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (eightMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, markerPosition, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+                        }
+
+                        if (marker.getId().equals(marker2ID)) {
+
+                            if (threeMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, markerPosition};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (fourMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, markerPosition, marker3Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (fiveMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, markerPosition, marker3Position, marker4Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sixMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, markerPosition, marker3Position, marker4Position, marker5Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sevenMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, markerPosition, marker3Position, marker4Position, marker5Position, marker6Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (eightMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, markerPosition, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+                        }
+
+                        if (marker.getId().equals(marker3ID)) {
+
+                            if (fourMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, markerPosition};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (fiveMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, markerPosition, marker4Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sixMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, markerPosition, marker4Position, marker5Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sevenMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, markerPosition, marker4Position, marker5Position, marker6Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (eightMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, markerPosition, marker4Position, marker5Position, marker6Position, marker7Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+                        }
+
+                        if (marker.getId().equals(marker4ID)) {
+
+                            if (fiveMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, markerPosition};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sixMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, markerPosition, marker5Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sevenMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, markerPosition, marker5Position, marker6Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (eightMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, markerPosition, marker5Position, marker6Position, marker7Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+                        }
+
+                        if (marker.getId().equals(marker5ID)) {
+
+                            if (sixMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, markerPosition};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sevenMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, markerPosition, marker6Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (eightMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, markerPosition, marker6Position, marker7Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+                        }
+
+                        if (marker.getId().equals(marker6ID)) {
+
+                            if (sevenMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, markerPosition};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (eightMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, markerPosition, marker7Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+                        }
+
+                        if (marker.getId().equals(marker7ID)) {
+
+                            LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, markerPosition};
+                            polygonPointsList = Arrays.asList(polygonPoints);
+                            polygon.setPoints(polygonPointsList);
+                        }
+                    }
+                }
+            }
+
+            @Override
+            public void onMarkerDrag(Marker marker) {
+
+                LatLng markerPosition = marker.getPosition();
+
+                // If user holds the center marker, update the circle's position. Else, update the circle's radius.
+                if (newCircle != null) {
+
+                    if (marker.getId().equals(marker0ID)) {
+
+                        newCircle.setCenter(markerPosition);
+                    }
+
+                    if (marker.getId().equals(marker1ID)) {
+
+                        // Limits the size of the circle.
+                        if (distanceGivenLatLng(markerPosition.latitude, markerPosition.longitude, newCircle.getCenter().latitude, newCircle.getCenter().longitude) < 200) {
+
+                            newCircle.setRadius(distanceGivenLatLng(newCircle.getCenter().latitude, newCircle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude));
+                        } else {
+
+                            newCircle.setRadius(200);
+                        }
+                    }
+                }
+
+                // Update the polygon shape as the marker positions get updated.
+                if (polygon != null) {
+
+                    // Limit polygon size. The low end will be handled in the onClickListener.
+                    if (SphericalUtil.computeArea(polygonPointsList) <= Math.PI*Math.pow(200, 2)) {
+
+                        markerPositionAtVertexOfPolygon = new LatLng(markerPosition.latitude, markerPosition.longitude);
+
+                        if (marker.getId().equals(marker0ID)) {
+
+                            if (threeMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{markerPosition, marker1Position, marker2Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+
+                            }
+
+                            if (fourMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{markerPosition, marker1Position, marker2Position, marker3Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (fiveMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{markerPosition, marker1Position, marker2Position, marker3Position, marker4Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sixMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{markerPosition, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sevenMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{markerPosition, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (eightMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{markerPosition, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+                        }
+
+                        if (marker.getId().equals(marker1ID)) {
+
+                            if (threeMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, markerPosition, marker2Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (fourMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, markerPosition, marker2Position, marker3Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (fiveMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, markerPosition, marker2Position, marker3Position, marker4Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sixMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, markerPosition, marker2Position, marker3Position, marker4Position, marker5Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sevenMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, markerPosition, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (eightMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, markerPosition, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+                        }
+
+                        if (marker.getId().equals(marker2ID)) {
+
+                            if (threeMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, markerPosition};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (fourMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, markerPosition, marker3Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (fiveMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, markerPosition, marker3Position, marker4Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sixMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, markerPosition, marker3Position, marker4Position, marker5Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sevenMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, markerPosition, marker3Position, marker4Position, marker5Position, marker6Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (eightMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, markerPosition, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+                        }
+
+                        if (marker.getId().equals(marker3ID)) {
+
+                            if (fourMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, markerPosition};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (fiveMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, markerPosition, marker4Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sixMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, markerPosition, marker4Position, marker5Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sevenMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, markerPosition, marker4Position, marker5Position, marker6Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (eightMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, markerPosition, marker4Position, marker5Position, marker6Position, marker7Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+                        }
+
+                        if (marker.getId().equals(marker4ID)) {
+
+                            if (fiveMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, markerPosition};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sixMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, markerPosition, marker5Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sevenMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, markerPosition, marker5Position, marker6Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (eightMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, markerPosition, marker5Position, marker6Position, marker7Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+                        }
+
+                        if (marker.getId().equals(marker5ID)) {
+
+                            if (sixMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, markerPosition};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sevenMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, markerPosition, marker6Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (eightMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, markerPosition, marker6Position, marker7Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+                        }
+
+                        if (marker.getId().equals(marker6ID)) {
+
+                            if (sevenMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, markerPosition};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (eightMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, markerPosition, marker7Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+                        }
+
+                        if (marker.getId().equals(marker7ID)) {
+
+                            LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, markerPosition};
+                            polygonPointsList = Arrays.asList(polygonPoints);
+                            polygon.setPoints(polygonPointsList);
+                        }
+                    } else {
+
+                        markerOutsidePolygon = true;
+                    }
+
+                    // If marker exits the polygon because it's too big and re-enters it, the following will update the shape with the marker so the previous code will work again.
+                    if (markerOutsidePolygon && PolyUtil.containsLocation(markerPosition.latitude, markerPosition.longitude, polygon.getPoints(), false)) {
+
+                        markerPositionAtVertexOfPolygon = new LatLng(markerPosition.latitude, markerPosition.longitude);
+
+                        if (marker.getId().equals(marker0ID)) {
+
+                            if (threeMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{markerPosition, marker1Position, marker2Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+
+                            }
+
+                            if (fourMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{markerPosition, marker1Position, marker2Position, marker3Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (fiveMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{markerPosition, marker1Position, marker2Position, marker3Position, marker4Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sixMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{markerPosition, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sevenMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{markerPosition, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (eightMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{markerPosition, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+                        }
+
+                        if (marker.getId().equals(marker1ID)) {
+
+                            if (threeMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, markerPosition, marker2Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (fourMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, markerPosition, marker2Position, marker3Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (fiveMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, markerPosition, marker2Position, marker3Position, marker4Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sixMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, markerPosition, marker2Position, marker3Position, marker4Position, marker5Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sevenMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, markerPosition, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (eightMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, markerPosition, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+                        }
+
+                        if (marker.getId().equals(marker2ID)) {
+
+                            if (threeMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, markerPosition};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (fourMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, markerPosition, marker3Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (fiveMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, markerPosition, marker3Position, marker4Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sixMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, markerPosition, marker3Position, marker4Position, marker5Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sevenMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, markerPosition, marker3Position, marker4Position, marker5Position, marker6Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (eightMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, markerPosition, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+                        }
+
+                        if (marker.getId().equals(marker3ID)) {
+
+                            if (fourMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, markerPosition};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (fiveMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, markerPosition, marker4Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sixMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, markerPosition, marker4Position, marker5Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sevenMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, markerPosition, marker4Position, marker5Position, marker6Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (eightMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, markerPosition, marker4Position, marker5Position, marker6Position, marker7Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+                        }
+
+                        if (marker.getId().equals(marker4ID)) {
+
+                            if (fiveMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, markerPosition};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sixMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, markerPosition, marker5Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sevenMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, markerPosition, marker5Position, marker6Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (eightMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, markerPosition, marker5Position, marker6Position, marker7Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+                        }
+
+                        if (marker.getId().equals(marker5ID)) {
+
+                            if (sixMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, markerPosition};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (sevenMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, markerPosition, marker6Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (eightMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, markerPosition, marker6Position, marker7Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+                        }
+
+                        if (marker.getId().equals(marker6ID)) {
+
+                            if (sevenMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, markerPosition};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+
+                            if (eightMarkers) {
+
+                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, markerPosition, marker7Position};
+                                polygonPointsList = Arrays.asList(polygonPoints);
+                                polygon.setPoints(polygonPointsList);
+                            }
+                        }
+
+                        if (marker.getId().equals(marker7ID)) {
+
+                            LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, markerPosition};
+                            polygonPointsList = Arrays.asList(polygonPoints);
+                            polygon.setPoints(polygonPointsList);
+                        }
+
+                        markerOutsidePolygon = false;
+                    }
+                }
+            }
+
+            @Override
+            public void onMarkerDragEnd(Marker marker) {
+
+                LatLng markerPosition = marker.getPosition();
+
+                if (newCircle != null) {
+
+                    // Sets marker1's position on the circle's edge relative to where the user last left marker1.
+                    if (marker.getId().equals(marker0ID)) {
+
+                        marker1.setPosition(latLngGivenDistance(newCircle.getCenter().latitude, newCircle.getCenter().longitude, newCircle.getRadius(), relativeAngle));
+
+                        marker1.setVisible(true);
+                    }
+
+                    if (marker.getId().equals(marker1ID)) {
+
+                        // Update the global variable with the angle the user left the marker's position. This is used if the user drags the center marker.
+                        relativeAngle = angleFromCoordinate(newCircle.getCenter().latitude, newCircle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude);
+
+                        // Keep the seekBar's progress aligned with the marker.
+                        if (newCircle.getRadius() < 200) {
+
+                            chatSizeSeekBar.setProgress((int) distanceGivenLatLng(newCircle.getCenter().latitude, newCircle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude));
+                        }
+
+                        // Limits the size of the circle, keeps marker1's position on the circle's edge at the same angle relative to where the user last left it, and keeps the seekBar's progress aligned with the marker.
+                        if (newCircle.getRadius() >= 200) {
+
+                            marker.setPosition(latLngGivenDistance(newCircle.getCenter().latitude, newCircle.getCenter().longitude, 200, relativeAngle));
+
+                            chatSizeSeekBar.setProgress(200);
+                        }
+                    }
+                }
+
+                // Update the global variable with the marker's position.
+                if (polygon != null) {
+
+                    // If the marker is dropped outside of the polygon, set it to the last known position where it was in the polygon.
+                    if (!PolyUtil.containsLocation(markerPosition.latitude, markerPosition.longitude, polygon.getPoints(), false)) {
+
+                        marker.setPosition(markerPositionAtVertexOfPolygon);
+                    }
+
+                    if (marker.getId().equals(marker0ID)) {
+
+                        marker0Position = marker.getPosition();
+                    }
+
+                    if (marker.getId().equals(marker1ID)) {
+
+                        marker1Position = marker.getPosition();
+                    }
+
+                    if (marker.getId().equals(marker2ID)) {
+
+                        marker2Position = marker.getPosition();
+                    }
+
+                    if (marker.getId().equals(marker3ID)) {
+
+                        marker3Position = marker.getPosition();
+                    }
+
+                    if (marker.getId().equals(marker4ID)) {
+
+                        marker4Position = marker.getPosition();
+                    }
+
+                    if (marker.getId().equals(marker5ID)) {
+
+                        marker5Position = marker.getPosition();
+                    }
+
+                    if (marker.getId().equals(marker6ID)) {
+
+                        marker6Position = marker.getPosition();
+                    }
+
+                    if (marker.getId().equals(marker7ID)) {
+
+                        marker7Position = marker.getPosition();
+                    }
+                }
+            }
+        });
+
+        // Go to Chat.java after clicking on a circle's middle marker.
+        mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
+            @Override
+            public boolean onMarkerClick(Marker marker) {
+
+                if (newCircle.getZIndex() == 0 && newCircle.getTag() == null) {
+
+                    overlappingShapesUUID.add("new circle");
+                } else if (newCircle.getZIndex() == 0 && newCircle.getTag() != null) {
+
+                    overlappingShapesUUID.add(newCircle.getTag().toString());
+                }
+
+                if (newCircle.getZIndex() == 0) {
+
+                    Log.i(TAG, "Dropping z-index of a circle from a marker click");
+
+                    newCircle.setZIndex(-1);
+
+                    marker.remove();
+
+                    touchAgain();
+
+                    return false;
+                }
+
+                // End this method if the method is already being processed from another shape clicking event.
+                if (waitingForShapeInformationToProcess) {
+
+                    return true;
+                }
+
+                // Update boolean to prevent double clicking a shape.
+                waitingForShapeInformationToProcess = true;
+
+                if (newCircle != null && marker.getId().equals(marker0ID)) {
+
+                    if (newCircle.getTag() != null) {
+
+                        // Get the ID set by Firebase to identify which circle the user clicked on.
+                        uuid = (String) newCircle.getTag();
+                    } else {
+
+                        // If the circle is new, it will not have a tag, as the tag is pulled from Firebase. Therefore, generate a uuid.
+                        uuid = UUID.randomUUID().toString();
+                    }
+
+                    // Check if the user is already signed in.
+                    if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+
+                        // User is signed in.
+
+                        // Check if user is within the circle before going to the chat.
+                        FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
+
+                        mFusedLocationClient.getLastLocation()
+                                .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
+                                    @Override
+                                    public void onSuccess(Location location) {
+
+                                        if (location != null) {
+
+                                            float[] distance = new float[2];
+
+                                            Location.distanceBetween(location.getLatitude(), location.getLongitude(),
+                                                    newCircle.getCenter().latitude, newCircle.getCenter().longitude, distance);
+
+                                            // Boolean; will be true if user is within the circle upon circle click.
+                                            userIsWithinShape = !(distance[0] > newCircle.getRadius());
+                                        }
+                                    }
+                                });
+
+                        // If circle.getTag() == null, the circle is new. Therefore, compare it to the uuids in Firebase to prevent uuid overlap before adding it to Firebase.
+                        if (newCircle.getTag() == null) {
+
+                            // Inform the user is the circle is too small.
+                            if (newCircle.getRadius() < 1) {
+
+                                Toast.makeText(Map.this, "Please make the shape larger", Toast.LENGTH_SHORT).show();
+                                waitingForShapeInformationToProcess = false;
+                                return true;
+                            }
+
+                            firebaseCircles.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
+
+                                @Override
+                                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                                    // If the uuid already exists in Firebase, generate another uuid and try again.
+                                    if (dataSnapshot.exists()) {
+
+                                        // uuid exists in Firebase. Generate another and try again.
+
+                                        // Generate another UUID and try again.
+                                        uuid = UUID.randomUUID().toString();
+
+                                        // Carry the extras all the way to Chat.java.
+                                        Intent Activity = new Intent(Map.this, Chat.class);
+                                        Activity.putExtra("shapeIsCircle", true);
+                                        // Pass this boolean value to Chat.java.
+                                        Activity.putExtra("newShape", true);
+                                        // Pass this value to Chat.java to identify the shape.
+                                        Activity.putExtra("uuid", uuid);
+                                        // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
+                                        Activity.putExtra("circleLatitude", newCircle.getCenter().latitude);
+                                        Activity.putExtra("circleLongitude", newCircle.getCenter().longitude);
+                                        Activity.putExtra("radius", newCircle.getRadius());
+                                        startActivity(Activity);
+                                    } else {
+
+                                        // uuid does not already exist in Firebase. Go to Chat.java with the uuid.
+
+                                        // Carry the extras all the way to Chat.java.
+                                        Intent Activity = new Intent(Map.this, Chat.class);
+                                        Activity.putExtra("shapeIsCircle", true);
+                                        // Pass this boolean value to Chat.java.
+                                        Activity.putExtra("newShape", true);
+                                        // Pass this value to Chat.java to identify the shape.
+                                        Activity.putExtra("uuid", uuid);
+                                        // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
+                                        Activity.putExtra("circleLatitude", newCircle.getCenter().latitude);
+                                        Activity.putExtra("circleLongitude", newCircle.getCenter().longitude);
+                                        Activity.putExtra("radius", newCircle.getRadius());
+                                        startActivity(Activity);
+                                    }
+                                }
+
+                                @Override
+                                public void onCancelled(@NonNull DatabaseError databaseError) {
+                                }
+                            });
+                        } else {
+
+                            // The circle is not new, so go to Chat.java.
+
+                            // Go to Chat.java with the boolean value.
+                            Intent Activity = new Intent(Map.this, Chat.class);
+                            Activity.putExtra("shapeIsCircle", true);
+                            // Pass this boolean value to Chat.java.
+                            Activity.putExtra("newShape", false);
+                            // Pass this value to Chat.java to identify the shape.
+                            Activity.putExtra("uuid", uuid);
+                            // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                            Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                            startActivity(Activity);
+                        }
+                    } else {
+
+                        // No user is signed in.
+
+                        // If circle.getTag() == null, the circle is new. Therefore, compare it to the uuids in Firebase to prevent uuid overlap before adding it to Firebase.
+                        if (newCircle.getTag() == null) {
+
+                            // Inform the user is the circle is too small.
+                            if (newCircle.getRadius() < 1) {
+
+                                Toast.makeText(Map.this, "Please make the shape larger", Toast.LENGTH_SHORT).show();
+                                waitingForShapeInformationToProcess = false;
+                                return true;
+                            }
+
+                            firebaseCircles.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
+
+                                @Override
+                                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                                    // If the uuid already exists in Firebase, generate another uuid and try again.
+                                    if (dataSnapshot.exists()) {
+
+                                        // uuid exists in Firebase. Generate another and try again.
+
+                                        // Generate another UUID and try again.
+                                        uuid = UUID.randomUUID().toString();
+
+                                        // Carry the extras all the way to Chat.java.
+                                        Intent Activity = new Intent(Map.this, SignIn.class);
+                                        Activity.putExtra("shapeIsCircle", true);
+                                        // Pass this boolean value to Chat.java.
+                                        Activity.putExtra("newShape", true);
+                                        // Pass this value to Chat.java to identify the shape.
+                                        Activity.putExtra("uuid", uuid);
+                                        // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
+                                        Activity.putExtra("circleLatitude", newCircle.getCenter().latitude);
+                                        Activity.putExtra("circleLongitude", newCircle.getCenter().longitude);
+                                        Activity.putExtra("radius", newCircle.getRadius());
+                                        startActivity(Activity);
+                                    } else {
+
+                                        // uuid does not already exist in Firebase. Go to Chat.java with the uuid.
+
+                                        // Carry the extras all the way to Chat.java.
+                                        Intent Activity = new Intent(Map.this, SignIn.class);
+                                        Activity.putExtra("shapeIsCircle", true);
+                                        // Pass this boolean value to Chat.java.
+                                        Activity.putExtra("newShape", true);
+                                        // Pass this value to Chat.java to identify the shape.
+                                        Activity.putExtra("uuid", uuid);
+                                        // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
+                                        Activity.putExtra("circleLatitude", newCircle.getCenter().latitude);
+                                        Activity.putExtra("circleLongitude", newCircle.getCenter().longitude);
+                                        Activity.putExtra("radius", newCircle.getRadius());
+                                        startActivity(Activity);
+                                    }
+                                }
+
+                                @Override
+                                public void onCancelled(@NonNull DatabaseError databaseError) {
+                                }
+                            });
+                        } else {
+
+                            // The polygon is not new, so go to SignIn.java.
+
+                            // Go to Chat.java with the boolean value.
+                            Intent Activity = new Intent(Map.this, SignIn.class);
+                            Activity.putExtra("shapeIsCircle", true);
+                            // Pass this boolean value to Chat.java.
+                            Activity.putExtra("newShape", false);
+                            // Pass this value to Chat.java to identify the shape.
+                            Activity.putExtra("uuid", uuid);
+                            // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                            Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                            startActivity(Activity);
+                        }
+                    }
+                }
+
+                return true;
+            }
+        });
+
+        // Go to Chat.java when clicking on a polygon.
+        mMap.setOnPolygonClickListener(new GoogleMap.OnPolygonClickListener() {
+            @Override
+            public void onPolygonClick(final Polygon polygon) {
+
+                Log.i(TAG, "onPolygonClick");
+
+                if (polygon.getZIndex() == 0 && polygon.getTag() == null) {
+
+                    overlappingShapesUUID.add("new polygon");
+                } else if (polygon.getZIndex() == 0 && polygon.getTag() != null) {
+
+                    overlappingShapesUUID.add(polygon.getTag().toString());
+                }
+
+                if (polygon.getZIndex() == 0) {
+
+                    Log.i(TAG, "Dropping z-index of a polygon");
+
+                    polygon.setZIndex(-1);
+
+                    touchAgain();
+
+                    return;
+                }
+
+                Log.i(TAG, "ArrayList: " + overlappingShapesUUID);
+
+                // End this method if the method is already being processed from another shape clicking event.
+                if (waitingForShapeInformationToProcess) {
+
+                    return;
+                }
+
+                // Update boolean to prevent double clicking a shape. Updated in onRestart() and after toast message.
+                waitingForShapeInformationToProcess = true;
+
+                // Let the user know if the shape is too small. This should only occur if the shape is new.
+                if (SphericalUtil.computeArea(polygonPointsList) < Math.PI) {
+
+                    Toast.makeText(Map.this, "Please make the shape larger", Toast.LENGTH_SHORT).show();
+                } else {
+
+                    if (polygon.getTag() != null) {
+
+                        // Get the ID set by Firebase to identify which polygon the user clicked on.
+                        uuid = (String) polygon.getTag();
+                    } else {
+
+                        // If the polygon is new, it will not have a tag, as the tag is pulled from Firebase. Therefore, generate a uuid.
+                        uuid = UUID.randomUUID().toString();
+                    }
+
+                    // Check if the user is already signed in.
+                    if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+
+                        // User is signed in.
+
+                        // Check if user is within the polygon before going to the chat.
+                        FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
+
+                        mFusedLocationClient.getLastLocation()
+                                .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
+                                    @Override
+                                    public void onSuccess(Location location) {
+
+                                        if (location != null) {
+
+                                            // Boolean; will be true if user is within the circle upon circle click.
+                                            userIsWithinShape = PolyUtil.containsLocation(location.getLatitude(), location.getLongitude(), polygon.getPoints(), false);
+                                        }
+                                    }
+                                });
+
+                        // If polygon.getTag() == null, the polygon is new. Therefore, compare it to the uuids in Firebase to prevent uuid overlap before adding it to Firebase.
+                        if (polygon.getTag() == null) {
+
+                            firebasePolygons.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
+
+                                @Override
+                                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                                    // If the uuid already exists in Firebase, generate another uuid and try again.
+                                    if (dataSnapshot.exists()) {
+
+                                        // uuid exists in Firebase. Generate another and try again.
+
+                                        // Generate another UUID and try again.
+                                        uuid = UUID.randomUUID().toString();
+
+                                        // Carry the extras all the way to Chat.java.
+                                        Intent Activity = new Intent(Map.this, Chat.class);
+
+                                        // Pass this information to Chat.java to create a new shape in Firebase after someone writes a message.
+                                        if (threeMarkers) {
+
+                                            Activity.putExtra("shapeIsCircle", false);
+                                            // Pass this boolean value Chat.java.
+                                            Activity.putExtra("newShape", true);
+                                            // Pass this value to Chat.java to identify the shape.
+                                            Activity.putExtra("uuid", uuid);
+                                            // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                            Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                            // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
+                                            Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
+                                            Activity.putExtra("threeMarkers", true);
+                                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+
+                                            startActivity(Activity);
+                                        }
+
+                                        if (fourMarkers) {
+
+                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                            GeometryFactory gf = new GeometryFactory();
+
+                                            ArrayList<Coordinate> points = new ArrayList<>();
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                    .toArray(new Coordinate[5])), gf), null);
+
+                                            if (polygon1.isSimple()) {
+
+                                                Activity.putExtra("shapeIsCircle", false);
+                                                // Pass this boolean value Chat.java.
+                                                Activity.putExtra("newShape", true);
+                                                // Pass this value to Chat.java to identify the shape.
+                                                Activity.putExtra("uuid", uuid);
+                                                // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                                // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
+                                                Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
+                                                Activity.putExtra("fourMarkers", true);
+                                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
+
+                                                startActivity(Activity);
+                                            } else {
+
+                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                                waitingForShapeInformationToProcess = false;
+                                            }
+                                        }
+
+                                        if (fiveMarkers) {
+
+                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                            GeometryFactory gf = new GeometryFactory();
+
+                                            ArrayList<Coordinate> points = new ArrayList<>();
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                    .toArray(new Coordinate[6])), gf), null);
+
+                                            if (polygon1.isSimple()) {
+
+                                                Activity.putExtra("shapeIsCircle", false);
+                                                // Pass this boolean value Chat.java.
+                                                Activity.putExtra("newShape", true);
+                                                // Pass this value to Chat.java to identify the shape.
+                                                Activity.putExtra("uuid", uuid);
+                                                // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                                // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
+                                                Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
+                                                Activity.putExtra("fiveMarkers", true);
+                                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
+
+                                                startActivity(Activity);
+                                            } else {
+
+                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                                waitingForShapeInformationToProcess = false;
+                                            }
+                                        }
+
+                                        if (sixMarkers) {
+
+                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                            GeometryFactory gf = new GeometryFactory();
+
+                                            ArrayList<Coordinate> points = new ArrayList<>();
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
+                                            points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                    .toArray(new Coordinate[7])), gf), null);
+
+                                            if (polygon1.isSimple()) {
+
+                                                Activity.putExtra("shapeIsCircle", false);
+                                                // Pass this boolean value Chat.java.
+                                                Activity.putExtra("newShape", true);
+                                                // Pass this value to Chat.java to identify the shape.
+                                                Activity.putExtra("uuid", uuid);
+                                                // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                                // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
+                                                Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
+                                                Activity.putExtra("sixMarkers", true);
+                                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                                Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                                Activity.putExtra("marker5Longitude", marker5Position.longitude);
+
+                                                startActivity(Activity);
+                                            } else {
+
+                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                                waitingForShapeInformationToProcess = false;
+                                            }
+                                        }
+
+                                        if (sevenMarkers) {
+
+                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                            GeometryFactory gf = new GeometryFactory();
+
+                                            ArrayList<Coordinate> points = new ArrayList<>();
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
+                                            points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
+                                            points.add(new Coordinate(marker6Position.latitude, marker6Position.longitude));
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                    .toArray(new Coordinate[8])), gf), null);
+
+                                            if (polygon1.isSimple()) {
+
+                                                Activity.putExtra("shapeIsCircle", false);
+                                                // Pass this boolean value Chat.java.
+                                                Activity.putExtra("newShape", true);
+                                                // Pass this value to Chat.java to identify the shape.
+                                                Activity.putExtra("uuid", uuid);
+                                                // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                                // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
+                                                Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
+                                                Activity.putExtra("sevenMarkers", true);
+                                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                                Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                                Activity.putExtra("marker5Longitude", marker5Position.longitude);
+                                                Activity.putExtra("marker6Latitude", marker6Position.latitude);
+                                                Activity.putExtra("marker6Longitude", marker6Position.longitude);
+
+                                                startActivity(Activity);
+                                            } else {
+
+                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                                waitingForShapeInformationToProcess = false;
+                                            }
+                                        }
+
+                                        if (eightMarkers) {
+
+                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                            GeometryFactory gf = new GeometryFactory();
+
+                                            ArrayList<Coordinate> points = new ArrayList<>();
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
+                                            points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
+                                            points.add(new Coordinate(marker6Position.latitude, marker6Position.longitude));
+                                            points.add(new Coordinate(marker7Position.latitude, marker7Position.longitude));
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+
+                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                    .toArray(new Coordinate[9])), gf), null);
+
+                                            if (polygon1.isSimple()) {
+
+                                                Activity.putExtra("shapeIsCircle", false);
+                                                // Pass this boolean value Chat.java.
+                                                Activity.putExtra("newShape", true);
+                                                // Pass this value to Chat.java to identify the shape.
+                                                Activity.putExtra("uuid", uuid);
+                                                // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                                // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
+                                                Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
+                                                Activity.putExtra("eightMarkers", true);
+                                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                                Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                                Activity.putExtra("marker5Longitude", marker5Position.longitude);
+                                                Activity.putExtra("marker6Latitude", marker6Position.latitude);
+                                                Activity.putExtra("marker6Longitude", marker6Position.longitude);
+                                                Activity.putExtra("marker7Latitude", marker7Position.latitude);
+                                                Activity.putExtra("marker7Latitude", marker7Position.longitude);
+
+                                                startActivity(Activity);
+                                            } else {
+
+                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                                waitingForShapeInformationToProcess = false;
+                                            }
+                                        }
+                                    } else {
+
+                                        // uuid does not already exist in Firebase. Go to Chat.java with the uuid.
+
+                                        // Carry the extras all the way to Chat.java.
+                                        Intent Activity = new Intent(Map.this, Chat.class);
+
+                                        // Pass this information to Chat.java to create a new shape in Firebase after someone writes a message.
+                                        if (threeMarkers) {
+
+                                            Activity.putExtra("shapeIsCircle", false);
+                                            // Pass this boolean value Chat.java.
+                                            Activity.putExtra("newShape", true);
+                                            // Pass this value to Chat.java to identify the shape.
+                                            Activity.putExtra("uuid", uuid);
+                                            // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                            Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                            // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
+                                            Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
+                                            Activity.putExtra("threeMarkers", true);
+                                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+
+                                            startActivity(Activity);
+                                        }
+
+                                        if (fourMarkers) {
+
+                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                            GeometryFactory gf = new GeometryFactory();
+
+                                            ArrayList<Coordinate> points = new ArrayList<>();
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                    .toArray(new Coordinate[5])), gf), null);
+
+                                            if (polygon1.isSimple()) {
+
+                                                Activity.putExtra("shapeIsCircle", false);
+                                                // Pass this boolean value Chat.java.
+                                                Activity.putExtra("newShape", true);
+                                                // Pass this value to Chat.java to identify the shape.
+                                                Activity.putExtra("uuid", uuid);
+                                                // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                                // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
+                                                Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
+                                                Activity.putExtra("fourMarkers", true);
+                                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
+
+                                                startActivity(Activity);
+                                            } else {
+
+                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                                waitingForShapeInformationToProcess = false;
+                                            }
+                                        }
+
+                                        if (fiveMarkers) {
+
+                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                            GeometryFactory gf = new GeometryFactory();
+
+                                            ArrayList<Coordinate> points = new ArrayList<>();
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                    .toArray(new Coordinate[6])), gf), null);
+
+                                            if (polygon1.isSimple()) {
+
+                                                Activity.putExtra("shapeIsCircle", false);
+                                                // Pass this boolean value Chat.java.
+                                                Activity.putExtra("newShape", true);
+                                                // Pass this value to Chat.java to identify the shape.
+                                                Activity.putExtra("uuid", uuid);
+                                                // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                                // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
+                                                Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
+                                                Activity.putExtra("fiveMarkers", true);
+                                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
+
+                                                startActivity(Activity);
+                                            } else {
+
+                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                                waitingForShapeInformationToProcess = false;
+                                            }
+                                        }
+
+                                        if (sixMarkers) {
+
+                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                            GeometryFactory gf = new GeometryFactory();
+
+                                            ArrayList<Coordinate> points = new ArrayList<>();
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
+                                            points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                    .toArray(new Coordinate[7])), gf), null);
+
+                                            if (polygon1.isSimple()) {
+
+                                                Activity.putExtra("shapeIsCircle", false);
+                                                // Pass this boolean value Chat.java.
+                                                Activity.putExtra("newShape", true);
+                                                // Pass this value to Chat.java to identify the shape.
+                                                Activity.putExtra("uuid", uuid);
+                                                // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                                // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
+                                                Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
+                                                Activity.putExtra("sixMarkers", true);
+                                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                                Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                                Activity.putExtra("marker5Longitude", marker5Position.longitude);
+
+                                                startActivity(Activity);
+                                            } else {
+
+                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                                waitingForShapeInformationToProcess = false;
+                                            }
+                                        }
+
+                                        if (sevenMarkers) {
+
+                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                            GeometryFactory gf = new GeometryFactory();
+
+                                            ArrayList<Coordinate> points = new ArrayList<>();
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
+                                            points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
+                                            points.add(new Coordinate(marker6Position.latitude, marker6Position.longitude));
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                    .toArray(new Coordinate[8])), gf), null);
+
+                                            if (polygon1.isSimple()) {
+
+                                                Activity.putExtra("shapeIsCircle", false);
+                                                // Pass this boolean value Chat.java.
+                                                Activity.putExtra("newShape", true);
+                                                // Pass this value to Chat.java to identify the shape.
+                                                Activity.putExtra("uuid", uuid);
+                                                // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                                // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
+                                                Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
+                                                Activity.putExtra("sevenMarkers", true);
+                                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                                Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                                Activity.putExtra("marker5Longitude", marker5Position.longitude);
+                                                Activity.putExtra("marker6Latitude", marker6Position.latitude);
+                                                Activity.putExtra("marker6Longitude", marker6Position.longitude);
+
+                                                startActivity(Activity);
+                                            } else {
+
+                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                                waitingForShapeInformationToProcess = false;
+                                            }
+                                        }
+
+                                        if (eightMarkers) {
+
+                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                            GeometryFactory gf = new GeometryFactory();
+
+                                            ArrayList<Coordinate> points = new ArrayList<>();
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
+                                            points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
+                                            points.add(new Coordinate(marker6Position.latitude, marker6Position.longitude));
+                                            points.add(new Coordinate(marker7Position.latitude, marker7Position.longitude));
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+
+                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                    .toArray(new Coordinate[9])), gf), null);
+
+                                            if (polygon1.isSimple()) {
+
+                                                Activity.putExtra("shapeIsCircle", false);
+                                                // Pass this boolean value Chat.java.
+                                                Activity.putExtra("newShape", true);
+                                                // Pass this value to Chat.java to identify the shape.
+                                                Activity.putExtra("uuid", uuid);
+                                                // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                                // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
+                                                Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
+                                                Activity.putExtra("eightMarkers", true);
+                                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                                Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                                Activity.putExtra("marker5Longitude", marker5Position.longitude);
+                                                Activity.putExtra("marker6Latitude", marker6Position.latitude);
+                                                Activity.putExtra("marker6Longitude", marker6Position.longitude);
+                                                Activity.putExtra("marker7Latitude", marker7Position.latitude);
+                                                Activity.putExtra("marker7Latitude", marker7Position.longitude);
+
+                                                startActivity(Activity);
+                                            } else {
+
+                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                                waitingForShapeInformationToProcess = false;
+                                            }
+                                        }
+                                    }
+                                }
+
+                                @Override
+                                public void onCancelled(@NonNull DatabaseError databaseError) {
+                                }
+                            });
+                        } else {
+
+                            // The polygon is not new, so go to Chat.java.
+
+                            // Carry the extras all the way to Chat.java.
+                            Intent Activity = new Intent(Map.this, Chat.class);
+                            Activity.putExtra("shapeIsCircle", false);
+                            // Pass this boolean value to Chat.java.
+                            Activity.putExtra("newShape", false);
+                            // Pass this value to Chat.java to identify the shape.
+                            Activity.putExtra("uuid", uuid);
+                            // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                            Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                            // Pass this information to Chat.java to create a new shape in Firebase after someone writes a message.
+                            startActivity(Activity);
+                        }
+                    } else {
+
+                        // No user is signed in.
+
+                        // If polygon.getTag() == null, the circle is new. Therefore, compare it to the uuids in Firebase to prevent uuid overlap before adding it to Firebase.
+                        if (newCircle.getTag() == null) {
+
+                            firebasePolygons.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
+
+                                @Override
+                                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                                    // If the uuid already exists in Firebase, generate another uuid and try again.
+                                    if (dataSnapshot.exists()) {
+
+                                        // uuid exists in Firebase. Generate another and try again.
+
+                                        // Generate another UUID and try again.
+                                        uuid = UUID.randomUUID().toString();
+
+                                        // Carry the extras all the way to Chat.java.
+                                        Intent Activity = new Intent(Map.this, Chat.class);
+
+                                        // Pass this information to Chat.java to create a new shape in Firebase after someone writes a message.
+                                        if (threeMarkers) {
+
+                                            Activity.putExtra("shapeIsCircle", false);
+                                            // Pass this boolean value Chat.java.
+                                            Activity.putExtra("newShape", true);
+                                            // Pass this value to Chat.java to identify the shape.
+                                            Activity.putExtra("uuid", uuid);
+                                            // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                            Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                            // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
+                                            Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
+                                            Activity.putExtra("threeMarkers", true);
+                                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+
+                                            startActivity(Activity);
+                                        }
+
+                                        if (fourMarkers) {
+
+                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                            GeometryFactory gf = new GeometryFactory();
+
+                                            ArrayList<Coordinate> points = new ArrayList<>();
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                    .toArray(new Coordinate[5])), gf), null);
+
+                                            if (polygon1.isSimple()) {
+
+                                                Activity.putExtra("shapeIsCircle", false);
+                                                // Pass this boolean value Chat.java.
+                                                Activity.putExtra("newShape", true);
+                                                // Pass this value to Chat.java to identify the shape.
+                                                Activity.putExtra("uuid", uuid);
+                                                // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                                // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
+                                                Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
+                                                Activity.putExtra("fourMarkers", true);
+                                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
+
+                                                startActivity(Activity);
+                                            } else {
+
+                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                                waitingForShapeInformationToProcess = false;
+                                            }
+                                        }
+
+                                        if (fiveMarkers) {
+
+                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                            GeometryFactory gf = new GeometryFactory();
+
+                                            ArrayList<Coordinate> points = new ArrayList<>();
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                    .toArray(new Coordinate[6])), gf), null);
+
+                                            if (polygon1.isSimple()) {
+
+                                                Activity.putExtra("shapeIsCircle", false);
+                                                // Pass this boolean value Chat.java.
+                                                Activity.putExtra("newShape", true);
+                                                // Pass this value to Chat.java to identify the shape.
+                                                Activity.putExtra("uuid", uuid);
+                                                // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                                // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
+                                                Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
+                                                Activity.putExtra("fiveMarkers", true);
+                                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
+
+                                                startActivity(Activity);
+                                            } else {
+
+                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                                waitingForShapeInformationToProcess = false;
+                                            }
+                                        }
+
+                                        if (sixMarkers) {
+
+                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                            GeometryFactory gf = new GeometryFactory();
+
+                                            ArrayList<Coordinate> points = new ArrayList<>();
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
+                                            points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                    .toArray(new Coordinate[7])), gf), null);
+
+                                            if (polygon1.isSimple()) {
+
+                                                Activity.putExtra("shapeIsCircle", false);
+                                                // Pass this boolean value Chat.java.
+                                                Activity.putExtra("newShape", true);
+                                                // Pass this value to Chat.java to identify the shape.
+                                                Activity.putExtra("uuid", uuid);
+                                                // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                                // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
+                                                Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
+                                                Activity.putExtra("sixMarkers", true);
+                                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                                Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                                Activity.putExtra("marker5Longitude", marker5Position.longitude);
+
+                                                startActivity(Activity);
+                                            } else {
+
+                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                                waitingForShapeInformationToProcess = false;
+                                            }
+                                        }
+
+                                        if (sevenMarkers) {
+
+                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                            GeometryFactory gf = new GeometryFactory();
+
+                                            ArrayList<Coordinate> points = new ArrayList<>();
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
+                                            points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
+                                            points.add(new Coordinate(marker6Position.latitude, marker6Position.longitude));
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                    .toArray(new Coordinate[8])), gf), null);
+
+                                            if (polygon1.isSimple()) {
+
+                                                Activity.putExtra("shapeIsCircle", false);
+                                                // Pass this boolean value Chat.java.
+                                                Activity.putExtra("newShape", true);
+                                                // Pass this value to Chat.java to identify the shape.
+                                                Activity.putExtra("uuid", uuid);
+                                                // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                                // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
+                                                Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
+                                                Activity.putExtra("sevenMarkers", true);
+                                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                                Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                                Activity.putExtra("marker5Longitude", marker5Position.longitude);
+                                                Activity.putExtra("marker6Latitude", marker6Position.latitude);
+                                                Activity.putExtra("marker6Longitude", marker6Position.longitude);
+
+                                                startActivity(Activity);
+                                            } else {
+
+                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                                waitingForShapeInformationToProcess = false;
+                                            }
+                                        }
+
+                                        if (eightMarkers) {
+
+                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                            GeometryFactory gf = new GeometryFactory();
+
+                                            ArrayList<Coordinate> points = new ArrayList<>();
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
+                                            points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
+                                            points.add(new Coordinate(marker6Position.latitude, marker6Position.longitude));
+                                            points.add(new Coordinate(marker7Position.latitude, marker7Position.longitude));
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+
+                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                    .toArray(new Coordinate[9])), gf), null);
+
+                                            if (polygon1.isSimple()) {
+
+                                                Activity.putExtra("shapeIsCircle", false);
+                                                // Pass this boolean value Chat.java.
+                                                Activity.putExtra("newShape", true);
+                                                // Pass this value to Chat.java to identify the shape.
+                                                Activity.putExtra("uuid", uuid);
+                                                // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                                // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
+                                                Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
+                                                Activity.putExtra("eightMarkers", true);
+                                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                                Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                                Activity.putExtra("marker5Longitude", marker5Position.longitude);
+                                                Activity.putExtra("marker6Latitude", marker6Position.latitude);
+                                                Activity.putExtra("marker6Longitude", marker6Position.longitude);
+                                                Activity.putExtra("marker7Latitude", marker7Position.latitude);
+                                                Activity.putExtra("marker7Latitude", marker7Position.longitude);
+
+                                                startActivity(Activity);
+                                            } else {
+
+                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                                waitingForShapeInformationToProcess = false;
+                                            }
+                                        }
+                                    } else {
+
+                                        // uuid does not already exist in Firebase. Go to SignIn.java with the uuid.
+
+                                        // Carry the extras all the way to Chat.java.
+                                        Intent Activity = new Intent(Map.this, Chat.class);
+
+                                        // Pass this information to Chat.java to create a new shape in Firebase after someone writes a message.
+                                        if (threeMarkers) {
+
+                                            Activity.putExtra("shapeIsCircle", false);
+                                            // Pass this boolean value Chat.java.
+                                            Activity.putExtra("newShape", true);
+                                            // Pass this value to Chat.java to identify the shape.
+                                            Activity.putExtra("uuid", uuid);
+                                            // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                            Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                            // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
+                                            Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
+                                            Activity.putExtra("threeMarkers", true);
+                                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+
+                                            startActivity(Activity);
+                                        }
+
+                                        if (fourMarkers) {
+
+                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                            GeometryFactory gf = new GeometryFactory();
+
+                                            ArrayList<Coordinate> points = new ArrayList<>();
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                    .toArray(new Coordinate[5])), gf), null);
+
+                                            if (polygon1.isSimple()) {
+
+                                                Activity.putExtra("shapeIsCircle", false);
+                                                // Pass this boolean value Chat.java.
+                                                Activity.putExtra("newShape", true);
+                                                // Pass this value to Chat.java to identify the shape.
+                                                Activity.putExtra("uuid", uuid);
+                                                // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                                // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
+                                                Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
+                                                Activity.putExtra("fourMarkers", true);
+                                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
+
+                                                startActivity(Activity);
+                                            } else {
+
+                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                                waitingForShapeInformationToProcess = false;
+                                            }
+                                        }
+
+                                        if (fiveMarkers) {
+
+                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                            GeometryFactory gf = new GeometryFactory();
+
+                                            ArrayList<Coordinate> points = new ArrayList<>();
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                    .toArray(new Coordinate[6])), gf), null);
+
+                                            if (polygon1.isSimple()) {
+
+                                                Activity.putExtra("shapeIsCircle", false);
+                                                // Pass this boolean value Chat.java.
+                                                Activity.putExtra("newShape", true);
+                                                // Pass this value to Chat.java to identify the shape.
+                                                Activity.putExtra("uuid", uuid);
+                                                // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                                // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
+                                                Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
+                                                Activity.putExtra("fiveMarkers", true);
+                                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
+
+                                                startActivity(Activity);
+                                            } else {
+
+                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                                waitingForShapeInformationToProcess = false;
+                                            }
+                                        }
+
+                                        if (sixMarkers) {
+
+                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                            GeometryFactory gf = new GeometryFactory();
+
+                                            ArrayList<Coordinate> points = new ArrayList<>();
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
+                                            points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                    .toArray(new Coordinate[7])), gf), null);
+
+                                            if (polygon1.isSimple()) {
+
+                                                Activity.putExtra("shapeIsCircle", false);
+                                                // Pass this boolean value Chat.java.
+                                                Activity.putExtra("newShape", true);
+                                                // Pass this value to Chat.java to identify the shape.
+                                                Activity.putExtra("uuid", uuid);
+                                                // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                                // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
+                                                Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
+                                                Activity.putExtra("sixMarkers", true);
+                                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                                Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                                Activity.putExtra("marker5Longitude", marker5Position.longitude);
+
+                                                startActivity(Activity);
+                                            } else {
+
+                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                                waitingForShapeInformationToProcess = false;
+                                            }
+                                        }
+
+                                        if (sevenMarkers) {
+
+                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                            GeometryFactory gf = new GeometryFactory();
+
+                                            ArrayList<Coordinate> points = new ArrayList<>();
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
+                                            points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
+                                            points.add(new Coordinate(marker6Position.latitude, marker6Position.longitude));
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                    .toArray(new Coordinate[8])), gf), null);
+
+                                            if (polygon1.isSimple()) {
+
+                                                Activity.putExtra("shapeIsCircle", false);
+                                                // Pass this boolean value Chat.java.
+                                                Activity.putExtra("newShape", true);
+                                                // Pass this value to Chat.java to identify the shape.
+                                                Activity.putExtra("uuid", uuid);
+                                                // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                                // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
+                                                Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
+                                                Activity.putExtra("sevenMarkers", true);
+                                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                                Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                                Activity.putExtra("marker5Longitude", marker5Position.longitude);
+                                                Activity.putExtra("marker6Latitude", marker6Position.latitude);
+                                                Activity.putExtra("marker6Longitude", marker6Position.longitude);
+
+                                                startActivity(Activity);
+                                            } else {
+
+                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                                waitingForShapeInformationToProcess = false;
+                                            }
+                                        }
+
+                                        if (eightMarkers) {
+
+                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
+                                            GeometryFactory gf = new GeometryFactory();
+
+                                            ArrayList<Coordinate> points = new ArrayList<>();
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
+                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
+                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
+                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
+                                            points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
+                                            points.add(new Coordinate(marker6Position.latitude, marker6Position.longitude));
+                                            points.add(new Coordinate(marker7Position.latitude, marker7Position.longitude));
+                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
+
+                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
+                                                    .toArray(new Coordinate[9])), gf), null);
+
+                                            if (polygon1.isSimple()) {
+
+                                                Activity.putExtra("shapeIsCircle", false);
+                                                // Pass this boolean value Chat.java.
+                                                Activity.putExtra("newShape", true);
+                                                // Pass this value to Chat.java to identify the shape.
+                                                Activity.putExtra("uuid", uuid);
+                                                // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                                // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
+                                                Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
+                                                Activity.putExtra("eightMarkers", true);
+                                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                                Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                                Activity.putExtra("marker5Longitude", marker5Position.longitude);
+                                                Activity.putExtra("marker6Latitude", marker6Position.latitude);
+                                                Activity.putExtra("marker6Longitude", marker6Position.longitude);
+                                                Activity.putExtra("marker7Latitude", marker7Position.latitude);
+                                                Activity.putExtra("marker7Latitude", marker7Position.longitude);
+
+                                                startActivity(Activity);
+                                            } else {
+
+                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                                                waitingForShapeInformationToProcess = false;
+                                            }
+                                        }
+                                    }
+                                }
+
+                                @Override
+                                public void onCancelled(@NonNull DatabaseError databaseError) {
+                                }
+                            });
+                        } else {
+
+                            // The polygon is not new, so go to SignIn.java.
+
+                            // Carry the extras all the way to Chat.java.
+                            Intent Activity = new Intent(Map.this, SignIn.class);
+                            Activity.putExtra("shapeIsCircle", false);
+                            // Pass this boolean value to Chat.java.
+                            Activity.putExtra("newShape", false);
+                            Activity.putExtra("shapeIsCircle", false);
+                            // Pass this value to Chat.java to identify the shape.
+                            Activity.putExtra("uuid", uuid);
+                            // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                            Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                            // Pass this information to Chat.java to create a new shape in Firebase after someone writes a message.
+                            startActivity(Activity);
+                        }
+                    }
+                }
+            }
+        });
+
+        // Go to Chat.java when clicking on a circle.
+        mMap.setOnCircleClickListener(new GoogleMap.OnCircleClickListener() {
+
+            // NOTE: Anything done here should also be done to the onMarkerClickListener.
+
+            @Override
+            public void onCircleClick(final Circle circle) {
+
+                Log.i(TAG, "onCircleClick");
+
+                // If the user tries to click on a circle that is not a circleTemp while circleTemp exists, return.
+                if (chatSelectorSeekBar.getVisibility() == View.VISIBLE && (circle != circleTemp)) {
+
+                    Log.i(TAG, "Selected circle is not a circleTemp. Returning");
+                    return;
+                }
+
+                // Change boolean value so the x and y values in touchAgain() from dispatchTouchEvent() do not change.
+                waitingForClicksToProcess = true;
+
+                // Click all through all circles, using the z-index to figure out which ones have not been cycled through. All the information to the arrayLists to be used by chatSelectorSeekBar.
+                if (circle.getZIndex() == 0 && circle.getTag() != null) {
+
+                    Log.i(TAG, "Lowering z-index of a circle");
+
+                    // Prevent the map from scrolling so the same spot will be clicked again in touchAgain().
+                    if (mMap.getUiSettings().isScrollGesturesEnabled()) {
+
+                        mMap.getUiSettings().setScrollGesturesEnabled(false);
+                    }
+
+                    // Drop the z-index to metaphorically check it off the "to click" list.
+                    circle.setZIndex(-1);
+
+                    // Add the information to arrayLists to be used by chatSelectorSeekBar.
+                    overlappingShapesUUID.add(circle.getTag().toString());
+                    overlappingShapesCircleLocation.add(circle.getCenter());
+                    overlappingShapesCircleRadius.add(circle.getRadius());
+
+                    // Programmatically click the same spot again.
+                    touchAgain();
+
+                    return;
+                }
+
+                waitingForClicksToProcess = false;
+
+                // This will get called after the last shape is programmatically clicked.
+                chatsSize = overlappingShapesUUID.size();
+
+                // If none of the clicked shapes are new, get rid of any new shapes.
+                if (!overlappingShapesUUID.contains("new")) {
+
+                    // Remove the polygon and markers.
+                    if (polygon != null) {
+
+                        polygon.remove();
+                        marker0.remove();
+                        marker1.remove();
+                        marker2.remove();
+                        polygon = null;
+                        marker0 = null;
+                        marker1 = null;
+                        marker2 = null;
+                        marker0Position = null;
+                        marker1Position = null;
+                        marker2Position = null;
+                        marker0ID = null;
+                        marker1ID = null;
+                        marker2ID = null;
+
+                        if (marker3 != null) {
+
+                            marker3.remove();
+                            marker3 = null;
+                            marker3Position = null;
+                            marker3ID = null;
+                        }
+
+                        if (marker4 != null) {
+
+                            marker4.remove();
+                            marker4 = null;
+                            marker4Position = null;
+                            marker4ID = null;
+                        }
+
+                        if (marker5 != null) {
+
+                            marker5.remove();
+                            marker5 = null;
+                            marker5Position = null;
+                            marker5ID = null;
+                        }
+
+                        if (marker6 != null) {
+
+                            marker6.remove();
+                            marker6 = null;
+                            marker6Position = null;
+                            marker6ID = null;
+                        }
+
+                        if (marker7 != null) {
+
+                            marker7.remove();
+                            marker7 = null;
+                            marker7Position = null;
+                            marker7ID = null;
+                        }
+                    }
+
+                    // Remove the circle and markers.
+                    if (newCircle != null) {
+
+                        newCircle.remove();
+                        if (marker0 != null) {
+
+                            marker0.remove();
+                        }
+
+                        if (marker1 != null) {
+                            marker1.remove();
+                        }
+
+                        newCircle = null;
+                        marker0 = null;
+                        marker1 = null;
+                        marker0Position = null;
+                        marker1Position = null;
+                        marker0ID = null;
+                        marker1ID = null;
+                    }
+                }
+
+                // If selectingShape, user has selected a highlighted shape. Similar logic applies to originally only clicking on one circle.
+                if (selectingShape || (chatsSize == 1 && circle.getTag() != null)) {
+
+                    Log.i(TAG, "User selected a circle");
+
+                    // End this method if the method is already being processed from another shape clicking event.
+                    if (waitingForShapeInformationToProcess) {
+
+                        return;
+                    }
+
+                    // Update boolean to prevent double clicking a shape.
+                    waitingForShapeInformationToProcess = true;
+
+                    // "New" shapes are automatically clicked. Therefore, get the ID set by Firebase to identify which circle the user clicked on.
+                    if (chatsSize == 1) {
+
+                        uuid = (String) circle.getTag();
+                    } else {
+
+                        uuid = selectedOverlappingShapeUUID;
+                    }
+
+                    // Check if the user is already signed in.
+                    if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+
+                        // User is signed in.
+
+                        // Check if user is within the circle before going to the chat.
+                        FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
+
+                        mFusedLocationClient.getLastLocation()
+                                .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
+                                    @Override
+                                    public void onSuccess(Location location) {
+
+                                        if (location != null) {
+
+                                            float[] distance = new float[2];
+
+                                            Location.distanceBetween(location.getLatitude(), location.getLongitude(),
+                                                    circle.getCenter().latitude, circle.getCenter().longitude, distance);
+
+                                            // Boolean; will be true if user is within the circle upon circle click.
+                                            userIsWithinShape = !(distance[0] > circle.getRadius());
+                                        }
+                                    }
+                                });
+
+                        // Go to Chat.java with the boolean value.
+                        Intent Activity = new Intent(Map.this, Chat.class);
+                        Activity.putExtra("shapeIsCircle", true);
+                        // Pass this boolean value to Chat.java.
+                        Activity.putExtra("newShape", false);
+                        // Pass this value to Chat.java to identify the shape.
+                        Activity.putExtra("uuid", uuid);
+                        // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                        startActivity(Activity);
+                    } else {
+
+                        // No user is signed in.
+
+                        // Go to Chat.java with the boolean value.
+                        Intent Activity = new Intent(Map.this, SignIn.class);
+                        Activity.putExtra("shapeIsCircle", true);
+                        // Pass this boolean value to Chat.java.
+                        Activity.putExtra("newShape", false);
+                        // Pass this value to Chat.java to identify the shape.
+                        Activity.putExtra("uuid", uuid);
+                        // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                        startActivity(Activity);
+                    }
+
+                    return;
+                }
+
+                // While clicking through the circles, if a circle does not have a tag, it is new. Therefore, go directly to the chat, as this is probably the chat the user wants to enter.
+                if (circle.getTag() == null) {
+
+                    Log.i(TAG, "User clicked on a new circle");
+
+                    // End this method if the method is already being processed from another shape clicking event.
+                    if (waitingForShapeInformationToProcess) {
+
+                        return;
+                    }
+
+                    // Update boolean to prevent double clicking a shape.
+                    waitingForShapeInformationToProcess = true;
+
+                    // Inform the user is the circle is too small.
+                    if (circle.getRadius() < 1) {
+
+                        Toast.makeText(Map.this, "Please make the shape larger", Toast.LENGTH_LONG).show();
+                        waitingForShapeInformationToProcess = false;
+                        return;
+                    }
+
+                    // Generate a uuid, as the shape is new.
+                    uuid = UUID.randomUUID().toString();
+
+                    // Check if the user is already signed in.
+                    if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+
+                        // User is signed in.
+
+                        // Check if user is within the circle before going to the chat.
+                        FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
+
+                        mFusedLocationClient.getLastLocation()
+                                .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
+                                    @Override
+                                    public void onSuccess(Location location) {
+
+                                        if (location != null) {
+
+                                            float[] distance = new float[2];
+
+                                            Location.distanceBetween(location.getLatitude(), location.getLongitude(),
+                                                    circle.getCenter().latitude, circle.getCenter().longitude, distance);
+
+                                            // Boolean; will be true if user is within the circle upon circle click.
+                                            userIsWithinShape = !(distance[0] > circle.getRadius());
+                                        }
+                                    }
+                                });
+
+                        // Compare the uuid to the uuids in Firebase to prevent uuid overlap before adding it to Firebase.
+                        firebaseCircles.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
+
+                            @Override
+                            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                                // If the uuid already exists in Firebase, generate another uuid and try again.
+                                if (dataSnapshot.exists()) {
+
+                                    // uuid exists in Firebase. Generate another and try again.
+
+                                    // Generate another UUID and try again.
+                                    uuid = UUID.randomUUID().toString();
+
+                                    // Carry the extras all the way to Chat.java.
+                                    Intent Activity = new Intent(Map.this, Chat.class);
+                                    Activity.putExtra("shapeIsCircle", true);
+                                    // Pass this boolean value to Chat.java.
+                                    Activity.putExtra("newShape", true);
+                                    // Pass this value to Chat.java to identify the shape.
+                                    Activity.putExtra("uuid", uuid);
+                                    // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                    Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                    // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
+                                    Activity.putExtra("circleLatitude", circle.getCenter().latitude);
+                                    Activity.putExtra("circleLongitude", circle.getCenter().longitude);
+                                    Activity.putExtra("radius", circle.getRadius());
+                                    startActivity(Activity);
+                                } else {
+
+                                    // uuid does not already exist in Firebase. Go to Chat.java with the uuid.
+
+                                    // Carry the extras all the way to Chat.java.
+                                    Intent Activity = new Intent(Map.this, Chat.class);
+                                    Activity.putExtra("shapeIsCircle", true);
+                                    // Pass this boolean value to Chat.java.
+                                    Activity.putExtra("newShape", true);
+                                    // Pass this value to Chat.java to identify the shape.
+                                    Activity.putExtra("uuid", uuid);
+                                    // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                    Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                    // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
+                                    Activity.putExtra("circleLatitude", circle.getCenter().latitude);
+                                    Activity.putExtra("circleLongitude", circle.getCenter().longitude);
+                                    Activity.putExtra("radius", circle.getRadius());
+                                    startActivity(Activity);
+                                }
+                            }
+
+                            @Override
+                            public void onCancelled(@NonNull DatabaseError databaseError) {
+                            }
+                        });
+
+                        // Add a return statement so chatSelectorSeekBar is not called.
+                        return;
+                    } else {
+
+                        // No user is signed in.
+
+                        // Compare the uuid to the uuids in Firebase to prevent uuid overlap before adding it to Firebase.
+                        firebaseCircles.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
+
+                            @Override
+                            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                                // If the uuid already exists in Firebase, generate another uuid and try again.
+                                if (dataSnapshot.exists()) {
+
+                                    // uuid exists in Firebase. Generate another and try again.
+
+                                    // Generate another UUID and try again.
+                                    uuid = UUID.randomUUID().toString();
+
+                                    // Carry the extras all the way to Chat.java.
+                                    Intent Activity = new Intent(Map.this, SignIn.class);
+                                    Activity.putExtra("shapeIsCircle", true);
+                                    // Pass this boolean value to Chat.java.
+                                    Activity.putExtra("newShape", true);
+                                    // Pass this value to Chat.java to identify the shape.
+                                    Activity.putExtra("uuid", uuid);
+                                    // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                    Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                    // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
+                                    Activity.putExtra("circleLatitude", circle.getCenter().latitude);
+                                    Activity.putExtra("circleLongitude", circle.getCenter().longitude);
+                                    Activity.putExtra("radius", circle.getRadius());
+                                    startActivity(Activity);
+                                } else {
+
+                                    // uuid does not already exist in Firebase. Go to Chat.java with the uuid.
+
+                                    // Carry the extras all the way to Chat.java.
+                                    Intent Activity = new Intent(Map.this, SignIn.class);
+                                    Activity.putExtra("shapeIsCircle", true);
+                                    // Pass this boolean value to Chat.java.
+                                    Activity.putExtra("newShape", true);
+                                    // Pass this value to Chat.java to identify the shape.
+                                    Activity.putExtra("uuid", uuid);
+                                    // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                    Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                    // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
+                                    Activity.putExtra("circleLatitude", circle.getCenter().latitude);
+                                    Activity.putExtra("circleLongitude", circle.getCenter().longitude);
+                                    Activity.putExtra("radius", circle.getRadius());
+                                    startActivity(Activity);
+                                }
+                            }
+
+                            @Override
+                            public void onCancelled(@NonNull DatabaseError databaseError) {
+                            }
+                        });
+
+                        // Add a return statement so chatSelectorSeekBar is not called.
+                        return;
+                    }
+                }
+
+                // At this point, chatsSize > 1 so set the chatSelectorSeekBar to VISIBLE.
+                chatSelectorSeekBar.setMax(chatsSize - 1);
+                // Change seekBar's progress so a shape will always be highlighted.
+                chatSelectorSeekBar.setProgress(1);
+                chatSelectorSeekBar.setProgress(0);
+                chatSizeSeekBar.setVisibility(View.GONE);
+                chatSelectorSeekBar.setVisibility(View.VISIBLE);
+                mMap.getUiSettings().setScrollGesturesEnabled(true);
+                Toast.makeText(Map.this, "Highlight and select a shape using the SeekBar below.", Toast.LENGTH_LONG).show();
+            }
+        });
+
+        // Get rid of chatSelectorSeekBar and circleTemp is the user clicks outside of the circles.
+        mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
+            @Override
+            public void onMapClick(LatLng latLng) {
+
+                if (chatSelectorSeekBar.getVisibility() == View.VISIBLE) {
+
+                    Log.i(TAG, "Replacing circles with z = -1 with z-index = 0 from onMapClick in onMapReadyAndRestart()");
+
+                    waitingForClicksToProcess = true;
+
+                    if (circleTemp != null) {
+
+                        circleTemp.remove();
+                    }
+
+                    selectingShape = false;
+
+                    // Change the circle color depending on the map type.
+                    if (mMap.getMapType() == 2 || mMap.getMapType() == 4) {
+
+                        for (int i = 0; i < overlappingShapesUUID.size(); i++) {
+
+                            Circle circle0 = mMap.addCircle(
+                                    new CircleOptions()
+                                            .center(overlappingShapesCircleLocation.get(i))
+                                            .clickable(true)
+                                            .fillColor(0)
+                                            .radius(overlappingShapesCircleRadius.get(i))
+                                            .strokeColor(Color.rgb(255, 255, 0))
+                                            .strokeWidth(3f)
+                                            .zIndex(0)
+                            );
+
+                            circle0.setTag(overlappingShapesUUID.get(i));
+                        }
+                    } else {
+
+                        for (int i = 0; i < overlappingShapesUUID.size(); i++) {
+
+                            Circle circle0 = mMap.addCircle(
+                                    new CircleOptions()
+                                            .center(overlappingShapesCircleLocation.get(i))
+                                            .clickable(true)
+                                            .fillColor(0)
+                                            .radius(overlappingShapesCircleRadius.get(i))
+                                            .strokeColor(Color.rgb(255, 0, 255))
+                                            .strokeWidth(3f)
+                                            .zIndex(0)
+                            );
+
+                            circle0.setTag(overlappingShapesUUID.get(i));
+                        }
+                    }
+
+                    overlappingShapesUUID = new ArrayList<>();
+                    overlappingShapesCircleLocation = new ArrayList<>();
+                    overlappingShapesCircleRadius = new ArrayList<>();
+
+                    chatSelectorSeekBar.setVisibility(View.INVISIBLE);
+                    chatSizeSeekBar.setVisibility(View.VISIBLE);
+
+                    chatsSize = 0;
+
+                    waitingForClicksToProcess = false;
+                }
+            }
+        });
     }
 
     @Override
@@ -2767,6 +5702,33 @@ public class Map extends FragmentActivity implements
 
                                 }
                             });
+
+                            // Create a circleTemp if one already exists.
+                            if (chatSelectorSeekBar.getVisibility() == View.VISIBLE) {
+
+                                selectedOverlappingShapeUUID = overlappingShapesUUID.get(chatSelectorSeekBar.getProgress());
+                                selectedOverlappingShapeCircleLocation = overlappingShapesCircleLocation.get(chatSelectorSeekBar.getProgress());
+                                selectedOverlappingShapeCircleRadius = overlappingShapesCircleRadius.get(chatSelectorSeekBar.getProgress());
+
+                                if (selectedOverlappingShapeUUID != null) {
+
+                                    if (circleTemp != null) {
+
+                                        circleTemp.remove();
+                                    }
+
+                                    circleTemp = mMap.addCircle(
+                                            new CircleOptions()
+                                                    .center(selectedOverlappingShapeCircleLocation)
+                                                    .clickable(true)
+                                                    .fillColor(Color.argb(100, 255, 0, 255))
+                                                    .radius(selectedOverlappingShapeCircleRadius)
+                                                    .strokeColor(Color.rgb(255, 0, 255))
+                                                    .strokeWidth(3f)
+                                                    .zIndex(2)
+                                    );
+                                }
+                            }
                         }
 
                         mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
@@ -3107,6 +6069,33 @@ public class Map extends FragmentActivity implements
 
                                 }
                             });
+
+                            // Create a circleTemp if one already exists.
+                            if (chatSelectorSeekBar.getVisibility() == View.VISIBLE) {
+
+                                selectedOverlappingShapeUUID = overlappingShapesUUID.get(chatSelectorSeekBar.getProgress());
+                                selectedOverlappingShapeCircleLocation = overlappingShapesCircleLocation.get(chatSelectorSeekBar.getProgress());
+                                selectedOverlappingShapeCircleRadius = overlappingShapesCircleRadius.get(chatSelectorSeekBar.getProgress());
+
+                                if (selectedOverlappingShapeUUID != null) {
+
+                                    if (circleTemp != null) {
+
+                                        circleTemp.remove();
+                                    }
+
+                                    circleTemp = mMap.addCircle(
+                                            new CircleOptions()
+                                                    .center(selectedOverlappingShapeCircleLocation)
+                                                    .clickable(true)
+                                                    .fillColor(Color.argb(100, 255, 255, 0))
+                                                    .radius(selectedOverlappingShapeCircleRadius)
+                                                    .strokeColor(Color.rgb(255, 255, 0))
+                                                    .strokeWidth(3f)
+                                                    .zIndex(2)
+                                    );
+                                }
+                            }
                         }
 
                         mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
@@ -3447,6 +6436,33 @@ public class Map extends FragmentActivity implements
 
                                 }
                             });
+
+                            // Create a circleTemp if one already exists.
+                            if (chatSelectorSeekBar.getVisibility() == View.VISIBLE) {
+
+                                selectedOverlappingShapeUUID = overlappingShapesUUID.get(chatSelectorSeekBar.getProgress());
+                                selectedOverlappingShapeCircleLocation = overlappingShapesCircleLocation.get(chatSelectorSeekBar.getProgress());
+                                selectedOverlappingShapeCircleRadius = overlappingShapesCircleRadius.get(chatSelectorSeekBar.getProgress());
+
+                                if (selectedOverlappingShapeUUID != null) {
+
+                                    if (circleTemp != null) {
+
+                                        circleTemp.remove();
+                                    }
+
+                                    circleTemp = mMap.addCircle(
+                                            new CircleOptions()
+                                                    .center(selectedOverlappingShapeCircleLocation)
+                                                    .clickable(true)
+                                                    .fillColor(Color.argb(100, 255, 255, 0))
+                                                    .radius(selectedOverlappingShapeCircleRadius)
+                                                    .strokeColor(Color.rgb(255, 255, 0))
+                                                    .strokeWidth(3f)
+                                                    .zIndex(2)
+                                    );
+                                }
+                            }
                         }
 
                         mMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
@@ -3787,6 +6803,33 @@ public class Map extends FragmentActivity implements
 
                                 }
                             });
+
+                            // Create a circleTemp if one already exists.
+                            if (chatSelectorSeekBar.getVisibility() == View.VISIBLE) {
+
+                                selectedOverlappingShapeUUID = overlappingShapesUUID.get(chatSelectorSeekBar.getProgress());
+                                selectedOverlappingShapeCircleLocation = overlappingShapesCircleLocation.get(chatSelectorSeekBar.getProgress());
+                                selectedOverlappingShapeCircleRadius = overlappingShapesCircleRadius.get(chatSelectorSeekBar.getProgress());
+
+                                if (selectedOverlappingShapeUUID != null) {
+
+                                    if (circleTemp != null) {
+
+                                        circleTemp.remove();
+                                    }
+
+                                    circleTemp = mMap.addCircle(
+                                            new CircleOptions()
+                                                    .center(selectedOverlappingShapeCircleLocation)
+                                                    .clickable(true)
+                                                    .fillColor(Color.argb(100, 255, 0, 255))
+                                                    .radius(selectedOverlappingShapeCircleRadius)
+                                                    .strokeColor(Color.rgb(255, 0, 255))
+                                                    .strokeWidth(3f)
+                                                    .zIndex(2)
+                                    );
+                                }
+                            }
                         }
 
                         mMap.setMapType(GoogleMap.MAP_TYPE_TERRAIN);
@@ -6471,2820 +9514,6 @@ public class Map extends FragmentActivity implements
         }
     }
 
-    // Cut down on code by using one method for the shared code from onMapReady() and onRestart().
-    private void onMapReadyAndRestart() {
-
-        Log.i(TAG, "onMapReadyAndRestart()");
-
-        // Use the NORMAL map type if the user is not connected to WIFI for easier loading.
-        changeMapTypeDependingOnConnection();
-
-        // Keep the marker on the shapes to allow for dragging.
-        mMap.setOnMarkerDragListener(new GoogleMap.OnMarkerDragListener() {
-            @Override
-            public void onMarkerDragStart(Marker marker) {
-
-                LatLng markerPosition = marker.getPosition();
-
-                // If user holds the center marker, update the circle's position. Else, update the circle's radius.
-                if (newCircle != null) {
-
-                    if (marker.getId().equals(marker0ID)) {
-
-                        newCircle.setCenter(markerPosition);
-                        marker1.setVisible(false);
-                    }
-
-                    if (marker.getId().equals(marker1ID)) {
-
-                        // Limits the size of the circle.
-                        if (distanceGivenLatLng(newCircle.getCenter().latitude, newCircle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude) < 200) {
-
-                            newCircle.setRadius(distanceGivenLatLng(newCircle.getCenter().latitude, newCircle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude));
-                        } else {
-
-                            newCircle.setRadius(200);
-                        }
-                    }
-                }
-
-                // Update the polygon shape as the marker positions get updated.
-                if (polygon != null) {
-
-                    // Limit polygon size.
-                    if (SphericalUtil.computeArea(polygonPointsList) >= Math.PI*Math.pow(200, 2)) {
-
-                        // Do nothing, as polygon should not be smaller than pi or larger than pi(200^2).
-                    } else {
-
-                        if (marker.getId().equals(marker0ID)) {
-
-                            if (threeMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{markerPosition, marker1Position, marker2Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (fourMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{markerPosition, marker1Position, marker2Position, marker3Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (fiveMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{markerPosition, marker1Position, marker2Position, marker3Position, marker4Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (sixMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{markerPosition, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (sevenMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{markerPosition, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (eightMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{markerPosition, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-                        }
-
-                        if (marker.getId().equals(marker1ID)) {
-
-                            if (threeMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, markerPosition, marker2Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (fourMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, markerPosition, marker2Position, marker3Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (fiveMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, markerPosition, marker2Position, marker3Position, marker4Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (sixMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, markerPosition, marker2Position, marker3Position, marker4Position, marker5Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (sevenMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, markerPosition, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (eightMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, markerPosition, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-                        }
-
-                        if (marker.getId().equals(marker2ID)) {
-
-                            if (threeMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, markerPosition};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (fourMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, markerPosition, marker3Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (fiveMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, markerPosition, marker3Position, marker4Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (sixMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, markerPosition, marker3Position, marker4Position, marker5Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (sevenMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, markerPosition, marker3Position, marker4Position, marker5Position, marker6Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (eightMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, markerPosition, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-                        }
-
-                        if (marker.getId().equals(marker3ID)) {
-
-                            if (fourMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, markerPosition};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (fiveMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, markerPosition, marker4Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (sixMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, markerPosition, marker4Position, marker5Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (sevenMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, markerPosition, marker4Position, marker5Position, marker6Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (eightMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, markerPosition, marker4Position, marker5Position, marker6Position, marker7Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-                        }
-
-                        if (marker.getId().equals(marker4ID)) {
-
-                            if (fiveMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, markerPosition};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (sixMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, markerPosition, marker5Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (sevenMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, markerPosition, marker5Position, marker6Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (eightMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, markerPosition, marker5Position, marker6Position, marker7Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-                        }
-
-                        if (marker.getId().equals(marker5ID)) {
-
-                            if (sixMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, markerPosition};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (sevenMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, markerPosition, marker6Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (eightMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, markerPosition, marker6Position, marker7Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-                        }
-
-                        if (marker.getId().equals(marker6ID)) {
-
-                            if (sevenMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, markerPosition};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (eightMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, markerPosition, marker7Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-                        }
-
-                        if (marker.getId().equals(marker7ID)) {
-
-                            LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, markerPosition};
-                            polygonPointsList = Arrays.asList(polygonPoints);
-                            polygon.setPoints(polygonPointsList);
-                        }
-                    }
-                }
-            }
-
-            @Override
-            public void onMarkerDrag(Marker marker) {
-
-                LatLng markerPosition = marker.getPosition();
-
-                // If user holds the center marker, update the circle's position. Else, update the circle's radius.
-                if (newCircle != null) {
-
-                    if (marker.getId().equals(marker0ID)) {
-
-                        newCircle.setCenter(markerPosition);
-                    }
-
-                    if (marker.getId().equals(marker1ID)) {
-
-                        // Limits the size of the circle.
-                        if (distanceGivenLatLng(markerPosition.latitude, markerPosition.longitude, newCircle.getCenter().latitude, newCircle.getCenter().longitude) < 200) {
-
-                            newCircle.setRadius(distanceGivenLatLng(newCircle.getCenter().latitude, newCircle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude));
-                        } else {
-
-                            newCircle.setRadius(200);
-                        }
-                    }
-                }
-
-                // Update the polygon shape as the marker positions get updated.
-                if (polygon != null) {
-
-                    // Limit polygon size. The low end will be handled in the onClickListener.
-                    if (SphericalUtil.computeArea(polygonPointsList) <= Math.PI*Math.pow(200, 2)) {
-
-                        markerPositionAtVertexOfPolygon = new LatLng(markerPosition.latitude, markerPosition.longitude);
-
-                        if (marker.getId().equals(marker0ID)) {
-
-                            if (threeMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{markerPosition, marker1Position, marker2Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-
-                            }
-
-                            if (fourMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{markerPosition, marker1Position, marker2Position, marker3Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (fiveMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{markerPosition, marker1Position, marker2Position, marker3Position, marker4Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (sixMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{markerPosition, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (sevenMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{markerPosition, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (eightMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{markerPosition, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-                        }
-
-                        if (marker.getId().equals(marker1ID)) {
-
-                            if (threeMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, markerPosition, marker2Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (fourMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, markerPosition, marker2Position, marker3Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (fiveMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, markerPosition, marker2Position, marker3Position, marker4Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (sixMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, markerPosition, marker2Position, marker3Position, marker4Position, marker5Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (sevenMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, markerPosition, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (eightMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, markerPosition, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-                        }
-
-                        if (marker.getId().equals(marker2ID)) {
-
-                            if (threeMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, markerPosition};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (fourMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, markerPosition, marker3Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (fiveMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, markerPosition, marker3Position, marker4Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (sixMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, markerPosition, marker3Position, marker4Position, marker5Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (sevenMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, markerPosition, marker3Position, marker4Position, marker5Position, marker6Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (eightMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, markerPosition, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-                        }
-
-                        if (marker.getId().equals(marker3ID)) {
-
-                            if (fourMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, markerPosition};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (fiveMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, markerPosition, marker4Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (sixMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, markerPosition, marker4Position, marker5Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (sevenMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, markerPosition, marker4Position, marker5Position, marker6Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (eightMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, markerPosition, marker4Position, marker5Position, marker6Position, marker7Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-                        }
-
-                        if (marker.getId().equals(marker4ID)) {
-
-                            if (fiveMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, markerPosition};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (sixMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, markerPosition, marker5Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (sevenMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, markerPosition, marker5Position, marker6Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (eightMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, markerPosition, marker5Position, marker6Position, marker7Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-                        }
-
-                        if (marker.getId().equals(marker5ID)) {
-
-                            if (sixMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, markerPosition};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (sevenMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, markerPosition, marker6Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (eightMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, markerPosition, marker6Position, marker7Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-                        }
-
-                        if (marker.getId().equals(marker6ID)) {
-
-                            if (sevenMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, markerPosition};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (eightMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, markerPosition, marker7Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-                        }
-
-                        if (marker.getId().equals(marker7ID)) {
-
-                            LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, markerPosition};
-                            polygonPointsList = Arrays.asList(polygonPoints);
-                            polygon.setPoints(polygonPointsList);
-                        }
-                    } else {
-
-                        markerOutsidePolygon = true;
-                    }
-
-                    // If marker exits the polygon because it's too big and re-enters it, the following will update the shape with the marker so the previous code will work again.
-                    if (markerOutsidePolygon && PolyUtil.containsLocation(markerPosition.latitude, markerPosition.longitude, polygon.getPoints(), false)) {
-
-                        markerPositionAtVertexOfPolygon = new LatLng(markerPosition.latitude, markerPosition.longitude);
-
-                        if (marker.getId().equals(marker0ID)) {
-
-                            if (threeMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{markerPosition, marker1Position, marker2Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-
-                            }
-
-                            if (fourMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{markerPosition, marker1Position, marker2Position, marker3Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (fiveMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{markerPosition, marker1Position, marker2Position, marker3Position, marker4Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (sixMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{markerPosition, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (sevenMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{markerPosition, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (eightMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{markerPosition, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-                        }
-
-                        if (marker.getId().equals(marker1ID)) {
-
-                            if (threeMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, markerPosition, marker2Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (fourMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, markerPosition, marker2Position, marker3Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (fiveMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, markerPosition, marker2Position, marker3Position, marker4Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (sixMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, markerPosition, marker2Position, marker3Position, marker4Position, marker5Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (sevenMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, markerPosition, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (eightMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, markerPosition, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-                        }
-
-                        if (marker.getId().equals(marker2ID)) {
-
-                            if (threeMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, markerPosition};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (fourMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, markerPosition, marker3Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (fiveMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, markerPosition, marker3Position, marker4Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (sixMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, markerPosition, marker3Position, marker4Position, marker5Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (sevenMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, markerPosition, marker3Position, marker4Position, marker5Position, marker6Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (eightMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, markerPosition, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-                        }
-
-                        if (marker.getId().equals(marker3ID)) {
-
-                            if (fourMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, markerPosition};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (fiveMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, markerPosition, marker4Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (sixMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, markerPosition, marker4Position, marker5Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (sevenMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, markerPosition, marker4Position, marker5Position, marker6Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (eightMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, markerPosition, marker4Position, marker5Position, marker6Position, marker7Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-                        }
-
-                        if (marker.getId().equals(marker4ID)) {
-
-                            if (fiveMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, markerPosition};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (sixMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, markerPosition, marker5Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (sevenMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, markerPosition, marker5Position, marker6Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (eightMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, markerPosition, marker5Position, marker6Position, marker7Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-                        }
-
-                        if (marker.getId().equals(marker5ID)) {
-
-                            if (sixMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, markerPosition};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (sevenMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, markerPosition, marker6Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (eightMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, markerPosition, marker6Position, marker7Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-                        }
-
-                        if (marker.getId().equals(marker6ID)) {
-
-                            if (sevenMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, markerPosition};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-
-                            if (eightMarkers) {
-
-                                LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, markerPosition, marker7Position};
-                                polygonPointsList = Arrays.asList(polygonPoints);
-                                polygon.setPoints(polygonPointsList);
-                            }
-                        }
-
-                        if (marker.getId().equals(marker7ID)) {
-
-                            LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, markerPosition};
-                            polygonPointsList = Arrays.asList(polygonPoints);
-                            polygon.setPoints(polygonPointsList);
-                        }
-
-                        markerOutsidePolygon = false;
-                    }
-                }
-            }
-
-            @Override
-            public void onMarkerDragEnd(Marker marker) {
-
-                LatLng markerPosition = marker.getPosition();
-
-                if (newCircle != null) {
-
-                    // Sets marker1's position on the circle's edge relative to where the user last left marker1.
-                    if (marker.getId().equals(marker0ID)) {
-
-                        marker1.setPosition(latLngGivenDistance(newCircle.getCenter().latitude, newCircle.getCenter().longitude, newCircle.getRadius(), relativeAngle));
-
-                        marker1.setVisible(true);
-                    }
-
-                    if (marker.getId().equals(marker1ID)) {
-
-                        // Update the global variable with the angle the user left the marker's position. This is used if the user drags the center marker.
-                        relativeAngle = angleFromCoordinate(newCircle.getCenter().latitude, newCircle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude);
-
-                        // Keep the seekBar's progress aligned with the marker.
-                        if (newCircle.getRadius() < 200) {
-
-                            chatSizeSeekBar.setProgress((int) distanceGivenLatLng(newCircle.getCenter().latitude, newCircle.getCenter().longitude, markerPosition.latitude, markerPosition.longitude));
-                        }
-
-                        // Limits the size of the circle, keeps marker1's position on the circle's edge at the same angle relative to where the user last left it, and keeps the seekBar's progress aligned with the marker.
-                        if (newCircle.getRadius() >= 200) {
-
-                            marker.setPosition(latLngGivenDistance(newCircle.getCenter().latitude, newCircle.getCenter().longitude, 200, relativeAngle));
-
-                            chatSizeSeekBar.setProgress(200);
-                        }
-                    }
-                }
-
-                // Update the global variable with the marker's position.
-                if (polygon != null) {
-
-                    // If the marker is dropped outside of the polygon, set it to the last known position where it was in the polygon.
-                    if (!PolyUtil.containsLocation(markerPosition.latitude, markerPosition.longitude, polygon.getPoints(), false)) {
-
-                        marker.setPosition(markerPositionAtVertexOfPolygon);
-                    }
-
-                    if (marker.getId().equals(marker0ID)) {
-
-                        marker0Position = marker.getPosition();
-                    }
-
-                    if (marker.getId().equals(marker1ID)) {
-
-                        marker1Position = marker.getPosition();
-                    }
-
-                    if (marker.getId().equals(marker2ID)) {
-
-                        marker2Position = marker.getPosition();
-                    }
-
-                    if (marker.getId().equals(marker3ID)) {
-
-                        marker3Position = marker.getPosition();
-                    }
-
-                    if (marker.getId().equals(marker4ID)) {
-
-                        marker4Position = marker.getPosition();
-                    }
-
-                    if (marker.getId().equals(marker5ID)) {
-
-                        marker5Position = marker.getPosition();
-                    }
-
-                    if (marker.getId().equals(marker6ID)) {
-
-                        marker6Position = marker.getPosition();
-                    }
-
-                    if (marker.getId().equals(marker7ID)) {
-
-                        marker7Position = marker.getPosition();
-                    }
-                }
-            }
-        });
-
-        // Go to Chat.java after clicking on a circle's middle marker.
-        mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
-            @Override
-            public boolean onMarkerClick(Marker marker) {
-
-                if (newCircle.getZIndex() == 0 && newCircle.getTag() == null) {
-
-                    overlappingShapesUUID.add("new circle");
-                } else if (newCircle.getZIndex() == 0 && newCircle.getTag() != null) {
-
-                    overlappingShapesUUID.add(newCircle.getTag().toString());
-                }
-
-                if (newCircle.getZIndex() == 0) {
-
-                    Log.i(TAG, "Dropping z-index of a circle from a marker click");
-
-                    newCircle.setZIndex(-1);
-
-                    marker.remove();
-
-                    touchAgain();
-
-                    return false;
-                }
-
-                // End this method if the method is already being processed from another shape clicking event.
-                if (waitingForShapeInformationToProcess) {
-
-                    return true;
-                }
-
-                // Update boolean to prevent double clicking a shape.
-                waitingForShapeInformationToProcess = true;
-
-                if (newCircle != null && marker.getId().equals(marker0ID)) {
-
-                    if (newCircle.getTag() != null) {
-
-                        // Get the ID set by Firebase to identify which circle the user clicked on.
-                        uuid = (String) newCircle.getTag();
-                    } else {
-
-                        // If the circle is new, it will not have a tag, as the tag is pulled from Firebase. Therefore, generate a uuid.
-                        uuid = UUID.randomUUID().toString();
-                    }
-
-                    // Check if the user is already signed in.
-                    if (FirebaseAuth.getInstance().getCurrentUser() != null) {
-
-                        // User is signed in.
-
-                        // Check if user is within the circle before going to the chat.
-                        FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
-
-                        mFusedLocationClient.getLastLocation()
-                                .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
-                                    @Override
-                                    public void onSuccess(Location location) {
-
-                                        if (location != null) {
-
-                                            float[] distance = new float[2];
-
-                                            Location.distanceBetween(location.getLatitude(), location.getLongitude(),
-                                                    newCircle.getCenter().latitude, newCircle.getCenter().longitude, distance);
-
-                                            // Boolean; will be true if user is within the circle upon circle click.
-                                            userIsWithinShape = !(distance[0] > newCircle.getRadius());
-                                        }
-                                    }
-                                });
-
-                        // If circle.getTag() == null, the circle is new. Therefore, compare it to the uuids in Firebase to prevent uuid overlap before adding it to Firebase.
-                        if (newCircle.getTag() == null) {
-
-                            // Inform the user is the circle is too small.
-                            if (newCircle.getRadius() < 1) {
-
-                                Toast.makeText(Map.this, "Please make the shape larger", Toast.LENGTH_SHORT).show();
-                                waitingForShapeInformationToProcess = false;
-                                return true;
-                            }
-
-                            firebaseCircles.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
-
-                                @Override
-                                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-
-                                    // If the uuid already exists in Firebase, generate another uuid and try again.
-                                    if (dataSnapshot.exists()) {
-
-                                        // uuid exists in Firebase. Generate another and try again.
-
-                                        // Generate another UUID and try again.
-                                        uuid = UUID.randomUUID().toString();
-
-                                        // Carry the extras all the way to Chat.java.
-                                        Intent Activity = new Intent(Map.this, Chat.class);
-                                        Activity.putExtra("shapeIsCircle", true);
-                                        // Pass this boolean value to Chat.java.
-                                        Activity.putExtra("newShape", true);
-                                        // Pass this value to Chat.java to identify the shape.
-                                        Activity.putExtra("uuid", uuid);
-                                        // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
-                                        Activity.putExtra("circleLatitude", newCircle.getCenter().latitude);
-                                        Activity.putExtra("circleLongitude", newCircle.getCenter().longitude);
-                                        Activity.putExtra("radius", newCircle.getRadius());
-                                        startActivity(Activity);
-                                    } else {
-
-                                        // uuid does not already exist in Firebase. Go to Chat.java with the uuid.
-
-                                        // Carry the extras all the way to Chat.java.
-                                        Intent Activity = new Intent(Map.this, Chat.class);
-                                        Activity.putExtra("shapeIsCircle", true);
-                                        // Pass this boolean value to Chat.java.
-                                        Activity.putExtra("newShape", true);
-                                        // Pass this value to Chat.java to identify the shape.
-                                        Activity.putExtra("uuid", uuid);
-                                        // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
-                                        Activity.putExtra("circleLatitude", newCircle.getCenter().latitude);
-                                        Activity.putExtra("circleLongitude", newCircle.getCenter().longitude);
-                                        Activity.putExtra("radius", newCircle.getRadius());
-                                        startActivity(Activity);
-                                    }
-                                }
-
-                                @Override
-                                public void onCancelled(@NonNull DatabaseError databaseError) {
-                                }
-                            });
-                        } else {
-
-                            // The circle is not new, so go to Chat.java.
-
-                            // Go to Chat.java with the boolean value.
-                            Intent Activity = new Intent(Map.this, Chat.class);
-                            Activity.putExtra("shapeIsCircle", true);
-                            // Pass this boolean value to Chat.java.
-                            Activity.putExtra("newShape", false);
-                            // Pass this value to Chat.java to identify the shape.
-                            Activity.putExtra("uuid", uuid);
-                            // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                            Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                            startActivity(Activity);
-                        }
-                    } else {
-
-                        // No user is signed in.
-
-                        // If circle.getTag() == null, the circle is new. Therefore, compare it to the uuids in Firebase to prevent uuid overlap before adding it to Firebase.
-                        if (newCircle.getTag() == null) {
-
-                            // Inform the user is the circle is too small.
-                            if (newCircle.getRadius() < 1) {
-
-                                Toast.makeText(Map.this, "Please make the shape larger", Toast.LENGTH_SHORT).show();
-                                waitingForShapeInformationToProcess = false;
-                                return true;
-                            }
-
-                            firebaseCircles.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
-
-                                @Override
-                                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-
-                                    // If the uuid already exists in Firebase, generate another uuid and try again.
-                                    if (dataSnapshot.exists()) {
-
-                                        // uuid exists in Firebase. Generate another and try again.
-
-                                        // Generate another UUID and try again.
-                                        uuid = UUID.randomUUID().toString();
-
-                                        // Carry the extras all the way to Chat.java.
-                                        Intent Activity = new Intent(Map.this, SignIn.class);
-                                        Activity.putExtra("shapeIsCircle", true);
-                                        // Pass this boolean value to Chat.java.
-                                        Activity.putExtra("newShape", true);
-                                        // Pass this value to Chat.java to identify the shape.
-                                        Activity.putExtra("uuid", uuid);
-                                        // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
-                                        Activity.putExtra("circleLatitude", newCircle.getCenter().latitude);
-                                        Activity.putExtra("circleLongitude", newCircle.getCenter().longitude);
-                                        Activity.putExtra("radius", newCircle.getRadius());
-                                        startActivity(Activity);
-                                    } else {
-
-                                        // uuid does not already exist in Firebase. Go to Chat.java with the uuid.
-
-                                        // Carry the extras all the way to Chat.java.
-                                        Intent Activity = new Intent(Map.this, SignIn.class);
-                                        Activity.putExtra("shapeIsCircle", true);
-                                        // Pass this boolean value to Chat.java.
-                                        Activity.putExtra("newShape", true);
-                                        // Pass this value to Chat.java to identify the shape.
-                                        Activity.putExtra("uuid", uuid);
-                                        // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
-                                        Activity.putExtra("circleLatitude", newCircle.getCenter().latitude);
-                                        Activity.putExtra("circleLongitude", newCircle.getCenter().longitude);
-                                        Activity.putExtra("radius", newCircle.getRadius());
-                                        startActivity(Activity);
-                                    }
-                                }
-
-                                @Override
-                                public void onCancelled(@NonNull DatabaseError databaseError) {
-                                }
-                            });
-                        } else {
-
-                            // The polygon is not new, so go to SignIn.java.
-
-                            // Go to Chat.java with the boolean value.
-                            Intent Activity = new Intent(Map.this, SignIn.class);
-                            Activity.putExtra("shapeIsCircle", true);
-                            // Pass this boolean value to Chat.java.
-                            Activity.putExtra("newShape", false);
-                            // Pass this value to Chat.java to identify the shape.
-                            Activity.putExtra("uuid", uuid);
-                            // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                            Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                            startActivity(Activity);
-                        }
-                    }
-                }
-
-                return true;
-            }
-        });
-
-        // Go to Chat.java when clicking on a polygon.
-        mMap.setOnPolygonClickListener(new GoogleMap.OnPolygonClickListener() {
-            @Override
-            public void onPolygonClick(final Polygon polygon) {
-
-                Log.i(TAG, "onPolygonClick");
-
-                if (polygon.getZIndex() == 0 && polygon.getTag() == null) {
-
-                    overlappingShapesUUID.add("new polygon");
-                } else if (polygon.getZIndex() == 0 && polygon.getTag() != null) {
-
-                    overlappingShapesUUID.add(polygon.getTag().toString());
-                }
-
-                if (polygon.getZIndex() == 0) {
-
-                    Log.i(TAG, "Dropping z-index of a polygon");
-
-                    polygon.setZIndex(-1);
-
-                    touchAgain();
-
-                    return;
-                }
-
-                Log.i(TAG, "ArrayList: " + overlappingShapesUUID);
-
-                // End this method if the method is already being processed from another shape clicking event.
-                if (waitingForShapeInformationToProcess) {
-
-                    return;
-                }
-
-                // Update boolean to prevent double clicking a shape. Updated in onRestart() and after toast message.
-                waitingForShapeInformationToProcess = true;
-
-                // Let the user know if the shape is too small. This should only occur if the shape is new.
-                if (SphericalUtil.computeArea(polygonPointsList) < Math.PI) {
-
-                    Toast.makeText(Map.this, "Please make the shape larger", Toast.LENGTH_SHORT).show();
-                } else {
-
-                    if (polygon.getTag() != null) {
-
-                        // Get the ID set by Firebase to identify which polygon the user clicked on.
-                        uuid = (String) polygon.getTag();
-                    } else {
-
-                        // If the polygon is new, it will not have a tag, as the tag is pulled from Firebase. Therefore, generate a uuid.
-                        uuid = UUID.randomUUID().toString();
-                    }
-
-                    // Check if the user is already signed in.
-                    if (FirebaseAuth.getInstance().getCurrentUser() != null) {
-
-                        // User is signed in.
-
-                        // Check if user is within the polygon before going to the chat.
-                        FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
-
-                        mFusedLocationClient.getLastLocation()
-                                .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
-                                    @Override
-                                    public void onSuccess(Location location) {
-
-                                        if (location != null) {
-
-                                            // Boolean; will be true if user is within the circle upon circle click.
-                                            userIsWithinShape = PolyUtil.containsLocation(location.getLatitude(), location.getLongitude(), polygon.getPoints(), false);
-                                        }
-                                    }
-                                });
-
-                        // If polygon.getTag() == null, the polygon is new. Therefore, compare it to the uuids in Firebase to prevent uuid overlap before adding it to Firebase.
-                        if (polygon.getTag() == null) {
-
-                            firebasePolygons.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
-
-                                @Override
-                                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-
-                                    // If the uuid already exists in Firebase, generate another uuid and try again.
-                                    if (dataSnapshot.exists()) {
-
-                                        // uuid exists in Firebase. Generate another and try again.
-
-                                        // Generate another UUID and try again.
-                                        uuid = UUID.randomUUID().toString();
-
-                                        // Carry the extras all the way to Chat.java.
-                                        Intent Activity = new Intent(Map.this, Chat.class);
-
-                                        // Pass this information to Chat.java to create a new shape in Firebase after someone writes a message.
-                                        if (threeMarkers) {
-
-                                            Activity.putExtra("shapeIsCircle", false);
-                                            // Pass this boolean value Chat.java.
-                                            Activity.putExtra("newShape", true);
-                                            // Pass this value to Chat.java to identify the shape.
-                                            Activity.putExtra("uuid", uuid);
-                                            // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                                            Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                            // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
-                                            Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
-                                            Activity.putExtra("threeMarkers", true);
-                                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
-
-                                            startActivity(Activity);
-                                        }
-
-                                        if (fourMarkers) {
-
-                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
-                                            GeometryFactory gf = new GeometryFactory();
-
-                                            ArrayList<Coordinate> points = new ArrayList<>();
-                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
-                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
-                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
-                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
-                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
-                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
-                                                    .toArray(new Coordinate[5])), gf), null);
-
-                                            if (polygon1.isSimple()) {
-
-                                                Activity.putExtra("shapeIsCircle", false);
-                                                // Pass this boolean value Chat.java.
-                                                Activity.putExtra("newShape", true);
-                                                // Pass this value to Chat.java to identify the shape.
-                                                Activity.putExtra("uuid", uuid);
-                                                // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
-                                                Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
-                                                Activity.putExtra("fourMarkers", true);
-                                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
-
-                                                startActivity(Activity);
-                                            } else {
-
-                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
-                                                waitingForShapeInformationToProcess = false;
-                                            }
-                                        }
-
-                                        if (fiveMarkers) {
-
-                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
-                                            GeometryFactory gf = new GeometryFactory();
-
-                                            ArrayList<Coordinate> points = new ArrayList<>();
-                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
-                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
-                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
-                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
-                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
-                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
-                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
-                                                    .toArray(new Coordinate[6])), gf), null);
-
-                                            if (polygon1.isSimple()) {
-
-                                                Activity.putExtra("shapeIsCircle", false);
-                                                // Pass this boolean value Chat.java.
-                                                Activity.putExtra("newShape", true);
-                                                // Pass this value to Chat.java to identify the shape.
-                                                Activity.putExtra("uuid", uuid);
-                                                // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
-                                                Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
-                                                Activity.putExtra("fiveMarkers", true);
-                                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
-                                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
-                                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
-
-                                                startActivity(Activity);
-                                            } else {
-
-                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
-                                                waitingForShapeInformationToProcess = false;
-                                            }
-                                        }
-
-                                        if (sixMarkers) {
-
-                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
-                                            GeometryFactory gf = new GeometryFactory();
-
-                                            ArrayList<Coordinate> points = new ArrayList<>();
-                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
-                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
-                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
-                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
-                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
-                                            points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
-                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
-                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
-                                                    .toArray(new Coordinate[7])), gf), null);
-
-                                            if (polygon1.isSimple()) {
-
-                                                Activity.putExtra("shapeIsCircle", false);
-                                                // Pass this boolean value Chat.java.
-                                                Activity.putExtra("newShape", true);
-                                                // Pass this value to Chat.java to identify the shape.
-                                                Activity.putExtra("uuid", uuid);
-                                                // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
-                                                Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
-                                                Activity.putExtra("sixMarkers", true);
-                                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
-                                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
-                                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
-                                                Activity.putExtra("marker5Latitude", marker5Position.latitude);
-                                                Activity.putExtra("marker5Longitude", marker5Position.longitude);
-
-                                                startActivity(Activity);
-                                            } else {
-
-                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
-                                                waitingForShapeInformationToProcess = false;
-                                            }
-                                        }
-
-                                        if (sevenMarkers) {
-
-                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
-                                            GeometryFactory gf = new GeometryFactory();
-
-                                            ArrayList<Coordinate> points = new ArrayList<>();
-                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
-                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
-                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
-                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
-                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
-                                            points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
-                                            points.add(new Coordinate(marker6Position.latitude, marker6Position.longitude));
-                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
-                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
-                                                    .toArray(new Coordinate[8])), gf), null);
-
-                                            if (polygon1.isSimple()) {
-
-                                                Activity.putExtra("shapeIsCircle", false);
-                                                // Pass this boolean value Chat.java.
-                                                Activity.putExtra("newShape", true);
-                                                // Pass this value to Chat.java to identify the shape.
-                                                Activity.putExtra("uuid", uuid);
-                                                // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
-                                                Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
-                                                Activity.putExtra("sevenMarkers", true);
-                                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
-                                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
-                                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
-                                                Activity.putExtra("marker5Latitude", marker5Position.latitude);
-                                                Activity.putExtra("marker5Longitude", marker5Position.longitude);
-                                                Activity.putExtra("marker6Latitude", marker6Position.latitude);
-                                                Activity.putExtra("marker6Longitude", marker6Position.longitude);
-
-                                                startActivity(Activity);
-                                            } else {
-
-                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
-                                                waitingForShapeInformationToProcess = false;
-                                            }
-                                        }
-
-                                        if (eightMarkers) {
-
-                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
-                                            GeometryFactory gf = new GeometryFactory();
-
-                                            ArrayList<Coordinate> points = new ArrayList<>();
-                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
-                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
-                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
-                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
-                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
-                                            points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
-                                            points.add(new Coordinate(marker6Position.latitude, marker6Position.longitude));
-                                            points.add(new Coordinate(marker7Position.latitude, marker7Position.longitude));
-                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
-
-                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
-                                                    .toArray(new Coordinate[9])), gf), null);
-
-                                            if (polygon1.isSimple()) {
-
-                                                Activity.putExtra("shapeIsCircle", false);
-                                                // Pass this boolean value Chat.java.
-                                                Activity.putExtra("newShape", true);
-                                                // Pass this value to Chat.java to identify the shape.
-                                                Activity.putExtra("uuid", uuid);
-                                                // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
-                                                Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
-                                                Activity.putExtra("eightMarkers", true);
-                                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
-                                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
-                                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
-                                                Activity.putExtra("marker5Latitude", marker5Position.latitude);
-                                                Activity.putExtra("marker5Longitude", marker5Position.longitude);
-                                                Activity.putExtra("marker6Latitude", marker6Position.latitude);
-                                                Activity.putExtra("marker6Longitude", marker6Position.longitude);
-                                                Activity.putExtra("marker7Latitude", marker7Position.latitude);
-                                                Activity.putExtra("marker7Latitude", marker7Position.longitude);
-
-                                                startActivity(Activity);
-                                            } else {
-
-                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
-                                                waitingForShapeInformationToProcess = false;
-                                            }
-                                        }
-                                    } else {
-
-                                        // uuid does not already exist in Firebase. Go to Chat.java with the uuid.
-
-                                        // Carry the extras all the way to Chat.java.
-                                        Intent Activity = new Intent(Map.this, Chat.class);
-
-                                        // Pass this information to Chat.java to create a new shape in Firebase after someone writes a message.
-                                        if (threeMarkers) {
-
-                                            Activity.putExtra("shapeIsCircle", false);
-                                            // Pass this boolean value Chat.java.
-                                            Activity.putExtra("newShape", true);
-                                            // Pass this value to Chat.java to identify the shape.
-                                            Activity.putExtra("uuid", uuid);
-                                            // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                                            Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                            // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
-                                            Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
-                                            Activity.putExtra("threeMarkers", true);
-                                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
-
-                                            startActivity(Activity);
-                                        }
-
-                                        if (fourMarkers) {
-
-                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
-                                            GeometryFactory gf = new GeometryFactory();
-
-                                            ArrayList<Coordinate> points = new ArrayList<>();
-                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
-                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
-                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
-                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
-                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
-                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
-                                                    .toArray(new Coordinate[5])), gf), null);
-
-                                            if (polygon1.isSimple()) {
-
-                                                Activity.putExtra("shapeIsCircle", false);
-                                                // Pass this boolean value Chat.java.
-                                                Activity.putExtra("newShape", true);
-                                                // Pass this value to Chat.java to identify the shape.
-                                                Activity.putExtra("uuid", uuid);
-                                                // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
-                                                Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
-                                                Activity.putExtra("fourMarkers", true);
-                                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
-
-                                                startActivity(Activity);
-                                            } else {
-
-                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
-                                                waitingForShapeInformationToProcess = false;
-                                            }
-                                        }
-
-                                        if (fiveMarkers) {
-
-                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
-                                            GeometryFactory gf = new GeometryFactory();
-
-                                            ArrayList<Coordinate> points = new ArrayList<>();
-                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
-                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
-                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
-                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
-                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
-                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
-                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
-                                                    .toArray(new Coordinate[6])), gf), null);
-
-                                            if (polygon1.isSimple()) {
-
-                                                Activity.putExtra("shapeIsCircle", false);
-                                                // Pass this boolean value Chat.java.
-                                                Activity.putExtra("newShape", true);
-                                                // Pass this value to Chat.java to identify the shape.
-                                                Activity.putExtra("uuid", uuid);
-                                                // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
-                                                Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
-                                                Activity.putExtra("fiveMarkers", true);
-                                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
-                                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
-                                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
-
-                                                startActivity(Activity);
-                                            } else {
-
-                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
-                                                waitingForShapeInformationToProcess = false;
-                                            }
-                                        }
-
-                                        if (sixMarkers) {
-
-                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
-                                            GeometryFactory gf = new GeometryFactory();
-
-                                            ArrayList<Coordinate> points = new ArrayList<>();
-                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
-                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
-                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
-                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
-                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
-                                            points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
-                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
-                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
-                                                    .toArray(new Coordinate[7])), gf), null);
-
-                                            if (polygon1.isSimple()) {
-
-                                                Activity.putExtra("shapeIsCircle", false);
-                                                // Pass this boolean value Chat.java.
-                                                Activity.putExtra("newShape", true);
-                                                // Pass this value to Chat.java to identify the shape.
-                                                Activity.putExtra("uuid", uuid);
-                                                // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
-                                                Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
-                                                Activity.putExtra("sixMarkers", true);
-                                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
-                                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
-                                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
-                                                Activity.putExtra("marker5Latitude", marker5Position.latitude);
-                                                Activity.putExtra("marker5Longitude", marker5Position.longitude);
-
-                                                startActivity(Activity);
-                                            } else {
-
-                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
-                                                waitingForShapeInformationToProcess = false;
-                                            }
-                                        }
-
-                                        if (sevenMarkers) {
-
-                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
-                                            GeometryFactory gf = new GeometryFactory();
-
-                                            ArrayList<Coordinate> points = new ArrayList<>();
-                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
-                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
-                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
-                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
-                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
-                                            points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
-                                            points.add(new Coordinate(marker6Position.latitude, marker6Position.longitude));
-                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
-                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
-                                                    .toArray(new Coordinate[8])), gf), null);
-
-                                            if (polygon1.isSimple()) {
-
-                                                Activity.putExtra("shapeIsCircle", false);
-                                                // Pass this boolean value Chat.java.
-                                                Activity.putExtra("newShape", true);
-                                                // Pass this value to Chat.java to identify the shape.
-                                                Activity.putExtra("uuid", uuid);
-                                                // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
-                                                Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
-                                                Activity.putExtra("sevenMarkers", true);
-                                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
-                                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
-                                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
-                                                Activity.putExtra("marker5Latitude", marker5Position.latitude);
-                                                Activity.putExtra("marker5Longitude", marker5Position.longitude);
-                                                Activity.putExtra("marker6Latitude", marker6Position.latitude);
-                                                Activity.putExtra("marker6Longitude", marker6Position.longitude);
-
-                                                startActivity(Activity);
-                                            } else {
-
-                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
-                                                waitingForShapeInformationToProcess = false;
-                                            }
-                                        }
-
-                                        if (eightMarkers) {
-
-                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
-                                            GeometryFactory gf = new GeometryFactory();
-
-                                            ArrayList<Coordinate> points = new ArrayList<>();
-                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
-                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
-                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
-                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
-                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
-                                            points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
-                                            points.add(new Coordinate(marker6Position.latitude, marker6Position.longitude));
-                                            points.add(new Coordinate(marker7Position.latitude, marker7Position.longitude));
-                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
-
-                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
-                                                    .toArray(new Coordinate[9])), gf), null);
-
-                                            if (polygon1.isSimple()) {
-
-                                                Activity.putExtra("shapeIsCircle", false);
-                                                // Pass this boolean value Chat.java.
-                                                Activity.putExtra("newShape", true);
-                                                // Pass this value to Chat.java to identify the shape.
-                                                Activity.putExtra("uuid", uuid);
-                                                // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
-                                                Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
-                                                Activity.putExtra("eightMarkers", true);
-                                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
-                                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
-                                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
-                                                Activity.putExtra("marker5Latitude", marker5Position.latitude);
-                                                Activity.putExtra("marker5Longitude", marker5Position.longitude);
-                                                Activity.putExtra("marker6Latitude", marker6Position.latitude);
-                                                Activity.putExtra("marker6Longitude", marker6Position.longitude);
-                                                Activity.putExtra("marker7Latitude", marker7Position.latitude);
-                                                Activity.putExtra("marker7Latitude", marker7Position.longitude);
-
-                                                startActivity(Activity);
-                                            } else {
-
-                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
-                                                waitingForShapeInformationToProcess = false;
-                                            }
-                                        }
-                                    }
-                                }
-
-                                @Override
-                                public void onCancelled(@NonNull DatabaseError databaseError) {
-                                }
-                            });
-                        } else {
-
-                            // The polygon is not new, so go to Chat.java.
-
-                            // Carry the extras all the way to Chat.java.
-                            Intent Activity = new Intent(Map.this, Chat.class);
-                            Activity.putExtra("shapeIsCircle", false);
-                            // Pass this boolean value to Chat.java.
-                            Activity.putExtra("newShape", false);
-                            // Pass this value to Chat.java to identify the shape.
-                            Activity.putExtra("uuid", uuid);
-                            // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                            Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                            // Pass this information to Chat.java to create a new shape in Firebase after someone writes a message.
-                            startActivity(Activity);
-                        }
-                    } else {
-
-                        // No user is signed in.
-
-                        // If polygon.getTag() == null, the circle is new. Therefore, compare it to the uuids in Firebase to prevent uuid overlap before adding it to Firebase.
-                        if (newCircle.getTag() == null) {
-
-                            firebasePolygons.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
-
-                                @Override
-                                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-
-                                    // If the uuid already exists in Firebase, generate another uuid and try again.
-                                    if (dataSnapshot.exists()) {
-
-                                        // uuid exists in Firebase. Generate another and try again.
-
-                                        // Generate another UUID and try again.
-                                        uuid = UUID.randomUUID().toString();
-
-                                        // Carry the extras all the way to Chat.java.
-                                        Intent Activity = new Intent(Map.this, Chat.class);
-
-                                        // Pass this information to Chat.java to create a new shape in Firebase after someone writes a message.
-                                        if (threeMarkers) {
-
-                                            Activity.putExtra("shapeIsCircle", false);
-                                            // Pass this boolean value Chat.java.
-                                            Activity.putExtra("newShape", true);
-                                            // Pass this value to Chat.java to identify the shape.
-                                            Activity.putExtra("uuid", uuid);
-                                            // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                                            Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                            // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
-                                            Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
-                                            Activity.putExtra("threeMarkers", true);
-                                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
-
-                                            startActivity(Activity);
-                                        }
-
-                                        if (fourMarkers) {
-
-                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
-                                            GeometryFactory gf = new GeometryFactory();
-
-                                            ArrayList<Coordinate> points = new ArrayList<>();
-                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
-                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
-                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
-                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
-                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
-                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
-                                                    .toArray(new Coordinate[5])), gf), null);
-
-                                            if (polygon1.isSimple()) {
-
-                                                Activity.putExtra("shapeIsCircle", false);
-                                                // Pass this boolean value Chat.java.
-                                                Activity.putExtra("newShape", true);
-                                                // Pass this value to Chat.java to identify the shape.
-                                                Activity.putExtra("uuid", uuid);
-                                                // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
-                                                Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
-                                                Activity.putExtra("fourMarkers", true);
-                                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
-
-                                                startActivity(Activity);
-                                            } else {
-
-                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
-                                                waitingForShapeInformationToProcess = false;
-                                            }
-                                        }
-
-                                        if (fiveMarkers) {
-
-                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
-                                            GeometryFactory gf = new GeometryFactory();
-
-                                            ArrayList<Coordinate> points = new ArrayList<>();
-                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
-                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
-                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
-                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
-                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
-                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
-                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
-                                                    .toArray(new Coordinate[6])), gf), null);
-
-                                            if (polygon1.isSimple()) {
-
-                                                Activity.putExtra("shapeIsCircle", false);
-                                                // Pass this boolean value Chat.java.
-                                                Activity.putExtra("newShape", true);
-                                                // Pass this value to Chat.java to identify the shape.
-                                                Activity.putExtra("uuid", uuid);
-                                                // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
-                                                Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
-                                                Activity.putExtra("fiveMarkers", true);
-                                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
-                                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
-                                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
-
-                                                startActivity(Activity);
-                                            } else {
-
-                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
-                                                waitingForShapeInformationToProcess = false;
-                                            }
-                                        }
-
-                                        if (sixMarkers) {
-
-                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
-                                            GeometryFactory gf = new GeometryFactory();
-
-                                            ArrayList<Coordinate> points = new ArrayList<>();
-                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
-                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
-                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
-                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
-                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
-                                            points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
-                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
-                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
-                                                    .toArray(new Coordinate[7])), gf), null);
-
-                                            if (polygon1.isSimple()) {
-
-                                                Activity.putExtra("shapeIsCircle", false);
-                                                // Pass this boolean value Chat.java.
-                                                Activity.putExtra("newShape", true);
-                                                // Pass this value to Chat.java to identify the shape.
-                                                Activity.putExtra("uuid", uuid);
-                                                // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
-                                                Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
-                                                Activity.putExtra("sixMarkers", true);
-                                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
-                                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
-                                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
-                                                Activity.putExtra("marker5Latitude", marker5Position.latitude);
-                                                Activity.putExtra("marker5Longitude", marker5Position.longitude);
-
-                                                startActivity(Activity);
-                                            } else {
-
-                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
-                                                waitingForShapeInformationToProcess = false;
-                                            }
-                                        }
-
-                                        if (sevenMarkers) {
-
-                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
-                                            GeometryFactory gf = new GeometryFactory();
-
-                                            ArrayList<Coordinate> points = new ArrayList<>();
-                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
-                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
-                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
-                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
-                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
-                                            points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
-                                            points.add(new Coordinate(marker6Position.latitude, marker6Position.longitude));
-                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
-                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
-                                                    .toArray(new Coordinate[8])), gf), null);
-
-                                            if (polygon1.isSimple()) {
-
-                                                Activity.putExtra("shapeIsCircle", false);
-                                                // Pass this boolean value Chat.java.
-                                                Activity.putExtra("newShape", true);
-                                                // Pass this value to Chat.java to identify the shape.
-                                                Activity.putExtra("uuid", uuid);
-                                                // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
-                                                Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
-                                                Activity.putExtra("sevenMarkers", true);
-                                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
-                                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
-                                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
-                                                Activity.putExtra("marker5Latitude", marker5Position.latitude);
-                                                Activity.putExtra("marker5Longitude", marker5Position.longitude);
-                                                Activity.putExtra("marker6Latitude", marker6Position.latitude);
-                                                Activity.putExtra("marker6Longitude", marker6Position.longitude);
-
-                                                startActivity(Activity);
-                                            } else {
-
-                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
-                                                waitingForShapeInformationToProcess = false;
-                                            }
-                                        }
-
-                                        if (eightMarkers) {
-
-                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
-                                            GeometryFactory gf = new GeometryFactory();
-
-                                            ArrayList<Coordinate> points = new ArrayList<>();
-                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
-                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
-                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
-                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
-                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
-                                            points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
-                                            points.add(new Coordinate(marker6Position.latitude, marker6Position.longitude));
-                                            points.add(new Coordinate(marker7Position.latitude, marker7Position.longitude));
-                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
-
-                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
-                                                    .toArray(new Coordinate[9])), gf), null);
-
-                                            if (polygon1.isSimple()) {
-
-                                                Activity.putExtra("shapeIsCircle", false);
-                                                // Pass this boolean value Chat.java.
-                                                Activity.putExtra("newShape", true);
-                                                // Pass this value to Chat.java to identify the shape.
-                                                Activity.putExtra("uuid", uuid);
-                                                // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
-                                                Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
-                                                Activity.putExtra("eightMarkers", true);
-                                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
-                                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
-                                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
-                                                Activity.putExtra("marker5Latitude", marker5Position.latitude);
-                                                Activity.putExtra("marker5Longitude", marker5Position.longitude);
-                                                Activity.putExtra("marker6Latitude", marker6Position.latitude);
-                                                Activity.putExtra("marker6Longitude", marker6Position.longitude);
-                                                Activity.putExtra("marker7Latitude", marker7Position.latitude);
-                                                Activity.putExtra("marker7Latitude", marker7Position.longitude);
-
-                                                startActivity(Activity);
-                                            } else {
-
-                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
-                                                waitingForShapeInformationToProcess = false;
-                                            }
-                                        }
-                                    } else {
-
-                                        // uuid does not already exist in Firebase. Go to SignIn.java with the uuid.
-
-                                        // Carry the extras all the way to Chat.java.
-                                        Intent Activity = new Intent(Map.this, Chat.class);
-
-                                        // Pass this information to Chat.java to create a new shape in Firebase after someone writes a message.
-                                        if (threeMarkers) {
-
-                                            Activity.putExtra("shapeIsCircle", false);
-                                            // Pass this boolean value Chat.java.
-                                            Activity.putExtra("newShape", true);
-                                            // Pass this value to Chat.java to identify the shape.
-                                            Activity.putExtra("uuid", uuid);
-                                            // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                                            Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                            // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
-                                            Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
-                                            Activity.putExtra("threeMarkers", true);
-                                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
-
-                                            startActivity(Activity);
-                                        }
-
-                                        if (fourMarkers) {
-
-                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
-                                            GeometryFactory gf = new GeometryFactory();
-
-                                            ArrayList<Coordinate> points = new ArrayList<>();
-                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
-                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
-                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
-                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
-                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
-                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
-                                                    .toArray(new Coordinate[5])), gf), null);
-
-                                            if (polygon1.isSimple()) {
-
-                                                Activity.putExtra("shapeIsCircle", false);
-                                                // Pass this boolean value Chat.java.
-                                                Activity.putExtra("newShape", true);
-                                                // Pass this value to Chat.java to identify the shape.
-                                                Activity.putExtra("uuid", uuid);
-                                                // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
-                                                Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
-                                                Activity.putExtra("fourMarkers", true);
-                                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
-
-                                                startActivity(Activity);
-                                            } else {
-
-                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
-                                                waitingForShapeInformationToProcess = false;
-                                            }
-                                        }
-
-                                        if (fiveMarkers) {
-
-                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
-                                            GeometryFactory gf = new GeometryFactory();
-
-                                            ArrayList<Coordinate> points = new ArrayList<>();
-                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
-                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
-                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
-                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
-                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
-                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
-                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
-                                                    .toArray(new Coordinate[6])), gf), null);
-
-                                            if (polygon1.isSimple()) {
-
-                                                Activity.putExtra("shapeIsCircle", false);
-                                                // Pass this boolean value Chat.java.
-                                                Activity.putExtra("newShape", true);
-                                                // Pass this value to Chat.java to identify the shape.
-                                                Activity.putExtra("uuid", uuid);
-                                                // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
-                                                Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
-                                                Activity.putExtra("fiveMarkers", true);
-                                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
-                                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
-                                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
-
-                                                startActivity(Activity);
-                                            } else {
-
-                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
-                                                waitingForShapeInformationToProcess = false;
-                                            }
-                                        }
-
-                                        if (sixMarkers) {
-
-                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
-                                            GeometryFactory gf = new GeometryFactory();
-
-                                            ArrayList<Coordinate> points = new ArrayList<>();
-                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
-                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
-                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
-                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
-                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
-                                            points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
-                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
-                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
-                                                    .toArray(new Coordinate[7])), gf), null);
-
-                                            if (polygon1.isSimple()) {
-
-                                                Activity.putExtra("shapeIsCircle", false);
-                                                // Pass this boolean value Chat.java.
-                                                Activity.putExtra("newShape", true);
-                                                // Pass this value to Chat.java to identify the shape.
-                                                Activity.putExtra("uuid", uuid);
-                                                // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
-                                                Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
-                                                Activity.putExtra("sixMarkers", true);
-                                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
-                                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
-                                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
-                                                Activity.putExtra("marker5Latitude", marker5Position.latitude);
-                                                Activity.putExtra("marker5Longitude", marker5Position.longitude);
-
-                                                startActivity(Activity);
-                                            } else {
-
-                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
-                                                waitingForShapeInformationToProcess = false;
-                                            }
-                                        }
-
-                                        if (sevenMarkers) {
-
-                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
-                                            GeometryFactory gf = new GeometryFactory();
-
-                                            ArrayList<Coordinate> points = new ArrayList<>();
-                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
-                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
-                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
-                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
-                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
-                                            points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
-                                            points.add(new Coordinate(marker6Position.latitude, marker6Position.longitude));
-                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
-                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
-                                                    .toArray(new Coordinate[8])), gf), null);
-
-                                            if (polygon1.isSimple()) {
-
-                                                Activity.putExtra("shapeIsCircle", false);
-                                                // Pass this boolean value Chat.java.
-                                                Activity.putExtra("newShape", true);
-                                                // Pass this value to Chat.java to identify the shape.
-                                                Activity.putExtra("uuid", uuid);
-                                                // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
-                                                Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
-                                                Activity.putExtra("sevenMarkers", true);
-                                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
-                                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
-                                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
-                                                Activity.putExtra("marker5Latitude", marker5Position.latitude);
-                                                Activity.putExtra("marker5Longitude", marker5Position.longitude);
-                                                Activity.putExtra("marker6Latitude", marker6Position.latitude);
-                                                Activity.putExtra("marker6Longitude", marker6Position.longitude);
-
-                                                startActivity(Activity);
-                                            } else {
-
-                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
-                                                waitingForShapeInformationToProcess = false;
-                                            }
-                                        }
-
-                                        if (eightMarkers) {
-
-                                            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
-                                            GeometryFactory gf = new GeometryFactory();
-
-                                            ArrayList<Coordinate> points = new ArrayList<>();
-                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
-                                            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
-                                            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
-                                            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
-                                            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
-                                            points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
-                                            points.add(new Coordinate(marker6Position.latitude, marker6Position.longitude));
-                                            points.add(new Coordinate(marker7Position.latitude, marker7Position.longitude));
-                                            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
-
-                                            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
-                                                    .toArray(new Coordinate[9])), gf), null);
-
-                                            if (polygon1.isSimple()) {
-
-                                                Activity.putExtra("shapeIsCircle", false);
-                                                // Pass this boolean value Chat.java.
-                                                Activity.putExtra("newShape", true);
-                                                // Pass this value to Chat.java to identify the shape.
-                                                Activity.putExtra("uuid", uuid);
-                                                // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
-                                                Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
-                                                Activity.putExtra("eightMarkers", true);
-                                                Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                                Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                                Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                                Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                                Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                                Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                                                Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                                                Activity.putExtra("marker3Longitude", marker3Position.longitude);
-                                                Activity.putExtra("marker4Latitude", marker4Position.latitude);
-                                                Activity.putExtra("marker4Longitude", marker4Position.longitude);
-                                                Activity.putExtra("marker5Latitude", marker5Position.latitude);
-                                                Activity.putExtra("marker5Longitude", marker5Position.longitude);
-                                                Activity.putExtra("marker6Latitude", marker6Position.latitude);
-                                                Activity.putExtra("marker6Longitude", marker6Position.longitude);
-                                                Activity.putExtra("marker7Latitude", marker7Position.latitude);
-                                                Activity.putExtra("marker7Latitude", marker7Position.longitude);
-
-                                                startActivity(Activity);
-                                            } else {
-
-                                                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
-                                                waitingForShapeInformationToProcess = false;
-                                            }
-                                        }
-                                    }
-                                }
-
-                                @Override
-                                public void onCancelled(@NonNull DatabaseError databaseError) {
-                                }
-                            });
-                        } else {
-
-                            // The polygon is not new, so go to SignIn.java.
-
-                            // Carry the extras all the way to Chat.java.
-                            Intent Activity = new Intent(Map.this, SignIn.class);
-                            Activity.putExtra("shapeIsCircle", false);
-                            // Pass this boolean value to Chat.java.
-                            Activity.putExtra("newShape", false);
-                            Activity.putExtra("shapeIsCircle", false);
-                            // Pass this value to Chat.java to identify the shape.
-                            Activity.putExtra("uuid", uuid);
-                            // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                            Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                            // Pass this information to Chat.java to create a new shape in Firebase after someone writes a message.
-                            startActivity(Activity);
-                        }
-                    }
-                }
-            }
-        });
-
-        // Go to Chat.java when clicking on a circle.
-        mMap.setOnCircleClickListener(new GoogleMap.OnCircleClickListener() {
-
-            // NOTE: Anything done here should also be done to the onMarkerClickListener.
-
-            @Override
-            public void onCircleClick(final Circle circle) {
-
-                Log.i(TAG, "onCircleClick");
-
-                // Click all through all circles, using the z-index to figure out which ones have not been cycled through. All the information to the arrayLists to be used by chatSelectorSeekBar.
-                if (circle.getZIndex() == 0 && circle.getTag() != null) {
-
-                    Log.i(TAG, "Dropping z-index of a circle");
-
-                    // Drop the z-index to metaphorically check it off the "to click" list.
-                    circle.setZIndex(-1);
-
-                    // Add the information to arrayLists to be used by chatSelectorSeekBar.
-                    overlappingShapesUUID.add(circle.getTag().toString());
-                    overlappingShapesCircleLocation.add(circle.getCenter());
-                    overlappingShapesCircleRadius.add(circle.getRadius());
-
-                    // Programmatically click the same spot again.
-                    touchAgain();
-
-                    return;
-                }
-
-                // This will get called after the last shape is programmatically clicked.
-                chatsSize = overlappingShapesUUID.size();
-
-                // If none of the clicked shapes are new, get rid of any new shapes.
-                if (!overlappingShapesUUID.contains("new")) {
-
-                    // Remove the polygon and markers.
-                    if (polygon != null) {
-
-                        polygon.remove();
-                        marker0.remove();
-                        marker1.remove();
-                        marker2.remove();
-                        polygon = null;
-                        marker0 = null;
-                        marker1 = null;
-                        marker2 = null;
-                        marker0Position = null;
-                        marker1Position = null;
-                        marker2Position = null;
-                        marker0ID = null;
-                        marker1ID = null;
-                        marker2ID = null;
-
-                        if (marker3 != null) {
-
-                            marker3.remove();
-                            marker3 = null;
-                            marker3Position = null;
-                            marker3ID = null;
-                        }
-
-                        if (marker4 != null) {
-
-                            marker4.remove();
-                            marker4 = null;
-                            marker4Position = null;
-                            marker4ID = null;
-                        }
-
-                        if (marker5 != null) {
-
-                            marker5.remove();
-                            marker5 = null;
-                            marker5Position = null;
-                            marker5ID = null;
-                        }
-
-                        if (marker6 != null) {
-
-                            marker6.remove();
-                            marker6 = null;
-                            marker6Position = null;
-                            marker6ID = null;
-                        }
-
-                        if (marker7 != null) {
-
-                            marker7.remove();
-                            marker7 = null;
-                            marker7Position = null;
-                            marker7ID = null;
-                        }
-                    }
-
-                    // Remove the circle and markers.
-                    if (newCircle != null) {
-
-                        newCircle.remove();
-                        if (marker0 != null) {
-
-                            marker0.remove();
-                        }
-
-                        if (marker1 != null) {
-                            marker1.remove();
-                        }
-
-                        newCircle = null;
-                        marker0 = null;
-                        marker1 = null;
-                        marker0Position = null;
-                        marker1Position = null;
-                        marker0ID = null;
-                        marker1ID = null;
-                    }
-                }
-
-                // If selectingShape, user has selected a highlighted shape. Similar logic applies to originally only clicking on one circle.
-                if (selectingShape || (chatsSize == 1 && circle.getTag() != null)) {
-
-                    Log.i(TAG, "User selected a circle");
-
-                    // End this method if the method is already being processed from another shape clicking event.
-                    if (waitingForShapeInformationToProcess) {
-
-                        return;
-                    }
-
-                    // Update boolean to prevent double clicking a shape.
-                    waitingForShapeInformationToProcess = true;
-
-                    // "New" shapes are automatically clicked. Therefore, get the ID set by Firebase to identify which circle the user clicked on.
-                    if (chatsSize == 1) {
-
-                        uuid = (String) circle.getTag();
-                    } else {
-
-                        uuid = selectedOverlappingShapeUUID;
-                    }
-
-                    // Check if the user is already signed in.
-                    if (FirebaseAuth.getInstance().getCurrentUser() != null) {
-
-                        // User is signed in.
-
-                        // Check if user is within the circle before going to the chat.
-                        FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
-
-                        mFusedLocationClient.getLastLocation()
-                                .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
-                                    @Override
-                                    public void onSuccess(Location location) {
-
-                                        if (location != null) {
-
-                                            float[] distance = new float[2];
-
-                                            Location.distanceBetween(location.getLatitude(), location.getLongitude(),
-                                                    circle.getCenter().latitude, circle.getCenter().longitude, distance);
-
-                                            // Boolean; will be true if user is within the circle upon circle click.
-                                            userIsWithinShape = !(distance[0] > circle.getRadius());
-                                        }
-                                    }
-                                });
-
-                        // Go to Chat.java with the boolean value.
-                        Intent Activity = new Intent(Map.this, Chat.class);
-                        Activity.putExtra("shapeIsCircle", true);
-                        // Pass this boolean value to Chat.java.
-                        Activity.putExtra("newShape", false);
-                        // Pass this value to Chat.java to identify the shape.
-                        Activity.putExtra("uuid", uuid);
-                        // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                        startActivity(Activity);
-                    } else {
-
-                        // No user is signed in.
-
-                        // Go to Chat.java with the boolean value.
-                        Intent Activity = new Intent(Map.this, SignIn.class);
-                        Activity.putExtra("shapeIsCircle", true);
-                        // Pass this boolean value to Chat.java.
-                        Activity.putExtra("newShape", false);
-                        // Pass this value to Chat.java to identify the shape.
-                        Activity.putExtra("uuid", uuid);
-                        // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                        startActivity(Activity);
-                    }
-
-                    return;
-                }
-
-                // While clicking through the circles, if a circle does not have a tag, it is new. Therefore, go directly to the chat, as this is probably the chat the user wants to enter.
-                if (circle.getTag() == null) {
-
-                    Log.i(TAG, "User clicked on a new circle");
-
-                    // End this method if the method is already being processed from another shape clicking event.
-                    if (waitingForShapeInformationToProcess) {
-
-                        return;
-                    }
-
-                    // Update boolean to prevent double clicking a shape.
-                    waitingForShapeInformationToProcess = true;
-
-                    // Inform the user is the circle is too small.
-                    if (circle.getRadius() < 1) {
-
-                        Toast.makeText(Map.this, "Please make the shape larger", Toast.LENGTH_LONG).show();
-                        waitingForShapeInformationToProcess = false;
-                        return;
-                    }
-
-                    // Generate a uuid, as the shape is new.
-                    uuid = UUID.randomUUID().toString();
-
-                    // Check if the user is already signed in.
-                    if (FirebaseAuth.getInstance().getCurrentUser() != null) {
-
-                        // User is signed in.
-
-                        // Check if user is within the circle before going to the chat.
-                        FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
-
-                        mFusedLocationClient.getLastLocation()
-                                .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
-                                    @Override
-                                    public void onSuccess(Location location) {
-
-                                        if (location != null) {
-
-                                            float[] distance = new float[2];
-
-                                            Location.distanceBetween(location.getLatitude(), location.getLongitude(),
-                                                    circle.getCenter().latitude, circle.getCenter().longitude, distance);
-
-                                            // Boolean; will be true if user is within the circle upon circle click.
-                                            userIsWithinShape = !(distance[0] > circle.getRadius());
-                                        }
-                                    }
-                                });
-
-                        // Compare the uuid to the uuids in Firebase to prevent uuid overlap before adding it to Firebase.
-                        firebaseCircles.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
-
-                            @Override
-                            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-
-                                // If the uuid already exists in Firebase, generate another uuid and try again.
-                                if (dataSnapshot.exists()) {
-
-                                    // uuid exists in Firebase. Generate another and try again.
-
-                                    // Generate another UUID and try again.
-                                    uuid = UUID.randomUUID().toString();
-
-                                    // Carry the extras all the way to Chat.java.
-                                    Intent Activity = new Intent(Map.this, Chat.class);
-                                    Activity.putExtra("shapeIsCircle", true);
-                                    // Pass this boolean value to Chat.java.
-                                    Activity.putExtra("newShape", true);
-                                    // Pass this value to Chat.java to identify the shape.
-                                    Activity.putExtra("uuid", uuid);
-                                    // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                                    Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                    // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
-                                    Activity.putExtra("circleLatitude", circle.getCenter().latitude);
-                                    Activity.putExtra("circleLongitude", circle.getCenter().longitude);
-                                    Activity.putExtra("radius", circle.getRadius());
-                                    startActivity(Activity);
-                                } else {
-
-                                    // uuid does not already exist in Firebase. Go to Chat.java with the uuid.
-
-                                    // Carry the extras all the way to Chat.java.
-                                    Intent Activity = new Intent(Map.this, Chat.class);
-                                    Activity.putExtra("shapeIsCircle", true);
-                                    // Pass this boolean value to Chat.java.
-                                    Activity.putExtra("newShape", true);
-                                    // Pass this value to Chat.java to identify the shape.
-                                    Activity.putExtra("uuid", uuid);
-                                    // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                                    Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                    // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
-                                    Activity.putExtra("circleLatitude", circle.getCenter().latitude);
-                                    Activity.putExtra("circleLongitude", circle.getCenter().longitude);
-                                    Activity.putExtra("radius", circle.getRadius());
-                                    startActivity(Activity);
-                                }
-                            }
-
-                            @Override
-                            public void onCancelled(@NonNull DatabaseError databaseError) {
-                            }
-                        });
-
-                        // Add a return statement so chatSelectorSeekBar is not called.
-                        return;
-                    } else {
-
-                        // No user is signed in.
-
-                        // Compare the uuid to the uuids in Firebase to prevent uuid overlap before adding it to Firebase.
-                        firebaseCircles.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
-
-                                @Override
-                                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-
-                                    // If the uuid already exists in Firebase, generate another uuid and try again.
-                                    if (dataSnapshot.exists()) {
-
-                                        // uuid exists in Firebase. Generate another and try again.
-
-                                        // Generate another UUID and try again.
-                                        uuid = UUID.randomUUID().toString();
-
-                                        // Carry the extras all the way to Chat.java.
-                                        Intent Activity = new Intent(Map.this, SignIn.class);
-                                        Activity.putExtra("shapeIsCircle", true);
-                                        // Pass this boolean value to Chat.java.
-                                        Activity.putExtra("newShape", true);
-                                        // Pass this value to Chat.java to identify the shape.
-                                        Activity.putExtra("uuid", uuid);
-                                        // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
-                                        Activity.putExtra("circleLatitude", circle.getCenter().latitude);
-                                        Activity.putExtra("circleLongitude", circle.getCenter().longitude);
-                                        Activity.putExtra("radius", circle.getRadius());
-                                        startActivity(Activity);
-                                    } else {
-
-                                        // uuid does not already exist in Firebase. Go to Chat.java with the uuid.
-
-                                        // Carry the extras all the way to Chat.java.
-                                        Intent Activity = new Intent(Map.this, SignIn.class);
-                                        Activity.putExtra("shapeIsCircle", true);
-                                        // Pass this boolean value to Chat.java.
-                                        Activity.putExtra("newShape", true);
-                                        // Pass this value to Chat.java to identify the shape.
-                                        Activity.putExtra("uuid", uuid);
-                                        // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
-                                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
-                                        Activity.putExtra("circleLatitude", circle.getCenter().latitude);
-                                        Activity.putExtra("circleLongitude", circle.getCenter().longitude);
-                                        Activity.putExtra("radius", circle.getRadius());
-                                        startActivity(Activity);
-                                    }
-                                }
-
-                                @Override
-                                public void onCancelled(@NonNull DatabaseError databaseError) {
-                                }
-                            });
-
-                        // Add a return statement so chatSelectorSeekBar is not called.
-                        return;
-                    }
-                }
-
-                // At this point, chatsSize > 1 so set the chatSelectorSeekBar to VISIBLE.
-                chatSelectorSeekBar.setMax(chatsSize - 1);
-                // Change seekBar's progress so a shape will always be highlighted.
-                chatSelectorSeekBar.setProgress(1);
-                chatSelectorSeekBar.setProgress(0);
-                chatSizeSeekBar.setVisibility(View.GONE);
-                chatSelectorSeekBar.setVisibility(View.VISIBLE);
-                Toast.makeText(Map.this, "Highlight and select a shape using the SeekBar below.", Toast.LENGTH_LONG).show();
-            }
-        });
-    }
-
     // Use the NORMAL map type if the user is not connected to WIFI for easier loading.
     @SuppressWarnings({"deprecation", "RedundantSuppression"})
     private void changeMapTypeDependingOnConnection() {
@@ -10223,13 +10452,19 @@ public class Map extends FragmentActivity implements
     @Override
     public boolean dispatchTouchEvent(MotionEvent event) {
 
+        // If user already clicked on a circle, don't change the x and y values.
+        if (waitingForClicksToProcess) {
+
+            return false;
+        }
+
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
 
             x = event.getX();
             y = event.getY();
 
-            Log.i(TAG, "x " + x);
-            Log.i(TAG, "y " + y);
+            Log.i(TAG, "x from dispatchTouchEvent() " + x);
+            Log.i(TAG, "y from dispatchTouchEvent() " + y);
         }
 
         return super.dispatchTouchEvent(event);
@@ -10239,6 +10474,7 @@ public class Map extends FragmentActivity implements
 
         Log.i(TAG, "touchAgain()");
 
+        // If x and y are the default value, return.
         if (x == 0.0f || y == 0.0f) {
 
             return;
@@ -10247,7 +10483,7 @@ public class Map extends FragmentActivity implements
         // Obtain MotionEvent object
         long downTime = SystemClock.uptimeMillis();
         long eventTime = SystemClock.uptimeMillis() + 100;
-        // List of meta states found here:     developer.android.com/reference/android/view/KeyEvent.html#getMetaState()
+        // List of meta states found here: developer.android.com/reference/android/view/KeyEvent.html#getMetaState()
         int metaState = 0;
 
         MotionEvent motionEventDown = MotionEvent.obtain(
@@ -10259,12 +10495,10 @@ public class Map extends FragmentActivity implements
                 metaState
         );
 
-        // Create the view - used by dispatchTouchEvent.
         View v = findViewById(R.id.activity_maps);
 
         v.dispatchTouchEvent(motionEventDown);
 
-        // Recycle the event, as recycling is good.
         motionEventDown.recycle();
 
         MotionEvent motionEventUp = MotionEvent.obtain(
@@ -10278,7 +10512,6 @@ public class Map extends FragmentActivity implements
 
         v.dispatchTouchEvent(motionEventUp);
 
-        // Recycle the event, as recycling is good.
         motionEventUp.recycle();
     }
 
@@ -10348,9 +10581,3 @@ public class Map extends FragmentActivity implements
         Log.i(TAG, "onProviderDisabled()");
     }
 }
-
-// user touch
-// if z=0, save info and make z=-1.
-// touch same spot again.
-// repeat until z!=0
-// create menu with saved info
