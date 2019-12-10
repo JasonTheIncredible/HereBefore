@@ -5,6 +5,7 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Color;
@@ -26,6 +27,7 @@ import android.os.SystemClock;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.MotionEvent;
+import android.view.Surface;
 import android.view.View;
 import android.widget.Button;
 import android.widget.PopupMenu;
@@ -105,8 +107,6 @@ public class Map extends FragmentActivity implements
     private float x, y;
     private int chatsSize;
 
-    //TODO: Check logic with an orientation change.
-    //TODO: Disable changing map types (and other menus) if circles are being added.
     //TODO: Give warning about circle overlap and create popup menu for selecting circle.
     //TODO: Change map type on different thread. Also, save user map type preference.
     //TODO: Implement Firebase caching?
@@ -1947,6 +1947,7 @@ public class Map extends FragmentActivity implements
         if (mMap != null) {
 
             mMap.getUiSettings().setScrollGesturesEnabled(true);
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
 
             // Remove the polygon and markers.
             if (polygon != null) {
@@ -4833,7 +4834,7 @@ public class Map extends FragmentActivity implements
                 Log.i(TAG, "onCircleClick");
 
                 // If the user tries to click on a circle that is not a circleTemp while circleTemp exists, return.
-                if (chatSelectorSeekBar.getVisibility() == View.VISIBLE && (circle != circleTemp)) {
+                if (chatSelectorSeekBar.getVisibility() == View.VISIBLE && (circle.getTag() != selectedOverlappingShapeUUID)) {
 
                     Log.i(TAG, "Selected circle is not a circleTemp. Returning");
                     return;
@@ -4851,6 +4852,22 @@ public class Map extends FragmentActivity implements
                     if (mMap.getUiSettings().isScrollGesturesEnabled()) {
 
                         mMap.getUiSettings().setScrollGesturesEnabled(false);
+                    }
+
+                    // Prevent screen orientation change while programmatically touching circles.
+                    if (getWindowManager().getDefaultDisplay().getRotation()== Surface.ROTATION_0) {
+
+                        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+                    }
+
+                    if (getWindowManager().getDefaultDisplay().getRotation()== Surface.ROTATION_90) {
+
+                        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+                    }
+
+                    if (getWindowManager().getDefaultDisplay().getRotation()== Surface.ROTATION_270) {
+
+                        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
                     }
 
                     // Drop the z-index to metaphorically check it off the "to click" list.
@@ -5213,6 +5230,7 @@ public class Map extends FragmentActivity implements
                 chatSizeSeekBar.setVisibility(View.GONE);
                 chatSelectorSeekBar.setVisibility(View.VISIBLE);
                 mMap.getUiSettings().setScrollGesturesEnabled(true);
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
                 Toast.makeText(Map.this, "Highlight and select a shape using the SeekBar below.", Toast.LENGTH_LONG).show();
             }
         });
