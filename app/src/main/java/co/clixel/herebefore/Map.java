@@ -106,7 +106,6 @@ public class Map extends FragmentActivity implements
     private float x, y;
     private int chatsSize;
 
-    //TODO: Create loading icon while map scroll is locked and program is clicking on a stack of shapes.
     //TODO: Change map type on different thread. Also, save user map type preference.
     //TODO: Implement Firebase caching?
     //TODO: Only load Firebase circles if they're within camera view (in onMapReady) (getMap().getProjection().getVisibleRegion().latLangBounds). If this works, can possibly replace singleValueEventListener in onMapReady() and onRestart() with a valueEventListener.
@@ -2943,6 +2942,8 @@ public class Map extends FragmentActivity implements
                         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
                     }
 
+                    findViewById(R.id.loadingIcon).setVisibility(View.VISIBLE);
+
                     // Drop the z-index to metaphorically check it off the "to click" list.
                     polygon.setZIndex(-1);
 
@@ -3181,6 +3182,7 @@ public class Map extends FragmentActivity implements
                 chatSelectorSeekBar.setVisibility(View.VISIBLE);
                 mMap.getUiSettings().setScrollGesturesEnabled(true);
                 setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+                findViewById(R.id.loadingIcon).setVisibility(View.GONE);
                 Toast.makeText(Map.this, "Highlight and select a shape using the SeekBar below.", Toast.LENGTH_LONG).show();
             }
         });
@@ -3547,7 +3549,7 @@ public class Map extends FragmentActivity implements
                     return;
                 }
 
-                // Add a highlighted shape.
+                // Add a highlighted shape. Also, setting these to to lower amount (0) prevents a crash.
                 if (overlappingShapesCircleLocation.size() != 0) {
 
                     selectedOverlappingShapeUUID = overlappingShapesUUID.get(0);
@@ -3678,7 +3680,7 @@ public class Map extends FragmentActivity implements
                         }
                     } else {
 
-                        for (int i = 0; i < overlappingShapesUUID.size(); i++) {
+                        for (int i = 0; i < overlappingShapesCircleLocation.size(); i++) {
 
                             Circle circle0 = mMap.addCircle(
                                     new CircleOptions()
@@ -8378,18 +8380,7 @@ public class Map extends FragmentActivity implements
                 }
 
                 // Change the shape color depending on the map type.
-
                 if (combinedList.get(chatSelectorSeekBar.getProgress()) instanceof LatLng) {
-
-                    if (overlappingShapesCircleLocation.size() > overlappingShapesPolygonVertices.size()) {
-
-                        selectedOverlappingShapeCircleLocation = overlappingShapesCircleLocation.get(chatSelectorSeekBar.getProgress() - overlappingShapesPolygonVertices.size());
-                        selectedOverlappingShapeCircleRadius = overlappingShapesCircleRadius.get(chatSelectorSeekBar.getProgress() - overlappingShapesPolygonVertices.size());
-                    } else {
-
-                        selectedOverlappingShapeCircleLocation = overlappingShapesCircleLocation.get(chatSelectorSeekBar.getProgress());
-                        selectedOverlappingShapeCircleRadius = overlappingShapesCircleRadius.get(chatSelectorSeekBar.getProgress());
-                    }
 
                     circleTemp = mMap.addCircle(
                             new CircleOptions()
@@ -8408,19 +8399,11 @@ public class Map extends FragmentActivity implements
                     circleTemp.setRadius(selectedOverlappingShapeCircleRadius);
                 } else {
 
-                    if (selectedOverlappingShapePolygonVertices.size() > overlappingShapesCircleLocation.size()) {
-
-                        selectedOverlappingShapePolygonVertices = overlappingShapesPolygonVertices.get(chatSelectorSeekBar.getProgress() - overlappingShapesCircleLocation.size());
-                    } else {
-
-                        selectedOverlappingShapePolygonVertices = overlappingShapesPolygonVertices.get(chatSelectorSeekBar.getProgress());
-                    }
-
                     polygonTemp = mMap.addPolygon(
                             new PolygonOptions()
                                     .clickable(true)
                                     .fillColor(Color.argb(100, 255, 0, 255))
-                                    .strokeColor(Color.rgb(255,0,255))
+                                    .strokeColor(Color.rgb(255, 0, 255))
                                     .strokeWidth(3f)
                                     .addAll(selectedOverlappingShapePolygonVertices)
                                     .zIndex(2)
@@ -8776,24 +8759,13 @@ public class Map extends FragmentActivity implements
                 }
 
                 // Change the shape color depending on the map type.
-
                 if (combinedList.get(chatSelectorSeekBar.getProgress()) instanceof LatLng) {
-
-                    if (overlappingShapesCircleLocation.size() > overlappingShapesPolygonVertices.size()) {
-
-                        selectedOverlappingShapeCircleLocation = overlappingShapesCircleLocation.get(chatSelectorSeekBar.getProgress() - overlappingShapesPolygonVertices.size());
-                        selectedOverlappingShapeCircleRadius = overlappingShapesCircleRadius.get(chatSelectorSeekBar.getProgress() - overlappingShapesPolygonVertices.size());
-                    } else {
-
-                        selectedOverlappingShapeCircleLocation = overlappingShapesCircleLocation.get(chatSelectorSeekBar.getProgress());
-                        selectedOverlappingShapeCircleRadius = overlappingShapesCircleRadius.get(chatSelectorSeekBar.getProgress());
-                    }
 
                     circleTemp = mMap.addCircle(
                             new CircleOptions()
                                     .center(selectedOverlappingShapeCircleLocation)
                                     .clickable(true)
-                                    .fillColor(Color.argb(100, 255, 255, 0 ))
+                                    .fillColor(Color.argb(100, 255, 255, 0))
                                     .radius(selectedOverlappingShapeCircleRadius)
                                     .strokeColor(Color.rgb(255, 255, 0))
                                     .strokeWidth(3f)
@@ -8806,19 +8778,11 @@ public class Map extends FragmentActivity implements
                     circleTemp.setRadius(selectedOverlappingShapeCircleRadius);
                 } else {
 
-                    if (selectedOverlappingShapePolygonVertices.size() > overlappingShapesCircleLocation.size()) {
-
-                        selectedOverlappingShapePolygonVertices = overlappingShapesPolygonVertices.get(chatSelectorSeekBar.getProgress() - overlappingShapesCircleLocation.size());
-                    } else {
-
-                        selectedOverlappingShapePolygonVertices = overlappingShapesPolygonVertices.get(chatSelectorSeekBar.getProgress());
-                    }
-
                     polygonTemp = mMap.addPolygon(
                             new PolygonOptions()
                                     .clickable(true)
                                     .fillColor(Color.argb(100, 255, 255, 0))
-                                    .strokeColor(Color.rgb(255,255,0))
+                                    .strokeColor(Color.rgb(255, 255, 0))
                                     .strokeWidth(3f)
                                     .addAll(selectedOverlappingShapePolygonVertices)
                                     .zIndex(2)

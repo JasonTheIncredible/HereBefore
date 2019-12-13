@@ -80,4 +80,17 @@
         android:theme="@style/Widget.AppCompat.SeekBar.Discrete"
         android:visibility="gone"/>
 
+    <RelativeLayout
+        android:id="@+id/loadingIcon"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:visibility="gone">
+
+        <ProgressBar
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:indeterminate="true"/>
+    </RelativeLayout>
+
 </RelativeLayout>
