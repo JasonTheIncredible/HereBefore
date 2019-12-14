@@ -7297,7 +7297,7 @@ public class Map extends FragmentActivity implements
                 Log.i(TAG, "onMenuItemClick() -> showPoints");
 
                 // Prevent resetting and reloading everything if this is already the state.
-                if (!showingSmall) {
+                if (!showingPoints) {
 
                     mMap.clear();
 
