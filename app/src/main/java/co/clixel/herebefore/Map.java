@@ -106,16 +106,17 @@ public class Map extends FragmentActivity implements
     private float x, y;
     private int chatsSize;
 
-    //TODO: Change map type on different thread. Also, save user map type preference.
     //TODO: Implement Firebase caching?
     //TODO: Only load Firebase circles if they're within camera view (in onMapReady) (getMap().getProjection().getVisibleRegion().latLangBounds). If this works, can possibly replace singleValueEventListener in onMapReady() and onRestart() with a valueEventListener.
     //TODO: Make sure Firebase listener is always updating map properly.
     //TODO: Optimize Firebase loading.
-    //TODO: Too much work on main thread.
+    //TODO: Properly using I/ and E/.
     //TODO: Make checkLocationPermission Async / create loading animations.
     //TODO: Work on possible NullPointerExceptions (try/catch).
     //TODO: Work on onTrimMemory() and onPause() / onStart() interaction.
     //TODO: Check updating in different states with another device - make sure uuids never overlap.
+    //The following should be implemented later.
+    //TODO: Save user map type preference.
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
