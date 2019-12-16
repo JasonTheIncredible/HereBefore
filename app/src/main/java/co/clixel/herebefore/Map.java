@@ -106,7 +106,6 @@ public class Map extends FragmentActivity implements
     private float x, y;
     private int chatsSize;
 
-    //TODO: Implement Firebase caching?
     //TODO: Only load Firebase circles if they're within camera view (in onMapReady) (getMap().getProjection().getVisibleRegion().latLangBounds). If this works, can possibly replace singleValueEventListener in onMapReady() and onRestart() with a valueEventListener.
     //TODO: Make sure Firebase listener is always updating map properly.
     //TODO: Optimize Firebase loading.
