@@ -93,7 +93,7 @@ public class Map extends FragmentActivity implements
     private String uuid, marker0ID, marker1ID, marker2ID, marker3ID, marker4ID, marker5ID, marker6ID, marker7ID, selectedOverlappingShapeUUID;
     private Button createChatButton, chatViewsButton, mapTypeButton;
     private PopupMenu popupMapType, popupChatViews, popupCreateChat;
-    private Boolean showingEverything = true, showingLarge = false, showingMedium = false, showingSmall = false, showingPoints = false, waitingForClicksToProcess = false, waitingForShapeInformationToProcess = false, markerOutsidePolygon = false, mapTypeMenuIsOpen = false, chatViewsMenuIsOpen = false, createChatMenuIsOpen = false, usedSeekBar = false, userIsWithinShape, selectingShape = false, firstLoad = true, threeMarkers = false, fourMarkers = false, fiveMarkers = false, sixMarkers = false, sevenMarkers = false, eightMarkers = false;
+    private Boolean showingEverything = true, showingLarge = false, showingMedium = false, showingSmall = false, showingPoints = false, waitingForClicksToProcess = false, waitingForShapeInformationToProcess = false, markerOutsidePolygon = false, mapTypeMenuIsOpen = false, chatViewsMenuIsOpen = false, createChatMenuIsOpen = false, usedSeekBar = false, userIsWithinShape, selectingShape = false, threeMarkers = false, fourMarkers = false, fiveMarkers = false, sixMarkers = false, sevenMarkers = false, eightMarkers = false;
     private LatLng markerPositionAtVertexOfPolygon, marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position, selectedOverlappingShapeCircleLocation;
     private Double relativeAngle = 0.0, selectedOverlappingShapeCircleRadius;
     private Location mlocation;
@@ -106,16 +106,14 @@ public class Map extends FragmentActivity implements
     private float x, y;
     private int chatsSize;
 
-    //TODO: Only load Firebase circles if they're within camera view (in onMapReady) (getMap().getProjection().getVisibleRegion().latLangBounds). If this works, can possibly replace singleValueEventListener in onMapReady() and onRestart() with a valueEventListener.
-    //TODO: Make sure Firebase listener is always updating map properly.
-    //TODO: Optimize Firebase loading.
-    //TODO: Properly using I/ and E/.
+    //TODO: Don't request user's location too often on GPS.
+    //TODO: I/ and E/, try/catch best practices.
     //TODO: Make checkLocationPermission Async / create loading animations.
     //TODO: Work on possible NullPointerExceptions (try/catch).
     //TODO: Work on onTrimMemory() and onPause() / onStart() interaction.
     //TODO: Check updating in different states with another device - make sure uuids never overlap.
-    //The following should be implemented later.
-    //TODO: Save user map type preference.
+    //The following should be implemented later:
+    //Save user map type preference.
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -2387,10 +2385,8 @@ public class Map extends FragmentActivity implements
                     // Request location updates:
                     if (locationManager != null) {
 
-                        locationManager.requestLocationUpdates(provider, 1000, 0, this);
+                        locationManager.requestLocationUpdates(provider, 5000, 0, this);
                         mMap.setMyLocationEnabled(true);
-                        // Set firstLoad to true to guarantee the camera moves to the user's location.
-                        firstLoad = true;
                     }
                 }
             }
@@ -2409,8 +2405,8 @@ public class Map extends FragmentActivity implements
         long UPDATE_INTERVAL = 10 * 1000;
         mLocationRequest.setInterval(UPDATE_INTERVAL);
 
-        /* 1 sec */
-        long FASTEST_INTERVAL = 1000;
+        /* 5 sec */
+        long FASTEST_INTERVAL = 5 * 1000;
         mLocationRequest.setFastestInterval(FASTEST_INTERVAL);
 
         // Create LocationSettingsRequest object using location request
@@ -2423,8 +2419,6 @@ public class Map extends FragmentActivity implements
         SettingsClient settingsClient = LocationServices.getSettingsClient(this);
         settingsClient.checkLocationSettings(locationSettingsRequest);
 
-        checkLocationPermission();
-
         // New Google API SDK v11 uses getFusedLocationProviderClient(this)
         getFusedLocationProviderClient(this).requestLocationUpdates(mLocationRequest, new LocationCallback() {
 
@@ -2432,6 +2426,8 @@ public class Map extends FragmentActivity implements
                     public void onLocationResult(LocationResult locationResult) {
 
                         onLocationChanged(locationResult.getLastLocation());
+
+                        moveCameraOnFirstLoad();
                     }
                 },
 
@@ -2460,30 +2456,8 @@ public class Map extends FragmentActivity implements
 
         // Cut down on code by using one method for the shared code from onMapReady() and onRestart().
         onMapReadyAndRestart();
-    }
 
-    @Override
-    public void onLocationChanged(Location location) {
-
-        Log.i(TAG, "onLocationChanged()");
-
-        // Zoom to user's location the first time the map loads.
-        if ( (location != null) && (firstLoad) ) {
-
-            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location.getLatitude(), location.getLongitude()), 13));
-
-            CameraPosition cameraPosition = new CameraPosition.Builder()
-                    .target(new LatLng(location.getLatitude(), location.getLongitude()))      // Sets the center of the map to location user
-                    .zoom(18)                   // Sets the zoom
-                    .bearing(0)                // Sets the orientation of the camera
-                    .tilt(0)                   // Sets the tilt of the camera
-                    .build();                   // Creates a CameraPosition from the builder
-            // Instantly move the camera to the user's location once the map is available.
-            mMap.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
-
-            // Set Boolean to false to prevent unnecessary animation, as the camera should already be set on the user's location.
-            firstLoad = false;
-        }
+        moveCameraOnFirstLoad();
     }
 
     // Cut down on code by using one method for the shared code from onMapReady() and onRestart().
@@ -3634,6 +3608,7 @@ public class Map extends FragmentActivity implements
         });
 
         mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
+
             @Override
             public void onMapClick(LatLng latLng) {
 
@@ -4330,6 +4305,36 @@ public class Map extends FragmentActivity implements
                 }
             }
         }
+    }
+
+    // Move the camera to the user's location during the boot-up process. Used in startLocationUpdates() and onMapReady().
+    private void moveCameraOnFirstLoad() {
+
+        Log.i(TAG, "moveCameraOnFirstLoad()");
+
+        FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
+
+        mFusedLocationClient.getLastLocation()
+                .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
+
+                    @Override
+                    public void onSuccess(Location location) {
+
+                        // Get last known location. In some rare situations, this can be null.
+                        if (location != null) {
+
+                            CameraPosition cameraPosition = new CameraPosition.Builder()
+                                    .target(new LatLng(location.getLatitude(), location.getLongitude()))      // Sets the center of the map to user's location
+                                    .zoom(18)                   // Sets the zoom
+                                    .bearing(0)                // Sets the orientation of the camera
+                                    .tilt(0)                   // Sets the tilt of the camera
+                                    .build();                   // Creates a CameraPosition from the builder
+
+                            // Move the camera to the user's location once the map is available.
+                            mMap.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
+                        }
+                    }
+                });
     }
 
     // Used by onMarkerClickListener in onMapReadyAndRestart().
@@ -9240,6 +9245,10 @@ public class Map extends FragmentActivity implements
 
 
         return new LatLng (Math.toDegrees(latitudeResult), Math.toDegrees(longitudeResult));
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
     }
 
     @Override
