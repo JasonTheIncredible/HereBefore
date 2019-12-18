@@ -106,7 +106,6 @@ public class Map extends FragmentActivity implements
     private float x, y;
     private int chatsSize;
 
-    //TODO: Don't request user's location too often on GPS.
     //TODO: I/ and E/, try/catch best practices.
     //TODO: Make checkLocationPermission Async / create loading animations.
     //TODO: Work on possible NullPointerExceptions (try/catch).
