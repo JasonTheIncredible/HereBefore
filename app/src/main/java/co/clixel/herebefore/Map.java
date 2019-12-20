@@ -95,7 +95,7 @@ public class Map extends FragmentActivity implements
     private String uuid, marker0ID, marker1ID, marker2ID, marker3ID, marker4ID, marker5ID, marker6ID, marker7ID, selectedOverlappingShapeUUID;
     private Button createChatButton, chatViewsButton, mapTypeButton;
     private PopupMenu popupMapType, popupChatViews, popupCreateChat;
-    private Boolean firstLoad = true, cameraMoved = false, waitingForBetterLocationAccuracy = true, showingEverything = true, showingLarge = false, showingMedium = false, showingSmall = false, showingPoints = false, waitingForClicksToProcess = false, waitingForShapeInformationToProcess = false, markerOutsidePolygon = false, mapTypeMenuIsOpen = false, chatViewsMenuIsOpen = false, createChatMenuIsOpen = false, usedSeekBar = false, userIsWithinShape, selectingShape = false, threeMarkers = false, fourMarkers = false, fiveMarkers = false, sixMarkers = false, sevenMarkers = false, eightMarkers = false;
+    private Boolean firstLoad = true, cameraMoved = false, waitingForBetterLocationAccuracy = false, badAccuracy = false, showingEverything = true, showingLarge = false, showingMedium = false, showingSmall = false, showingPoints = false, waitingForClicksToProcess = false, waitingForShapeInformationToProcess = false, markerOutsidePolygon = false, mapTypeMenuIsOpen = false, chatViewsMenuIsOpen = false, createChatMenuIsOpen = false, usedSeekBar = false, userIsWithinShape, selectingShape = false, threeMarkers = false, fourMarkers = false, fiveMarkers = false, sixMarkers = false, sevenMarkers = false, eightMarkers = false;
     private LatLng markerPositionAtVertexOfPolygon, marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position, selectedOverlappingShapeCircleLocation;
     private Double relativeAngle = 0.0, selectedOverlappingShapeCircleRadius;
     private Location mlocation;
@@ -107,8 +107,10 @@ public class Map extends FragmentActivity implements
     private List<LatLng> selectedOverlappingShapePolygonVertices;
     private float x, y;
     private int chatsSize;
+    private LocationManager locationManager;
 
-    //TODO: Make checkLocationPermission Async / create loading animations.
+    //TODO: Make checkLocationPermission Async.
+    //TODO: Create loading animations.
     //TODO: Work on onTrimMemory() and onPause() / onStart() interaction.
     //TODO: Check updating in different states with another device - make sure uuids never overlap.
     //The following should be implemented later:
@@ -151,7 +153,7 @@ public class Map extends FragmentActivity implements
                 Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
 
-            LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+            locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
             String provider = LocationManager.NETWORK_PROVIDER;
             if (locationManager != null) {
 
@@ -2077,6 +2079,7 @@ public class Map extends FragmentActivity implements
         firstLoad = false;
         cameraMoved = false;
         waitingForBetterLocationAccuracy = false;
+        badAccuracy = false;
         findViewById(R.id.loadingIcon).setVisibility(View.GONE);
 
         // Clear map before adding new Firebase circles in onStart() to prevent overlap.
@@ -2263,7 +2266,6 @@ public class Map extends FragmentActivity implements
         Log.i(TAG, "onStop()");
 
         // Remove updating location information.
-        LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
         if (locationManager != null) {
 
             if (ContextCompat.checkSelfPermission(Map.this,
@@ -2386,8 +2388,11 @@ public class Map extends FragmentActivity implements
                 Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
 
-            // Should we show an explanation?
-            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+            // No explanation needed, we can request the permission.
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    Request_User_Location_Code);
+        } else if (ActivityCompat.shouldShowRequestPermissionRationale(this,
                     Manifest.permission.ACCESS_FINE_LOCATION)) {
 
                 // Show an explanation to the user *asynchronously* -- don't block
@@ -2396,7 +2401,7 @@ public class Map extends FragmentActivity implements
                 new AlertDialog.Builder(this)
                         .setCancelable(false)
                         .setTitle("Device Location Required")
-                        .setMessage("We need permission to use your location to find ChatCircles around you.")
+                        .setMessage("We need permission to use your location to find Chats around you.")
                         .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialogInterface, int i) {
@@ -2409,14 +2414,6 @@ public class Map extends FragmentActivity implements
                         })
                         .create()
                         .show();
-
-            } else {
-
-                // No explanation needed, we can request the permission.
-                ActivityCompat.requestPermissions(this,
-                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                        Request_User_Location_Code);
-            }
         }
     }
 
@@ -2431,15 +2428,14 @@ public class Map extends FragmentActivity implements
             if (grantResults.length > 0
                     && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
 
-                // Permission was granted, yay! Do the
-                // location-related task you need to do.
+                // Permission was granted, yay! Do the location-related task you need to do.
                 startLocationUpdates();
 
                 if (ContextCompat.checkSelfPermission(this,
                         Manifest.permission.ACCESS_FINE_LOCATION)
                         == PackageManager.PERMISSION_GRANTED) {
 
-                    LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+                    locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
                     String provider = LocationManager.NETWORK_PROVIDER;
                     // Request location updates:
                     if (locationManager != null) {
@@ -2454,6 +2450,32 @@ public class Map extends FragmentActivity implements
                         Crashlytics.logException(new Exception("onRequestPermissionsResult() -> locationManager = null"));
                     }
                 }
+            } else if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                    Manifest.permission.ACCESS_FINE_LOCATION)) {
+
+                // Show an explanation to the user *asynchronously* -- don't block
+                // this thread waiting for the user's response! After the user
+                // sees the explanation, try again to request the permission.
+                new AlertDialog.Builder(this)
+                        .setCancelable(false)
+                        .setTitle("Device Location Required")
+                        .setMessage("We need permission to use your location to find Chats around you.")
+                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+
+                                //Prompt the user once explanation has been shown
+                                ActivityCompat.requestPermissions(Map.this,
+                                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                                        Request_User_Location_Code);
+                            }
+                        })
+                        .create()
+                        .show();
+            } else {
+
+                // User denied permission and checked "Don't ask again!"
+                Toast.makeText(Map.this, "Location permission is required. Please enable it manually through the Android settings menu.", Toast.LENGTH_LONG).show();
             }
         }
     }
@@ -2491,6 +2513,8 @@ public class Map extends FragmentActivity implements
                     public void onLocationResult(LocationResult locationResult) {
 
                         onLocationChanged(locationResult.getLastLocation());
+
+                        moveCameraOnFirstLoad();
                     }
                 },
 
@@ -2509,8 +2533,71 @@ public class Map extends FragmentActivity implements
             mMap.setMyLocationEnabled(true);
         }
 
+        // Move camera on first load. Continue trying to call this as long as the user has not manually moved the camera.
+        if (firstLoad && !cameraMoved) {
+
+            moveCameraOnFirstLoad();
+        }
+
         // Cut down on code by using one method for the shared code from onMapReady() and onRestart().
         onMapReadyAndRestart();
+    }
+
+    // Move the camera on the first load. This is used to potentially update the camera faster than waiting for onLocationChanged() to be called.
+    public void moveCameraOnFirstLoad() {
+
+        Log.i(TAG, "moveCameraOnFirstLoad()");
+
+        // If this is the first time loading the map and the user has NOT changed the camera position manually (from onMapReadyAndRestart() -> onCameraMoveListener) after the camera was changed programmatically with bad accuracy,
+        // OR the camera position was changed by the user BEFORE the camera position was changed programmatically, this will get called to either change the camera position programmatically with good accuracy
+        // or update it with bad accuracy and then wait to update it again with good accuracy assuming the user does not update it manually before it can be updated with good accuracy.
+        FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
+
+        mFusedLocationClient.getLastLocation()
+                .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
+
+                    @Override
+                    public void onSuccess(Location location) {
+
+                        Log.i(TAG, "accuracy " + location.getAccuracy());
+
+                        if (firstLoad && !cameraMoved && location.getAccuracy() < 60) {
+
+                            Log.i(TAG, "moveCameraOnFirstLoad() -> Good accuracy");
+
+                            CameraPosition cameraPosition = new CameraPosition.Builder()
+                                    .target(new LatLng(location.getLatitude(), location.getLongitude()))      // Sets the center of the map to user's location
+                                    .zoom(18)                   // Sets the zoom
+                                    .bearing(0)                // Sets the orientation of the camera
+                                    .tilt(0)                   // Sets the tilt of the camera
+                                    .build();                   // Creates a CameraPosition from the builder
+
+                            // Move the camera to the user's location once the map is available.
+                            mMap.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
+
+                            // Adjust boolean values to prevent this logic from being called again.
+                            firstLoad = false;
+                            cameraMoved = true;
+                        } else if (firstLoad && !badAccuracy && location.getAccuracy() >= 60) {
+
+                            Log.i(TAG, "moveCameraOnFirstLoad() -> Bad accuracy");
+
+                            CameraPosition cameraPosition = new CameraPosition.Builder()
+                                    .target(new LatLng(location.getLatitude(), location.getLongitude()))      // Sets the center of the map to user's location
+                                    .zoom(18)                   // Sets the zoom
+                                    .bearing(0)                // Sets the orientation of the camera
+                                    .tilt(0)                   // Sets the tilt of the camera
+                                    .build();                   // Creates a CameraPosition from the builder
+
+                            // Move the camera to the user's location once the map is available.
+                            mMap.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
+
+                            // Adjust boolean values to prevent this logic from being called again.
+                            badAccuracy = true;
+                            waitingForBetterLocationAccuracy = true;
+                        }
+                    }
+                });
     }
 
     // Cut down on code by using one method for the shared code from onMapReady() and onRestart().
@@ -3912,13 +3999,13 @@ public class Map extends FragmentActivity implements
             }
         });
 
-        // Changed the boolean value for onLocationChanged()
+        // Updates the boolean value for onLocationChanged() to prevent updating the camera position if the user has already changed it manually.
         mMap.setOnCameraMoveListener(new GoogleMap.OnCameraMoveListener() {
 
             @Override
             public void onCameraMove() {
 
-                if (!cameraMoved) {
+                if (waitingForBetterLocationAccuracy && !cameraMoved) {
 
                     Log.i(TAG, "onMapReadyAndRestart() -> onCameraMove");
 
@@ -3931,80 +4018,43 @@ public class Map extends FragmentActivity implements
     @Override
     public void onLocationChanged(Location location) {
 
-        if (location != null && !cameraMoved && waitingForBetterLocationAccuracy && location.getAccuracy() < 60) {
+        // If this is the first time loading the map and the user has NOT changed the camera position manually (from onMapReadyAndRestart() -> onCameraMoveListener) after the camera was changed programmatically with bad accuracy,
+        // OR the camera position was changed by the user BEFORE the camera position was changed programmatically, this will get called to either change the camera position programmatically with good accuracy
+        // or update it with bad accuracy and then wait to update it again with good accuracy assuming the user does not update it manually before it can be updated with good accuracy.
+        if (firstLoad && !cameraMoved && location.getAccuracy() < 60) {
 
             Log.i(TAG, "onLocationChanged() -> Good accuracy");
 
-            FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
+            CameraPosition cameraPosition = new CameraPosition.Builder()
+                    .target(new LatLng(location.getLatitude(), location.getLongitude()))      // Sets the center of the map to user's location
+                    .zoom(18)                   // Sets the zoom
+                    .bearing(0)                // Sets the orientation of the camera
+                    .tilt(0)                   // Sets the tilt of the camera
+                    .build();                   // Creates a CameraPosition from the builder
 
-            mFusedLocationClient.getLastLocation()
-                    .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
+            // Move the camera to the user's location once the map is available.
+            mMap.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
 
-                        @Override
-                        public void onSuccess(Location location) {
-
-                            // Get last known location. In some rare situations, this can be null.
-                            if (location != null) {
-
-                                CameraPosition cameraPosition = new CameraPosition.Builder()
-                                        .target(new LatLng(location.getLatitude(), location.getLongitude()))      // Sets the center of the map to user's location
-                                        .zoom(18)                   // Sets the zoom
-                                        .bearing(0)                // Sets the orientation of the camera
-                                        .tilt(0)                   // Sets the tilt of the camera
-                                        .build();                   // Creates a CameraPosition from the builder
-
-                                // Move the camera to the user's location once the map is available.
-                                mMap.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
-                            } else {
-
-                                Log.e(TAG, "onLocationChanged() -> Good accuracy -> location == null");
-                                Crashlytics.logException(new Exception("onLocationChanged() -> Good accuracy -> location == null"));
-                            }
-                        }
-                    });
-
-            // Set Boolean to false to prevent unnecessary animation, as the camera should already be set on the user's location.
+            // Adjust boolean values to prevent this logic from being called again.
             firstLoad = false;
             cameraMoved = true;
-        } else if (location != null && firstLoad && location.getAccuracy() >= 60) {
+        } else if (firstLoad && !badAccuracy && location.getAccuracy() >= 60) {
 
             Log.i(TAG, "onLocationChanged() -> Bad accuracy");
 
-            FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
+            CameraPosition cameraPosition = new CameraPosition.Builder()
+                    .target(new LatLng(location.getLatitude(), location.getLongitude()))      // Sets the center of the map to user's location
+                    .zoom(18)                   // Sets the zoom
+                    .bearing(0)                // Sets the orientation of the camera
+                    .tilt(0)                   // Sets the tilt of the camera
+                    .build();                   // Creates a CameraPosition from the builder
 
-            mFusedLocationClient.getLastLocation()
-                    .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
+            // Move the camera to the user's location once the map is available.
+            mMap.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
 
-                        @Override
-                        public void onSuccess(Location location) {
-
-                            // Get last known location. In some rare situations, this can be null.
-                            if (location != null) {
-
-                                CameraPosition cameraPosition = new CameraPosition.Builder()
-                                        .target(new LatLng(location.getLatitude(), location.getLongitude()))      // Sets the center of the map to user's location
-                                        .zoom(18)                   // Sets the zoom
-                                        .bearing(0)                // Sets the orientation of the camera
-                                        .tilt(0)                   // Sets the tilt of the camera
-                                        .build();                   // Creates a CameraPosition from the builder
-
-                                // Move the camera to the user's location once the map is available.
-                                mMap.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
-                            } else {
-
-                                Log.e(TAG, "onLocationChanged() -> Bad accuracy -> location == null");
-                                Crashlytics.logException(new Exception("onLocationChanged() -> Bad accuracy -> location == null"));
-                            }
-                        }
-                    });
-
-            // Set Boolean to false to prevent unnecessary animation, as the camera should already be set on the user's location.
-            firstLoad = false;
+            // Adjust boolean values to prevent this logic from being called again.
+            badAccuracy = true;
             waitingForBetterLocationAccuracy = true;
-        } else if (location == null) {
-
-            Log.e(TAG, "onLocationChanged() -> location == null");
-            Crashlytics.logException(new Exception("onLocationChanged() -> location == null"));
         }
     }
 
