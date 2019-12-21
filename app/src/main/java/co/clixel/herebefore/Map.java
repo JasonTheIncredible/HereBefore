@@ -19,6 +19,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Looper;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.Surface;
@@ -60,7 +61,9 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+// https://googlemaps.github.io/android-maps-utils/javadoc/com/google/maps/android/PolyUtil.html
 import com.google.maps.android.PolyUtil;
+// http://www.tsusiatsoftware.net/jts/javadoc//com/vividsolutions/jts/geom/Polygon.html
 import com.google.maps.android.SphericalUtil;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.GeometryFactory;
@@ -75,9 +78,6 @@ import java.util.UUID;
 import static com.google.android.gms.location.LocationServices.getFusedLocationProviderClient;
 import static java.lang.Math.cos;
 import static java.lang.Math.sin;
-
-// https://googlemaps.github.io/android-maps-utils/javadoc/com/google/maps/android/PolyUtil.html
-// http://www.tsusiatsoftware.net/jts/javadoc//com/vividsolutions/jts/geom/Polygon.html
 
 public class Map extends FragmentActivity implements
         OnMapReadyCallback,
@@ -2475,7 +2475,9 @@ public class Map extends FragmentActivity implements
             } else {
 
                 // User denied permission and checked "Don't ask again!"
-                Toast.makeText(Map.this, "Location permission is required. Please enable it manually through the Android settings menu.", Toast.LENGTH_LONG).show();
+                Toast toast = Toast.makeText(Map.this,"Location permission is required. Please enable it manually through the Android settings menu.", Toast.LENGTH_LONG);
+                toast.setGravity(Gravity.CENTER, 0, 0);
+                toast.show();
             }
         }
     }
