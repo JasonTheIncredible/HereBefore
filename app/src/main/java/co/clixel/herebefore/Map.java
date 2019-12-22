@@ -1,6 +1,7 @@
 package co.clixel.herebefore;
 
 import android.Manifest;
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -15,9 +16,11 @@ import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Looper;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.MenuItem;
@@ -70,6 +73,7 @@ import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LinearRing;
 import com.vividsolutions.jts.geom.impl.CoordinateArraySequence;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -109,8 +113,6 @@ public class Map extends FragmentActivity implements
     private int chatsSize;
     private LocationManager locationManager;
 
-    //TODO: Make checkLocationPermission Async.
-    //TODO: Create loading animations.
     //TODO: Work on onTrimMemory() and onPause() / onStart() interaction.
     //TODO: Check updating in different states with another device - make sure uuids never overlap.
     //The following should be implemented later:
@@ -131,8 +133,8 @@ public class Map extends FragmentActivity implements
             mapFragment.getMapAsync(this);
         } else {
 
-            Log.e(TAG, "onCreate() -> mapFragment = null");
-            Crashlytics.logException(new Exception("onCreate() -> mapFragment = null"));
+            Log.e(TAG, "onCreate() -> mapFragment == null");
+            Crashlytics.logException(new Exception("onCreate() -> mapFragment == null"));
         }
 
         mapTypeButton = findViewById(R.id.mapTypeButton);
@@ -160,8 +162,8 @@ public class Map extends FragmentActivity implements
                 locationManager.requestLocationUpdates(provider, 5000, 0, this);
             } else {
 
-                Log.e(TAG, "onStart() -> locationManager = null");
-                Crashlytics.logException(new Exception("onStart() -> locationManager = null"));
+                Log.e(TAG, "onStart() -> locationManager == null");
+                Crashlytics.logException(new Exception("onStart() -> locationManager == null"));
             }
         } else{
 
@@ -2048,8 +2050,8 @@ public class Map extends FragmentActivity implements
                         }
                     } else {
 
-                        Log.e(TAG, "onStart() -> chatSelectorSeekBar -> onProgressChanged -> selectedOverlappingShapeUUID = null");
-                        Crashlytics.logException(new Exception("onStart() -> chatSelectorSeekBar -> onProgressChanged -> selectedOverlappingShapeUUID = null"));
+                        Log.e(TAG, "onStart() -> chatSelectorSeekBar -> onProgressChanged -> selectedOverlappingShapeUUID == null");
+                        Crashlytics.logException(new Exception("onStart() -> chatSelectorSeekBar -> onProgressChanged -> selectedOverlappingShapeUUID == null"));
                     }
 
                     selectingShape = true;
@@ -2076,7 +2078,6 @@ public class Map extends FragmentActivity implements
         showingMedium = false;
         showingSmall = false;
         showingPoints = false;
-        firstLoad = false;
         cameraMoved = false;
         waitingForBetterLocationAccuracy = false;
         badAccuracy = false;
@@ -2186,13 +2187,15 @@ public class Map extends FragmentActivity implements
             polygonPointsList = null;
             markerOutsidePolygon = false;
             userIsWithinShape = false;
+            // Set firstLoad to true if the camera is zoomed out. This will allow the camera to zoom in if the user left the activity from a dialog box before zooming.
+            firstLoad = mMap.getCameraPosition().zoom <= 5;
 
             // Cut down on code by using one method for the shared code from onMapReady() and onRestart().
             onMapReadyAndRestart();
         } else {
 
-            Log.e(TAG, "onRestart() -> mMap = null");
-            Crashlytics.logException(new Exception("onRestart() -> mMap = null"));
+            Log.e(TAG, "onRestart() -> mMap == null");
+            Crashlytics.logException(new Exception("onRestart() -> mMap == null"));
         }
 
         // Close any open menus.
@@ -2244,12 +2247,66 @@ public class Map extends FragmentActivity implements
 
             if (!manager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
 
-                buildAlertMessageNoGps();
+                // If GPS is disabled, show an alert dialog and have the user turn GPS on.
+                new buildAlertNoGPS(this).execute();
             }
         } else {
 
-            Log.e(TAG, "onResume() -> manager = null");
-            Crashlytics.logException(new Exception("onResume() -> manager = null"));
+            Log.e(TAG, "onResume() -> manager == null");
+            Crashlytics.logException(new Exception("onResume() -> manager == null"));
+        }
+    }
+
+    // If GPS is disabled, show an alert dialog and have the user turn GPS on.
+    private static class buildAlertNoGPS extends AsyncTask<Void, Void, Void> {
+
+        AlertDialog.Builder builder;
+        private WeakReference<Activity> activityWeakRef;
+
+        buildAlertNoGPS(Activity activity) {
+
+            activityWeakRef = new WeakReference<>(activity);
+        }
+
+        @Override
+        protected void onPreExecute() {
+
+            super.onPreExecute();
+        }
+
+        @Override
+        protected Void doInBackground(Void...voids) {
+
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void results) {
+
+            super.onPostExecute(results);
+
+            Log.i(TAG, "buildAlertNoGPS -> onPostExecute()");
+
+            if (activityWeakRef != null && activityWeakRef.get() != null) {
+
+                builder = new AlertDialog.Builder(activityWeakRef.get());
+
+                // If GPS is disabled, show an alert dialog and have the user turn GPS on.
+                builder.setCancelable(false)
+                        .setTitle("GPS Disabled")
+                        .setMessage("Please enable your location services on the following screen.")
+                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+
+                            public void onClick(DialogInterface dialog, int i) {
+
+                                Activity activity = activityWeakRef.get();
+
+                                activity.startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS));
+                            }
+                        })
+                        .create()
+                        .show();
+            }
         }
     }
 
@@ -2257,6 +2314,7 @@ public class Map extends FragmentActivity implements
     protected void onPause() {
 
         Log.i(TAG, "onPause()");
+
         super.onPause();
     }
 
@@ -2361,25 +2419,6 @@ public class Map extends FragmentActivity implements
         super.onDestroy();
     }
 
-    private void buildAlertMessageNoGps() {
-
-        Log.i(TAG, "buildAlertMessageNoGps()");
-
-        // If GPS is disabled, show an alert dialog and have the user turn GPS on.
-        new AlertDialog.Builder(this)
-                .setCancelable(false)
-                .setTitle("GPS Disabled")
-                .setMessage("Please enable your location services on the following screen.")
-                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-
-                    public void onClick(DialogInterface dialog, int i) {
-                        startActivity(new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS));
-                    }
-                })
-                .create()
-                .show();
-    }
-
     private void checkLocationPermission() {
 
         Log.i(TAG, "checkLocationPermission()");
@@ -2395,25 +2434,10 @@ public class Map extends FragmentActivity implements
         } else if (ActivityCompat.shouldShowRequestPermissionRationale(this,
                     Manifest.permission.ACCESS_FINE_LOCATION)) {
 
-                // Show an explanation to the user *asynchronously* -- don't block
-                // this thread waiting for the user's response! After the user
-                // sees the explanation, try again to request the permission.
-                new AlertDialog.Builder(this)
-                        .setCancelable(false)
-                        .setTitle("Device Location Required")
-                        .setMessage("We need permission to use your location to find Chats around you.")
-                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialogInterface, int i) {
-
-                                //Prompt the user once explanation has been shown
-                                ActivityCompat.requestPermissions(Map.this,
-                                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                                        Request_User_Location_Code);
-                            }
-                        })
-                        .create()
-                        .show();
+            // Show an explanation to the user *asynchronously* -- don't block
+            // this thread waiting for the user's response! After the user
+            // sees the explanation, try again to request the permission.
+            new locationPermissionAlertDialog(this).execute();
         }
     }
 
@@ -2446,8 +2470,8 @@ public class Map extends FragmentActivity implements
                         firstLoad = true;
                     } else {
 
-                        Log.e(TAG, "onRequestPermissionsResult() -> locationManager = null");
-                        Crashlytics.logException(new Exception("onRequestPermissionsResult() -> locationManager = null"));
+                        Log.e(TAG, "onRequestPermissionsResult() -> locationManager == null");
+                        Crashlytics.logException(new Exception("onRequestPermissionsResult() -> locationManager == null"));
                     }
                 }
             } else if (ActivityCompat.shouldShowRequestPermissionRationale(this,
@@ -2456,28 +2480,69 @@ public class Map extends FragmentActivity implements
                 // Show an explanation to the user *asynchronously* -- don't block
                 // this thread waiting for the user's response! After the user
                 // sees the explanation, try again to request the permission.
-                new AlertDialog.Builder(this)
-                        .setCancelable(false)
-                        .setTitle("Device Location Required")
-                        .setMessage("We need permission to use your location to find Chats around you.")
-                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialogInterface, int i) {
-
-                                //Prompt the user once explanation has been shown
-                                ActivityCompat.requestPermissions(Map.this,
-                                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                                        Request_User_Location_Code);
-                            }
-                        })
-                        .create()
-                        .show();
+                new locationPermissionAlertDialog(this).execute();
             } else {
 
                 // User denied permission and checked "Don't ask again!"
                 Toast toast = Toast.makeText(Map.this,"Location permission is required. Please enable it manually through the Android settings menu.", Toast.LENGTH_LONG);
                 toast.setGravity(Gravity.CENTER, 0, 0);
                 toast.show();
+            }
+        }
+    }
+
+    // Show an explanation as to why location permission is necessary.
+    private static class locationPermissionAlertDialog extends AsyncTask<Void, Void, Void> {
+
+        AlertDialog.Builder builder;
+        private WeakReference<Activity> activityWeakRef;
+
+        locationPermissionAlertDialog(Activity activity) {
+
+            activityWeakRef = new WeakReference<>(activity);
+        }
+
+        @Override
+        protected void onPreExecute() {
+
+            super.onPreExecute();
+        }
+
+        @Override
+        protected Void doInBackground(Void... voids) {
+
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void result) {
+
+            super.onPostExecute(result);
+
+            Log.i(TAG, "locationPermissionAlertDialog -> onPostExecute()");
+
+            if (activityWeakRef != null && activityWeakRef.get() != null) {
+
+                builder = new AlertDialog.Builder(activityWeakRef.get());
+
+                // Show an explanation to the user *asynchronously* -- don't block
+                // this thread waiting for the user's response! After the user
+                // sees the explanation, try again to request the permission.
+                builder.setCancelable(false)
+                        .setTitle("Device Location Required")
+                        .setMessage("We need permission to use your location to find Chat Areas around you.")
+                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+
+                                //Prompt the user once explanation has been shown
+                                ActivityCompat.requestPermissions(activityWeakRef.get(),
+                                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                                        Request_User_Location_Code);
+                            }
+                        })
+                        .create()
+                        .show();
             }
         }
     }
@@ -2516,7 +2581,10 @@ public class Map extends FragmentActivity implements
 
                         onLocationChanged(locationResult.getLastLocation());
 
-                        moveCameraOnFirstLoad();
+                        if (firstLoad && !cameraMoved) {
+
+                            moveCameraOnFirstLoad();
+                        }
                     }
                 },
 
@@ -2561,42 +2629,43 @@ public class Map extends FragmentActivity implements
                     @Override
                     public void onSuccess(Location location) {
 
-                        Log.i(TAG, "accuracy " + location.getAccuracy());
+                        if (location != null) {
 
-                        if (firstLoad && !cameraMoved && location.getAccuracy() < 60) {
+                            if (firstLoad && !cameraMoved && location.getAccuracy() < 60) {
 
-                            Log.i(TAG, "moveCameraOnFirstLoad() -> Good accuracy");
+                                Log.i(TAG, "moveCameraOnFirstLoad() -> Good accuracy");
 
-                            CameraPosition cameraPosition = new CameraPosition.Builder()
-                                    .target(new LatLng(location.getLatitude(), location.getLongitude()))      // Sets the center of the map to user's location
-                                    .zoom(18)                   // Sets the zoom
-                                    .bearing(0)                // Sets the orientation of the camera
-                                    .tilt(0)                   // Sets the tilt of the camera
-                                    .build();                   // Creates a CameraPosition from the builder
+                                CameraPosition cameraPosition = new CameraPosition.Builder()
+                                        .target(new LatLng(location.getLatitude(), location.getLongitude()))      // Sets the center of the map to user's location
+                                        .zoom(18)                   // Sets the zoom
+                                        .bearing(0)                // Sets the orientation of the camera
+                                        .tilt(0)                   // Sets the tilt of the camera
+                                        .build();                   // Creates a CameraPosition from the builder
 
-                            // Move the camera to the user's location once the map is available.
-                            mMap.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
+                                // Move the camera to the user's location once the map is available.
+                                mMap.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
 
-                            // Adjust boolean values to prevent this logic from being called again.
-                            firstLoad = false;
-                            cameraMoved = true;
-                        } else if (firstLoad && !badAccuracy && location.getAccuracy() >= 60) {
+                                // Adjust boolean values to prevent this logic from being called again.
+                                firstLoad = false;
+                                cameraMoved = true;
+                            } else if (firstLoad && !badAccuracy && location.getAccuracy() >= 60) {
 
-                            Log.i(TAG, "moveCameraOnFirstLoad() -> Bad accuracy");
+                                Log.i(TAG, "moveCameraOnFirstLoad() -> Bad accuracy");
 
-                            CameraPosition cameraPosition = new CameraPosition.Builder()
-                                    .target(new LatLng(location.getLatitude(), location.getLongitude()))      // Sets the center of the map to user's location
-                                    .zoom(18)                   // Sets the zoom
-                                    .bearing(0)                // Sets the orientation of the camera
-                                    .tilt(0)                   // Sets the tilt of the camera
-                                    .build();                   // Creates a CameraPosition from the builder
+                                CameraPosition cameraPosition = new CameraPosition.Builder()
+                                        .target(new LatLng(location.getLatitude(), location.getLongitude()))      // Sets the center of the map to user's location
+                                        .zoom(18)                   // Sets the zoom
+                                        .bearing(0)                // Sets the orientation of the camera
+                                        .tilt(0)                   // Sets the tilt of the camera
+                                        .build();                   // Creates a CameraPosition from the builder
 
-                            // Move the camera to the user's location once the map is available.
-                            mMap.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
+                                // Move the camera to the user's location once the map is available.
+                                mMap.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
 
-                            // Adjust boolean values to prevent this logic from being called again.
-                            badAccuracy = true;
-                            waitingForBetterLocationAccuracy = true;
+                                // Adjust boolean values to prevent this logic from being called again.
+                                badAccuracy = true;
+                                waitingForBetterLocationAccuracy = true;
+                            }
                         }
                     }
                 });
@@ -3332,8 +3401,8 @@ public class Map extends FragmentActivity implements
                     }
                 } else {
 
-                    Log.e(TAG, "onMapReadyAndRestart() -> onPolygonClick -> selectedOverlappingShapeUUID = null");
-                    Crashlytics.logException(new Exception("onMapReadyAndRestart() -> onPolygonClick -> selectedOverlappingShapeUUID = null"));
+                    Log.e(TAG, "onMapReadyAndRestart() -> onPolygonClick -> selectedOverlappingShapeUUID == null");
+                    Crashlytics.logException(new Exception("onMapReadyAndRestart() -> onPolygonClick -> selectedOverlappingShapeUUID == null"));
                 }
 
                 selectingShape = true;
@@ -4022,7 +4091,8 @@ public class Map extends FragmentActivity implements
 
         // If this is the first time loading the map and the user has NOT changed the camera position manually (from onMapReadyAndRestart() -> onCameraMoveListener) after the camera was changed programmatically with bad accuracy,
         // OR the camera position was changed by the user BEFORE the camera position was changed programmatically, this will get called to either change the camera position programmatically with good accuracy
-        // or update it with bad accuracy and then wait to update it again with good accuracy assuming the user does not update it manually before it can be updated with good accuracy.
+        // or update it with bad accuracy and then wait to update it again with good accuracy assuming the user does not update it manually before it can be updated with good accuracy. This also gets called if the camera is zoomed
+        // out after restart to get around bugs involving alert dialogs at start-up.
         if (firstLoad && !cameraMoved && location.getAccuracy() < 60) {
 
             Log.i(TAG, "onLocationChanged() -> Good accuracy");
@@ -4570,8 +4640,8 @@ public class Map extends FragmentActivity implements
             }
         } else {
 
-            Log.e(TAG, "changeMapTypeDependingOnConnection() -> ConnectivityManager cm = null");
-            Crashlytics.logException(new Exception("changeMapTypeDependingOnConnection() -> ConnectivityManager cm = null"));
+            Log.e(TAG, "changeMapTypeDependingOnConnection() -> ConnectivityManager cm == null");
+            Crashlytics.logException(new Exception("changeMapTypeDependingOnConnection() -> ConnectivityManager cm == null"));
         }
     }
 
@@ -5483,8 +5553,8 @@ public class Map extends FragmentActivity implements
                     }
                 } else {
 
-                    Log.e(TAG, "onMenuItemClick -> Road Map -> mMap = null");
-                    Crashlytics.logException(new Exception("onMenuItemClick -> Road Map -> mMap = null"));
+                    Log.e(TAG, "onMenuItemClick -> Road Map -> mMap == null");
+                    Crashlytics.logException(new Exception("onMenuItemClick -> Road Map -> mMap == null"));
                 }
 
                 mapTypeMenuIsOpen = false;
@@ -5511,8 +5581,8 @@ public class Map extends FragmentActivity implements
                     }
                 } else {
 
-                    Log.e(TAG, "onMenuItemClick -> Satellite Map -> mMap = null");
-                    Crashlytics.logException(new Exception("onMenuItemClick -> Satellite Map -> mMap = null"));
+                    Log.e(TAG, "onMenuItemClick -> Satellite Map -> mMap == null");
+                    Crashlytics.logException(new Exception("onMenuItemClick -> Satellite Map -> mMap == null"));
                 }
 
                 mapTypeMenuIsOpen = false;
@@ -5539,8 +5609,8 @@ public class Map extends FragmentActivity implements
                     }
                 } else {
 
-                    Log.e(TAG, "onMenuItemClick -> Hybrid Map -> mMap = null");
-                    Crashlytics.logException(new Exception("onMenuItemClick -> Hybrid Map -> mMap = null"));
+                    Log.e(TAG, "onMenuItemClick -> Hybrid Map -> mMap == null");
+                    Crashlytics.logException(new Exception("onMenuItemClick -> Hybrid Map -> mMap == null"));
                 }
 
                 mapTypeMenuIsOpen = false;
@@ -5567,8 +5637,8 @@ public class Map extends FragmentActivity implements
                     }
                 } else {
 
-                    Log.e(TAG, "onMenuItemClick -> Terrain Map -> mMap = null");
-                    Crashlytics.logException(new Exception("onMenuItemClick -> Terrain Map -> mMap = null"));
+                    Log.e(TAG, "onMenuItemClick -> Terrain Map -> mMap == null");
+                    Crashlytics.logException(new Exception("onMenuItemClick -> Terrain Map -> mMap == null"));
                 }
 
                 mapTypeMenuIsOpen = false;
