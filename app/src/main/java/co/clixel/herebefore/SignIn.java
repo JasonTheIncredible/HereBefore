@@ -13,7 +13,6 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import com.crashlytics.android.Crashlytics;
-import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
@@ -23,13 +22,12 @@ public class SignIn extends AppCompatActivity {
 
     private static final String TAG = "SignIn";
     private EditText mEmail, mPassword;
-    private Button btnSignIn, btnGoToCreateAccount;
+    private Button signInButton, btnGoToCreateAccount;
     private String uuid;
     private Double polygonArea, circleLatitude, circleLongitude, radius, marker0Latitude, marker0Longitude, marker1Latitude, marker1Longitude, marker2Latitude, marker2Longitude, marker3Latitude, marker3Longitude, marker4Latitude, marker4Longitude, marker5Latitude, marker5Longitude, marker6Latitude, marker6Longitude, marker7Latitude, marker7Longitude;
     private boolean newShape, userIsWithinShape, threeMarkers, fourMarkers, fiveMarkers, sixMarkers, sevenMarkers, eightMarkers, shapeIsCircle;
     private int fillColor;
 
-    //TODO: Update signin.xml (visuals).
     //TODO: Sign in with Google account.
 
     @Override
@@ -37,11 +35,12 @@ public class SignIn extends AppCompatActivity {
 
         super.onCreate(savedInstanceState);
         Log.i(TAG, "onCreate()");
+
         setContentView(R.layout.signin);
 
         mEmail = findViewById(R.id.emailAddress);
         mPassword = findViewById(R.id.password);
-        btnSignIn = findViewById(R.id.signInButton);
+        signInButton = findViewById(R.id.signInButton);
         btnGoToCreateAccount = findViewById(R.id.goToCreateAccountButton);
     }
 
@@ -53,68 +52,77 @@ public class SignIn extends AppCompatActivity {
 
         // Get info from Map.java
         Bundle extras = getIntent().getExtras();
-        newShape = extras.getBoolean("newShape");
-        uuid = extras.getString("uuid");
-        userIsWithinShape = extras.getBoolean("userIsWithinShape");
-        // fillColor will be null if the shape is not a point.
-        fillColor = extras.getInt("fillColor");
-        // circleLatitude, circleLongitude, and radius will be null if the circle is not new (as a new circle is not being created).
-        circleLatitude = extras.getDouble("circleLatitude");
-        circleLongitude = extras.getDouble("circleLongitude");
-        radius = extras.getDouble("radius");
-        // Most of these will be null if the polygon does not have eight markers, or if the polygon is not new.
-        shapeIsCircle = extras.getBoolean("shapeIsCircle");
-        polygonArea = extras.getDouble("polygonArea");
-        threeMarkers = extras.getBoolean("threeMarkers");
-        fourMarkers = extras.getBoolean("fourMarkers");
-        fiveMarkers = extras.getBoolean("fiveMarkers");
-        sixMarkers = extras.getBoolean("sixMarkers");
-        sevenMarkers = extras.getBoolean("sevenMarkers");
-        eightMarkers = extras.getBoolean("eightMarkers");
-        marker0Latitude = extras.getDouble("marker0Latitude");
-        marker0Longitude = extras.getDouble("marker0Longitude");
-        marker1Latitude = extras.getDouble("marker1Latitude");
-        marker1Longitude = extras.getDouble("marker1Longitude");
-        marker2Latitude = extras.getDouble("marker2Latitude");
-        marker2Longitude = extras.getDouble("marker2Longitude");
-        marker3Latitude = extras.getDouble("marker3Latitude");
-        marker3Longitude = extras.getDouble("marker3Longitude");
-        marker4Latitude = extras.getDouble("marker4Latitude");
-        marker4Longitude = extras.getDouble("marker4Longitude");
-        marker5Latitude = extras.getDouble("marker5Latitude");
-        marker5Longitude = extras.getDouble("marker5Longitude");
-        marker6Latitude = extras.getDouble("marker6Latitude");
-        marker6Longitude = extras.getDouble("marker6Longitude");
-        marker7Latitude = extras.getDouble("marker7Latitude");
-        marker7Longitude = extras.getDouble("marker7Longitude");
+
+        if (extras != null) {
+
+            newShape = extras.getBoolean("newShape");
+            uuid = extras.getString("uuid");
+            userIsWithinShape = extras.getBoolean("userIsWithinShape");
+            // fillColor will be null if the shape is not a point.
+            fillColor = extras.getInt("fillColor");
+            // circleLatitude, circleLongitude, and radius will be null if the circle is not new (as a new circle is not being created).
+            circleLatitude = extras.getDouble("circleLatitude");
+            circleLongitude = extras.getDouble("circleLongitude");
+            radius = extras.getDouble("radius");
+            // Most of these will be null if the polygon does not have eight markers, or if the polygon is not new.
+            shapeIsCircle = extras.getBoolean("shapeIsCircle");
+            polygonArea = extras.getDouble("polygonArea");
+            threeMarkers = extras.getBoolean("threeMarkers");
+            fourMarkers = extras.getBoolean("fourMarkers");
+            fiveMarkers = extras.getBoolean("fiveMarkers");
+            sixMarkers = extras.getBoolean("sixMarkers");
+            sevenMarkers = extras.getBoolean("sevenMarkers");
+            eightMarkers = extras.getBoolean("eightMarkers");
+            marker0Latitude = extras.getDouble("marker0Latitude");
+            marker0Longitude = extras.getDouble("marker0Longitude");
+            marker1Latitude = extras.getDouble("marker1Latitude");
+            marker1Longitude = extras.getDouble("marker1Longitude");
+            marker2Latitude = extras.getDouble("marker2Latitude");
+            marker2Longitude = extras.getDouble("marker2Longitude");
+            marker3Latitude = extras.getDouble("marker3Latitude");
+            marker3Longitude = extras.getDouble("marker3Longitude");
+            marker4Latitude = extras.getDouble("marker4Latitude");
+            marker4Longitude = extras.getDouble("marker4Longitude");
+            marker5Latitude = extras.getDouble("marker5Latitude");
+            marker5Longitude = extras.getDouble("marker5Longitude");
+            marker6Latitude = extras.getDouble("marker6Latitude");
+            marker6Longitude = extras.getDouble("marker6Longitude");
+            marker7Latitude = extras.getDouble("marker7Latitude");
+            marker7Longitude = extras.getDouble("marker7Longitude");
+        } else {
+
+            Log.e(TAG, "onStart() -> extras == null");
+            Crashlytics.logException(new RuntimeException("onStart() -> extras == null"));
+        }
 
         // Give feedback about email and password.
-        btnSignIn.setOnClickListener(new View.OnClickListener() {
+        signInButton.setOnClickListener(new View.OnClickListener() {
 
             @Override
             public void onClick(View view){
+
+                Log.i(TAG, "onStart() -> signInButton -> onClick");
 
                 String email = mEmail.getText().toString().toLowerCase();
                 String pass = mPassword.getText().toString();
 
                 if (email.equals("") && !pass.equals("")) {
 
-                    toastMessage("Email address required");
+                    toastMessageShort("Email address required");
                     mEmail.requestFocus();
                     return;
                 } if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
 
-                    toastMessage("Please enter a valid email address");
+                    toastMessageShort("Please enter a valid email address");
                     mEmail.requestFocus();
-                    return;
                 } if (pass.equals("") && !email.equals("")) {
 
-                    toastMessage("Password required");
+                    toastMessageShort("Password required");
                     mPassword.requestFocus();
                     return;
-                } if (pass.length()<6) {
+                } if (pass.length() < 6) {
 
-                    toastMessage("Password must be at least 6 characters long");
+                    toastMessageShort("Password must be at least 6 characters long");
                     mPassword.requestFocus();
                     return;
                 }
@@ -128,7 +136,7 @@ public class SignIn extends AppCompatActivity {
                         if (task.isSuccessful()) {
 
                             // Go to Chat.java ith the circleID.
-                            toastMessage("Signed in");
+                            toastMessageShort("Signed in");
                             Intent Activity = new Intent(SignIn.this, Chat.class);
                             Activity.putExtra("newShape", newShape);
                             Activity.putExtra("uuid", uuid);
@@ -163,17 +171,24 @@ public class SignIn extends AppCompatActivity {
                             Activity.putExtra("marker7Longitude", marker7Longitude);
                             startActivity(Activity);
                             finish();
-                        } if (task.getException() != null) {
+                        }
+
+                        if (task.getException() != null) {
 
                             // Tell the user what happened.
-                            Toast.makeText(getApplicationContext(), "User Authentication Failed: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
+                            toastMessageLong("User Authentication Failed: " + task.getException().getMessage());
 
-                            // Send the information to Crashlytics for future debugging. NOTE: This will only be sent after the user restarts the app.
-                            Crashlytics.logException(new RuntimeException( task.getException().getMessage() ));
-                        } if ( (!task.isSuccessful() ) && ( task.getException() == null) ) {
+                            // Send the information to Crashlytics for future debugging.
+                            Log.e(TAG, "onStart() -> signInButton -> OnClick -> FirebaseAuth -> task.getException != null");
+                            Crashlytics.logException(new RuntimeException("onStart() -> signInButton -> OnClick -> FirebaseAuth -> task.getException != null"));
+                        } else {
 
                             // Tell the user something happened.
-                            toastMessage("An unknown error occurred. Please try again.");
+                            toastMessageShort("An unknown error occurred. Please try again.");
+
+                            // Send the information to Crashlytics for future debugging.
+                            Log.e(TAG, "onStart() -> signInButton -> OnClick -> FirebaseAuth -> task.getException == null");
+                            Crashlytics.logException(new RuntimeException("onStart() -> signInButton -> OnClick -> FirebaseAuth -> task.getException == null"));
                         }
                     }
                 });
@@ -251,9 +266,9 @@ public class SignIn extends AppCompatActivity {
         Log.i(TAG, "onStop()");
 
         // Remove the listener.
-        if (btnSignIn != null) {
+        if (signInButton != null) {
 
-            btnSignIn.setOnClickListener(null);
+            signInButton.setOnClickListener(null);
         }
 
         // Remove the listener.
@@ -286,8 +301,13 @@ public class SignIn extends AppCompatActivity {
         super.onDestroy();
     }
 
-    private void toastMessage(String message){
+    private void toastMessageShort(String message){
 
-        Toast.makeText(this,message, Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+    }
+
+    private void toastMessageLong(String message){
+
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }
 }
