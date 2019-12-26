@@ -38,6 +38,9 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
 
 import com.crashlytics.android.Crashlytics;
+//developers.google.com/identity/sign-in/android/sign-in
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
@@ -116,6 +119,7 @@ public class Map extends FragmentActivity implements
     // The following should be implemented later:
     // Save user map type preference.
     // Page for deleting user account.
+    // Allow user to sign out from here and Chat.java.
     // Work on onTrimMemory().
     // Make sure uuids never overlap in Firebase.
 
@@ -2855,7 +2859,7 @@ public class Map extends FragmentActivity implements
                                 });
 
                         // Check if the user is already signed in.
-                        if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+                        if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) instanceof GoogleSignInAccount) {
 
                             // User is signed in.
 
@@ -3044,7 +3048,7 @@ public class Map extends FragmentActivity implements
                             });
 
                     // Check if the user is already signed in.
-                    if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+                    if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) instanceof GoogleSignInAccount) {
 
                         // User is signed in.
 
@@ -3162,7 +3166,10 @@ public class Map extends FragmentActivity implements
                         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
                     }
 
-                    findViewById(R.id.loadingIcon).setVisibility(View.VISIBLE);
+                    if (findViewById(R.id.loadingIcon).getVisibility() != View.VISIBLE) {
+
+                        findViewById(R.id.loadingIcon).setVisibility(View.VISIBLE);
+                    }
 
                     // Drop the z-index to metaphorically check it off the "to click" list.
                     polygon.setZIndex(-1);
@@ -3312,7 +3319,7 @@ public class Map extends FragmentActivity implements
                             });
 
                     // Check if the user is already signed in.
-                    if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+                    if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) instanceof GoogleSignInAccount) {
 
 
                         Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> User selected a polygon -> User signed in");
@@ -3491,7 +3498,7 @@ public class Map extends FragmentActivity implements
                             });
 
                     // Check if the user is already signed in.
-                    if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+                    if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) instanceof GoogleSignInAccount) {
 
                         // User is signed in.
 
@@ -3610,6 +3617,11 @@ public class Map extends FragmentActivity implements
                     if (getWindowManager().getDefaultDisplay().getRotation()== Surface.ROTATION_270) {
 
                         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
+                    }
+
+                    if (findViewById(R.id.loadingIcon).getVisibility() != View.VISIBLE) {
+
+                        findViewById(R.id.loadingIcon).setVisibility(View.VISIBLE);
                     }
 
                     // Drop the z-index to metaphorically check it off the "to click" list.
@@ -3766,7 +3778,7 @@ public class Map extends FragmentActivity implements
                             });
 
                     // Check if the user is already signed in.
-                    if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+                    if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) instanceof GoogleSignInAccount) {
 
                         Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> User selected a circle -> User signed in");
 
@@ -3879,6 +3891,7 @@ public class Map extends FragmentActivity implements
                 chatSelectorSeekBar.setVisibility(View.VISIBLE);
                 mMap.getUiSettings().setScrollGesturesEnabled(true);
                 setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+                findViewById(R.id.loadingIcon).setVisibility(View.GONE);
                 Toast.makeText(Map.this, "Highlight and select a shape using the SeekBar below.", Toast.LENGTH_LONG).show();
             }
         });
@@ -8510,7 +8523,7 @@ public class Map extends FragmentActivity implements
                                         uuid = UUID.randomUUID().toString();
 
                                         // Check if the user is already signed in.
-                                        if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+                                        if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) instanceof GoogleSignInAccount) {
 
                                             // User is signed in.
                                             // Connect to Firebase.

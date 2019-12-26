@@ -30,14 +30,12 @@
 
         <activity
             android:name=".SignIn"
-            android:configChanges="orientation"
             android:windowSoftInputMode="adjustResize"
             android:label="@string/title_activity_maps">
         </activity>
 
         <activity
             android:name=".SignUp"
-            android:configChanges="orientation"
             android:windowSoftInputMode="adjustResize"
             android:label="@string/title_activity_maps">
         </activity>

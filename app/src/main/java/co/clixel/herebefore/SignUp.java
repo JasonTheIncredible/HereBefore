@@ -29,7 +29,6 @@ public class SignUp extends AppCompatActivity {
     private int fillColor;
 
     //TODO: Update signup.xml (visuals and add more user information).
-    //TODO: Sign in with Google account.
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

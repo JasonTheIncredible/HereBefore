@@ -13,6 +13,13 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import com.crashlytics.android.Crashlytics;
+//developers.google.com/identity/sign-in/android/sign-in
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.common.SignInButton;
+import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
@@ -21,14 +28,20 @@ import com.google.firebase.auth.FirebaseAuth;
 public class SignIn extends AppCompatActivity {
 
     private static final String TAG = "SignIn";
+    private static final int RC_SIGN_IN = 0;
     private EditText mEmail, mPassword;
-    private Button signInButton, btnGoToCreateAccount;
+    private Button signInButton, goToCreateAccountButton;
+    private SignInButton googleSignInButton;
     private String uuid;
     private Double polygonArea, circleLatitude, circleLongitude, radius, marker0Latitude, marker0Longitude, marker1Latitude, marker1Longitude, marker2Latitude, marker2Longitude, marker3Latitude, marker3Longitude, marker4Latitude, marker4Longitude, marker5Latitude, marker5Longitude, marker6Latitude, marker6Longitude, marker7Latitude, marker7Longitude;
     private boolean newShape, userIsWithinShape, threeMarkers, fourMarkers, fiveMarkers, sixMarkers, sevenMarkers, eightMarkers, shapeIsCircle;
     private int fillColor;
+    private GoogleSignInClient mGoogleSignInClient;
 
-    //TODO: Sign in with Google account.
+    //TODO: Change button placement.
+    //TODO: Fix "G" placement in Google sign-in button
+    //TODO: Fix google sign in error.
+    //TODO: Figure out why crashlytics error not being sent.
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,7 +54,20 @@ public class SignIn extends AppCompatActivity {
         mEmail = findViewById(R.id.emailAddress);
         mPassword = findViewById(R.id.password);
         signInButton = findViewById(R.id.signInButton);
-        btnGoToCreateAccount = findViewById(R.id.goToCreateAccountButton);
+        googleSignInButton = findViewById(R.id.googleSignInButton);
+        // Set the color scheme for the Google sign-in button. Documentation found here:
+        // developers.google.com/android/reference/com/google/android/gms/common/SignInButton.html#COLOR_DARK
+        googleSignInButton.setColorScheme(0);
+        goToCreateAccountButton = findViewById(R.id.goToCreateAccountButton);
+
+        // Configure sign-in to request the user's ID, email address, and basic
+        // profile. ID and basic profile are included in DEFAULT_SIGN_IN.
+        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestEmail()
+                .build();
+
+        // Build a GoogleSignInClient with the options specified by gso.
+        mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
     }
 
     @Override
@@ -135,7 +161,7 @@ public class SignIn extends AppCompatActivity {
 
                         if (task.isSuccessful()) {
 
-                            // Go to Chat.java ith the circleID.
+                            // Go to Chat.java with the extras.
                             toastMessageShort("Signed in");
                             Intent Activity = new Intent(SignIn.this, Chat.class);
                             Activity.putExtra("newShape", newShape);
@@ -184,7 +210,7 @@ public class SignIn extends AppCompatActivity {
                         } else {
 
                             // Tell the user something happened.
-                            toastMessageShort("An unknown error occurred. Please try again.");
+                            toastMessageLong("An unknown error occurred. Please try again.");
 
                             // Send the information to Crashlytics for future debugging.
                             Log.e(TAG, "onStart() -> signInButton -> OnClick -> FirebaseAuth -> task.getException == null");
@@ -195,8 +221,19 @@ public class SignIn extends AppCompatActivity {
             }
         });
 
-        // Go to the SignUp activity with the circleID.
-        btnGoToCreateAccount.setOnClickListener(new View.OnClickListener() {
+        // Sign-in using Google.
+        googleSignInButton.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View view) {
+
+                Intent signInIntent = mGoogleSignInClient.getSignInIntent();
+                startActivityForResult(signInIntent, RC_SIGN_IN);
+            }
+        });
+
+        // Go to the SignUp activity with the extras.
+        goToCreateAccountButton.setOnClickListener(new View.OnClickListener() {
 
             @Override
             public void onClick(View view){
@@ -272,9 +309,15 @@ public class SignIn extends AppCompatActivity {
         }
 
         // Remove the listener.
-        if (btnGoToCreateAccount != null) {
+        if (googleSignInButton != null) {
 
-            btnGoToCreateAccount.setOnClickListener(null);
+            googleSignInButton.setOnClickListener(null);
+        }
+
+        // Remove the listener.
+        if (goToCreateAccountButton != null) {
+
+            goToCreateAccountButton.setOnClickListener(null);
         }
 
         super.onStop();
@@ -299,6 +342,72 @@ public class SignIn extends AppCompatActivity {
 
         Log.i(TAG, "onDestroy()");
         super.onDestroy();
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+
+        super.onActivityResult(requestCode, resultCode, data);
+
+        // Result returned from launching the Intent from GoogleSignInClient.getSignInIntent(...);
+        if (requestCode == RC_SIGN_IN) {
+
+            // The Task returned from this call is always completed, no need to attach
+            // a listener.
+            Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
+            handleSignInResult(task);
+        }
+    }
+
+    private void handleSignInResult(Task<GoogleSignInAccount> completedTask) {
+
+        try {
+
+            GoogleSignInAccount account = completedTask.getResult(ApiException.class);
+            // Go to Chat.java with the extras.
+            toastMessageShort("Signed in");
+            Intent Activity = new Intent(SignIn.this, Chat.class);
+            Activity.putExtra("newShape", newShape);
+            Activity.putExtra("uuid", uuid);
+            Activity.putExtra("userIsWithinShape", userIsWithinShape);
+            Activity.putExtra("circleLatitude", circleLatitude);
+            Activity.putExtra("circleLongitude", circleLongitude);
+            Activity.putExtra("fillColor", fillColor);
+            Activity.putExtra("polygonArea", polygonArea);
+            Activity.putExtra("radius", radius);
+            Activity.putExtra("shapeIsCircle", shapeIsCircle);
+            Activity.putExtra("threeMarkers", threeMarkers);
+            Activity.putExtra("fourMarkers", fourMarkers);
+            Activity.putExtra("fiveMarkers", fiveMarkers);
+            Activity.putExtra("sixMarkers", sixMarkers);
+            Activity.putExtra("sevenMarkers", sevenMarkers);
+            Activity.putExtra("eightMarkers", eightMarkers);
+            Activity.putExtra("marker0Latitude", marker0Latitude);
+            Activity.putExtra("marker0Longitude", marker0Longitude);
+            Activity.putExtra("marker1Latitude", marker1Latitude);
+            Activity.putExtra("marker1Longitude", marker1Longitude);
+            Activity.putExtra("marker2Latitude", marker2Latitude);
+            Activity.putExtra("marker2Longitude", marker2Longitude);
+            Activity.putExtra("marker3Latitude", marker3Latitude);
+            Activity.putExtra("marker3Longitude", marker3Longitude);
+            Activity.putExtra("marker4Latitude", marker4Latitude);
+            Activity.putExtra("marker4Longitude", marker4Longitude);
+            Activity.putExtra("marker5Latitude", marker5Latitude);
+            Activity.putExtra("marker5Longitude", marker5Longitude);
+            Activity.putExtra("marker6Latitude", marker6Latitude);
+            Activity.putExtra("marker6Longitude", marker6Longitude);
+            Activity.putExtra("marker7Latitude", marker7Latitude);
+            Activity.putExtra("marker7Longitude", marker7Longitude);
+            startActivity(Activity);
+            finish();
+        } catch (ApiException e) {
+
+            // The ApiException status code indicates the detailed failure reason.
+            // Please refer to the GoogleSignInStatusCodes class reference for more information.
+            Log.w(TAG, "signInResult: failed code = " + e.getStatusCode());
+            Crashlytics.logException(new Exception("signInResult: failed code = " + e.getStatusCode()));
+            toastMessageLong("Error signing in: " + e.getStatusCode());
+        }
     }
 
     private void toastMessageShort(String message){

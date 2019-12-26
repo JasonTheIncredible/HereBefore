@@ -20,4 +20,5 @@
     <string name="create_a_polygon">Create a polygon</string>
     <string name="create_a_circle">Create a circle</string>
     <string name="remove_the_circle">Remove the shape</string>
+    <string name="or">Or…</string>
 </resources>
