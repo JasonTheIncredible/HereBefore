@@ -4652,8 +4652,8 @@ public class Map extends FragmentActivity implements
                     }
                 } else {
 
-                    Log.e(TAG, "changeMapTypeDependingOnConnection() -> Network n = null");
-                    Crashlytics.logException(new Exception("changeMapTypeDependingOnConnection() -> Network n = null"));
+                    Log.e(TAG, "changeMapTypeDependingOnConnection() -> Network n == null");
+                    Crashlytics.logException(new Exception("changeMapTypeDependingOnConnection() -> Network n == null"));
                 }
             }
         } else {

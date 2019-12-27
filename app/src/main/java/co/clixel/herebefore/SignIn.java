@@ -22,8 +22,11 @@ import com.google.android.gms.common.SignInButton;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.auth.GoogleAuthProvider;
 
 public class SignIn extends AppCompatActivity {
 
@@ -37,11 +40,9 @@ public class SignIn extends AppCompatActivity {
     private boolean newShape, userIsWithinShape, threeMarkers, fourMarkers, fiveMarkers, sixMarkers, sevenMarkers, eightMarkers, shapeIsCircle;
     private int fillColor;
     private GoogleSignInClient mGoogleSignInClient;
+    private FirebaseAuth mAuth;
 
-    //TODO: Change button placement.
-    //TODO: Fix "G" placement in Google sign-in button
-    //TODO: Fix google sign in error.
-    //TODO: Figure out why crashlytics error not being sent.
+    //TODO: Add loading icon while signing-in with Google.
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,14 +61,17 @@ public class SignIn extends AppCompatActivity {
         googleSignInButton.setColorScheme(0);
         goToCreateAccountButton = findViewById(R.id.goToCreateAccountButton);
 
-        // Configure sign-in to request the user's ID, email address, and basic
-        // profile. ID and basic profile are included in DEFAULT_SIGN_IN.
+        // Configure Google Sign In
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestIdToken(getString(R.string.default_web_client_id))
                 .requestEmail()
                 .build();
 
         // Build a GoogleSignInClient with the options specified by gso.
         mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
+
+        // Initialize Firebase Auth
+        mAuth = FirebaseAuth.getInstance();
     }
 
     @Override
@@ -221,7 +225,7 @@ public class SignIn extends AppCompatActivity {
             }
         });
 
-        // Sign-in using Google.
+        // Sign in using Google.
         googleSignInButton.setOnClickListener(new View.OnClickListener() {
 
             @Override
@@ -232,7 +236,7 @@ public class SignIn extends AppCompatActivity {
             }
         });
 
-        // Go to the SignUp activity with the extras.
+        // Go to the SignUp.java with the extras.
         goToCreateAccountButton.setOnClickListener(new View.OnClickListener() {
 
             @Override
@@ -344,70 +348,101 @@ public class SignIn extends AppCompatActivity {
         super.onDestroy();
     }
 
+    // Used to sign in using Google.
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
 
         super.onActivityResult(requestCode, resultCode, data);
 
-        // Result returned from launching the Intent from GoogleSignInClient.getSignInIntent(...);
+        // Result returned from launching the Intent from GoogleSignInApi.getSignInIntent(...);
         if (requestCode == RC_SIGN_IN) {
 
-            // The Task returned from this call is always completed, no need to attach
-            // a listener.
             Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
-            handleSignInResult(task);
+            try {
+
+                // Google sign in was successful, authenticate with Firebase
+                GoogleSignInAccount account = task.getResult(ApiException.class);
+                if (account != null) {
+
+                    firebaseAuthWithGoogle(account);
+                } else {
+
+                    Log.w(TAG, "onActivityResult() -> account == null");
+                    Crashlytics.logException(new Exception("onActivityResult() -> account == null"));
+                    toastMessageLong("Sign-in failed. Try again later.");
+                }
+            } catch (ApiException e) {
+
+                // Google sign in failed, update UI appropriately
+                Log.w(TAG, "Google sign in failed: " + e);
+                Crashlytics.logException(new Exception("Google sign in failed: " + e));
+                toastMessageLong("Google sign in failed: " + e);
+            }
         }
     }
 
-    private void handleSignInResult(Task<GoogleSignInAccount> completedTask) {
+    // Used by onActivityResult().
+    private void firebaseAuthWithGoogle(GoogleSignInAccount acct) {
 
-        try {
+        Log.d(TAG, "firebaseAuthWithGoogle: " + acct.getId());
 
-            GoogleSignInAccount account = completedTask.getResult(ApiException.class);
-            // Go to Chat.java with the extras.
-            toastMessageShort("Signed in");
-            Intent Activity = new Intent(SignIn.this, Chat.class);
-            Activity.putExtra("newShape", newShape);
-            Activity.putExtra("uuid", uuid);
-            Activity.putExtra("userIsWithinShape", userIsWithinShape);
-            Activity.putExtra("circleLatitude", circleLatitude);
-            Activity.putExtra("circleLongitude", circleLongitude);
-            Activity.putExtra("fillColor", fillColor);
-            Activity.putExtra("polygonArea", polygonArea);
-            Activity.putExtra("radius", radius);
-            Activity.putExtra("shapeIsCircle", shapeIsCircle);
-            Activity.putExtra("threeMarkers", threeMarkers);
-            Activity.putExtra("fourMarkers", fourMarkers);
-            Activity.putExtra("fiveMarkers", fiveMarkers);
-            Activity.putExtra("sixMarkers", sixMarkers);
-            Activity.putExtra("sevenMarkers", sevenMarkers);
-            Activity.putExtra("eightMarkers", eightMarkers);
-            Activity.putExtra("marker0Latitude", marker0Latitude);
-            Activity.putExtra("marker0Longitude", marker0Longitude);
-            Activity.putExtra("marker1Latitude", marker1Latitude);
-            Activity.putExtra("marker1Longitude", marker1Longitude);
-            Activity.putExtra("marker2Latitude", marker2Latitude);
-            Activity.putExtra("marker2Longitude", marker2Longitude);
-            Activity.putExtra("marker3Latitude", marker3Latitude);
-            Activity.putExtra("marker3Longitude", marker3Longitude);
-            Activity.putExtra("marker4Latitude", marker4Latitude);
-            Activity.putExtra("marker4Longitude", marker4Longitude);
-            Activity.putExtra("marker5Latitude", marker5Latitude);
-            Activity.putExtra("marker5Longitude", marker5Longitude);
-            Activity.putExtra("marker6Latitude", marker6Latitude);
-            Activity.putExtra("marker6Longitude", marker6Longitude);
-            Activity.putExtra("marker7Latitude", marker7Latitude);
-            Activity.putExtra("marker7Longitude", marker7Longitude);
-            startActivity(Activity);
-            finish();
-        } catch (ApiException e) {
+        AuthCredential credential = GoogleAuthProvider.getCredential(acct.getIdToken(), null);
+        mAuth.signInWithCredential(credential)
+                .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
 
-            // The ApiException status code indicates the detailed failure reason.
-            // Please refer to the GoogleSignInStatusCodes class reference for more information.
-            Log.w(TAG, "signInResult: failed code = " + e.getStatusCode());
-            Crashlytics.logException(new Exception("signInResult: failed code = " + e.getStatusCode()));
-            toastMessageLong("Error signing in: " + e.getStatusCode());
-        }
+                    @Override
+                    public void onComplete(@NonNull Task<AuthResult> task) {
+
+                        if (task.isSuccessful()) {
+
+                            // Sign-in success, update UI with the signed-in user's information
+                            Log.d(TAG, "signInWithCredential:success");
+                            FirebaseUser user = mAuth.getCurrentUser();
+                            // Go to Chat.java with the extras.
+                            toastMessageShort("Signed in");
+                            Intent Activity = new Intent(SignIn.this, Chat.class);
+                            Activity.putExtra("newShape", newShape);
+                            Activity.putExtra("uuid", uuid);
+                            Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                            Activity.putExtra("circleLatitude", circleLatitude);
+                            Activity.putExtra("circleLongitude", circleLongitude);
+                            Activity.putExtra("fillColor", fillColor);
+                            Activity.putExtra("polygonArea", polygonArea);
+                            Activity.putExtra("radius", radius);
+                            Activity.putExtra("shapeIsCircle", shapeIsCircle);
+                            Activity.putExtra("threeMarkers", threeMarkers);
+                            Activity.putExtra("fourMarkers", fourMarkers);
+                            Activity.putExtra("fiveMarkers", fiveMarkers);
+                            Activity.putExtra("sixMarkers", sixMarkers);
+                            Activity.putExtra("sevenMarkers", sevenMarkers);
+                            Activity.putExtra("eightMarkers", eightMarkers);
+                            Activity.putExtra("marker0Latitude", marker0Latitude);
+                            Activity.putExtra("marker0Longitude", marker0Longitude);
+                            Activity.putExtra("marker1Latitude", marker1Latitude);
+                            Activity.putExtra("marker1Longitude", marker1Longitude);
+                            Activity.putExtra("marker2Latitude", marker2Latitude);
+                            Activity.putExtra("marker2Longitude", marker2Longitude);
+                            Activity.putExtra("marker3Latitude", marker3Latitude);
+                            Activity.putExtra("marker3Longitude", marker3Longitude);
+                            Activity.putExtra("marker4Latitude", marker4Latitude);
+                            Activity.putExtra("marker4Longitude", marker4Longitude);
+                            Activity.putExtra("marker5Latitude", marker5Latitude);
+                            Activity.putExtra("marker5Longitude", marker5Longitude);
+                            Activity.putExtra("marker6Latitude", marker6Latitude);
+                            Activity.putExtra("marker6Longitude", marker6Longitude);
+                            Activity.putExtra("marker7Latitude", marker7Latitude);
+                            Activity.putExtra("marker7Longitude", marker7Longitude);
+                            startActivity(Activity);
+                            finish();
+                        } else {
+
+                            // If sign in fails, display a message to the user.
+                            Log.w(TAG, "firebaseAuthWithGoogle() -> failed: " + task.getException());
+                            toastMessageLong("Authentication failed. Try again later.");
+                            Crashlytics.logException(new Exception("firebaseAuthWithGoogle() -> failed: " + task.getException()));
+                        }
+                    }
+                });
     }
 
     private void toastMessageShort(String message){
