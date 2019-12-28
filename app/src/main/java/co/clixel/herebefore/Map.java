@@ -117,6 +117,8 @@ public class Map extends FragmentActivity implements
     private LocationManager locationManager;
 
     // The following should be implemented later:
+    // Optimize Firebase loading (Google how databases are structured).
+    // Log.i vs d vs w...
     // Save user map type preference.
     // Page for deleting user account.
     // Allow user to sign out from here and Chat.java.

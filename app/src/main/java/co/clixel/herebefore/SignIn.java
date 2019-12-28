@@ -42,7 +42,7 @@ public class SignIn extends AppCompatActivity {
     private GoogleSignInClient mGoogleSignInClient;
     private FirebaseAuth mAuth;
 
-    //TODO: Add loading icon while signing-in with Google.
+    // TODO: Make scrollView zoomable?
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -285,6 +285,8 @@ public class SignIn extends AppCompatActivity {
 
         super.onRestart();
         Log.i(TAG, "onRestart()");
+
+        findViewById(R.id.loadingIcon).setVisibility(View.GONE);
     }
 
     @Override
@@ -365,6 +367,8 @@ public class SignIn extends AppCompatActivity {
                 if (account != null) {
 
                     firebaseAuthWithGoogle(account);
+                    findViewById(R.id.loadingIcon).bringToFront();
+                    findViewById(R.id.loadingIcon).setVisibility(View.VISIBLE);
                 } else {
 
                     Log.w(TAG, "onActivityResult() -> account == null");
@@ -432,11 +436,13 @@ public class SignIn extends AppCompatActivity {
                             Activity.putExtra("marker6Longitude", marker6Longitude);
                             Activity.putExtra("marker7Latitude", marker7Latitude);
                             Activity.putExtra("marker7Longitude", marker7Longitude);
+                            findViewById(R.id.loadingIcon).setVisibility(View.GONE);
                             startActivity(Activity);
                             finish();
                         } else {
 
                             // If sign in fails, display a message to the user.
+                            findViewById(R.id.loadingIcon).setVisibility(View.GONE);
                             Log.w(TAG, "firebaseAuthWithGoogle() -> failed: " + task.getException());
                             toastMessageLong("Authentication failed. Try again later.");
                             Crashlytics.logException(new Exception("firebaseAuthWithGoogle() -> failed: " + task.getException()));
