@@ -120,9 +120,10 @@ public class Map extends FragmentActivity implements
     // Optimize Firebase loading (Google how databases are structured).
     // Log.i vs d vs w...
     // Save user map type preference.
-    // Page for deleting user account.
+    // Page for deleting user account, resetting password, etc.
     // Allow user to sign out from here and Chat.java.
     // Work on onTrimMemory().
+    // Leave messages in locations that users get notified of when they enter the area.
     // Make sure uuids never overlap in Firebase.
 
     @Override

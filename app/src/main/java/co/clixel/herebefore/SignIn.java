@@ -1,5 +1,6 @@
 package co.clixel.herebefore;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import androidx.annotation.NonNull;
@@ -8,6 +9,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.util.Log;
 import android.util.Patterns;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
@@ -41,8 +43,6 @@ public class SignIn extends AppCompatActivity {
     private int fillColor;
     private GoogleSignInClient mGoogleSignInClient;
     private FirebaseAuth mAuth;
-
-    // TODO: Make scrollView zoomable?
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -145,6 +145,7 @@ public class SignIn extends AppCompatActivity {
 
                     toastMessageShort("Please enter a valid email address");
                     mEmail.requestFocus();
+                    return;
                 } if (pass.equals("") && !email.equals("")) {
 
                     toastMessageShort("Password required");
@@ -156,6 +157,19 @@ public class SignIn extends AppCompatActivity {
                     mPassword.requestFocus();
                     return;
                 }
+
+                // Close the keyboard.
+                if (SignIn.this.getCurrentFocus() != null) {
+
+                    InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                    if (imm != null) {
+
+                        imm.hideSoftInputFromWindow(SignIn.this.getCurrentFocus().getWindowToken(), 0);
+                    }
+                }
+
+                findViewById(R.id.loadingIcon).bringToFront();
+                findViewById(R.id.loadingIcon).setVisibility(View.VISIBLE);
 
                 // Check if the account exists in Firebase.
                 FirebaseAuth.getInstance().signInWithEmailAndPassword(email,pass).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
@@ -199,21 +213,20 @@ public class SignIn extends AppCompatActivity {
                             Activity.putExtra("marker6Longitude", marker6Longitude);
                             Activity.putExtra("marker7Latitude", marker7Latitude);
                             Activity.putExtra("marker7Longitude", marker7Longitude);
+                            findViewById(R.id.loadingIcon).setVisibility(View.GONE);
                             startActivity(Activity);
                             finish();
                         }
 
-                        if (task.getException() != null) {
+                        if (!task.isSuccessful() && task.getException() != null) {
 
                             // Tell the user what happened.
+                            findViewById(R.id.loadingIcon).setVisibility(View.GONE);
                             toastMessageLong("User Authentication Failed: " + task.getException().getMessage());
-
-                            // Send the information to Crashlytics for future debugging.
-                            Log.e(TAG, "onStart() -> signInButton -> OnClick -> FirebaseAuth -> task.getException != null");
-                            Crashlytics.logException(new RuntimeException("onStart() -> signInButton -> OnClick -> FirebaseAuth -> task.getException != null"));
-                        } else {
+                        } else if (!task.isSuccessful() && task.getException() == null) {
 
                             // Tell the user something happened.
+                            findViewById(R.id.loadingIcon).setVisibility(View.GONE);
                             toastMessageLong("An unknown error occurred. Please try again.");
 
                             // Send the information to Crashlytics for future debugging.
@@ -350,7 +363,7 @@ public class SignIn extends AppCompatActivity {
         super.onDestroy();
     }
 
-    // Used to sign in using Google.
+    // Sign in using Google.
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
 

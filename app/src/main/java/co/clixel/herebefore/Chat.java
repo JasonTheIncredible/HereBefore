@@ -529,13 +529,12 @@ public class Chat extends AppCompatActivity {
         }
 
         // Close keyboard after sending a message.
-        View view = this.getCurrentFocus();
-        if (view != null) {
+        if (Chat.this.getCurrentFocus() != null) {
 
             InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
             if (imm != null) {
 
-                imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+                imm.hideSoftInputFromWindow(Chat.this.getCurrentFocus().getWindowToken(), 0);
             }
             if (mInput != null){
 
