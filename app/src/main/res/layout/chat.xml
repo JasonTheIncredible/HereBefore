@@ -51,7 +51,5 @@
             android:id="@+id/input"
             android:autofillHints=""
             android:inputType="" />
-
     </com.google.android.material.textfield.TextInputLayout>
-
 </RelativeLayout>

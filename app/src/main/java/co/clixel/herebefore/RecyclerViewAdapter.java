@@ -34,7 +34,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
 
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.message, parent,false);
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.recyclerviewlayout, parent,false);
         return new ViewHolder(view);
     }
 
@@ -49,8 +49,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
         if(position %2 == 1) {
 
             holder.itemView.setBackgroundColor(Color.parseColor("#FFFFFF"));
-        }
-        else {
+        } else {
 
             holder.itemView.setBackgroundColor(Color.parseColor("#FFFAF8FD"));
         }

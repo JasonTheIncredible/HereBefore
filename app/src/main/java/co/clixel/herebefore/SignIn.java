@@ -454,7 +454,7 @@ public class SignIn extends AppCompatActivity {
                             finish();
                         } else {
 
-                            // If sign in fails, display a message to the user.
+                            // If sign in fails, display a recyclerviewlayout to the user.
                             findViewById(R.id.loadingIcon).setVisibility(View.GONE);
                             Log.w(TAG, "firebaseAuthWithGoogle() -> failed: " + task.getException());
                             toastMessageLong("Authentication failed. Try again later.");

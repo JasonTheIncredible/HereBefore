@@ -10,6 +10,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import android.util.Log;
 import android.view.View;
 
+import com.crashlytics.android.Crashlytics;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.PolygonOptions;
@@ -55,12 +56,12 @@ public class Chat extends AppCompatActivity {
     private Double polygonArea, circleLatitude, circleLongitude, radius, marker0Latitude, marker0Longitude, marker1Latitude, marker1Longitude, marker2Latitude, marker2Longitude, marker3Latitude, marker3Longitude, marker4Latitude, marker4Longitude, marker5Latitude, marker5Longitude, marker6Latitude, marker6Longitude, marker7Latitude, marker7Longitude;
     private int fillColor;
 
-    //TODO: Keep checking user's location while user is in chat to see if they can keep messaging?
-    //TODO: Keep users from adding messages if userIsWithinShape == false, and add a message at the top notifying user of this.
+    //TODO: Change recyclerviewlayout color depending on dark mode.
+    //TODO: Keep checking user's location while user is in recyclerviewlayout to see if they can keep messaging?
+    //TODO: Keep users from adding messages if userIsWithinShape == false, and add a recyclerviewlayout at the top notifying user of this.
     //TODO: Too much work on main thread.
-    //TODO: Add a username (in message.xml).
+    //TODO: Add a username (in recyclerviewlayout).
     //TODO: Add ability to add pictures and video to RecyclerView.
-    //TODO: Work on possible NullPointerExceptions.
     //TODO: Check updating in different states with another device.
 
     @Override
@@ -68,7 +69,8 @@ public class Chat extends AppCompatActivity {
 
         super.onCreate(savedInstanceState);
         Log.i(TAG, "onCreate()");
-        setContentView(R.layout.messaginglayout);
+
+        setContentView(R.layout.chat);
 
         mInput = findViewById(R.id.input);
         sendButton = findViewById(R.id.sendButton);
@@ -83,40 +85,47 @@ public class Chat extends AppCompatActivity {
 
         // Get info from Map.java
         Bundle extras = getIntent().getExtras();
-        newShape = extras.getBoolean("newShape");
-        uuid = extras.getString("uuid");
-        userIsWithinShape = extras.getBoolean("userIsWithinShape");
-        // fillColor will be null if the shape is not a point.
-        fillColor = extras.getInt("fillColor");
-        // circleLatitude, circleLongitude, and radius will be null if the circle is not new (as a new circle is not being created).
-        circleLatitude = extras.getDouble("circleLatitude");
-        circleLongitude = extras.getDouble("circleLongitude");
-        radius = extras.getDouble("radius");
-        // Most of these will be null if the polygon does not have eight markers, or if the polygon is not new.
-        shapeIsCircle = extras.getBoolean("shapeIsCircle");
-        polygonArea = extras.getDouble("polygonArea");
-        threeMarkers = extras.getBoolean("threeMarkers");
-        fourMarkers = extras.getBoolean("fourMarkers");
-        fiveMarkers = extras.getBoolean("fiveMarkers");
-        sixMarkers = extras.getBoolean("sixMarkers");
-        sevenMarkers = extras.getBoolean("sevenMarkers");
-        eightMarkers = extras.getBoolean("eightMarkers");
-        marker0Latitude = extras.getDouble("marker0Latitude");
-        marker0Longitude = extras.getDouble("marker0Longitude");
-        marker1Latitude = extras.getDouble("marker1Latitude");
-        marker1Longitude = extras.getDouble("marker1Longitude");
-        marker2Latitude = extras.getDouble("marker2Latitude");
-        marker2Longitude = extras.getDouble("marker2Longitude");
-        marker3Latitude = extras.getDouble("marker3Latitude");
-        marker3Longitude = extras.getDouble("marker3Longitude");
-        marker4Latitude = extras.getDouble("marker4Latitude");
-        marker4Longitude = extras.getDouble("marker4Longitude");
-        marker5Latitude = extras.getDouble("marker5Latitude");
-        marker5Longitude = extras.getDouble("marker5Longitude");
-        marker6Latitude = extras.getDouble("marker6Latitude");
-        marker6Longitude = extras.getDouble("marker6Longitude");
-        marker7Latitude = extras.getDouble("marker7Latitude");
-        marker7Longitude = extras.getDouble("marker7Longitude");
+        if (extras != null) {
+
+            newShape = extras.getBoolean("newShape");
+            uuid = extras.getString("uuid");
+            userIsWithinShape = extras.getBoolean("userIsWithinShape");
+            // fillColor will be null if the shape is not a point.
+            fillColor = extras.getInt("fillColor");
+            // circleLatitude, circleLongitude, and radius will be null if the circle is not new (as a new circle is not being created).
+            circleLatitude = extras.getDouble("circleLatitude");
+            circleLongitude = extras.getDouble("circleLongitude");
+            radius = extras.getDouble("radius");
+            // Most of these will be null if the polygon does not have eight markers, or if the polygon is not new.
+            shapeIsCircle = extras.getBoolean("shapeIsCircle");
+            polygonArea = extras.getDouble("polygonArea");
+            threeMarkers = extras.getBoolean("threeMarkers");
+            fourMarkers = extras.getBoolean("fourMarkers");
+            fiveMarkers = extras.getBoolean("fiveMarkers");
+            sixMarkers = extras.getBoolean("sixMarkers");
+            sevenMarkers = extras.getBoolean("sevenMarkers");
+            eightMarkers = extras.getBoolean("eightMarkers");
+            marker0Latitude = extras.getDouble("marker0Latitude");
+            marker0Longitude = extras.getDouble("marker0Longitude");
+            marker1Latitude = extras.getDouble("marker1Latitude");
+            marker1Longitude = extras.getDouble("marker1Longitude");
+            marker2Latitude = extras.getDouble("marker2Latitude");
+            marker2Longitude = extras.getDouble("marker2Longitude");
+            marker3Latitude = extras.getDouble("marker3Latitude");
+            marker3Longitude = extras.getDouble("marker3Longitude");
+            marker4Latitude = extras.getDouble("marker4Latitude");
+            marker4Longitude = extras.getDouble("marker4Longitude");
+            marker5Latitude = extras.getDouble("marker5Latitude");
+            marker5Longitude = extras.getDouble("marker5Longitude");
+            marker6Latitude = extras.getDouble("marker6Latitude");
+            marker6Longitude = extras.getDouble("marker6Longitude");
+            marker7Latitude = extras.getDouble("marker7Latitude");
+            marker7Longitude = extras.getDouble("marker7Longitude");
+        } else {
+
+            Log.e(TAG, "onStart() -> extras == null");
+            Crashlytics.logException(new RuntimeException("onStart() -> extras == null"));
+        }
 
         // Connect to Firebase.
         DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
@@ -139,34 +148,50 @@ public class Chat extends AppCompatActivity {
 
                     for (DataSnapshot ds : dataSnapshot.getChildren()) {
 
-                        // If the circle identifier brought from Map equals the uuid attached to the message in Firebase, load it into the RecyclerView.
-                        if (ds.child("uuid").getValue().equals(uuid)) {
+                        // If the circle identifier brought from Map equals the uuid attached to the recyclerviewlayout in Firebase, load it into the RecyclerView.
+                        String firebaseUUID = (String) ds.child("uuid").getValue();
+                        if (firebaseUUID != null) {
 
-                            String messageText = (String) ds.child("message").getValue();
-                            Long serverDate = (Long) ds.child("date").getValue();
-                            DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
-                            // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                            // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                            Date netDate = (new Date(serverDate));
-                            String messageTime = dateFormat.format(netDate);
-                            mText.add(messageText);
-                            mTime.add(messageTime);
+                            if (firebaseUUID.equals(uuid)) {
+
+                                String messageText = (String) ds.child("recyclerviewlayout").getValue();
+                                Long serverDate = (Long) ds.child("date").getValue();
+                                DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
+                                // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+                                // This will cause onDataChange to fire twice; optimizations could be made in the future.
+                                if (serverDate != null) {
+
+                                    Date netDate = (new Date(serverDate));
+                                    String messageTime = dateFormat.format(netDate);
+                                    mTime.add(messageTime);
+                                } else {
+
+                                    Log.e(TAG, "onStart() -> serverDate == null");
+                                    Crashlytics.logException(new RuntimeException("onStart() -> serverDate == null"));
+                                }
+                                mText.add(messageText);
+                            }
                         }
                     }
                 }
 
                 // Read RecyclerView scroll position (for use in initRecyclerView).
-                if ( recyclerView.getLayoutManager() != null ){
+                if (recyclerView.getLayoutManager() != null){
 
                     index = ( (LinearLayoutManager) recyclerView.getLayoutManager()).findFirstVisibleItemPosition();
                     View v = recyclerView.getChildAt(0);
                     top = (v == null) ? 0 : (v.getTop() - recyclerView.getPaddingTop());
+                } else {
+
+                    Log.e(TAG, "onStart() -> recyclerView.getLayoutManager() == null");
+                    Crashlytics.logException(new RuntimeException("initRecyclerView -> recyclerView.getLayoutManager() == null"));
                 }
 
                 initRecyclerView();
 
                 // Check RecyclerView scroll state (to allow the layout to move up when keyboard appears).
                 recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+
                     @Override
                     public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
 
@@ -175,13 +200,14 @@ public class Chat extends AppCompatActivity {
                         // If RecyclerView can't be scrolled down, reachedEndOfRecyclerView = true.
                         reachedEndOfRecyclerView = !recyclerView.canScrollVertically(1);
 
-                        // Used to detect if user has just entered the chat (so layout needs to move up when keyboard appears).
+                        // Used to detect if user has just entered the recyclerviewlayout (so layout needs to move up when keyboard appears).
                         recyclerViewHasScrolled = true;
                     }
                 });
 
                 // If RecyclerView is scrolled to the bottom, move the layout up when the keyboard appears.
                 recyclerView.addOnLayoutChangeListener(onLayoutChangeListener = new View.OnLayoutChangeListener() {
+
                     @Override
                     public void onLayoutChange(View v,
                                                int left, int top, int right, int bottom,
@@ -210,23 +236,22 @@ public class Chat extends AppCompatActivity {
                 });
             }
 
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-
-            }
+            public void onCancelled(@NonNull DatabaseError databaseError) {}
         };
 
         // Add the Firebase listener.
         databaseReference.addValueEventListener(eventListener);
 
-        // onClickListener for sending message to Firebase.
+        // onClickListener for sending recyclerviewlayout to Firebase.
         sendButton.setOnClickListener(new View.OnClickListener() {
+
             @Override
             public void onClick(View view) {
 
                 final String input = mInput.getText().toString();
                 final Bundle extras = getIntent().getExtras();
 
-                // Send message to Firebase.
+                // Send recyclerviewlayout to Firebase.
                 if ( !input.equals("") ) {
 
                     // Check Boolean value from onStart();
@@ -234,11 +259,11 @@ public class Chat extends AppCompatActivity {
 
                         DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
 
-                        // If circleLatitude != null, the shape is a circle.
                         if (shapeIsCircle) {
 
                             DatabaseReference firebaseCircles = rootRef.child("circles");
                             firebaseCircles.addListenerForSingleValueEvent(new ValueEventListener() {
+
                                 @Override
                                 public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
 
@@ -262,8 +287,11 @@ public class Chat extends AppCompatActivity {
                                     // This will cause onDataChange to fire twice; optimizations could be made in the future.
                                     Object date = ServerValue.TIMESTAMP;
                                     messageInformation.setDate(date);
-                                    String uuid = extras.getString("uuid");
-                                    messageInformation.setUUID(uuid);
+                                    if (extras != null) {
+
+                                        String uuid = extras.getString("uuid");
+                                        messageInformation.setUUID(uuid);
+                                    }
                                     DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("messageThreads").push();
                                     newMessage.setValue(messageInformation);
                                     mInput.getText().clear();
@@ -271,22 +299,21 @@ public class Chat extends AppCompatActivity {
                                 }
 
                                 @Override
-                                public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                                }
+                                public void onCancelled(@NonNull DatabaseError databaseError) {}
                             });
                         }
 
-                        // If marker0Latitude != null, the shape is a polygon.
                         if (!shapeIsCircle) {
 
                             DatabaseReference firebasePolygons = rootRef.child("polygons");
                             firebasePolygons.addListenerForSingleValueEvent(new ValueEventListener() {
+
                                 @Override
                                 public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
 
                                     // Since the uuid doesn't already exist in Firebase, add the circle.
                                     if (threeMarkers) {
+
                                         PolygonOptions polygonOptions = new PolygonOptions()
                                                 .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude))
                                                 .clickable(true)
@@ -300,6 +327,7 @@ public class Chat extends AppCompatActivity {
                                     }
 
                                     if (fourMarkers) {
+
                                         PolygonOptions polygonOptions = new PolygonOptions()
                                                 .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude))
                                                 .clickable(true)
@@ -313,6 +341,7 @@ public class Chat extends AppCompatActivity {
                                     }
 
                                     if (fiveMarkers) {
+
                                         PolygonOptions polygonOptions = new PolygonOptions()
                                                 .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude))
                                                 .clickable(true)
@@ -326,6 +355,7 @@ public class Chat extends AppCompatActivity {
                                     }
 
                                     if (sixMarkers) {
+
                                         PolygonOptions polygonOptions = new PolygonOptions()
                                                 .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude))
                                                 .clickable(true)
@@ -339,6 +369,7 @@ public class Chat extends AppCompatActivity {
                                     }
 
                                     if (sevenMarkers) {
+
                                         PolygonOptions polygonOptions = new PolygonOptions()
                                                 .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude), new LatLng(marker6Latitude, marker6Longitude))
                                                 .clickable(true)
@@ -352,6 +383,7 @@ public class Chat extends AppCompatActivity {
                                     }
 
                                     if (eightMarkers) {
+
                                         PolygonOptions polygonOptions = new PolygonOptions()
                                                 .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude), new LatLng(marker6Latitude, marker6Longitude), new LatLng(marker7Latitude, marker7Longitude))
                                                 .clickable(true)
@@ -372,8 +404,11 @@ public class Chat extends AppCompatActivity {
                                     // This will cause onDataChange to fire twice; optimizations could be made in the future.
                                     Object date = ServerValue.TIMESTAMP;
                                     messageInformation.setDate(date);
-                                    String uuid = extras.getString("uuid");
-                                    messageInformation.setUUID(uuid);
+                                    if (extras != null) {
+
+                                        String uuid = extras.getString("uuid");
+                                        messageInformation.setUUID(uuid);
+                                    }
                                     DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("messageThreads").push();
                                     newMessage.setValue(messageInformation);
                                     mInput.getText().clear();
@@ -381,46 +416,27 @@ public class Chat extends AppCompatActivity {
                                 }
 
                                 @Override
-                                public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                                }
+                                public void onCancelled(@NonNull DatabaseError databaseError) {}
                             });
                         }
                     } else {
 
-                        if (shapeIsCircle) {
+                        // Change boolean to true - scrolls to the bottom of the recyclerView (in initRecyclerView()).
+                        messageSent = true;
+                        MessageInformation messageInformation = new MessageInformation();
+                        messageInformation.setMessage(input);
+                        // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+                        // This will cause onDataChange to fire twice; optimizations could be made in the future.
+                        Object date = ServerValue.TIMESTAMP;
+                        messageInformation.setDate(date);
+                        if (extras != null) {
 
-                            // Change boolean to true - scrolls to the bottom of the recyclerView (in initRecyclerView()).
-                            messageSent = true;
-                            MessageInformation messageInformation = new MessageInformation();
-                            messageInformation.setMessage(input);
-                            // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                            // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                            Object date = ServerValue.TIMESTAMP;
-                            messageInformation.setDate(date);
                             String uuid = extras.getString("uuid");
                             messageInformation.setUUID(uuid);
-                            DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("messageThreads").push();
-                            newMessage.setValue(messageInformation);
-                            mInput.getText().clear();
                         }
-
-                        if (!shapeIsCircle) {
-
-                            // Change boolean to true - scrolls to the bottom of the recyclerView (in initRecyclerView()).
-                            messageSent = true;
-                            MessageInformation messageInformation = new MessageInformation();
-                            messageInformation.setMessage(input);
-                            // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                            // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                            Object date = ServerValue.TIMESTAMP;
-                            messageInformation.setDate(date);
-                            String uuid = extras.getString("uuid");
-                            messageInformation.setUUID(uuid);
-                            DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("messageThreads").push();
-                            newMessage.setValue(messageInformation);
-                            mInput.getText().clear();
-                        }
+                        DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("messageThreads").push();
+                        newMessage.setValue(messageInformation);
+                        mInput.getText().clear();
                     }
                 }
             }
@@ -519,22 +535,33 @@ public class Chat extends AppCompatActivity {
 
         if (index == -1 || messageSent) {
 
-            // Scroll to bottom of chat after first initialization and after sending a message.
+            // Scroll to bottom of recyclerviewlayout after first initialization and after sending a recyclerviewlayout.
             recyclerView.scrollToPosition(mText.size() - 1);
             messageSent = false;
         } else{
 
             // Set RecyclerView scroll position to prevent movement when Firebase gets updated and after screen orientation change.
-            ( (LinearLayoutManager) recyclerView.getLayoutManager() ).scrollToPositionWithOffset( index, top);
+            if (recyclerView.getLayoutManager() != null) {
+
+                ((LinearLayoutManager) recyclerView.getLayoutManager()).scrollToPositionWithOffset(index, top);
+            } else {
+
+                Log.e(TAG, "initRecyclerView -> recyclerView.getLayoutManager() == null");
+                Crashlytics.logException(new RuntimeException("initRecyclerView -> recyclerView.getLayoutManager() == null"));
+            }
         }
 
-        // Close keyboard after sending a message.
+        // Close keyboard after sending a recyclerviewlayout.
         if (Chat.this.getCurrentFocus() != null) {
 
             InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
             if (imm != null) {
 
                 imm.hideSoftInputFromWindow(Chat.this.getCurrentFocus().getWindowToken(), 0);
+            } else {
+
+                Log.e(TAG, "initRecyclerView -> imm == null");
+                Crashlytics.logException(new RuntimeException("initRecyclerView -> imm == null"));
             }
             if (mInput != null){
 

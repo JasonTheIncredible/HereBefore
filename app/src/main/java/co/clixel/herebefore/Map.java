@@ -2836,7 +2836,7 @@ public class Map extends FragmentActivity implements
                         // Generate a uuid, as the shape is new.
                         uuid = UUID.randomUUID().toString();
 
-                        // Check if user is within the circle before going to the chat.
+                        // Check if user is within the circle before going to the recyclerviewlayout.
                         FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
 
                         mFusedLocationClient.getLastLocation()
@@ -2889,9 +2889,9 @@ public class Map extends FragmentActivity implements
                                         Activity.putExtra("newShape", true);
                                         // Pass this value to Chat.java to identify the shape.
                                         Activity.putExtra("uuid", uuid);
-                                        // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                        // Pass this value to Chat.java to tell whether the user can leave a recyclerviewlayout in the recyclerviewlayout.
                                         Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
+                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a recyclerviewlayout.
                                         Activity.putExtra("circleLatitude", newCircle.getCenter().latitude);
                                         Activity.putExtra("circleLongitude", newCircle.getCenter().longitude);
                                         Activity.putExtra("radius", newCircle.getRadius());
@@ -2909,9 +2909,9 @@ public class Map extends FragmentActivity implements
                                         Activity.putExtra("newShape", true);
                                         // Pass this value to Chat.java to identify the shape.
                                         Activity.putExtra("uuid", uuid);
-                                        // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                        // Pass this value to Chat.java to tell whether the user can leave a recyclerviewlayout in the recyclerviewlayout.
                                         Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
+                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a recyclerviewlayout.
                                         Activity.putExtra("circleLatitude", newCircle.getCenter().latitude);
                                         Activity.putExtra("circleLongitude", newCircle.getCenter().longitude);
                                         Activity.putExtra("radius", newCircle.getRadius());
@@ -2949,9 +2949,9 @@ public class Map extends FragmentActivity implements
                                         Activity.putExtra("newShape", true);
                                         // Pass this value to Chat.java to identify the shape.
                                         Activity.putExtra("uuid", uuid);
-                                        // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                        // Pass this value to Chat.java to tell whether the user can leave a recyclerviewlayout in the recyclerviewlayout.
                                         Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
+                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a recyclerviewlayout.
                                         Activity.putExtra("circleLatitude", newCircle.getCenter().latitude);
                                         Activity.putExtra("circleLongitude", newCircle.getCenter().longitude);
                                         Activity.putExtra("radius", newCircle.getRadius());
@@ -2969,9 +2969,9 @@ public class Map extends FragmentActivity implements
                                         Activity.putExtra("newShape", true);
                                         // Pass this value to Chat.java to identify the shape.
                                         Activity.putExtra("uuid", uuid);
-                                        // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                                        // Pass this value to Chat.java to tell whether the user can leave a recyclerviewlayout in the recyclerviewlayout.
                                         Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
+                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a recyclerviewlayout.
                                         Activity.putExtra("circleLatitude", newCircle.getCenter().latitude);
                                         Activity.putExtra("circleLongitude", newCircle.getCenter().longitude);
                                         Activity.putExtra("radius", newCircle.getRadius());
@@ -3005,7 +3005,7 @@ public class Map extends FragmentActivity implements
                 // Change boolean value so the x and y values in touchAgain() from dispatchTouchEvent() do not change.
                 waitingForClicksToProcess = true;
 
-                // While clicking through the circles, if a circle does not have a tag, it is new. Therefore, go directly to the chat, as this is probably the chat the user wants to enter.
+                // While clicking through the circles, if a circle does not have a tag, it is new. Therefore, go directly to the recyclerviewlayout, as this is probably the recyclerviewlayout the user wants to enter.
                 if (polygon.getTag() == null) {
 
                     Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> User clicked on a new polygon");
@@ -3030,7 +3030,7 @@ public class Map extends FragmentActivity implements
                     // Generate a uuid, as the shape is new.
                     uuid = UUID.randomUUID().toString();
 
-                    // Check if user is within the circle before going to the chat.
+                    // Check if user is within the circle before going to the recyclerviewlayout.
                     FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
 
                     mFusedLocationClient.getLastLocation()
@@ -3073,7 +3073,7 @@ public class Map extends FragmentActivity implements
                                     // Carry the extras all the way to Chat.java.
                                     Intent Activity = new Intent(Map.this, Chat.class);
 
-                                    // Pass this information to Chat.java to create a new shape in Firebase after someone writes a message.
+                                    // Pass this information to Chat.java to create a new shape in Firebase after someone writes a recyclerviewlayout.
                                     goToNextActivityPolygon(Activity);
                                 } else {
 
@@ -3084,7 +3084,7 @@ public class Map extends FragmentActivity implements
                                     // Carry the extras all the way to Chat.java.
                                     Intent Activity = new Intent(Map.this, Chat.class);
 
-                                    // Pass this information to Chat.java to create a new shape in Firebase after someone writes a message.
+                                    // Pass this information to Chat.java to create a new shape in Firebase after someone writes a recyclerviewlayout.
                                     goToNextActivityPolygon(Activity);
                                 }
                             }
@@ -3117,7 +3117,7 @@ public class Map extends FragmentActivity implements
                                     // Carry the extras to SignIn.java
                                     Intent Activity = new Intent(Map.this, SignIn.class);
 
-                                    // Pass this information to Chat.java to create a new shape in Firebase after someone writes a message.
+                                    // Pass this information to Chat.java to create a new shape in Firebase after someone writes a recyclerviewlayout.
                                     goToNextActivityPolygon(Activity);
                                 } else {
 
@@ -3128,7 +3128,7 @@ public class Map extends FragmentActivity implements
                                     // Carry the extras to SignIn.java.
                                     Intent Activity = new Intent(Map.this, Chat.class);
 
-                                    // Pass this information to Chat.java to create a new shape in Firebase after someone writes a message.
+                                    // Pass this information to Chat.java to create a new shape in Firebase after someone writes a recyclerviewlayout.
                                     goToNextActivityPolygon(Activity);
                                 }
                             }
@@ -3301,7 +3301,7 @@ public class Map extends FragmentActivity implements
                         uuid = selectedOverlappingShapeUUID;
                     }
 
-                    // Check if user is within the circle before going to the chat.
+                    // Check if user is within the circle before going to the recyclerviewlayout.
                     FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
 
                     mFusedLocationClient.getLastLocation()
@@ -3336,9 +3336,9 @@ public class Map extends FragmentActivity implements
                         Activity.putExtra("newShape", false);
                         // Pass this value to Chat.java to identify the shape.
                         Activity.putExtra("uuid", uuid);
-                        // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                        // Pass this value to Chat.java to tell whether the user can leave a recyclerviewlayout in the recyclerviewlayout.
                         Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                        // Pass this information to Chat.java to create a new shape in Firebase after someone writes a message.
+                        // Pass this information to Chat.java to create a new shape in Firebase after someone writes a recyclerviewlayout.
                         startActivity(Activity);
                     } else {
 
@@ -3354,9 +3354,9 @@ public class Map extends FragmentActivity implements
                         Activity.putExtra("shapeIsCircle", false);
                         // Pass this value to Chat.java to identify the shape.
                         Activity.putExtra("uuid", uuid);
-                        // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                        // Pass this value to Chat.java to tell whether the user can leave a recyclerviewlayout in the recyclerviewlayout.
                         Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                        // Pass this information to Chat.java to create a new shape in Firebase after someone writes a message.
+                        // Pass this information to Chat.java to create a new shape in Firebase after someone writes a recyclerviewlayout.
                         startActivity(Activity);
                     }
 
@@ -3450,7 +3450,7 @@ public class Map extends FragmentActivity implements
                 // Change boolean value so the x and y values in touchAgain() from dispatchTouchEvent() do not change.
                 waitingForClicksToProcess = true;
 
-                // While clicking through the circles, if a circle does not have a tag, it is new. Therefore, go directly to the chat, as this is probably the chat the user wants to enter.
+                // While clicking through the circles, if a circle does not have a tag, it is new. Therefore, go directly to the recyclerviewlayout, as this is probably the recyclerviewlayout the user wants to enter.
                 if (circle.getTag() == null) {
 
                     Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> User clicked on a new circle");
@@ -3475,7 +3475,7 @@ public class Map extends FragmentActivity implements
                     // Generate a uuid, as the shape is new.
                     uuid = UUID.randomUUID().toString();
 
-                    // Check if user is within the circle before going to the chat.
+                    // Check if user is within the circle before going to the recyclerviewlayout.
                     FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
 
                     mFusedLocationClient.getLastLocation()
@@ -3524,7 +3524,7 @@ public class Map extends FragmentActivity implements
                                     // Carry the extras all the way to Chat.java.
                                     Intent Activity = new Intent(Map.this, Chat.class);
 
-                                    // Pass this information to Chat.java to create a new shape in Firebase after someone writes a message.
+                                    // Pass this information to Chat.java to create a new shape in Firebase after someone writes a recyclerviewlayout.
                                     goToNextActivityCircle(Activity, circle);
                                 } else {
 
@@ -3535,7 +3535,7 @@ public class Map extends FragmentActivity implements
                                     // Carry the extras all the way to Chat.java.
                                     Intent Activity = new Intent(Map.this, Chat.class);
 
-                                    // Pass this information to Chat.java to create a new shape in Firebase after someone writes a message.
+                                    // Pass this information to Chat.java to create a new shape in Firebase after someone writes a recyclerviewlayout.
                                     goToNextActivityCircle(Activity, circle);
                                 }
                             }
@@ -3569,7 +3569,7 @@ public class Map extends FragmentActivity implements
                                     // Carry the extras to SignIn.java.
                                     Intent Activity = new Intent(Map.this, SignIn.class);
 
-                                    // Pass this information to Chat.java to create a new shape in Firebase after someone writes a message.
+                                    // Pass this information to Chat.java to create a new shape in Firebase after someone writes a recyclerviewlayout.
                                     goToNextActivityCircle(Activity, circle);
                                 } else {
 
@@ -3580,7 +3580,7 @@ public class Map extends FragmentActivity implements
                                     // Carry the extras to SignIn.java.
                                     Intent Activity = new Intent(Map.this, SignIn.class);
 
-                                    // Pass this information to Chat.java to create a new shape in Firebase after someone writes a message.
+                                    // Pass this information to Chat.java to create a new shape in Firebase after someone writes a recyclerviewlayout.
                                     goToNextActivityCircle(Activity, circle);
                                 }
                             }
@@ -3755,7 +3755,7 @@ public class Map extends FragmentActivity implements
                         uuid = selectedOverlappingShapeUUID;
                     }
 
-                    // Check if user is within the circle before going to the chat.
+                    // Check if user is within the circle before going to the recyclerviewlayout.
                     FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
 
                     mFusedLocationClient.getLastLocation()
@@ -3794,7 +3794,7 @@ public class Map extends FragmentActivity implements
                         Activity.putExtra("newShape", false);
                         // Pass this value to Chat.java to identify the shape.
                         Activity.putExtra("uuid", uuid);
-                        // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                        // Pass this value to Chat.java to tell whether the user can leave a recyclerviewlayout in the recyclerviewlayout.
                         Activity.putExtra("userIsWithinShape", userIsWithinShape);
                         startActivity(Activity);
                     } else {
@@ -3810,7 +3810,7 @@ public class Map extends FragmentActivity implements
                         Activity.putExtra("newShape", false);
                         // Pass this value to Chat.java to identify the shape.
                         Activity.putExtra("uuid", uuid);
-                        // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                        // Pass this value to Chat.java to tell whether the user can leave a recyclerviewlayout in the recyclerviewlayout.
                         Activity.putExtra("userIsWithinShape", userIsWithinShape);
                         startActivity(Activity);
                     }
@@ -5255,7 +5255,7 @@ public class Map extends FragmentActivity implements
             Activity.putExtra("newShape", true);
             // Pass this value to Chat.java to identify the shape.
             Activity.putExtra("uuid", uuid);
-            // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+            // Pass this value to Chat.java to tell whether the user can leave a recyclerviewlayout in the recyclerviewlayout.
             Activity.putExtra("userIsWithinShape", userIsWithinShape);
             // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
             Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
@@ -5293,7 +5293,7 @@ public class Map extends FragmentActivity implements
                 Activity.putExtra("newShape", true);
                 // Pass this value to Chat.java to identify the shape.
                 Activity.putExtra("uuid", uuid);
-                // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                // Pass this value to Chat.java to tell whether the user can leave a recyclerviewlayout in the recyclerviewlayout.
                 Activity.putExtra("userIsWithinShape", userIsWithinShape);
                 // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                 Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
@@ -5339,7 +5339,7 @@ public class Map extends FragmentActivity implements
                 Activity.putExtra("newShape", true);
                 // Pass this value to Chat.java to identify the shape.
                 Activity.putExtra("uuid", uuid);
-                // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                // Pass this value to Chat.java to tell whether the user can leave a recyclerviewlayout in the recyclerviewlayout.
                 Activity.putExtra("userIsWithinShape", userIsWithinShape);
                 // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                 Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
@@ -5388,7 +5388,7 @@ public class Map extends FragmentActivity implements
                 Activity.putExtra("newShape", true);
                 // Pass this value to Chat.java to identify the shape.
                 Activity.putExtra("uuid", uuid);
-                // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                // Pass this value to Chat.java to tell whether the user can leave a recyclerviewlayout in the recyclerviewlayout.
                 Activity.putExtra("userIsWithinShape", userIsWithinShape);
                 // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                 Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
@@ -5440,7 +5440,7 @@ public class Map extends FragmentActivity implements
                 Activity.putExtra("newShape", true);
                 // Pass this value to Chat.java to identify the shape.
                 Activity.putExtra("uuid", uuid);
-                // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                // Pass this value to Chat.java to tell whether the user can leave a recyclerviewlayout in the recyclerviewlayout.
                 Activity.putExtra("userIsWithinShape", userIsWithinShape);
                 // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                 Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
@@ -5496,7 +5496,7 @@ public class Map extends FragmentActivity implements
                 Activity.putExtra("newShape", true);
                 // Pass this value to Chat.java to identify the shape.
                 Activity.putExtra("uuid", uuid);
-                // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+                // Pass this value to Chat.java to tell whether the user can leave a recyclerviewlayout in the recyclerviewlayout.
                 Activity.putExtra("userIsWithinShape", userIsWithinShape);
                 // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                 Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
@@ -5537,9 +5537,9 @@ public class Map extends FragmentActivity implements
         Activity.putExtra("newShape", true);
         // Pass this value to Chat.java to identify the shape.
         Activity.putExtra("uuid", uuid);
-        // Pass this value to Chat.java to tell whether the user can leave a message in the chat.
+        // Pass this value to Chat.java to tell whether the user can leave a recyclerviewlayout in the recyclerviewlayout.
         Activity.putExtra("userIsWithinShape", userIsWithinShape);
-        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
+        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a recyclerviewlayout.
         Activity.putExtra("circleLatitude", circle.getCenter().latitude);
         Activity.putExtra("circleLongitude", circle.getCenter().longitude);
         Activity.putExtra("radius", circle.getRadius());
@@ -8061,7 +8061,7 @@ public class Map extends FragmentActivity implements
                                         marker2ID = marker2.getId();
                                         marker3ID = marker3.getId();
 
-                                        // Update the global variable for use when a user clicks on the polygon to go to chat without updating the marker locations.
+                                        // Update the global variable for use when a user clicks on the polygon to go to recyclerviewlayout without updating the marker locations.
                                         LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position};
                                         polygonPointsList = Arrays.asList(polygonPoints);
 
@@ -8117,7 +8117,7 @@ public class Map extends FragmentActivity implements
                                         marker2ID = marker2.getId();
                                         marker3ID = marker3.getId();
 
-                                        // Update the global variable for use when a user clicks on the polygon to go to chat without updating the marker locations.
+                                        // Update the global variable for use when a user clicks on the polygon to go to recyclerviewlayout without updating the marker locations.
                                         LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position};
                                         polygonPointsList = Arrays.asList(polygonPoints);
 
@@ -8520,7 +8520,7 @@ public class Map extends FragmentActivity implements
                                         newPolygon = null;
                                     }
 
-                                    // Add circle to the map and go to chat.
+                                    // Add circle to the map and go to recyclerviewlayout.
                                     if (mMap != null) {
 
                                         uuid = UUID.randomUUID().toString();
@@ -8546,7 +8546,7 @@ public class Map extends FragmentActivity implements
                                                         Activity.putExtra("newShape", true);
                                                         // Pass this value to Chat.java to identify the shape.
                                                         Activity.putExtra("uuid", uuid);
-                                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
+                                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a recyclerviewlayout.
                                                         Activity.putExtra("circleLatitude", location.getLatitude());
                                                         Activity.putExtra("circleLongitude", location.getLongitude());
                                                         Activity.putExtra("radius", 1.0);
@@ -8560,7 +8560,7 @@ public class Map extends FragmentActivity implements
                                                         Activity.putExtra("newShape", true);
                                                         // Pass this value to Chat.java to identify the shape.
                                                         Activity.putExtra("uuid", uuid);
-                                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
+                                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a recyclerviewlayout.
                                                         Activity.putExtra("circleLatitude", location.getLatitude());
                                                         Activity.putExtra("circleLongitude", location.getLongitude());
                                                         Activity.putExtra("radius", 1.0);
@@ -8592,7 +8592,7 @@ public class Map extends FragmentActivity implements
                                                         Activity.putExtra("newShape", true);
                                                         // Pass this value to Chat.java to identify the shape.
                                                         Activity.putExtra("uuid", uuid);
-                                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
+                                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a recyclerviewlayout.
                                                         Activity.putExtra("circleLatitude", location.getLatitude());
                                                         Activity.putExtra("circleLongitude", location.getLongitude());
                                                         Activity.putExtra("radius", 1.0);
@@ -8606,7 +8606,7 @@ public class Map extends FragmentActivity implements
                                                         Activity.putExtra("newShape", true);
                                                         // Pass this value to Chat.java to identify the shape.
                                                         Activity.putExtra("uuid", uuid);
-                                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a message.
+                                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a recyclerviewlayout.
                                                         Activity.putExtra("circleLatitude", location.getLatitude());
                                                         Activity.putExtra("circleLongitude", location.getLongitude());
                                                         Activity.putExtra("radius", 1.0);
