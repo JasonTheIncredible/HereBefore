@@ -33,6 +33,7 @@ import android.widget.SeekBar;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
@@ -150,6 +151,10 @@ public class Map extends FragmentActivity implements
         chatSizeSeekBar = findViewById(R.id.chatSizeSeekBar);
         chatViewsButton = findViewById(R.id.chatViewsButton);
         chatSelectorSeekBar = findViewById(R.id.chatSelectorSeekBar);
+
+        // Set to dark mode.
+        AppCompatDelegate.setDefaultNightMode(
+                AppCompatDelegate.MODE_NIGHT_YES);
     }
 
     @Override

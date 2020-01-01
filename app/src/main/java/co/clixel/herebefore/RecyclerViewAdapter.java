@@ -53,7 +53,6 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
 
             holder.itemView.setBackgroundColor(Color.parseColor("#FFFAF8FD"));
         }
-
     }
 
     @Override

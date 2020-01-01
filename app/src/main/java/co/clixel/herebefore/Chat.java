@@ -4,6 +4,7 @@ import android.content.Context;
 import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatDelegate;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -75,6 +76,10 @@ public class Chat extends AppCompatActivity {
         mInput = findViewById(R.id.input);
         sendButton = findViewById(R.id.sendButton);
         recyclerView = findViewById(R.id.messageList);
+
+        // Set to dark mode.
+        AppCompatDelegate.setDefaultNightMode(
+                AppCompatDelegate.MODE_NIGHT_YES);
     }
 
     @Override
@@ -148,13 +153,13 @@ public class Chat extends AppCompatActivity {
 
                     for (DataSnapshot ds : dataSnapshot.getChildren()) {
 
-                        // If the circle identifier brought from Map equals the uuid attached to the recyclerviewlayout in Firebase, load it into the RecyclerView.
+                        // If the uuid brought from Map.java equals the uuid attached to the recyclerviewlayout in Firebase, load it into the RecyclerView.
                         String firebaseUUID = (String) ds.child("uuid").getValue();
                         if (firebaseUUID != null) {
 
                             if (firebaseUUID.equals(uuid)) {
 
-                                String messageText = (String) ds.child("recyclerviewlayout").getValue();
+                                String messageText = (String) ds.child("message").getValue();
                                 Long serverDate = (Long) ds.child("date").getValue();
                                 DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
                                 // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
@@ -181,10 +186,6 @@ public class Chat extends AppCompatActivity {
                     index = ( (LinearLayoutManager) recyclerView.getLayoutManager()).findFirstVisibleItemPosition();
                     View v = recyclerView.getChildAt(0);
                     top = (v == null) ? 0 : (v.getTop() - recyclerView.getPaddingTop());
-                } else {
-
-                    Log.e(TAG, "onStart() -> recyclerView.getLayoutManager() == null");
-                    Crashlytics.logException(new RuntimeException("initRecyclerView -> recyclerView.getLayoutManager() == null"));
                 }
 
                 initRecyclerView();

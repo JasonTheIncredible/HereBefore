@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatDelegate;
 
 import android.util.Log;
 import android.util.Patterns;
@@ -40,6 +41,10 @@ public class SignUp extends AppCompatActivity {
         mEmail = findViewById(R.id.createEmailAddress);
         mPassword = findViewById(R.id.createPassword);
         createAccountButton = findViewById(R.id.createAccountButton);
+
+        // Set to dark mode.
+        AppCompatDelegate.setDefaultNightMode(
+                AppCompatDelegate.MODE_NIGHT_YES);
     }
 
     @Override
