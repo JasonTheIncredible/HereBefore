@@ -57,12 +57,11 @@ public class Chat extends AppCompatActivity {
     private Double polygonArea, circleLatitude, circleLongitude, radius, marker0Latitude, marker0Longitude, marker1Latitude, marker1Longitude, marker2Latitude, marker2Longitude, marker3Latitude, marker3Longitude, marker4Latitude, marker4Longitude, marker5Latitude, marker5Longitude, marker6Latitude, marker6Longitude, marker7Latitude, marker7Longitude;
     private int fillColor;
 
-    //TODO: Change recyclerviewlayout color depending on dark mode.
+    //TODO: Add ability to add pictures and video to RecyclerView.
     //TODO: Keep checking user's location while user is in recyclerviewlayout to see if they can keep messaging?
     //TODO: Keep users from adding messages if userIsWithinShape == false, and add a recyclerviewlayout at the top notifying user of this.
     //TODO: Too much work on main thread.
     //TODO: Add a username (in recyclerviewlayout).
-    //TODO: Add ability to add pictures and video to RecyclerView.
     //TODO: Check updating in different states with another device.
 
     @Override

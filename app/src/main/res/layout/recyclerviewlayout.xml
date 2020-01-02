@@ -6,10 +6,10 @@
     android:id="@+id/message">
 
     <TextView
+        android:id="@+id/messageUser"
         android:layout_alignParentTop="true"
         android:layout_alignParentStart="true"
         android:layout_alignParentLeft="true"
-        android:id="@+id/messageUser"
         android:textStyle="normal|bold"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -19,10 +19,10 @@
         tools:text="User"/>
 
     <TextView
+        android:id="@+id/messageTime"
         android:layout_alignParentBottom="@+id/messageUser"
         android:layout_alignParentEnd="true"
         android:layout_alignParentRight="true"
-        android:id="@+id/messageTime"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
@@ -33,13 +33,14 @@
         tools:text="Time"/>
 
     <TextView
+        android:id="@+id/messageText"
         android:layout_alignParentStart="true"
         android:layout_alignParentLeft="true"
         android:layout_marginTop="4dp"
+        android:layout_marginBottom="4dp"
         android:layout_below="@id/messageUser"
         android:textAppearance="@style/TextAppearance.AppCompat.Body1"
         android:textSize="18sp"
-        android:id="@+id/messageText"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginLeft="10dp"
