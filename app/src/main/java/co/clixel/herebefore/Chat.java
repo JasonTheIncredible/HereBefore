@@ -58,10 +58,9 @@ public class Chat extends AppCompatActivity {
     private int fillColor;
 
     //TODO: Add ability to add pictures and video to RecyclerView.
-    //TODO: Keep checking user's location while user is in recyclerviewlayout to see if they can keep messaging?
-    //TODO: Keep users from adding messages if userIsWithinShape == false, and add a recyclerviewlayout at the top notifying user of this.
-    //TODO: Too much work on main thread.
     //TODO: Add a username (in recyclerviewlayout).
+    //TODO: Keep checking user's location while user is in recyclerviewlayout to see if they can keep messaging, add a recyclerviewlayout at the top notifying user of this. Add differentiation between messaging within area vs not.
+    //TODO: Too much work on main thread.
     //TODO: Check updating in different states with another device.
 
     @Override
