@@ -4686,6 +4686,7 @@ public class Map extends FragmentActivity implements
                 Log.i(TAG, "adjustShape() -> circle -> marker0");
 
                 newCircle.setCenter(markerPosition);
+                marker1.setVisible(false);
             }
 
             if (marker.getId().equals(marker1ID)) {
