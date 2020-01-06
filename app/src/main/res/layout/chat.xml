@@ -11,7 +11,7 @@
         android:id="@+id/messageList"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_above="@+id/sendButton"
+        android:layout_above="@+id/input"
         android:layout_alignParentStart="true"
         android:layout_alignParentLeft="true"
         android:layout_alignParentTop="true"
@@ -19,6 +19,32 @@
         android:divider="@android:color/transparent"
         android:dividerHeight="16dp"
         android:scrollbars="vertical" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/mediaButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginStart="8dp"
+        android:layout_marginLeft="8dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:src="@drawable/ic_add"
+        android:tint="@android:color/white" />
+
+    <EditText
+        android:id="@+id/input"
+        android:importantForAutofill="no"
+        android:hint="@string/message"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_toRightOf="@id/mediaButton"
+        android:layout_toEndOf="@id/mediaButton"
+        android:layout_toStartOf="@+id/sendButton"
+        android:layout_toLeftOf="@+id/sendButton" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/sendButton"
@@ -33,24 +59,5 @@
         android:focusable="true"
         android:src="@drawable/ic_send"
         android:tint="@android:color/white" />
-
-    <com.google.android.material.textfield.TextInputLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentLeft="true"
-        android:layout_marginStart="8dp"
-        android:layout_marginLeft="8dp"
-        android:layout_toStartOf="@+id/sendButton"
-        android:layout_toLeftOf="@+id/sendButton">
-        <EditText
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="@string/message"
-            android:id="@+id/input"
-            android:autofillHints=""
-            android:inputType="" />
-    </com.google.android.material.textfield.TextInputLayout>
 
 </RelativeLayout>

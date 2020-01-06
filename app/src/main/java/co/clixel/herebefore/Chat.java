@@ -37,6 +37,7 @@ import static java.text.DateFormat.getDateTimeInstance;
 public class Chat extends AppCompatActivity {
 
     private static final String TAG = "Chat";
+    private static final int PICK_IMAGE_REQUEST = 1;
     private EditText mInput;
     private ArrayList<String> mUser = new ArrayList<>();
     private ArrayList<String> mTime = new ArrayList<>();
