@@ -5556,7 +5556,6 @@ public class Map extends FragmentActivity implements
     @Override
     public boolean onMenuItemClick(MenuItem menuItem) {
 
-        // Sets the chatviews_menu actions.
         switch(menuItem.getItemId()) {
 
             // maptype_menu
@@ -9462,7 +9461,7 @@ public class Map extends FragmentActivity implements
 
             popupMapType.dismiss();
             mapTypeButton.performClick();
-        } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT && mapTypeMenuIsOpen){
+        } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT && mapTypeMenuIsOpen) {
 
             popupMapType.dismiss();
             mapTypeButton.performClick();
@@ -9473,7 +9472,7 @@ public class Map extends FragmentActivity implements
 
             popupChatViews.dismiss();
             chatViewsButton.performClick();
-        } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT && chatViewsMenuIsOpen){
+        } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT && chatViewsMenuIsOpen) {
 
             popupChatViews.dismiss();
             chatViewsButton.performClick();
@@ -9484,7 +9483,7 @@ public class Map extends FragmentActivity implements
 
             popupCreateChat.dismiss();
             createChatButton.performClick();
-        } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT && createChatMenuIsOpen){
+        } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT && createChatMenuIsOpen) {
 
             popupCreateChat.dismiss();
             createChatButton.performClick();

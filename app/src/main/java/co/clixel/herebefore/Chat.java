@@ -1,6 +1,7 @@
 package co.clixel.herebefore;
 
 import android.content.Context;
+import android.content.res.Configuration;
 import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -9,6 +10,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 
 import com.crashlytics.android.Crashlytics;
@@ -19,6 +21,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
+import android.widget.PopupMenu;
 
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -34,7 +37,8 @@ import java.util.Locale;
 
 import static java.text.DateFormat.getDateTimeInstance;
 
-public class Chat extends AppCompatActivity {
+public class Chat extends AppCompatActivity implements
+        PopupMenu.OnMenuItemClickListener {
 
     private static final String TAG = "Chat";
     private static final int PICK_IMAGE_REQUEST = 1;
@@ -47,18 +51,21 @@ public class Chat extends AppCompatActivity {
     private static int top = -1;
     private DatabaseReference databaseReference;
     private ValueEventListener eventListener;
-    private FloatingActionButton sendButton;
+    private FloatingActionButton sendButton, mediaButton;
     private boolean reachedEndOfRecyclerView = false;
     private boolean recyclerViewHasScrolled = false;
     private boolean messageSent = false;
-    private boolean newShape, threeMarkers, fourMarkers, fiveMarkers, sixMarkers, sevenMarkers, eightMarkers, shapeIsCircle;
+    private boolean mediaButtonMenuIsOpen, newShape, threeMarkers, fourMarkers, fiveMarkers, sixMarkers, sevenMarkers, eightMarkers, shapeIsCircle;
     private Boolean userIsWithinShape;
     private View.OnLayoutChangeListener onLayoutChangeListener;
     private String uuid;
     private Double polygonArea, circleLatitude, circleLongitude, radius, marker0Latitude, marker0Longitude, marker1Latitude, marker1Longitude, marker2Latitude, marker2Longitude, marker3Latitude, marker3Longitude, marker4Latitude, marker4Longitude, marker5Latitude, marker5Longitude, marker6Latitude, marker6Longitude, marker7Latitude, marker7Longitude;
     private int fillColor;
+    private PopupMenu mediaButtonMenu;
 
     //TODO: Add ability to add pictures and video to RecyclerView.
+    //TODO: Change popupMenu color.
+    //TODO: Move recyclerView down when new message is added.
     //TODO: Add a username (in recyclerviewlayout).
     //TODO: Keep checking user's location while user is in recyclerviewlayout to see if they can keep messaging, add a recyclerviewlayout at the top notifying user of this. Add differentiation between messaging within area vs not.
     //TODO: Too much work on main thread.
@@ -72,6 +79,7 @@ public class Chat extends AppCompatActivity {
 
         setContentView(R.layout.chat);
 
+        mediaButton = findViewById(R.id.mediaButton);
         mInput = findViewById(R.id.input);
         sendButton = findViewById(R.id.sendButton);
         recyclerView = findViewById(R.id.messageList);
@@ -241,6 +249,34 @@ public class Chat extends AppCompatActivity {
 
         // Add the Firebase listener.
         databaseReference.addValueEventListener(eventListener);
+
+        mediaButton.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View view) {
+
+                Log.i(TAG, "onStart() -> mediaButton -> onClick");
+
+                mediaButtonMenu = new PopupMenu(Chat.this, mediaButton);
+                mediaButtonMenu.setOnMenuItemClickListener(Chat.this);
+                mediaButtonMenu.inflate(R.menu.mediabutton_menu);
+                mediaButtonMenu.show();
+                mediaButtonMenuIsOpen = true;
+
+                // Changes boolean value (used in OnConfigurationChanged) to determine whether menu is currently open.
+                mediaButtonMenu.setOnDismissListener(new PopupMenu.OnDismissListener(){
+
+                    @Override
+                    public void onDismiss(PopupMenu popupMenu) {
+
+                        Log.i(TAG, "onStart() -> mediaButton -> onDismiss");
+
+                        mediaButtonMenuIsOpen = false;
+                        mediaButtonMenu.setOnDismissListener(null);
+                    }
+                });
+            }
+        });
 
         // onClickListener for sending recyclerviewlayout to Firebase.
         sendButton.setOnClickListener(new View.OnClickListener() {
@@ -567,6 +603,40 @@ public class Chat extends AppCompatActivity {
 
                 mInput.clearFocus();
             }
+        }
+    }
+
+    @Override
+    public boolean onMenuItemClick(MenuItem menuItem) {
+
+        switch(menuItem.getItemId()) {
+
+            case R.id.selectImage:
+
+                mediaButtonMenuIsOpen = false;
+                return true;
+
+            default:
+                return false;
+        }
+    }
+
+    @Override
+    public void onConfigurationChanged(@NonNull Configuration newConfig) {
+
+        // Called when the orientation of the screen changes.
+        super.onConfigurationChanged(newConfig);
+        Log.i(TAG, "onConfigurationChanged()");
+
+        // Reloads the popup when the orientation changes to prevent viewing issues.
+        if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE && mediaButtonMenuIsOpen) {
+
+            mediaButtonMenu.dismiss();
+            mediaButton.performClick();
+        } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT && mediaButtonMenuIsOpen) {
+
+            mediaButtonMenu.dismiss();
+            mediaButton.performClick();
         }
     }
 }

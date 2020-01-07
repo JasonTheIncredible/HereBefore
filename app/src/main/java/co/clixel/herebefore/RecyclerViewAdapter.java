@@ -45,11 +45,15 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
         //holder.messageUser.setText(mMessageUser.get(position));
         holder.messageTime.setText(mMessageTime.get(position));
         holder.messageText.setText(mMessageText.get(position));
+        holder.setIsRecyclable(true);
 
         // Change the color of every other row for visual purposes.
         if (position %2 == 0) {
 
-            holder.itemView.setBackgroundColor(Color.parseColor("#222222"));
+            holder.itemView.setBackgroundColor(Color.parseColor("#222222")); //121212 for darker
+        } else {
+
+            holder.itemView.setBackgroundColor(Color.parseColor("#303030")); //222222 for darker
         }
     }
 
