@@ -34,6 +34,21 @@
         android:src="@drawable/ic_add"
         android:tint="@android:color/white" />
 
+    <ImageView
+        android:id="@+id/imageView"
+        android:visibility="gone"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingLeft="5dp"
+        android:paddingStart="5dp"
+        android:paddingBottom="8dp"
+        android:adjustViewBounds="true"
+        android:maxWidth="50dp"
+        android:maxHeight="50dp"
+        android:layout_alignParentBottom="true"
+        android:layout_toRightOf="@id/mediaButton"
+        android:layout_toEndOf="@id/mediaButton" />
+
     <EditText
         android:id="@+id/input"
         android:importantForAutofill="no"
@@ -41,8 +56,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:layout_toRightOf="@id/mediaButton"
-        android:layout_toEndOf="@id/mediaButton"
+        android:layout_toRightOf="@id/imageView"
+        android:layout_toEndOf="@id/imageView"
         android:layout_toStartOf="@+id/sendButton"
         android:layout_toLeftOf="@+id/sendButton" />
 

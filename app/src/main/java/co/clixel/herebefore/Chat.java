@@ -1,9 +1,13 @@
 package co.clixel.herebefore;
 
+import android.content.ContentResolver;
 import android.content.Context;
+import android.content.Intent;
 import android.content.res.Configuration;
+import android.net.Uri;
 import android.os.Bundle;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -17,10 +21,14 @@ import com.crashlytics.android.Crashlytics;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.PolygonOptions;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import android.view.inputmethod.InputMethodManager;
+import android.webkit.MimeTypeMap;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.PopupMenu;
 
 import com.google.firebase.database.DataSnapshot;
@@ -29,6 +37,9 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ServerValue;
 import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
 
 import java.text.DateFormat;
 import java.util.ArrayList;
@@ -62,14 +73,18 @@ public class Chat extends AppCompatActivity implements
     private Double polygonArea, circleLatitude, circleLongitude, radius, marker0Latitude, marker0Longitude, marker1Latitude, marker1Longitude, marker2Latitude, marker2Longitude, marker3Latitude, marker3Longitude, marker4Latitude, marker4Longitude, marker5Latitude, marker5Longitude, marker6Latitude, marker6Longitude, marker7Latitude, marker7Longitude;
     private int fillColor;
     private PopupMenu mediaButtonMenu;
+    private StorageReference mStorageRef;
+    private ImageView imageView;
+    public Uri imgURI;
 
     //TODO: Add ability to add pictures and video to RecyclerView.
-    //TODO: Change popupMenu color.
     //TODO: Move recyclerView down when new message is added.
+    //TODO: Look up videos about texting apps to change design of + button.
     //TODO: Add a username (in recyclerviewlayout).
     //TODO: Keep checking user's location while user is in recyclerviewlayout to see if they can keep messaging, add a recyclerviewlayout at the top notifying user of this. Add differentiation between messaging within area vs not.
     //TODO: Too much work on main thread.
     //TODO: Check updating in different states with another device.
+    //TODO: Change popupMenu color.
 
     @Override
     protected void onCreate(Bundle savedInstanceState){
@@ -80,9 +95,12 @@ public class Chat extends AppCompatActivity implements
         setContentView(R.layout.chat);
 
         mediaButton = findViewById(R.id.mediaButton);
+        imageView = findViewById(R.id.imageView);
         mInput = findViewById(R.id.input);
         sendButton = findViewById(R.id.sendButton);
         recyclerView = findViewById(R.id.messageList);
+
+        mStorageRef = FirebaseStorage.getInstance().getReference("Images");
 
         // Set to dark mode.
         AppCompatDelegate.setDefaultNightMode(
@@ -613,12 +631,71 @@ public class Chat extends AppCompatActivity implements
 
             case R.id.selectImage:
 
+                chooseImage();
                 mediaButtonMenuIsOpen = false;
                 return true;
 
             default:
                 return false;
         }
+    }
+
+    private void chooseImage() {
+
+        Log.i(TAG, "chooseImage");
+
+        Intent intent = new Intent();
+        intent.setType("image/");
+        intent.setAction(Intent.ACTION_GET_CONTENT);
+        startActivityForResult(intent, 1);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == 1 && resultCode == RESULT_OK && data != null && data.getData() != null) {
+
+            imgURI = data.getData();
+            imageView.setImageURI(imgURI);
+            imageView.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private void uploadImage() {
+
+        Log.i(TAG, "fileUploader");
+
+        StorageReference storageReference = mStorageRef.child(System.currentTimeMillis() + "." + getExtension(imgURI));
+
+        storageReference.putFile(imgURI)
+                .addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+
+                    @Override
+                    public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+
+                        // Get a URL to the uploaded content
+                        // Uri downloadUrl = taskSnapshot.getUploadSessionUri();
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+
+                    @Override
+                    public void onFailure(@NonNull Exception exception) {
+
+                        // Handle unsuccessful uploads
+                        // ...
+                    }
+                });
+    }
+
+    private String getExtension(Uri uri) {
+
+        Log.i(TAG, "getExtension()");
+
+        ContentResolver cr = getContentResolver();
+        MimeTypeMap mimeTypeMap = MimeTypeMap.getSingleton();
+        return mimeTypeMap.getExtensionFromMimeType(cr.getType(uri));
     }
 
     @Override
