@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.MenuItem;
 import android.view.View;
 
@@ -30,6 +31,7 @@ import android.webkit.MimeTypeMap;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.PopupMenu;
+import android.widget.Toast;
 
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -99,6 +101,7 @@ public class Chat extends AppCompatActivity implements
         mInput = findViewById(R.id.input);
         sendButton = findViewById(R.id.sendButton);
         recyclerView = findViewById(R.id.messageList);
+        recyclerView.hasFixedSize();
 
         mStorageRef = FirebaseStorage.getInstance().getReference("Images");
 
@@ -267,6 +270,22 @@ public class Chat extends AppCompatActivity implements
 
         // Add the Firebase listener.
         databaseReference.addValueEventListener(eventListener);
+
+        // Hide the imageView if user presses the delete button.
+        mInput.setOnKeyListener(new View.OnKeyListener() {
+
+            @Override
+            public boolean onKey(View v, int keyCode, KeyEvent event) {
+
+                if(keyCode == KeyEvent.KEYCODE_DEL && imageView.getVisibility() == View.VISIBLE &&
+                        (mInput.getText().toString().trim().length() == 0 || mInput.getSelectionStart() == 0)) {
+
+                    imageView.setVisibility(View.GONE);
+                }
+
+                return true;
+            }
+        });
 
         mediaButton.setOnClickListener(new View.OnClickListener() {
 
@@ -529,29 +548,30 @@ public class Chat extends AppCompatActivity implements
 
         Log.i(TAG, "onStop()");
 
-        // Remove the Firebase event listener.
         if (databaseReference != null){
 
             databaseReference.removeEventListener(eventListener);
         }
 
-        // Remove RecyclerView listeners.
         if (recyclerView != null){
 
             recyclerView.clearOnScrollListeners();
             recyclerView.removeOnLayoutChangeListener(onLayoutChangeListener);
         }
 
-        // Remove the Firebase event listener.
         if (eventListener != null){
 
             eventListener = null;
         }
 
-        // Remove the button listener.
         if (sendButton != null){
 
             sendButton.setOnClickListener(null);
+        }
+
+        if (mInput != null) {
+
+            mInput.setOnKeyListener(null);
         }
 
         super.onStop();
@@ -684,7 +704,7 @@ public class Chat extends AppCompatActivity implements
                     public void onFailure(@NonNull Exception exception) {
 
                         // Handle unsuccessful uploads
-                        // ...
+                        Toast.makeText(Chat.this, "An error occurred: " + exception.getMessage(), Toast.LENGTH_LONG).show();
                     }
                 });
     }
