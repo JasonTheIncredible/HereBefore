@@ -41,6 +41,7 @@ import com.google.firebase.database.ServerValue;
 import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.StorageTask;
 import com.google.firebase.storage.UploadTask;
 
 import java.text.DateFormat;
@@ -78,7 +79,9 @@ public class Chat extends AppCompatActivity implements
     private StorageReference mStorageRef;
     private ImageView imageView;
     public Uri imgURI;
+    private StorageTask uploadTask;
 
+    //TODO: Add uploaded image to recyclerView, work on new shape / no text added interaction, and show text in same recyclerView as image.
     //TODO: Add ability to add pictures and video to RecyclerView.
     //TODO: Move recyclerView down when new message is added.
     //TODO: Look up videos about texting apps to change design of + button.
@@ -325,7 +328,7 @@ public class Chat extends AppCompatActivity implements
                 final Bundle extras = getIntent().getExtras();
 
                 // Send recyclerviewlayout to Firebase.
-                if ( !input.equals("") ) {
+                if (!input.equals("")) {
 
                     // Check Boolean value from onStart();
                     if (newShape) {
@@ -512,6 +515,18 @@ public class Chat extends AppCompatActivity implements
                         mInput.getText().clear();
                     }
                 }
+
+                if (imageView.getVisibility() != View.GONE) {
+
+                    // Upload the image to Firebase if it exists and is not already in the process of sending an image.
+                    if (uploadTask != null && uploadTask.isInProgress()) {
+
+                        Toast.makeText(Chat.this, "Image upload in progress", Toast.LENGTH_SHORT).show();
+                    } else {
+
+                        uploadImage();
+                    }
+                }
             }
         });
     }
@@ -688,14 +703,14 @@ public class Chat extends AppCompatActivity implements
 
         StorageReference storageReference = mStorageRef.child(System.currentTimeMillis() + "." + getExtension(imgURI));
 
-        storageReference.putFile(imgURI)
+        uploadTask = storageReference.putFile(imgURI)
                 .addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
 
                     @Override
                     public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
 
                         // Get a URL to the uploaded content
-                        // Uri downloadUrl = taskSnapshot.getUploadSessionUri();
+                        imageView.setVisibility(View.GONE);
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {
