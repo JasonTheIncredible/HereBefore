@@ -8,8 +8,11 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+
+import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
 
@@ -19,14 +22,16 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
 
     private ArrayList<String> mMessageUser;
     private ArrayList<String> mMessageTime;
+    private ArrayList<String> mMessageImage;
     private ArrayList<String> mMessageText;
     private Context mContext;
 
-    RecyclerViewAdapter(Context context, ArrayList<String> mMessageUser, ArrayList<String> mMessageTime, ArrayList<String> mMessageText) {
+    RecyclerViewAdapter(Context context, ArrayList<String> mMessageUser, ArrayList<String> mMessageTime, ArrayList<String> mMessageImage, ArrayList<String> mMessageText) {
 
         this.mContext = context;
         this.mMessageUser = mMessageUser;
         this.mMessageTime = mMessageTime;
+        this.mMessageImage = mMessageImage;
         this.mMessageText = mMessageText;
     }
 
@@ -34,7 +39,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
 
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.recyclerviewlayout, parent,false);
+        View view = LayoutInflater.from(mContext).inflate(R.layout.recyclerviewlayout, parent,false);
         return new ViewHolder(view);
     }
 
@@ -44,6 +49,9 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
         Log.d(TAG, "onBindViewHolder: called.");
         //holder.messageUser.setText(mMessageUser.get(position));
         holder.messageTime.setText(mMessageTime.get(position));
+        Picasso.get()
+                .load(mMessageImage.get(position))
+                .into(holder.messageImage);
         holder.messageText.setText(mMessageText.get(position));
         holder.setIsRecyclable(true);
 
@@ -60,12 +68,13 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
     @Override
     public int getItemCount() {
 
-        return mMessageText.size();
+        return mMessageTime.size();
     }
 
     class ViewHolder extends RecyclerView.ViewHolder{
 
         TextView messageUser, messageTime, messageText;
+        ImageView messageImage;
         RelativeLayout messageItem;
         
         ViewHolder(@NonNull View itemView) {
@@ -73,6 +82,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
             super(itemView);
             messageUser = itemView.findViewById(R.id.messageUser);
             messageTime = itemView.findViewById(R.id.messageTime);
+            messageImage = itemView.findViewById(R.id.messageImage);
             messageText = itemView.findViewById(R.id.messageText);
             messageItem = itemView.findViewById(R.id.message);
         }

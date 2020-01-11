@@ -5,17 +5,20 @@ public class MessageInformation {
 
     public String message;
     public Object date;
-    public String uuid;
+    public String uuid, imageURL;
 
-    MessageInformation(){
+    MessageInformation(){}
+
+    public void setDate(Object date) {
+        this.date = date;
+    }
+
+    public void setImageURL(String imageURL) {
+        this.imageURL = imageURL;
     }
 
     public void setMessage(String message) {
         this.message = message;
-    }
-
-    public void setDate(Object date) {
-        this.date = date;
     }
 
     public void setUUID(String uuid) {

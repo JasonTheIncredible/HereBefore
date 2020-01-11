@@ -60,6 +60,7 @@ public class Chat extends AppCompatActivity implements
     private ArrayList<String> mUser = new ArrayList<>();
     private ArrayList<String> mTime = new ArrayList<>();
     private ArrayList<String> mText = new ArrayList<>();
+    private ArrayList<String> mImage = new ArrayList<>();
     private RecyclerView recyclerView;
     private static int index = -1;
     private static int top = -1;
@@ -76,13 +77,15 @@ public class Chat extends AppCompatActivity implements
     private Double polygonArea, circleLatitude, circleLongitude, radius, marker0Latitude, marker0Longitude, marker1Latitude, marker1Longitude, marker2Latitude, marker2Longitude, marker3Latitude, marker3Longitude, marker4Latitude, marker4Longitude, marker5Latitude, marker5Longitude, marker6Latitude, marker6Longitude, marker7Latitude, marker7Longitude;
     private int fillColor;
     private PopupMenu mediaButtonMenu;
-    private StorageReference mStorageRef;
     private ImageView imageView;
     public Uri imgURI;
     private StorageTask uploadTask;
 
-    //TODO: Add uploaded image to recyclerView, work on new shape / no text added interaction, and show text in same recyclerView as image.
-    //TODO: Add ability to add pictures and video to RecyclerView.
+    //TODO: Add Logs to sendButton.
+    //TODO: Adjust spacing of recyclerviewlayout.xml
+    //TODO: Click on image to expand.
+    //TODO: Add loading icon for uploading / download image.
+    //TODO: Add ability to add taken pictures and video to RecyclerView.
     //TODO: Move recyclerView down when new message is added.
     //TODO: Look up videos about texting apps to change design of + button.
     //TODO: Add a username (in recyclerviewlayout).
@@ -106,18 +109,9 @@ public class Chat extends AppCompatActivity implements
         recyclerView = findViewById(R.id.messageList);
         recyclerView.hasFixedSize();
 
-        mStorageRef = FirebaseStorage.getInstance().getReference("Images");
-
         // Set to dark mode.
         AppCompatDelegate.setDefaultNightMode(
                 AppCompatDelegate.MODE_NIGHT_YES);
-    }
-
-    @Override
-    protected void onStart() {
-
-        super.onStart();
-        Log.i(TAG, "onStart()");
 
         // Get info from Map.java
         Bundle extras = getIntent().getExtras();
@@ -162,6 +156,13 @@ public class Chat extends AppCompatActivity implements
             Log.e(TAG, "onStart() -> extras == null");
             Crashlytics.logException(new RuntimeException("onStart() -> extras == null"));
         }
+    }
+
+    @Override
+    protected void onStart() {
+
+        super.onStart();
+        Log.i(TAG, "onStart()");
 
         // Connect to Firebase.
         DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
@@ -176,6 +177,7 @@ public class Chat extends AppCompatActivity implements
 
                     mUser.clear();
                     mTime.clear();
+                    mImage.clear();
                     mText.clear();
                 }
 
@@ -190,8 +192,9 @@ public class Chat extends AppCompatActivity implements
 
                             if (firebaseUUID.equals(uuid)) {
 
-                                String messageText = (String) ds.child("message").getValue();
                                 Long serverDate = (Long) ds.child("date").getValue();
+                                String messageURL = (String) ds.child("imageURL").getValue();
+                                String messageText = (String) ds.child("message").getValue();
                                 DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
                                 // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
                                 // This will cause onDataChange to fire twice; optimizations could be made in the future.
@@ -205,6 +208,7 @@ public class Chat extends AppCompatActivity implements
                                     Log.e(TAG, "onStart() -> serverDate == null");
                                     Crashlytics.logException(new RuntimeException("onStart() -> serverDate == null"));
                                 }
+                                mImage.add(messageURL);
                                 mText.add(messageText);
                             }
                         }
@@ -268,7 +272,10 @@ public class Chat extends AppCompatActivity implements
                 });
             }
 
-            public void onCancelled(@NonNull DatabaseError databaseError) {}
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                Toast.makeText(Chat.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+            }
         };
 
         // Add the Firebase listener.
@@ -284,6 +291,11 @@ public class Chat extends AppCompatActivity implements
                         (mInput.getText().toString().trim().length() == 0 || mInput.getSelectionStart() == 0)) {
 
                     imageView.setVisibility(View.GONE);
+                }
+
+                if(keyCode == KeyEvent.KEYCODE_BACK && getCurrentFocus() == mInput) {
+
+                    mInput.clearFocus();
                 }
 
                 return true;
@@ -328,7 +340,7 @@ public class Chat extends AppCompatActivity implements
                 final Bundle extras = getIntent().getExtras();
 
                 // Send recyclerviewlayout to Firebase.
-                if (!input.equals("")) {
+                if (!input.equals("") || imageView.getVisibility() != View.GONE) {
 
                     // Check Boolean value from onStart();
                     if (newShape) {
@@ -343,43 +355,60 @@ public class Chat extends AppCompatActivity implements
                                 @Override
                                 public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
 
-                                    // Since the uuid doesn't already exist in Firebase, add the circle.
-                                    CircleOptions circleOptions = new CircleOptions()
-                                            .center(new LatLng(circleLatitude, circleLongitude))
-                                            .clickable(true)
-                                            .fillColor(fillColor)
-                                            .radius(radius);
-                                    CircleInformation circleInformation = new CircleInformation();
-                                    circleInformation.setCircleOptions(circleOptions);
-                                    circleInformation.setUUID(uuid);
-                                    DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("circles").push();
-                                    newFirebaseCircle.setValue(circleInformation);
+                                    if (imageView.getVisibility() != View.GONE) {
 
-                                    // Change boolean to true - scrolls to the bottom of the recyclerView (in initRecyclerView()).
-                                    messageSent = true;
-                                    MessageInformation messageInformation = new MessageInformation();
-                                    messageInformation.setMessage(input);
-                                    // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                                    // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                                    Object date = ServerValue.TIMESTAMP;
-                                    messageInformation.setDate(date);
-                                    if (extras != null) {
+                                        // Upload the image to Firebase if it exists and is not already in the process of sending an image.
+                                        if (uploadTask != null && uploadTask.isInProgress()) {
 
-                                        String uuid = extras.getString("uuid");
-                                        messageInformation.setUUID(uuid);
+                                            Toast.makeText(Chat.this, "Image upload in progress", Toast.LENGTH_SHORT).show();
+                                        } else {
+
+                                            uploadImage();
+                                        }
+                                    } else {
+
+                                        // Change boolean to true - scrolls to the bottom of the recyclerView (in initRecyclerView()).
+                                        messageSent = true;
+                                        // Since the uuid doesn't already exist in Firebase, add the circle.
+                                        CircleOptions circleOptions = new CircleOptions()
+                                                .center(new LatLng(circleLatitude, circleLongitude))
+                                                .clickable(true)
+                                                .fillColor(fillColor)
+                                                .radius(radius);
+                                        CircleInformation circleInformation = new CircleInformation();
+                                        circleInformation.setCircleOptions(circleOptions);
+                                        circleInformation.setUUID(uuid);
+                                        DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("circles").push();
+                                        newFirebaseCircle.setValue(circleInformation);
+
+                                        MessageInformation messageInformation = new MessageInformation();
+                                        messageInformation.setMessage(input);
+                                        // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+                                        // This will cause onDataChange to fire twice; optimizations could be made in the future.
+                                        Object date = ServerValue.TIMESTAMP;
+                                        messageInformation.setDate(date);
+                                        if (extras != null) {
+
+                                            String uuid = extras.getString("uuid");
+                                            messageInformation.setUUID(uuid);
+                                        }
+                                        DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("messageThreads").push();
+                                        newMessage.setValue(messageInformation);
+                                        mInput.getText().clear();
+
+                                        newShape = false;
                                     }
-                                    DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("messageThreads").push();
-                                    newMessage.setValue(messageInformation);
-                                    mInput.getText().clear();
-                                    newShape = false;
                                 }
 
                                 @Override
-                                public void onCancelled(@NonNull DatabaseError databaseError) {}
-                            });
-                        }
+                                public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                        if (!shapeIsCircle) {
+                                    Toast.makeText(Chat.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                                }
+                            });
+                        } else {
+
+                            // Shape is not a circle.
 
                             DatabaseReference firebasePolygons = rootRef.child("polygons");
                             firebasePolygons.addListenerForSingleValueEvent(new ValueEventListener() {
@@ -387,144 +416,164 @@ public class Chat extends AppCompatActivity implements
                                 @Override
                                 public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
 
-                                    // Since the uuid doesn't already exist in Firebase, add the circle.
-                                    if (threeMarkers) {
+                                    if (imageView.getVisibility() != View.GONE) {
 
-                                        PolygonOptions polygonOptions = new PolygonOptions()
-                                                .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude))
-                                                .clickable(true)
-                                                .fillColor(fillColor);
-                                        PolygonInformation polygonInformation = new PolygonInformation();
-                                        polygonInformation.setPolygonOptions(polygonOptions);
-                                        polygonInformation.setArea(polygonArea);
-                                        polygonInformation.setUUID(uuid);
-                                        DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
-                                        newFirebasePolygon.setValue(polygonInformation);
+                                        // Upload the image to Firebase if it exists and is not already in the process of sending an image.
+                                        if (uploadTask != null && uploadTask.isInProgress()) {
+
+                                            Toast.makeText(Chat.this, "Image upload in progress", Toast.LENGTH_SHORT).show();
+                                        } else {
+
+                                            uploadImage();
+                                        }
+                                    } else {
+
+                                        // Change boolean to true - scrolls to the bottom of the recyclerView (in initRecyclerView()).
+                                        messageSent = true;
+
+                                        // Since the uuid doesn't already exist in Firebase, add the circle.
+                                        if (threeMarkers) {
+
+                                            PolygonOptions polygonOptions = new PolygonOptions()
+                                                    .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude))
+                                                    .clickable(true)
+                                                    .fillColor(fillColor);
+                                            PolygonInformation polygonInformation = new PolygonInformation();
+                                            polygonInformation.setPolygonOptions(polygonOptions);
+                                            polygonInformation.setArea(polygonArea);
+                                            polygonInformation.setUUID(uuid);
+                                            DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
+                                            newFirebasePolygon.setValue(polygonInformation);
+                                        }
+
+                                        if (fourMarkers) {
+
+                                            PolygonOptions polygonOptions = new PolygonOptions()
+                                                    .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude))
+                                                    .clickable(true)
+                                                    .fillColor(fillColor);
+                                            PolygonInformation polygonInformation = new PolygonInformation();
+                                            polygonInformation.setPolygonOptions(polygonOptions);
+                                            polygonInformation.setArea(polygonArea);
+                                            polygonInformation.setUUID(uuid);
+                                            DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
+                                            newFirebasePolygon.setValue(polygonInformation);
+                                        }
+
+                                        if (fiveMarkers) {
+
+                                            PolygonOptions polygonOptions = new PolygonOptions()
+                                                    .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude))
+                                                    .clickable(true)
+                                                    .fillColor(fillColor);
+                                            PolygonInformation polygonInformation = new PolygonInformation();
+                                            polygonInformation.setPolygonOptions(polygonOptions);
+                                            polygonInformation.setArea(polygonArea);
+                                            polygonInformation.setUUID(uuid);
+                                            DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
+                                            newFirebasePolygon.setValue(polygonInformation);
+                                        }
+
+                                        if (sixMarkers) {
+
+                                            PolygonOptions polygonOptions = new PolygonOptions()
+                                                    .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude))
+                                                    .clickable(true)
+                                                    .fillColor(fillColor);
+                                            PolygonInformation polygonInformation = new PolygonInformation();
+                                            polygonInformation.setPolygonOptions(polygonOptions);
+                                            polygonInformation.setArea(polygonArea);
+                                            polygonInformation.setUUID(uuid);
+                                            DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
+                                            newFirebasePolygon.setValue(polygonInformation);
+                                        }
+
+                                        if (sevenMarkers) {
+
+                                            PolygonOptions polygonOptions = new PolygonOptions()
+                                                    .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude), new LatLng(marker6Latitude, marker6Longitude))
+                                                    .clickable(true)
+                                                    .fillColor(fillColor);
+                                            PolygonInformation polygonInformation = new PolygonInformation();
+                                            polygonInformation.setPolygonOptions(polygonOptions);
+                                            polygonInformation.setArea(polygonArea);
+                                            polygonInformation.setUUID(uuid);
+                                            DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
+                                            newFirebasePolygon.setValue(polygonInformation);
+                                        }
+
+                                        if (eightMarkers) {
+
+                                            PolygonOptions polygonOptions = new PolygonOptions()
+                                                    .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude), new LatLng(marker6Latitude, marker6Longitude), new LatLng(marker7Latitude, marker7Longitude))
+                                                    .clickable(true)
+                                                    .fillColor(fillColor);
+                                            PolygonInformation polygonInformation = new PolygonInformation();
+                                            polygonInformation.setPolygonOptions(polygonOptions);
+                                            polygonInformation.setArea(polygonArea);
+                                            polygonInformation.setUUID(uuid);
+                                            DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
+                                            newFirebasePolygon.setValue(polygonInformation);
+                                        }
+
+                                        MessageInformation messageInformation = new MessageInformation();
+                                        messageInformation.setMessage(input);
+                                        // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+                                        // This will cause onDataChange to fire twice; optimizations could be made in the future.
+                                        Object date = ServerValue.TIMESTAMP;
+                                        messageInformation.setDate(date);
+                                        if (extras != null) {
+
+                                            String uuid = extras.getString("uuid");
+                                            messageInformation.setUUID(uuid);
+                                        }
+                                        DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("messageThreads").push();
+                                        newMessage.setValue(messageInformation);
+                                        mInput.getText().clear();
+                                        newShape = false;
                                     }
-
-                                    if (fourMarkers) {
-
-                                        PolygonOptions polygonOptions = new PolygonOptions()
-                                                .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude))
-                                                .clickable(true)
-                                                .fillColor(fillColor);
-                                        PolygonInformation polygonInformation = new PolygonInformation();
-                                        polygonInformation.setPolygonOptions(polygonOptions);
-                                        polygonInformation.setArea(polygonArea);
-                                        polygonInformation.setUUID(uuid);
-                                        DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
-                                        newFirebasePolygon.setValue(polygonInformation);
-                                    }
-
-                                    if (fiveMarkers) {
-
-                                        PolygonOptions polygonOptions = new PolygonOptions()
-                                                .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude))
-                                                .clickable(true)
-                                                .fillColor(fillColor);
-                                        PolygonInformation polygonInformation = new PolygonInformation();
-                                        polygonInformation.setPolygonOptions(polygonOptions);
-                                        polygonInformation.setArea(polygonArea);
-                                        polygonInformation.setUUID(uuid);
-                                        DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
-                                        newFirebasePolygon.setValue(polygonInformation);
-                                    }
-
-                                    if (sixMarkers) {
-
-                                        PolygonOptions polygonOptions = new PolygonOptions()
-                                                .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude))
-                                                .clickable(true)
-                                                .fillColor(fillColor);
-                                        PolygonInformation polygonInformation = new PolygonInformation();
-                                        polygonInformation.setPolygonOptions(polygonOptions);
-                                        polygonInformation.setArea(polygonArea);
-                                        polygonInformation.setUUID(uuid);
-                                        DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
-                                        newFirebasePolygon.setValue(polygonInformation);
-                                    }
-
-                                    if (sevenMarkers) {
-
-                                        PolygonOptions polygonOptions = new PolygonOptions()
-                                                .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude), new LatLng(marker6Latitude, marker6Longitude))
-                                                .clickable(true)
-                                                .fillColor(fillColor);
-                                        PolygonInformation polygonInformation = new PolygonInformation();
-                                        polygonInformation.setPolygonOptions(polygonOptions);
-                                        polygonInformation.setArea(polygonArea);
-                                        polygonInformation.setUUID(uuid);
-                                        DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
-                                        newFirebasePolygon.setValue(polygonInformation);
-                                    }
-
-                                    if (eightMarkers) {
-
-                                        PolygonOptions polygonOptions = new PolygonOptions()
-                                                .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude), new LatLng(marker6Latitude, marker6Longitude), new LatLng(marker7Latitude, marker7Longitude))
-                                                .clickable(true)
-                                                .fillColor(fillColor);
-                                        PolygonInformation polygonInformation = new PolygonInformation();
-                                        polygonInformation.setPolygonOptions(polygonOptions);
-                                        polygonInformation.setArea(polygonArea);
-                                        polygonInformation.setUUID(uuid);
-                                        DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
-                                        newFirebasePolygon.setValue(polygonInformation);
-                                    }
-
-                                    // Change boolean to true - scrolls to the bottom of the recyclerView (in initRecyclerView()).
-                                    messageSent = true;
-                                    MessageInformation messageInformation = new MessageInformation();
-                                    messageInformation.setMessage(input);
-                                    // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                                    // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                                    Object date = ServerValue.TIMESTAMP;
-                                    messageInformation.setDate(date);
-                                    if (extras != null) {
-
-                                        String uuid = extras.getString("uuid");
-                                        messageInformation.setUUID(uuid);
-                                    }
-                                    DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("messageThreads").push();
-                                    newMessage.setValue(messageInformation);
-                                    mInput.getText().clear();
-                                    newShape = false;
                                 }
 
                                 @Override
-                                public void onCancelled(@NonNull DatabaseError databaseError) {}
+                                public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                                    Toast.makeText(Chat.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                                }
                             });
                         }
                     } else {
 
-                        // Change boolean to true - scrolls to the bottom of the recyclerView (in initRecyclerView()).
-                        messageSent = true;
-                        MessageInformation messageInformation = new MessageInformation();
-                        messageInformation.setMessage(input);
-                        // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                        // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                        Object date = ServerValue.TIMESTAMP;
-                        messageInformation.setDate(date);
-                        if (extras != null) {
+                        // Shape is not new.
 
-                            String uuid = extras.getString("uuid");
-                            messageInformation.setUUID(uuid);
+                        if (imageView.getVisibility() != View.GONE) {
+
+                            // Upload the image to Firebase if it exists and is not already in the process of sending an image.
+                            if (uploadTask != null && uploadTask.isInProgress()) {
+
+                                Toast.makeText(Chat.this, "Image upload in progress", Toast.LENGTH_SHORT).show();
+                            } else {
+
+                                uploadImage();
+                            }
+                        } else {
+
+                            // Change boolean to true - scrolls to the bottom of the recyclerView (in initRecyclerView()).
+                            messageSent = true;
+                            MessageInformation messageInformation = new MessageInformation();
+                            messageInformation.setMessage(input);
+                            // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+                            // This will cause onDataChange to fire twice; optimizations could be made in the future.
+                            Object date = ServerValue.TIMESTAMP;
+                            messageInformation.setDate(date);
+                            if (extras != null) {
+
+                                String uuid = extras.getString("uuid");
+                                messageInformation.setUUID(uuid);
+                            }
+                            DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("messageThreads").push();
+                            newMessage.setValue(messageInformation);
+                            mInput.getText().clear();
                         }
-                        DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("messageThreads").push();
-                        newMessage.setValue(messageInformation);
-                        mInput.getText().clear();
-                    }
-                }
-
-                if (imageView.getVisibility() != View.GONE) {
-
-                    // Upload the image to Firebase if it exists and is not already in the process of sending an image.
-                    if (uploadTask != null && uploadTask.isInProgress()) {
-
-                        Toast.makeText(Chat.this, "Image upload in progress", Toast.LENGTH_SHORT).show();
-                    } else {
-
-                        uploadImage();
                     }
                 }
             }
@@ -618,7 +667,7 @@ public class Chat extends AppCompatActivity implements
         // Initialize the RecyclerView
         Log.i(TAG, "initRecyclerView()");
 
-        RecyclerViewAdapter adapter = new RecyclerViewAdapter(this, mUser, mTime, mText);
+        RecyclerViewAdapter adapter = new RecyclerViewAdapter(this, mUser, mTime, mImage, mText);
         recyclerView.setAdapter(adapter);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
@@ -701,7 +750,11 @@ public class Chat extends AppCompatActivity implements
 
         Log.i(TAG, "fileUploader");
 
-        StorageReference storageReference = mStorageRef.child(System.currentTimeMillis() + "." + getExtension(imgURI));
+        // Connect to Firebase.
+        StorageReference mStorageRef = FirebaseStorage.getInstance().getReference("images");
+        final StorageReference storageReference = mStorageRef.child(System.currentTimeMillis() + "." + getExtension(imgURI));
+        final String input = mInput.getText().toString();
+        final Bundle extras = getIntent().getExtras();
 
         uploadTask = storageReference.putFile(imgURI)
                 .addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
@@ -709,8 +762,138 @@ public class Chat extends AppCompatActivity implements
                     @Override
                     public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
 
-                        // Get a URL to the uploaded content
-                        imageView.setVisibility(View.GONE);
+                        storageReference.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
+
+                            @Override
+                            public void onSuccess(Uri uri) {
+
+                                if (newShape) {
+
+                                    // Change boolean to true - scrolls to the bottom of the recyclerView (in initRecyclerView()).
+                                    messageSent = true;
+
+                                    if (shapeIsCircle) {
+
+                                        // Since the uuid doesn't already exist in Firebase, add the circle.
+                                        CircleOptions circleOptions = new CircleOptions()
+                                                .center(new LatLng(circleLatitude, circleLongitude))
+                                                .clickable(true)
+                                                .fillColor(fillColor)
+                                                .radius(radius);
+                                        CircleInformation circleInformation = new CircleInformation();
+                                        circleInformation.setCircleOptions(circleOptions);
+                                        circleInformation.setUUID(uuid);
+                                        DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("circles").push();
+                                        newFirebaseCircle.setValue(circleInformation);
+                                    } else {
+
+                                        // Since the uuid doesn't already exist in Firebase, add the circle.
+                                        if (threeMarkers) {
+
+                                            PolygonOptions polygonOptions = new PolygonOptions()
+                                                    .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude))
+                                                    .clickable(true)
+                                                    .fillColor(fillColor);
+                                            PolygonInformation polygonInformation = new PolygonInformation();
+                                            polygonInformation.setPolygonOptions(polygonOptions);
+                                            polygonInformation.setArea(polygonArea);
+                                            polygonInformation.setUUID(uuid);
+                                            DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
+                                            newFirebasePolygon.setValue(polygonInformation);
+                                        }
+
+                                        if (fourMarkers) {
+
+                                            PolygonOptions polygonOptions = new PolygonOptions()
+                                                    .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude))
+                                                    .clickable(true)
+                                                    .fillColor(fillColor);
+                                            PolygonInformation polygonInformation = new PolygonInformation();
+                                            polygonInformation.setPolygonOptions(polygonOptions);
+                                            polygonInformation.setArea(polygonArea);
+                                            polygonInformation.setUUID(uuid);
+                                            DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
+                                            newFirebasePolygon.setValue(polygonInformation);
+                                        }
+
+                                        if (fiveMarkers) {
+
+                                            PolygonOptions polygonOptions = new PolygonOptions()
+                                                    .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude))
+                                                    .clickable(true)
+                                                    .fillColor(fillColor);
+                                            PolygonInformation polygonInformation = new PolygonInformation();
+                                            polygonInformation.setPolygonOptions(polygonOptions);
+                                            polygonInformation.setArea(polygonArea);
+                                            polygonInformation.setUUID(uuid);
+                                            DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
+                                            newFirebasePolygon.setValue(polygonInformation);
+                                        }
+
+                                        if (sixMarkers) {
+
+                                            PolygonOptions polygonOptions = new PolygonOptions()
+                                                    .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude))
+                                                    .clickable(true)
+                                                    .fillColor(fillColor);
+                                            PolygonInformation polygonInformation = new PolygonInformation();
+                                            polygonInformation.setPolygonOptions(polygonOptions);
+                                            polygonInformation.setArea(polygonArea);
+                                            polygonInformation.setUUID(uuid);
+                                            DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
+                                            newFirebasePolygon.setValue(polygonInformation);
+                                        }
+
+                                        if (sevenMarkers) {
+
+                                            PolygonOptions polygonOptions = new PolygonOptions()
+                                                    .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude), new LatLng(marker6Latitude, marker6Longitude))
+                                                    .clickable(true)
+                                                    .fillColor(fillColor);
+                                            PolygonInformation polygonInformation = new PolygonInformation();
+                                            polygonInformation.setPolygonOptions(polygonOptions);
+                                            polygonInformation.setArea(polygonArea);
+                                            polygonInformation.setUUID(uuid);
+                                            DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
+                                            newFirebasePolygon.setValue(polygonInformation);
+                                        }
+
+                                        if (eightMarkers) {
+
+                                            PolygonOptions polygonOptions = new PolygonOptions()
+                                                    .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude), new LatLng(marker6Latitude, marker6Longitude), new LatLng(marker7Latitude, marker7Longitude))
+                                                    .clickable(true)
+                                                    .fillColor(fillColor);
+                                            PolygonInformation polygonInformation = new PolygonInformation();
+                                            polygonInformation.setPolygonOptions(polygonOptions);
+                                            polygonInformation.setArea(polygonArea);
+                                            polygonInformation.setUUID(uuid);
+                                            DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
+                                            newFirebasePolygon.setValue(polygonInformation);
+                                        }
+                                    }
+
+                                    newShape = false;
+                                }
+
+                                MessageInformation messageInformation = new MessageInformation();
+                                messageInformation.setImageURL(uri.toString());
+                                messageInformation.setMessage(input);
+                                // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+                                // This will cause onDataChange to fire twice; optimizations could be made in the future.
+                                Object date = ServerValue.TIMESTAMP;
+                                messageInformation.setDate(date);
+                                if (extras != null) {
+
+                                    String uuid = extras.getString("uuid");
+                                    messageInformation.setUUID(uuid);
+                                }
+                                DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("messageThreads").push();
+                                newMessage.setValue(messageInformation);
+                                mInput.getText().clear();
+                                imageView.setVisibility(View.GONE);
+                            }
+                        });
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {

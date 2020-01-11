@@ -2925,7 +2925,10 @@ public class Map extends FragmentActivity implements
                                 }
 
                                 @Override
-                                public void onCancelled(@NonNull DatabaseError databaseError) {}
+                                public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                                    Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                                }
                             });
                         } else {
 
@@ -2985,7 +2988,10 @@ public class Map extends FragmentActivity implements
                                 }
 
                                 @Override
-                                public void onCancelled(@NonNull DatabaseError databaseError) {}
+                                public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                                    Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                                }
                             });
                         }
                     }
@@ -3095,7 +3101,10 @@ public class Map extends FragmentActivity implements
                             }
 
                             @Override
-                            public void onCancelled(@NonNull DatabaseError databaseError) {}
+                            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                            }
                         });
 
                         // Add a return statement so chatSelectorSeekBar is not called.
@@ -3139,7 +3148,10 @@ public class Map extends FragmentActivity implements
                             }
 
                             @Override
-                            public void onCancelled(@NonNull DatabaseError databaseError) {}
+                            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                            }
                         });
 
                         // Add a return statement so chatSelectorSeekBar is not called.
@@ -3546,7 +3558,10 @@ public class Map extends FragmentActivity implements
                             }
 
                             @Override
-                            public void onCancelled(@NonNull DatabaseError databaseError) {}
+                            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                            }
                         });
 
                         // Add a return statement so chatSelectorSeekBar is not called.
@@ -3592,6 +3607,8 @@ public class Map extends FragmentActivity implements
 
                             @Override
                             public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
                             }
                         });
 
@@ -4217,7 +4234,10 @@ public class Map extends FragmentActivity implements
                             }
 
                             @Override
-                            public void onCancelled(@NonNull DatabaseError databaseError) {}
+                            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                            }
                         });
 
                         // Load Firebase points.
@@ -4255,7 +4275,10 @@ public class Map extends FragmentActivity implements
                             }
 
                             @Override
-                            public void onCancelled (@NonNull DatabaseError databaseError){}
+                            public void onCancelled (@NonNull DatabaseError databaseError) {
+
+                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                            }
                         });
 
                         // Load Firebase polygons.
@@ -4391,7 +4414,10 @@ public class Map extends FragmentActivity implements
                             }
 
                             @Override
-                            public void onCancelled(@NonNull DatabaseError databaseError) {}
+                            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                            }
                         });
                     } else {
 
@@ -4438,7 +4464,10 @@ public class Map extends FragmentActivity implements
                             }
 
                             @Override
-                            public void onCancelled(@NonNull DatabaseError databaseError) {}
+                            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                            }
                         });
 
                         // Load Firebase points.
@@ -4476,7 +4505,10 @@ public class Map extends FragmentActivity implements
                             }
 
                             @Override
-                            public void onCancelled (@NonNull DatabaseError databaseError){}
+                            public void onCancelled (@NonNull DatabaseError databaseError) {
+
+                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                            }
                         });
 
                         // Load Firebase polygons.
@@ -4612,7 +4644,10 @@ public class Map extends FragmentActivity implements
                             }
 
                             @Override
-                            public void onCancelled(@NonNull DatabaseError databaseError) {}
+                            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                            }
                         });
                     }
                 }
@@ -5814,7 +5849,10 @@ public class Map extends FragmentActivity implements
                             }
 
                             @Override
-                            public void onCancelled(@NonNull DatabaseError databaseError) {}
+                            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                            }
                         });
 
                         // Load Firebase points.
@@ -5852,7 +5890,10 @@ public class Map extends FragmentActivity implements
                             }
 
                             @Override
-                            public void onCancelled(@NonNull DatabaseError databaseError) {}
+                            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                            }
                         });
 
                         // Load Firebase polygons.
@@ -5988,7 +6029,10 @@ public class Map extends FragmentActivity implements
                             }
 
                             @Override
-                            public void onCancelled(@NonNull DatabaseError databaseError) {}
+                            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                            }
                         });
                     } else {
 
@@ -6026,7 +6070,10 @@ public class Map extends FragmentActivity implements
                             }
 
                             @Override
-                            public void onCancelled(@NonNull DatabaseError databaseError) {}
+                            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                            }
                         });
 
                         // Load Firebase points.
@@ -6064,7 +6111,10 @@ public class Map extends FragmentActivity implements
                             }
 
                             @Override
-                            public void onCancelled(@NonNull DatabaseError databaseError) {}
+                            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                            }
                         });
 
                         // Load Firebase polygons.
@@ -6200,7 +6250,10 @@ public class Map extends FragmentActivity implements
                             }
 
                             @Override
-                            public void onCancelled(@NonNull DatabaseError databaseError) {}
+                            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                            }
                         });
                     }
                 }
@@ -6357,7 +6410,10 @@ public class Map extends FragmentActivity implements
                             }
 
                             @Override
-                            public void onCancelled(@NonNull DatabaseError databaseError) {}
+                            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                            }
                         });
 
                         // Load Firebase polygons.
@@ -6496,7 +6552,10 @@ public class Map extends FragmentActivity implements
                             }
 
                             @Override
-                            public void onCancelled(@NonNull DatabaseError databaseError) {}
+                            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                            }
                         });
                     } else {
 
@@ -6534,7 +6593,10 @@ public class Map extends FragmentActivity implements
                             }
 
                             @Override
-                            public void onCancelled(@NonNull DatabaseError databaseError) {}
+                            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                            }
                         });
 
                         // Load Firebase polygons.
@@ -6673,7 +6735,10 @@ public class Map extends FragmentActivity implements
                             }
 
                             @Override
-                            public void onCancelled(@NonNull DatabaseError databaseError) {}
+                            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                            }
                         });
                     }
                 }
@@ -6830,7 +6895,10 @@ public class Map extends FragmentActivity implements
                             }
 
                             @Override
-                            public void onCancelled(@NonNull DatabaseError databaseError) {}
+                            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                            }
                         });
 
                         // Load Firebase polygons.
@@ -6969,7 +7037,10 @@ public class Map extends FragmentActivity implements
                             }
 
                             @Override
-                            public void onCancelled(@NonNull DatabaseError databaseError) {}
+                            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                            }
                         });
                     } else {
 
@@ -7007,7 +7078,10 @@ public class Map extends FragmentActivity implements
                             }
 
                             @Override
-                            public void onCancelled(@NonNull DatabaseError databaseError) {}
+                            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                            }
                         });
 
                         // Load Firebase polygons.
@@ -7146,7 +7220,10 @@ public class Map extends FragmentActivity implements
                             }
 
                             @Override
-                            public void onCancelled(@NonNull DatabaseError databaseError) {}
+                            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                            }
                         });
                     }
                 }
@@ -7303,7 +7380,10 @@ public class Map extends FragmentActivity implements
                             }
 
                             @Override
-                            public void onCancelled(@NonNull DatabaseError databaseError) {}
+                            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                            }
                         });
 
                         // Load Firebase polygons.
@@ -7442,7 +7522,10 @@ public class Map extends FragmentActivity implements
                             }
 
                             @Override
-                            public void onCancelled(@NonNull DatabaseError databaseError) {}
+                            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                            }
                         });
                     } else {
 
@@ -7480,7 +7563,10 @@ public class Map extends FragmentActivity implements
                             }
 
                             @Override
-                            public void onCancelled(@NonNull DatabaseError databaseError) {}
+                            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                            }
                         });
 
                         // Load Firebase polygons.
@@ -7619,7 +7705,10 @@ public class Map extends FragmentActivity implements
                             }
 
                             @Override
-                            public void onCancelled(@NonNull DatabaseError databaseError) {}
+                            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                            }
                         });
                     }
                 }
@@ -7777,7 +7866,10 @@ public class Map extends FragmentActivity implements
                             }
 
                             @Override
-                            public void onCancelled(@NonNull DatabaseError databaseError) {}
+                            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                            }
                         });
                     } else {
 
@@ -7815,7 +7907,10 @@ public class Map extends FragmentActivity implements
                             }
 
                             @Override
-                            public void onCancelled(@NonNull DatabaseError databaseError) {}
+                            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                            }
                         });
                     }
                 }
@@ -8574,7 +8669,10 @@ public class Map extends FragmentActivity implements
                                                 }
 
                                                 @Override
-                                                public void onCancelled(@NonNull DatabaseError databaseError) {}
+                                                public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                                                    Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                                                }
                                             });
                                         } else {
 
@@ -8620,7 +8718,10 @@ public class Map extends FragmentActivity implements
                                                 }
 
                                                 @Override
-                                                public void onCancelled(@NonNull DatabaseError databaseError) {}
+                                                public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                                                    Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                                                }
                                             });
                                         }
                                     }
@@ -8871,7 +8972,10 @@ public class Map extends FragmentActivity implements
             }
 
             @Override
-            public void onCancelled (@NonNull DatabaseError databaseError){}
+            public void onCancelled (@NonNull DatabaseError databaseError) {
+
+                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+            }
         });
 
         // Load Firebase polygons.
@@ -9007,7 +9111,10 @@ public class Map extends FragmentActivity implements
             }
 
             @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {}
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+            }
         });
     }
 
@@ -9246,7 +9353,10 @@ public class Map extends FragmentActivity implements
             }
 
             @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {}
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+            }
         });
 
         // Load Firebase polygons.
@@ -9382,7 +9492,10 @@ public class Map extends FragmentActivity implements
             }
 
             @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {}
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+            }
         });
     }
 

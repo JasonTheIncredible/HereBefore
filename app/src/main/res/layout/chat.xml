@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
-    android:focusableInTouchMode="true"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:paddingBottom="16dp"
-    android:paddingTop="16dp">
+    android:focusable="true"
+    android:focusableInTouchMode="true"
+    android:orientation="vertical"
+    android:paddingTop="16dp"
+    android:paddingBottom="16dp">
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/messageList"
@@ -36,30 +37,30 @@
 
     <ImageView
         android:id="@+id/imageView"
-        android:visibility="gone"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:paddingLeft="5dp"
-        android:paddingStart="5dp"
-        android:paddingBottom="8dp"
+        android:layout_alignParentBottom="true"
+        android:layout_toEndOf="@id/mediaButton"
+        android:layout_toRightOf="@id/mediaButton"
         android:adjustViewBounds="true"
         android:maxWidth="50dp"
         android:maxHeight="50dp"
-        android:layout_alignParentBottom="true"
-        android:layout_toRightOf="@id/mediaButton"
-        android:layout_toEndOf="@id/mediaButton" />
+        android:paddingStart="5dp"
+        android:paddingLeft="5dp"
+        android:paddingBottom="8dp"
+        android:visibility="gone" />
 
     <EditText
         android:id="@+id/input"
-        android:importantForAutofill="no"
-        android:hint="@string/message"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:layout_toRightOf="@id/imageView"
-        android:layout_toEndOf="@id/imageView"
         android:layout_toStartOf="@+id/sendButton"
-        android:layout_toLeftOf="@+id/sendButton" />
+        android:layout_toLeftOf="@+id/sendButton"
+        android:layout_toEndOf="@id/imageView"
+        android:layout_toRightOf="@id/imageView"
+        android:hint="@string/message"
+        android:importantForAutofill="no" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/sendButton"

@@ -52,5 +52,7 @@ dependencies {
 
     // http://www.tsusiatsoftware.net/jts/javadoc//com/vividsolutions/jts/geom/Polygon.html
     implementation 'com.vividsolutions:jts-core:1.14.0'
+
+    implementation 'com.squareup.picasso:picasso:2.71828'
 }
 apply plugin: 'com.google.gms.google-services'

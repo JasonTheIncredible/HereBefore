@@ -14,23 +14,23 @@
         <ProgressBar
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:indeterminate="true"/>
+            android:indeterminate="true" />
     </RelativeLayout>
 
     <ScrollView
         android:id="@+id/scrollView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:fillViewport="true"
         android:layout_centerInParent="true"
+        android:fillViewport="true"
         tools:ignore="UselessParent">
 
         <RelativeLayout
-            android:orientation="vertical"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:descendantFocusability="beforeDescendants"
-            android:focusableInTouchMode="true">
+            android:focusableInTouchMode="true"
+            android:orientation="vertical">
 
             <EditText
                 android:id="@+id/emailAddress"
@@ -39,62 +39,62 @@
                 android:layout_marginLeft="50dp"
                 android:layout_marginRight="50dp"
                 android:ems="10"
-                android:inputType="textEmailAddress"
+                android:hint="@string/email_address"
                 android:importantForAutofill="no"
-                android:hint="@string/email_address" />
+                android:inputType="textEmailAddress" />
 
             <EditText
                 android:id="@+id/password"
                 android:layout_width="match_parent"
                 android:layout_height="50dp"
+                android:layout_below="@id/emailAddress"
                 android:layout_marginLeft="50dp"
                 android:layout_marginRight="50dp"
                 android:ems="10"
-                android:inputType="textPassword"
-                android:layout_below="@id/emailAddress"
+                android:hint="@string/password"
                 android:importantForAutofill="no"
-                android:hint="@string/password" />
+                android:inputType="textPassword" />
 
             <Button
                 android:id="@+id/signInButton"
                 android:layout_width="150dp"
                 android:layout_height="65dp"
+                android:layout_below="@id/password"
+                android:layout_centerHorizontal="true"
                 android:layout_marginTop="20dp"
                 android:layout_marginBottom="10dp"
-                android:layout_centerHorizontal="true"
-                android:layout_below="@id/password"
                 android:text="@string/sign_in" />
 
             <TextView
                 android:id="@+id/orSignInWithGoogle"
                 android:layout_width="match_parent"
                 android:layout_height="30dp"
-                android:textAlignment="center"
                 android:layout_below="@id/signInButton"
-                android:text="@string/or"/>
+                android:text="@string/or"
+                android:textAlignment="center" />
 
             <com.google.android.gms.common.SignInButton
                 android:id="@+id/googleSignInButton"
                 android:layout_width="150dp"
                 android:layout_height="65dp"
-                android:layout_marginBottom="30dp"
+                android:layout_below="@id/orSignInWithGoogle"
                 android:layout_centerHorizontal="true"
-                android:layout_below="@id/orSignInWithGoogle"/>
+                android:layout_marginBottom="30dp" />
 
             <TextView
                 android:id="@+id/newUserQuestionText"
                 android:layout_width="match_parent"
                 android:layout_height="30dp"
-                android:textAlignment="center"
                 android:layout_below="@id/googleSignInButton"
-                android:text="@string/new_question"/>
+                android:text="@string/new_question"
+                android:textAlignment="center" />
 
             <Button
                 android:id="@+id/goToCreateAccountButton"
                 android:layout_width="150dp"
                 android:layout_height="65dp"
-                android:layout_centerHorizontal="true"
                 android:layout_below="@id/newUserQuestionText"
+                android:layout_centerHorizontal="true"
                 android:text="@string/create_account" />
         </RelativeLayout>
     </ScrollView>

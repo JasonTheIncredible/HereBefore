@@ -45,17 +45,9 @@ public class SignUp extends AppCompatActivity {
         // Set to dark mode.
         AppCompatDelegate.setDefaultNightMode(
                 AppCompatDelegate.MODE_NIGHT_YES);
-    }
-
-    @Override
-    protected void onStart() {
-
-        super.onStart();
-        Log.i(TAG, "onStart()");
 
         // Get info from Map.java -> SignIn.java.
         Bundle extras = getIntent().getExtras();
-
         if (extras != null) {
 
             newShape = extras.getBoolean("newShape");
@@ -97,6 +89,13 @@ public class SignUp extends AppCompatActivity {
             Log.e(TAG, "onStart() -> extras == null");
             Crashlytics.logException(new RuntimeException("onStart() -> extras == null"));
         }
+    }
+
+    @Override
+    protected void onStart() {
+
+        super.onStart();
+        Log.i(TAG, "onStart()");
 
         // Give feedback about email and password.
         createAccountButton.setOnClickListener(new View.OnClickListener() {
