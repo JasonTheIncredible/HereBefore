@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.Bundle;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -55,7 +56,6 @@ public class Chat extends AppCompatActivity implements
         PopupMenu.OnMenuItemClickListener {
 
     private static final String TAG = "Chat";
-    private static final int PICK_IMAGE_REQUEST = 1;
     private EditText mInput;
     private ArrayList<String> mUser = new ArrayList<>();
     private ArrayList<String> mTime = new ArrayList<>();
@@ -81,12 +81,10 @@ public class Chat extends AppCompatActivity implements
     public Uri imgURI;
     private StorageTask uploadTask;
 
-    //TODO: Add Logs to sendButton.
-    //TODO: Adjust spacing of recyclerviewlayout.xml
     //TODO: Click on image to expand.
+    //TODO: Move recyclerView down when new message is added.
     //TODO: Add loading icon for uploading / download image.
     //TODO: Add ability to add taken pictures and video to RecyclerView.
-    //TODO: Move recyclerView down when new message is added.
     //TODO: Look up videos about texting apps to change design of + button.
     //TODO: Add a username (in recyclerviewlayout).
     //TODO: Keep checking user's location while user is in recyclerviewlayout to see if they can keep messaging, add a recyclerviewlayout at the top notifying user of this. Add differentiation between messaging within area vs not.
@@ -95,7 +93,7 @@ public class Chat extends AppCompatActivity implements
     //TODO: Change popupMenu color.
 
     @Override
-    protected void onCreate(Bundle savedInstanceState){
+    protected void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
         Log.i(TAG, "onCreate()");
@@ -167,13 +165,13 @@ public class Chat extends AppCompatActivity implements
         // Connect to Firebase.
         DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
         databaseReference = rootRef.child("messageThreads");
-        eventListener = new ValueEventListener(){
+        eventListener = new ValueEventListener() {
 
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
 
                 // Clear the RecyclerView before adding new entries to prevent duplicates.
-                if (recyclerView.getLayoutManager() != null){
+                if (recyclerView.getLayoutManager() != null) {
 
                     mUser.clear();
                     mTime.clear();
@@ -216,9 +214,9 @@ public class Chat extends AppCompatActivity implements
                 }
 
                 // Read RecyclerView scroll position (for use in initRecyclerView).
-                if (recyclerView.getLayoutManager() != null){
+                if (recyclerView.getLayoutManager() != null) {
 
-                    index = ( (LinearLayoutManager) recyclerView.getLayoutManager()).findFirstVisibleItemPosition();
+                    index = ((LinearLayoutManager) recyclerView.getLayoutManager()).findFirstVisibleItemPosition();
                     View v = recyclerView.getChildAt(0);
                     top = (v == null) ? 0 : (v.getTop() - recyclerView.getPaddingTop());
                 }
@@ -249,7 +247,7 @@ public class Chat extends AppCompatActivity implements
                                                int left, int top, int right, int bottom,
                                                int oldLeft, int oldTop, int oldRight, int oldBottom) {
 
-                        if (reachedEndOfRecyclerView || !recyclerViewHasScrolled){
+                        if (reachedEndOfRecyclerView || !recyclerViewHasScrolled) {
 
                             if (bottom < oldBottom) {
 
@@ -287,13 +285,13 @@ public class Chat extends AppCompatActivity implements
             @Override
             public boolean onKey(View v, int keyCode, KeyEvent event) {
 
-                if(keyCode == KeyEvent.KEYCODE_DEL && imageView.getVisibility() == View.VISIBLE &&
+                if (keyCode == KeyEvent.KEYCODE_DEL && imageView.getVisibility() == View.VISIBLE &&
                         (mInput.getText().toString().trim().length() == 0 || mInput.getSelectionStart() == 0)) {
 
                     imageView.setVisibility(View.GONE);
                 }
 
-                if(keyCode == KeyEvent.KEYCODE_BACK && getCurrentFocus() == mInput) {
+                if (keyCode == KeyEvent.KEYCODE_BACK && getCurrentFocus() == mInput) {
 
                     mInput.clearFocus();
                 }
@@ -316,7 +314,7 @@ public class Chat extends AppCompatActivity implements
                 mediaButtonMenuIsOpen = true;
 
                 // Changes boolean value (used in OnConfigurationChanged) to determine whether menu is currently open.
-                mediaButtonMenu.setOnDismissListener(new PopupMenu.OnDismissListener(){
+                mediaButtonMenu.setOnDismissListener(new PopupMenu.OnDismissListener() {
 
                     @Override
                     public void onDismiss(PopupMenu popupMenu) {
@@ -335,6 +333,8 @@ public class Chat extends AppCompatActivity implements
 
             @Override
             public void onClick(View view) {
+
+                Log.i(TAG, "onStart() -> sendButton -> onClick");
 
                 final String input = mInput.getText().toString();
                 final Bundle extras = getIntent().getExtras();
@@ -587,21 +587,21 @@ public class Chat extends AppCompatActivity implements
         Log.i(TAG, "onRestart()");
 
         // Prevent keyboard from opening.
-        if (mInput != null){
+        if (mInput != null) {
 
             mInput.clearFocus();
         }
     }
 
     @Override
-    protected void onResume(){
+    protected void onResume() {
 
         super.onResume();
         Log.i(TAG, "onResume()");
     }
 
     @Override
-    protected void onPause(){
+    protected void onPause() {
 
         Log.i(TAG, "onPause()");
         super.onPause();
@@ -612,23 +612,23 @@ public class Chat extends AppCompatActivity implements
 
         Log.i(TAG, "onStop()");
 
-        if (databaseReference != null){
+        if (databaseReference != null) {
 
             databaseReference.removeEventListener(eventListener);
         }
 
-        if (recyclerView != null){
+        if (recyclerView != null) {
 
             recyclerView.clearOnScrollListeners();
             recyclerView.removeOnLayoutChangeListener(onLayoutChangeListener);
         }
 
-        if (eventListener != null){
+        if (eventListener != null) {
 
             eventListener = null;
         }
 
-        if (sendButton != null){
+        if (sendButton != null) {
 
             sendButton.setOnClickListener(null);
         }
@@ -662,7 +662,7 @@ public class Chat extends AppCompatActivity implements
         super.onDestroy();
     }
 
-    private void initRecyclerView(){
+    private void initRecyclerView() {
 
         // Initialize the RecyclerView
         Log.i(TAG, "initRecyclerView()");
@@ -676,7 +676,7 @@ public class Chat extends AppCompatActivity implements
             // Scroll to bottom of recyclerviewlayout after first initialization and after sending a recyclerviewlayout.
             recyclerView.scrollToPosition(mText.size() - 1);
             messageSent = false;
-        } else{
+        } else {
 
             // Set RecyclerView scroll position to prevent movement when Firebase gets updated and after screen orientation change.
             if (recyclerView.getLayoutManager() != null) {
@@ -701,7 +701,7 @@ public class Chat extends AppCompatActivity implements
                 Log.e(TAG, "initRecyclerView -> imm == null");
                 Crashlytics.logException(new RuntimeException("initRecyclerView -> imm == null"));
             }
-            if (mInput != null){
+            if (mInput != null) {
 
                 mInput.clearFocus();
             }
@@ -711,9 +711,11 @@ public class Chat extends AppCompatActivity implements
     @Override
     public boolean onMenuItemClick(MenuItem menuItem) {
 
-        switch(menuItem.getItemId()) {
+        switch (menuItem.getItemId()) {
 
             case R.id.selectImage:
+
+                Log.i(TAG, "onMenuItemClick() -> selectImage");
 
                 chooseImage();
                 mediaButtonMenuIsOpen = false;
@@ -740,6 +742,8 @@ public class Chat extends AppCompatActivity implements
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == 1 && resultCode == RESULT_OK && data != null && data.getData() != null) {
 
+            Log.i(TAG, "onActivityResult()");
+
             imgURI = data.getData();
             imageView.setImageURI(imgURI);
             imageView.setVisibility(View.VISIBLE);
@@ -748,7 +752,7 @@ public class Chat extends AppCompatActivity implements
 
     private void uploadImage() {
 
-        Log.i(TAG, "fileUploader");
+        Log.i(TAG, "uploadImage()");
 
         // Connect to Firebase.
         StorageReference mStorageRef = FirebaseStorage.getInstance().getReference("images");
@@ -766,6 +770,8 @@ public class Chat extends AppCompatActivity implements
 
                             @Override
                             public void onSuccess(Uri uri) {
+
+                                Log.i(TAG, "uploadImage() -> onSuccess");
 
                                 if (newShape) {
 
@@ -903,6 +909,7 @@ public class Chat extends AppCompatActivity implements
 
                         // Handle unsuccessful uploads
                         Toast.makeText(Chat.this, "An error occurred: " + exception.getMessage(), Toast.LENGTH_LONG).show();
+                        Log.e(TAG, "uploadImage() -> onFailure -> An error occurred: " + exception.getMessage());
                     }
                 });
     }

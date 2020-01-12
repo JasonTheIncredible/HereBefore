@@ -3,6 +3,7 @@ package co.clixel.herebefore;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
@@ -113,17 +114,20 @@ public class SignUp extends AppCompatActivity {
                     toastMessageShort("Email address required");
                     mEmail.requestFocus();
                     return;
-                } if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                }
+                if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
 
                     toastMessageShort("Please enter a valid email address");
                     mEmail.requestFocus();
                     return;
-                } if (pass.equals("") && !email.equals("")) {
+                }
+                if (pass.equals("") && !email.equals("")) {
 
                     toastMessageShort("Password required");
                     mPassword.requestFocus();
                     return;
-                } if (pass.length() < 6) {
+                }
+                if (pass.length() < 6) {
 
                     toastMessageShort("Password must be at least 6 characters long");
                     mPassword.requestFocus();
@@ -269,12 +273,12 @@ public class SignUp extends AppCompatActivity {
         super.onDestroy();
     }
 
-    private void toastMessageShort(String message){
+    private void toastMessageShort(String message) {
 
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }
 
-    private void toastMessageLong(String message){
+    private void toastMessageLong(String message) {
 
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }

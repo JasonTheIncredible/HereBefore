@@ -3,6 +3,7 @@ package co.clixel.herebefore;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
@@ -133,7 +134,7 @@ public class SignIn extends AppCompatActivity {
         signInButton.setOnClickListener(new View.OnClickListener() {
 
             @Override
-            public void onClick(View view){
+            public void onClick(View view) {
 
                 Log.i(TAG, "onStart() -> signInButton -> onClick");
 
@@ -145,17 +146,20 @@ public class SignIn extends AppCompatActivity {
                     toastMessageShort("Email address required");
                     mEmail.requestFocus();
                     return;
-                } if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                }
+                if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
 
                     toastMessageShort("Please enter a valid email address");
                     mEmail.requestFocus();
                     return;
-                } if (pass.equals("") && !email.equals("")) {
+                }
+                if (pass.equals("") && !email.equals("")) {
 
                     toastMessageShort("Password required");
                     mPassword.requestFocus();
                     return;
-                } if (pass.length() < 6) {
+                }
+                if (pass.length() < 6) {
 
                     toastMessageShort("Password must be at least 6 characters long");
                     mPassword.requestFocus();
@@ -176,7 +180,7 @@ public class SignIn extends AppCompatActivity {
                 findViewById(R.id.loadingIcon).setVisibility(View.VISIBLE);
 
                 // Check if the account exists in Firebase.
-                FirebaseAuth.getInstance().signInWithEmailAndPassword(email,pass).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
+                FirebaseAuth.getInstance().signInWithEmailAndPassword(email, pass).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
 
                     @Override
                     public void onComplete(@NonNull Task<AuthResult> task) {
@@ -257,7 +261,7 @@ public class SignIn extends AppCompatActivity {
         goToCreateAccountButton.setOnClickListener(new View.OnClickListener() {
 
             @Override
-            public void onClick(View view){
+            public void onClick(View view) {
 
                 Intent Activity = new Intent(SignIn.this, SignUp.class);
                 Activity.putExtra("newShape", newShape);
@@ -321,7 +325,7 @@ public class SignIn extends AppCompatActivity {
     }
 
     @Override
-    protected void onStop(){
+    protected void onStop() {
 
         Log.i(TAG, "onStop()");
 
@@ -468,12 +472,12 @@ public class SignIn extends AppCompatActivity {
                 });
     }
 
-    private void toastMessageShort(String message){
+    private void toastMessageShort(String message) {
 
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }
 
-    private void toastMessageLong(String message){
+    private void toastMessageLong(String message) {
 
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }

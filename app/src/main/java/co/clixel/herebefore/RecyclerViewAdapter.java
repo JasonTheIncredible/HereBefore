@@ -53,15 +53,20 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
                 .load(mMessageImage.get(position))
                 .into(holder.messageImage);
         holder.messageText.setText(mMessageText.get(position));
+        // Set messageImage to gone if an image doesn't exist for spacing consistency.
+        if (mMessageImage.get(position) == null) {
+
+            holder.messageImage.setVisibility(View.GONE);
+        }
         holder.setIsRecyclable(true);
 
         // Change the color of every other row for visual purposes.
         if (position %2 == 0) {
 
-            holder.itemView.setBackgroundColor(Color.parseColor("#222222")); //121212 for darker
+            holder.itemView.setBackgroundColor(Color.parseColor("#222222"));
         } else {
 
-            holder.itemView.setBackgroundColor(Color.parseColor("#303030")); //222222 for darker
+            holder.itemView.setBackgroundColor(Color.parseColor("#292929"));
         }
     }
 
