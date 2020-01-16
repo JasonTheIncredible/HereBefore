@@ -39,7 +39,7 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
 
 import com.crashlytics.android.Crashlytics;
-//developers.google.com/identity/sign-in/android/sign-in
+// developers.google.com/identity/sign-in/android/sign-in
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -2547,7 +2547,7 @@ public class Map extends FragmentActivity implements
                 // sees the explanation, try again to request the permission.
                 builder.setCancelable(false)
                         .setTitle("Device Location Required")
-                        .setMessage("We need permission to use your location to find Chat Areas around you.")
+                        .setMessage("HereBefore needs permission to use your location to find chat areas around you.")
                         .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialogInterface, int i) {

@@ -1,20 +1,36 @@
 package co.clixel.herebefore;
 
+import android.Manifest;
+import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.ContentResolver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
+import androidx.exifinterface.media.ExifInterface;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.os.Environment;
+import android.provider.MediaStore;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.MenuItem;
 import android.view.View;
@@ -45,6 +61,9 @@ import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.StorageTask;
 import com.google.firebase.storage.UploadTask;
 
+import java.io.File;
+import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -56,6 +75,8 @@ public class Chat extends AppCompatActivity implements
         PopupMenu.OnMenuItemClickListener {
 
     private static final String TAG = "Chat";
+    private static final int Request_User_Camera_Code = 1800;
+    private static final int Request_User_Write_External_Storage_Code = 1900;
     private EditText mInput;
     private ArrayList<String> mUser = new ArrayList<>();
     private ArrayList<String> mTime = new ArrayList<>();
@@ -73,7 +94,7 @@ public class Chat extends AppCompatActivity implements
     private boolean mediaButtonMenuIsOpen, newShape, threeMarkers, fourMarkers, fiveMarkers, sixMarkers, sevenMarkers, eightMarkers, shapeIsCircle;
     private Boolean userIsWithinShape;
     private View.OnLayoutChangeListener onLayoutChangeListener;
-    private String uuid;
+    private String uuid, currentPhotoPath;
     private Double polygonArea, circleLatitude, circleLongitude, radius, marker0Latitude, marker0Longitude, marker1Latitude, marker1Longitude, marker2Latitude, marker2Longitude, marker3Latitude, marker3Longitude, marker4Latitude, marker4Longitude, marker5Latitude, marker5Longitude, marker6Latitude, marker6Longitude, marker7Latitude, marker7Longitude;
     private int fillColor;
     private PopupMenu mediaButtonMenu;
@@ -81,9 +102,11 @@ public class Chat extends AppCompatActivity implements
     public Uri imgURI;
     private StorageTask uploadTask;
 
+    //TODO: Add loading icon for uploading / download image.
+    //TODO: Compress image before upload to Firebase.
+    //TODO: Fit taken photo to recyclerView.
     //TODO: Click on image to expand.
     //TODO: Move recyclerView down when new message is added.
-    //TODO: Add loading icon for uploading / download image.
     //TODO: Add ability to add taken pictures and video to RecyclerView.
     //TODO: Look up videos about texting apps to change design of + button.
     //TODO: Add a username (in recyclerviewlayout).
@@ -721,6 +744,24 @@ public class Chat extends AppCompatActivity implements
                 mediaButtonMenuIsOpen = false;
                 return true;
 
+            case  R.id.takePhoto:
+
+                Log.i(TAG, "onMenuItemClick() -> takePhoto");
+
+                if (ContextCompat.checkSelfPermission(Chat.this,
+                        Manifest.permission.CAMERA)
+                        == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(Chat.this,
+                        Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                        == PackageManager.PERMISSION_GRANTED) {
+
+                    startActivityTakePhoto();
+                } else {
+
+                    checkPermissions();
+                }
+                mediaButtonMenuIsOpen = false;
+                return true;
+
             default:
                 return false;
         }
@@ -736,18 +777,328 @@ public class Chat extends AppCompatActivity implements
         startActivityForResult(intent, 1);
     }
 
+    private void checkPermissions() {
+
+        Log.i(TAG, "checkPermissions()");
+
+        if (ContextCompat.checkSelfPermission(this,
+                Manifest.permission.CAMERA)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            // No explanation needed, we can request the permission.
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.CAMERA},
+                    Request_User_Camera_Code);
+        } else if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                Manifest.permission.CAMERA)) {
+
+            // Show an explanation to the user *asynchronously* -- don't block
+            // this thread waiting for the user's response! After the user
+            // sees the explanation, try again to request the permission.
+            new cameraPermissionAlertDialog(this).execute();
+        } else if (ContextCompat.checkSelfPermission(this,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            // No explanation needed, we can request the permission.
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                    Request_User_Write_External_Storage_Code);
+        } else if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+
+            // Show an explanation to the user *asynchronously* -- don't block
+            // this thread waiting for the user's response! After the user
+            // sees the explanation, try again to request the permission.
+            new writeExternalStoragePermissionAlertDialog(this).execute();
+        } else {
+
+            startActivityTakePhoto();
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (requestCode == Request_User_Camera_Code) {
+
+            if (grantResults.length > 0
+                    && grantResults[0] == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(this,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    == PackageManager.PERMISSION_GRANTED) {
+
+                startActivityTakePhoto();
+            } else if (grantResults.length > 0
+                    && grantResults[0] == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(this,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    != PackageManager.PERMISSION_GRANTED) {
+
+                checkPermissions();
+            } else if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                    Manifest.permission.CAMERA)) {
+
+                // Show an explanation to the user *asynchronously* -- don't block
+                // this thread waiting for the user's response! After the user
+                // sees the explanation, try again to request the permission.
+                new cameraPermissionAlertDialog(this).execute();
+            } else {
+
+                // User denied permission and checked "Don't ask again!"
+                Toast toast = Toast.makeText(Chat.this,"Camera permission is required. Please enable it manually through the Android settings menu.", Toast.LENGTH_LONG);
+                toast.setGravity(Gravity.CENTER, 0, 0);
+                toast.show();
+            }
+        }
+
+        if (requestCode == Request_User_Write_External_Storage_Code) {
+
+            if (grantResults.length > 0
+                    && grantResults[0] == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(this,
+                    Manifest.permission.CAMERA)
+                    == PackageManager.PERMISSION_GRANTED) {
+
+                startActivityTakePhoto();
+            } else if (grantResults.length > 0
+                    && grantResults[0] == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(this,
+                    Manifest.permission.CAMERA)
+                    != PackageManager.PERMISSION_GRANTED) {
+
+                checkPermissions();
+            } else if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+
+                // Show an explanation to the user *asynchronously* -- don't block
+                // this thread waiting for the user's response! After the user
+                // sees the explanation, try again to request the permission.
+                new writeExternalStoragePermissionAlertDialog(this).execute();
+            } else {
+
+                // User denied permission and checked "Don't ask again!"
+                Toast toast = Toast.makeText(Chat.this,"Camera permission is required. Please enable it manually through the Android settings menu.", Toast.LENGTH_LONG);
+                toast.setGravity(Gravity.CENTER, 0, 0);
+                toast.show();
+            }
+        }
+    }
+
+    private void startActivityTakePhoto() {
+
+        Log.i(TAG, "startActivityTakePhoto()");
+
+        // Permission was granted, yay! Do the location-related task you need to do.
+        Intent cameraIntent = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
+        if (cameraIntent.resolveActivity(getPackageManager()) != null) {
+            // Create the File where the photo should go
+            File photoFile = null;
+            try {
+
+                photoFile = createImageFile();
+            } catch (IOException ex) {
+                // Error occurred while creating the File
+            }
+            // Continue only if the File was successfully created
+            if (photoFile != null) {
+
+                imgURI = FileProvider.getUriForFile(Chat.this,
+                        "com.example.android.fileprovider",
+                        photoFile);
+                cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, imgURI);
+                startActivityForResult(cameraIntent, Request_User_Camera_Code);
+            }
+        }
+    }
+
+    // Show an explanation as to why location permission is necessary.
+    private static class cameraPermissionAlertDialog extends AsyncTask<Void, Void, Void> {
+
+        AlertDialog.Builder builder;
+        private WeakReference<Activity> activityWeakRef;
+
+        cameraPermissionAlertDialog(Activity activity) {
+
+            activityWeakRef = new WeakReference<>(activity);
+        }
+
+        @Override
+        protected void onPreExecute() {
+
+            super.onPreExecute();
+        }
+
+        @Override
+        protected Void doInBackground(Void... voids) {
+
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void result) {
+
+            super.onPostExecute(result);
+
+            Log.i(TAG, "cameraPermissionAlertDialog -> onPostExecute()");
+
+            if (activityWeakRef != null && activityWeakRef.get() != null) {
+
+                builder = new AlertDialog.Builder(activityWeakRef.get());
+
+                // Show an explanation to the user *asynchronously* -- don't block
+                // this thread waiting for the user's response! After the user
+                // sees the explanation, try again to request the permission.
+                builder.setCancelable(false)
+                        .setTitle("Camera Permission Required")
+                        .setMessage("HereBefore needs permission to use your camera to take pictures.")
+                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+
+                                //Prompt the user once explanation has been shown
+                                ActivityCompat.requestPermissions(activityWeakRef.get(),
+                                        new String[]{Manifest.permission.CAMERA},
+                                        Request_User_Camera_Code);
+                            }
+                        })
+                        .create()
+                        .show();
+            }
+        }
+    }
+
+    // Show an explanation as to why location permission is necessary.
+    private static class writeExternalStoragePermissionAlertDialog extends AsyncTask<Void, Void, Void> {
+
+        AlertDialog.Builder builder;
+        private WeakReference<Activity> activityWeakRef;
+
+        writeExternalStoragePermissionAlertDialog(Activity activity) {
+
+            activityWeakRef = new WeakReference<>(activity);
+        }
+
+        @Override
+        protected void onPreExecute() {
+
+            super.onPreExecute();
+        }
+
+        @Override
+        protected Void doInBackground(Void... voids) {
+
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void result) {
+
+            super.onPostExecute(result);
+
+            Log.i(TAG, "writeExternalStoragePermissionAlertDialog -> onPostExecute()");
+
+            if (activityWeakRef != null && activityWeakRef.get() != null) {
+
+                builder = new AlertDialog.Builder(activityWeakRef.get());
+
+                // Show an explanation to the user *asynchronously* -- don't block
+                // this thread waiting for the user's response! After the user
+                // sees the explanation, try again to request the permission.
+                builder.setCancelable(false)
+                        .setTitle("Storage Permission Required")
+                        .setMessage("HereBefore needs permission to use your storage to save photos.")
+                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+
+                                //Prompt the user once explanation has been shown
+                                ActivityCompat.requestPermissions(activityWeakRef.get(),
+                                        new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                                        Request_User_Write_External_Storage_Code);
+                            }
+                        })
+                        .create()
+                        .show();
+            }
+        }
+    }
+
+    private File createImageFile() throws IOException {
+
+        Log.i(TAG, "createImageFile()");
+
+        // Create an image file name
+        String timeStamp = getDateTimeInstance().format(new Date());
+        String imageFileName = "JPEG_" + timeStamp + "_";
+        File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        File image = File.createTempFile(
+                imageFileName,  /* prefix */
+                ".jpg",         /* suffix */
+                storageDir      /* directory */
+        );
+
+        // Save a file: path for use with ACTION_VIEW intents
+        currentPhotoPath = image.getAbsolutePath();
+        return image;
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
 
         super.onActivityResult(requestCode, resultCode, data);
+
         if (requestCode == 1 && resultCode == RESULT_OK && data != null && data.getData() != null) {
 
-            Log.i(TAG, "onActivityResult()");
+            Log.i(TAG, "onActivityResult() -> Gallery");
 
             imgURI = data.getData();
             imageView.setImageURI(imgURI);
             imageView.setVisibility(View.VISIBLE);
         }
+
+        if (requestCode == Request_User_Camera_Code && resultCode == RESULT_OK) {
+
+            Log.i(TAG, "onActivityResult() -> Camera");
+
+            Bitmap myBitmap = BitmapFactory.decodeFile(currentPhotoPath);
+            try {
+
+                ExifInterface exif = new ExifInterface(currentPhotoPath);
+                int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, 1);
+                Log.d("EXIF", "Exif: " + orientation);
+                Matrix matrix = new Matrix();
+                if (orientation == 6) {
+
+                    matrix.postRotate(90);
+                }
+                else if (orientation == 3) {
+
+                    matrix.postRotate(180);
+                }
+                else if (orientation == 8) {
+
+                    matrix.postRotate(270);
+                }
+
+                myBitmap = Bitmap.createBitmap(myBitmap, 0, 0, myBitmap.getWidth(), myBitmap.getHeight(), matrix, true); // rotating bitmap
+                String path = MediaStore.Images.Media.insertImage(Chat.this.getContentResolver(), myBitmap, "HereBefore_" + System.currentTimeMillis() + ".png", null);
+                imgURI = Uri.parse(path);
+                galleryAddPic();
+                imageView.setImageBitmap(myBitmap);
+                imageView.setVisibility(View.VISIBLE);
+            } catch (IOException ex) {
+
+                ex.printStackTrace();
+            }
+        }
+    }
+
+    private void galleryAddPic() {
+
+        Log.i(TAG, "galleryAddPic()");
+
+        Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+        mediaScanIntent.setData(imgURI);
+        this.sendBroadcast(mediaScanIntent);
     }
 
     private void uploadImage() {
@@ -908,8 +1259,8 @@ public class Chat extends AppCompatActivity implements
                     public void onFailure(@NonNull Exception exception) {
 
                         // Handle unsuccessful uploads
-                        Toast.makeText(Chat.this, "An error occurred: " + exception.getMessage(), Toast.LENGTH_LONG).show();
-                        Log.e(TAG, "uploadImage() -> onFailure -> An error occurred: " + exception.getMessage());
+                        Toast.makeText(Chat.this, exception.getMessage(), Toast.LENGTH_LONG).show();
+                        Log.e(TAG, "uploadImage() -> onFailure -> " + exception.getMessage());
                     }
                 });
     }
