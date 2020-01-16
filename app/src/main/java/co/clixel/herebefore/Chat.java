@@ -102,10 +102,9 @@ public class Chat extends AppCompatActivity implements
     public Uri imgURI;
     private StorageTask uploadTask;
 
-    //TODO: Add loading icon for uploading / download image.
-    //TODO: Compress image before upload to Firebase.
     //TODO: Fit taken photo to recyclerView.
     //TODO: Click on image to expand.
+    //TODO: Compress image before upload to Firebase.
     //TODO: Move recyclerView down when new message is added.
     //TODO: Add ability to add taken pictures and video to RecyclerView.
     //TODO: Look up videos about texting apps to change design of + button.
@@ -1111,6 +1110,9 @@ public class Chat extends AppCompatActivity implements
         final String input = mInput.getText().toString();
         final Bundle extras = getIntent().getExtras();
 
+        // Show the loading icon while the image is being uploaded to Firebase.
+        findViewById(R.id.loadingIcon).setVisibility(View.VISIBLE);
+
         uploadTask = storageReference.putFile(imgURI)
                 .addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
 
@@ -1249,6 +1251,7 @@ public class Chat extends AppCompatActivity implements
                                 newMessage.setValue(messageInformation);
                                 mInput.getText().clear();
                                 imageView.setVisibility(View.GONE);
+                                findViewById(R.id.loadingIcon).setVisibility(View.GONE);
                             }
                         });
                     }
@@ -1259,6 +1262,7 @@ public class Chat extends AppCompatActivity implements
                     public void onFailure(@NonNull Exception exception) {
 
                         // Handle unsuccessful uploads
+                        findViewById(R.id.loadingIcon).setVisibility(View.GONE);
                         Toast.makeText(Chat.this, exception.getMessage(), Toast.LENGTH_LONG).show();
                         Log.e(TAG, "uploadImage() -> onFailure -> " + exception.getMessage());
                     }
