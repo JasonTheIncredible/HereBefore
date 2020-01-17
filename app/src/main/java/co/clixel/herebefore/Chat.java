@@ -102,8 +102,8 @@ public class Chat extends AppCompatActivity implements
     public Uri imgURI;
     private StorageTask uploadTask;
 
-    //TODO: Fit taken photo to recyclerView.
     //TODO: Click on image to expand.
+    //TODO: Firebase caching.
     //TODO: Compress image before upload to Firebase.
     //TODO: Move recyclerView down when new message is added.
     //TODO: Add ability to add taken pictures and video to RecyclerView.

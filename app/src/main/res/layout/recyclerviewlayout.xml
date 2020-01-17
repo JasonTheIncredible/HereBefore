@@ -42,11 +42,13 @@
         android:layout_marginStart="10dp"
         android:layout_marginLeft="10dp"
         android:layout_marginTop="4dp"
-        android:layout_marginBottom="2dp"/>
+        android:layout_marginBottom="2dp"
+        android:adjustViewBounds="true"
+        android:scaleType="centerCrop" />
 
     <TextView
         android:id="@+id/messageText"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@id/messageImage"
         android:layout_alignParentStart="true"

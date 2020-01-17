@@ -53,10 +53,14 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
                 .load(mMessageImage.get(position))
                 .into(holder.messageImage);
         holder.messageText.setText(mMessageText.get(position));
-        // Set messageImage to gone if an image doesn't exist for spacing consistency.
+        // Set messageImage or messageText to gone if an image doesn't exist for spacing consistency.
         if (mMessageImage.get(position) == null) {
 
             holder.messageImage.setVisibility(View.GONE);
+        }
+        if (mMessageText.get(position).trim().isEmpty()) {
+
+            holder.messageText.setVisibility(View.GONE);
         }
         holder.setIsRecyclable(true);
 
