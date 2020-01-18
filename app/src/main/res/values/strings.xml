@@ -23,4 +23,5 @@
     <string name="or">Or Sign In Using Google:</string>
     <string name="select_image">Select image</string>
     <string name="take_photo">Take photo</string>
+    <string name="zoom_touch_close">zoom_touch_close</string>
 </resources>

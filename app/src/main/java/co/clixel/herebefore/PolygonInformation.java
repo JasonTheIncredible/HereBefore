@@ -9,7 +9,7 @@ public class PolygonInformation {
     public double polygonArea;
     public String uuid;
 
-    PolygonInformation(){
+    PolygonInformation() {
     }
 
     void setPolygonOptions(PolygonOptions polygonOptions) {

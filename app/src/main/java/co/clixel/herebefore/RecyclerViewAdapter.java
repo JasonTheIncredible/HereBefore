@@ -1,9 +1,12 @@
 package co.clixel.herebefore;
 
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Color;
+
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -39,12 +42,12 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
 
-        View view = LayoutInflater.from(mContext).inflate(R.layout.recyclerviewlayout, parent,false);
+        View view = LayoutInflater.from(mContext).inflate(R.layout.recyclerviewlayout, parent, false);
         return new ViewHolder(view);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull ViewHolder holder, final int position) {
 
         Log.d(TAG, "onBindViewHolder: called.");
         //holder.messageUser.setText(mMessageUser.get(position));
@@ -65,13 +68,25 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
         holder.setIsRecyclable(true);
 
         // Change the color of every other row for visual purposes.
-        if (position %2 == 0) {
+        if (position % 2 == 0) {
 
             holder.itemView.setBackgroundColor(Color.parseColor("#222222"));
         } else {
 
             holder.itemView.setBackgroundColor(Color.parseColor("#292929"));
         }
+
+        // Go to PhotoView.java to get a zoomed-in look at the image.
+        holder.messageImage.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+
+                Intent Activity = new Intent(mContext, co.clixel.herebefore.PhotoView.class);
+                Activity.putExtra("imgURL", mMessageImage.get(position));
+                mContext.startActivity(Activity);
+            }
+        });
     }
 
     @Override
@@ -80,12 +95,12 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
         return mMessageTime.size();
     }
 
-    class ViewHolder extends RecyclerView.ViewHolder{
+    class ViewHolder extends RecyclerView.ViewHolder {
 
         TextView messageUser, messageTime, messageText;
         ImageView messageImage;
         RelativeLayout messageItem;
-        
+
         ViewHolder(@NonNull View itemView) {
 
             super(itemView);

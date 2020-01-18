@@ -7,7 +7,8 @@ public class MessageInformation {
     public Object date;
     public String uuid, imageURL;
 
-    MessageInformation(){}
+    MessageInformation() {
+    }
 
     public void setDate(Object date) {
         this.date = date;

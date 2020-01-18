@@ -54,5 +54,7 @@ dependencies {
     implementation 'com.vividsolutions:jts-core:1.14.0'
 
     implementation 'com.squareup.picasso:picasso:2.71828'
+
+    implementation 'com.github.chrisbanes:PhotoView:2.3.0'
 }
 apply plugin: 'com.google.gms.google-services'

@@ -178,7 +178,7 @@ public class Map extends FragmentActivity implements
                 Log.e(TAG, "onStart() -> locationManager == null");
                 Crashlytics.logException(new Exception("onStart() -> locationManager == null"));
             }
-        } else{
+        } else {
 
             checkLocationPermission();
         }
@@ -198,7 +198,7 @@ public class Map extends FragmentActivity implements
                 mapTypeMenuIsOpen = true;
 
                 // Changes boolean value (used in OnConfigurationChanged) to determine whether menu is currently open.
-                popupMapType.setOnDismissListener(new PopupMenu.OnDismissListener(){
+                popupMapType.setOnDismissListener(new PopupMenu.OnDismissListener() {
 
                     @Override
                     public void onDismiss(PopupMenu popupMenu) {
@@ -226,7 +226,7 @@ public class Map extends FragmentActivity implements
                 chatViewsMenuIsOpen = true;
 
                 // Changes boolean value (used in OnConfigurationChanged) to determine whether menu is currently open.
-                popupChatViews.setOnDismissListener(new PopupMenu.OnDismissListener(){
+                popupChatViews.setOnDismissListener(new PopupMenu.OnDismissListener() {
 
                     @Override
                     public void onDismiss(PopupMenu popupMenu) {
@@ -256,7 +256,7 @@ public class Map extends FragmentActivity implements
 
                     popupCreateChat.getMenu().findItem(R.id.createPolygon).setVisible(false);
                     popupCreateChat.getMenu().findItem(R.id.createCircle).setVisible(false);
-                } else{
+                } else {
 
                     popupCreateChat.getMenu().findItem(R.id.removeShape).setVisible(false);
                 }
@@ -354,7 +354,7 @@ public class Map extends FragmentActivity implements
                                                             .center(latLng)
                                                             .clickable(true)
                                                             .radius(circleSize)
-                                                            .strokeColor(Color.rgb(255,0,255))
+                                                            .strokeColor(Color.rgb(255, 0, 255))
                                                             .strokeWidth(3f);
 
                                             // Create a marker in the center of the circle to allow for dragging.
@@ -1223,7 +1223,7 @@ public class Map extends FragmentActivity implements
                                             new PolygonOptions()
                                                     .add(marker0Position, marker1Position, marker2Position)
                                                     .clickable(true)
-                                                    .strokeColor(Color.rgb(255,0,255))
+                                                    .strokeColor(Color.rgb(255, 0, 255))
                                                     .strokeWidth(3f);
 
                                     // Create markers when creating the polygon to allow for dragging of the center and vertices.
@@ -1329,7 +1329,7 @@ public class Map extends FragmentActivity implements
                                             new PolygonOptions()
                                                     .add(marker0Position, marker1Position, marker2Position, marker3Position)
                                                     .clickable(true)
-                                                    .strokeColor(Color.rgb(255,0,255))
+                                                    .strokeColor(Color.rgb(255, 0, 255))
                                                     .strokeWidth(3f);
 
                                     // Create markers when creating the polygon to allow for dragging of the center and vertices.
@@ -1442,7 +1442,7 @@ public class Map extends FragmentActivity implements
                                             new PolygonOptions()
                                                     .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
                                                     .clickable(true)
-                                                    .strokeColor(Color.rgb(255,0,255))
+                                                    .strokeColor(Color.rgb(255, 0, 255))
                                                     .strokeWidth(3f);
 
                                     // Create markers when creating the polygon to allow for dragging of the center and vertices.
@@ -1562,7 +1562,7 @@ public class Map extends FragmentActivity implements
                                             new PolygonOptions()
                                                     .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
                                                     .clickable(true)
-                                                    .strokeColor(Color.rgb(255,0,255))
+                                                    .strokeColor(Color.rgb(255, 0, 255))
                                                     .strokeWidth(3f);
 
                                     // Create markers when creating the polygon to allow for dragging of the center and vertices.
@@ -1689,7 +1689,7 @@ public class Map extends FragmentActivity implements
                                             new PolygonOptions()
                                                     .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
                                                     .clickable(true)
-                                                    .strokeColor(Color.rgb(255,0,255))
+                                                    .strokeColor(Color.rgb(255, 0, 255))
                                                     .strokeWidth(3f);
 
                                     // Create markers when creating the polygon to allow for dragging of the center and vertices.
@@ -1823,7 +1823,7 @@ public class Map extends FragmentActivity implements
                                             new PolygonOptions()
                                                     .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
                                                     .clickable(true)
-                                                    .strokeColor(Color.rgb(255,0,255))
+                                                    .strokeColor(Color.rgb(255, 0, 255))
                                                     .strokeWidth(3f);
 
                                     // Create markers when creating the polygon to allow for dragging of the center and vertices.
@@ -1913,7 +1913,8 @@ public class Map extends FragmentActivity implements
         chatSelectorSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
 
             @Override
-            public void onStartTrackingTouch(final SeekBar seekBar) {}
+            public void onStartTrackingTouch(final SeekBar seekBar) {
+            }
 
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
 
@@ -2072,7 +2073,8 @@ public class Map extends FragmentActivity implements
             }
 
             @Override
-            public void onStopTrackingTouch(final SeekBar seekBar) {}
+            public void onStopTrackingTouch(final SeekBar seekBar) {
+            }
         });
     }
 
@@ -2288,7 +2290,7 @@ public class Map extends FragmentActivity implements
         }
 
         @Override
-        protected Void doInBackground(Void...voids) {
+        protected Void doInBackground(Void... voids) {
 
             return null;
         }
@@ -2413,6 +2415,7 @@ public class Map extends FragmentActivity implements
 
     /**
      * Release memory when the UI becomes hidden or when system resources become low.
+     *
      * @param level the memory-related event that was raised.
      */
     @Override
@@ -2449,7 +2452,7 @@ public class Map extends FragmentActivity implements
                     new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
                     Request_User_Location_Code);
         } else if (ActivityCompat.shouldShowRequestPermissionRationale(this,
-                    Manifest.permission.ACCESS_FINE_LOCATION)) {
+                Manifest.permission.ACCESS_FINE_LOCATION)) {
 
             // Show an explanation to the user *asynchronously* -- don't block
             // this thread waiting for the user's response! After the user
@@ -2501,7 +2504,7 @@ public class Map extends FragmentActivity implements
             } else {
 
                 // User denied permission and checked "Don't ask again!"
-                Toast toast = Toast.makeText(Map.this,"Location permission is required. Please enable it manually through the Android settings menu.", Toast.LENGTH_LONG);
+                Toast toast = Toast.makeText(Map.this, "Location permission is required. Please enable it manually through the Android settings menu.", Toast.LENGTH_LONG);
                 toast.setGravity(Gravity.CENTER, 0, 0);
                 toast.show();
             }
@@ -2564,7 +2567,7 @@ public class Map extends FragmentActivity implements
         }
     }
 
-    protected void startLocationUpdates(){
+    protected void startLocationUpdates() {
 
         Log.i(TAG, "startLocationUpdates()");
 
@@ -3171,17 +3174,17 @@ public class Map extends FragmentActivity implements
                     }
 
                     // Prevent screen orientation change while programmatically touching circles.
-                    if (getWindowManager().getDefaultDisplay().getRotation()== Surface.ROTATION_0) {
+                    if (getWindowManager().getDefaultDisplay().getRotation() == Surface.ROTATION_0) {
 
                         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
                     }
 
-                    if (getWindowManager().getDefaultDisplay().getRotation()== Surface.ROTATION_90) {
+                    if (getWindowManager().getDefaultDisplay().getRotation() == Surface.ROTATION_90) {
 
                         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
                     }
 
-                    if (getWindowManager().getDefaultDisplay().getRotation()== Surface.ROTATION_270) {
+                    if (getWindowManager().getDefaultDisplay().getRotation() == Surface.ROTATION_270) {
 
                         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
                     }
@@ -3406,7 +3409,7 @@ public class Map extends FragmentActivity implements
                                 new PolygonOptions()
                                         .clickable(true)
                                         .fillColor(Color.argb(100, 255, 255, 0))
-                                        .strokeColor(Color.rgb(255,255,0))
+                                        .strokeColor(Color.rgb(255, 255, 0))
                                         .strokeWidth(3f)
                                         .addAll(selectedOverlappingShapePolygonVertices)
                                         .zIndex(2)
@@ -3422,7 +3425,7 @@ public class Map extends FragmentActivity implements
                                 new PolygonOptions()
                                         .clickable(true)
                                         .fillColor(Color.argb(100, 255, 0, 255))
-                                        .strokeColor(Color.rgb(255,0,255))
+                                        .strokeColor(Color.rgb(255, 0, 255))
                                         .strokeWidth(3f)
                                         .addAll(selectedOverlappingShapePolygonVertices)
                                         .zIndex(2)
@@ -3629,17 +3632,17 @@ public class Map extends FragmentActivity implements
                     }
 
                     // Prevent screen orientation change while programmatically touching circles.
-                    if (getWindowManager().getDefaultDisplay().getRotation()== Surface.ROTATION_0) {
+                    if (getWindowManager().getDefaultDisplay().getRotation() == Surface.ROTATION_0) {
 
                         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
                     }
 
-                    if (getWindowManager().getDefaultDisplay().getRotation()== Surface.ROTATION_90) {
+                    if (getWindowManager().getDefaultDisplay().getRotation() == Surface.ROTATION_90) {
 
                         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
                     }
 
-                    if (getWindowManager().getDefaultDisplay().getRotation()== Surface.ROTATION_270) {
+                    if (getWindowManager().getDefaultDisplay().getRotation() == Surface.ROTATION_270) {
 
                         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
                     }
@@ -3968,7 +3971,7 @@ public class Map extends FragmentActivity implements
                                     new PolygonOptions()
                                             .clickable(true)
                                             .addAll(overlappingShapesPolygonVertices.get(i))
-                                            .strokeColor(Color.rgb(255,255,0))
+                                            .strokeColor(Color.rgb(255, 255, 0))
                                             .strokeWidth(3f)
                                             .zIndex(0)
                             );
@@ -3999,7 +4002,7 @@ public class Map extends FragmentActivity implements
                                     new PolygonOptions()
                                             .clickable(true)
                                             .addAll(overlappingShapesPolygonVertices.get(i))
-                                            .strokeColor(Color.rgb(255,0,255))
+                                            .strokeColor(Color.rgb(255, 0, 255))
                                             .strokeWidth(3f)
                                             .zIndex(0)
                             );
@@ -4259,7 +4262,7 @@ public class Map extends FragmentActivity implements
                                                     new CircleOptions()
                                                             .center(center)
                                                             .clickable(true)
-                                                            .fillColor(Color.argb(100,255,255,0))
+                                                            .fillColor(Color.argb(100, 255, 255, 0))
                                                             .radius(radius)
                                                             .strokeColor(Color.YELLOW)
                                                             .strokeWidth(3f)
@@ -4275,7 +4278,7 @@ public class Map extends FragmentActivity implements
                             }
 
                             @Override
-                            public void onCancelled (@NonNull DatabaseError databaseError) {
+                            public void onCancelled(@NonNull DatabaseError databaseError) {
 
                                 Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
                             }
@@ -4450,7 +4453,7 @@ public class Map extends FragmentActivity implements
                                                             .center(center)
                                                             .clickable(true)
                                                             .radius(radius)
-                                                            .strokeColor(Color.rgb(255,0,255))
+                                                            .strokeColor(Color.rgb(255, 0, 255))
                                                             .strokeWidth(3f)
                                             );
 
@@ -4489,9 +4492,9 @@ public class Map extends FragmentActivity implements
                                                     new CircleOptions()
                                                             .center(center)
                                                             .clickable(true)
-                                                            .fillColor(Color.argb(100, 255,0,255))
+                                                            .fillColor(Color.argb(100, 255, 0, 255))
                                                             .radius(radius)
-                                                            .strokeColor(Color.rgb(255,0,255))
+                                                            .strokeColor(Color.rgb(255, 0, 255))
                                                             .strokeWidth(3f)
                                             );
 
@@ -4505,7 +4508,7 @@ public class Map extends FragmentActivity implements
                             }
 
                             @Override
-                            public void onCancelled (@NonNull DatabaseError databaseError) {
+                            public void onCancelled(@NonNull DatabaseError databaseError) {
 
                                 Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
                             }
@@ -4535,7 +4538,7 @@ public class Map extends FragmentActivity implements
                                                     new PolygonOptions()
                                                             .clickable(true)
                                                             .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
-                                                            .strokeColor(Color.rgb(255,0,255))
+                                                            .strokeColor(Color.rgb(255, 0, 255))
                                                             .strokeWidth(3f)
                                             );
 
@@ -4556,7 +4559,7 @@ public class Map extends FragmentActivity implements
                                                     new PolygonOptions()
                                                             .clickable(true)
                                                             .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
-                                                            .strokeColor(Color.rgb(255,0,255))
+                                                            .strokeColor(Color.rgb(255, 0, 255))
                                                             .strokeWidth(3f)
                                             );
 
@@ -4576,7 +4579,7 @@ public class Map extends FragmentActivity implements
                                                     new PolygonOptions()
                                                             .clickable(true)
                                                             .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
-                                                            .strokeColor(Color.rgb(255,0,255))
+                                                            .strokeColor(Color.rgb(255, 0, 255))
                                                             .strokeWidth(3f)
                                             );
 
@@ -4595,7 +4598,7 @@ public class Map extends FragmentActivity implements
                                                     new PolygonOptions()
                                                             .clickable(true)
                                                             .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
-                                                            .strokeColor(Color.rgb(255,0,255))
+                                                            .strokeColor(Color.rgb(255, 0, 255))
                                                             .strokeWidth(3f)
                                             );
 
@@ -4613,7 +4616,7 @@ public class Map extends FragmentActivity implements
                                                     new PolygonOptions()
                                                             .clickable(true)
                                                             .add(marker0Position, marker1Position, marker2Position, marker3Position)
-                                                            .strokeColor(Color.rgb(255,0,255))
+                                                            .strokeColor(Color.rgb(255, 0, 255))
                                                             .strokeWidth(3f)
                                             );
 
@@ -4630,7 +4633,7 @@ public class Map extends FragmentActivity implements
                                                     new PolygonOptions()
                                                             .clickable(true)
                                                             .add(marker0Position, marker1Position, marker2Position)
-                                                            .strokeColor(Color.rgb(255,0,255))
+                                                            .strokeColor(Color.rgb(255, 0, 255))
                                                             .strokeWidth(3f)
                                             );
 
@@ -4743,7 +4746,7 @@ public class Map extends FragmentActivity implements
         if (newPolygon != null) {
 
             // Limit polygon size. The low end will be handled in the onClickListener.
-            if (SphericalUtil.computeArea(polygonPointsList) <= Math.PI*Math.pow(200, 2)) {
+            if (SphericalUtil.computeArea(polygonPointsList) <= Math.PI * Math.pow(200, 2)) {
 
                 markerPositionAtVertexOfPolygon = new LatLng(markerPosition.latitude, markerPosition.longitude);
 
@@ -5591,7 +5594,7 @@ public class Map extends FragmentActivity implements
     @Override
     public boolean onMenuItemClick(MenuItem menuItem) {
 
-        switch(menuItem.getItemId()) {
+        switch (menuItem.getItemId()) {
 
             // maptype_menu
             case R.id.roadmap:
@@ -7968,7 +7971,7 @@ public class Map extends FragmentActivity implements
                                     new PolygonOptions()
                                             .clickable(true)
                                             .addAll(overlappingShapesPolygonVertices.get(i))
-                                            .strokeColor(Color.rgb(255,255,0))
+                                            .strokeColor(Color.rgb(255, 255, 0))
                                             .strokeWidth(3f)
                                             .zIndex(0)
                             );
@@ -7999,7 +8002,7 @@ public class Map extends FragmentActivity implements
                                     new PolygonOptions()
                                             .clickable(true)
                                             .addAll(overlappingShapesPolygonVertices.get(i))
-                                            .strokeColor(Color.rgb(255,0,255))
+                                            .strokeColor(Color.rgb(255, 0, 255))
                                             .strokeWidth(3f)
                                             .zIndex(0)
                             );
@@ -8186,7 +8189,7 @@ public class Map extends FragmentActivity implements
                                                 new PolygonOptions()
                                                         .add(marker0Position, marker1Position, marker2Position, marker3Position)
                                                         .clickable(true)
-                                                        .strokeColor(Color.rgb(255,0,255))
+                                                        .strokeColor(Color.rgb(255, 0, 255))
                                                         .strokeWidth(3f);
 
                                         // Create markers when creating the polygon to allow for dragging of the center and vertices.
@@ -8279,7 +8282,7 @@ public class Map extends FragmentActivity implements
                                     new PolygonOptions()
                                             .clickable(true)
                                             .addAll(overlappingShapesPolygonVertices.get(i))
-                                            .strokeColor(Color.rgb(255,255,0))
+                                            .strokeColor(Color.rgb(255, 255, 0))
                                             .strokeWidth(3f)
                                             .zIndex(0)
                             );
@@ -8310,7 +8313,7 @@ public class Map extends FragmentActivity implements
                                     new PolygonOptions()
                                             .clickable(true)
                                             .addAll(overlappingShapesPolygonVertices.get(i))
-                                            .strokeColor(Color.rgb(255,0,255))
+                                            .strokeColor(Color.rgb(255, 0, 255))
                                             .strokeWidth(3f)
                                             .zIndex(0)
                             );
@@ -8469,7 +8472,7 @@ public class Map extends FragmentActivity implements
                                                         .center(latLng)
                                                         .clickable(true)
                                                         .radius(circleRadius)
-                                                        .strokeColor(Color.rgb(255,0,255))
+                                                        .strokeColor(Color.rgb(255, 0, 255))
                                                         .strokeWidth(3f);
 
                                         // Create a marker in the center of the circle to allow for dragging.
@@ -8936,9 +8939,9 @@ public class Map extends FragmentActivity implements
                                     new CircleOptions()
                                             .center(center)
                                             .clickable(true)
-                                            .fillColor(Color.argb(100, 255,0,255))
+                                            .fillColor(Color.argb(100, 255, 0, 255))
                                             .radius(radius)
-                                            .strokeColor(Color.rgb(255,0,255))
+                                            .strokeColor(Color.rgb(255, 0, 255))
                                             .strokeWidth(3f)
                             );
 
@@ -8958,7 +8961,7 @@ public class Map extends FragmentActivity implements
                                             .center(center)
                                             .clickable(true)
                                             .radius(radius)
-                                            .strokeColor(Color.rgb(255,0,255))
+                                            .strokeColor(Color.rgb(255, 0, 255))
                                             .strokeWidth(3f)
                             );
 
@@ -8972,7 +8975,7 @@ public class Map extends FragmentActivity implements
             }
 
             @Override
-            public void onCancelled (@NonNull DatabaseError databaseError) {
+            public void onCancelled(@NonNull DatabaseError databaseError) {
 
                 Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
             }
@@ -9002,7 +9005,7 @@ public class Map extends FragmentActivity implements
                                     new PolygonOptions()
                                             .clickable(true)
                                             .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
-                                            .strokeColor(Color.rgb(255,0,255))
+                                            .strokeColor(Color.rgb(255, 0, 255))
                                             .strokeWidth(3f)
                             );
 
@@ -9023,7 +9026,7 @@ public class Map extends FragmentActivity implements
                                     new PolygonOptions()
                                             .clickable(true)
                                             .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
-                                            .strokeColor(Color.rgb(255,0,255))
+                                            .strokeColor(Color.rgb(255, 0, 255))
                                             .strokeWidth(3f)
                             );
 
@@ -9043,7 +9046,7 @@ public class Map extends FragmentActivity implements
                                     new PolygonOptions()
                                             .clickable(true)
                                             .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
-                                            .strokeColor(Color.rgb(255,0,255))
+                                            .strokeColor(Color.rgb(255, 0, 255))
                                             .strokeWidth(3f)
                             );
 
@@ -9062,7 +9065,7 @@ public class Map extends FragmentActivity implements
                                     new PolygonOptions()
                                             .clickable(true)
                                             .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
-                                            .strokeColor(Color.rgb(255,0,255))
+                                            .strokeColor(Color.rgb(255, 0, 255))
                                             .strokeWidth(3f)
                             );
 
@@ -9080,7 +9083,7 @@ public class Map extends FragmentActivity implements
                                     new PolygonOptions()
                                             .clickable(true)
                                             .add(marker0Position, marker1Position, marker2Position, marker3Position)
-                                            .strokeColor(Color.rgb(255,0,255))
+                                            .strokeColor(Color.rgb(255, 0, 255))
                                             .strokeWidth(3f)
                             );
 
@@ -9097,7 +9100,7 @@ public class Map extends FragmentActivity implements
                                     new PolygonOptions()
                                             .clickable(true)
                                             .add(marker0Position, marker1Position, marker2Position)
-                                            .strokeColor(Color.rgb(255,0,255))
+                                            .strokeColor(Color.rgb(255, 0, 255))
                                             .strokeWidth(3f)
                             );
 
@@ -9317,7 +9320,7 @@ public class Map extends FragmentActivity implements
                                     new CircleOptions()
                                             .center(center)
                                             .clickable(true)
-                                            .fillColor(Color.argb(100,255,255,0))
+                                            .fillColor(Color.argb(100, 255, 255, 0))
                                             .radius(radius)
                                             .strokeColor(Color.YELLOW)
                                             .strokeWidth(3f)
@@ -9645,12 +9648,12 @@ public class Map extends FragmentActivity implements
         Log.i(TAG, "distanceGivenLatLng");
 
         double earthRadius = 6371000; // Meters
-        double dLat = Math.toRadians(lat2-lat1);
-        double dLng = Math.toRadians(lng2-lng1);
-        double a = sin(dLat/2) * sin(dLat/2) +
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLng = Math.toRadians(lng2 - lng1);
+        double a = sin(dLat / 2) * sin(dLat / 2) +
                 cos(Math.toRadians(lat1)) * cos(Math.toRadians(lat2)) *
-                        sin(dLng/2) * sin(dLng/2);
-        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                        sin(dLng / 2) * sin(dLng / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
         return (float) (earthRadius * c);
     }
@@ -9689,16 +9692,19 @@ public class Map extends FragmentActivity implements
         double a = Math.atan2(sin(brngRad) * sin(distFrac) * cos(latRad), cos(distFrac) - sin(latRad) * sin(latitudeResult));
         double longitudeResult = (lonRad + a + 3 * Math.PI) % (2 * Math.PI) - Math.PI;
 
-        return new LatLng (Math.toDegrees(latitudeResult), Math.toDegrees(longitudeResult));
+        return new LatLng(Math.toDegrees(latitudeResult), Math.toDegrees(longitudeResult));
     }
 
     @Override
     @SuppressWarnings({"deprecation", "RedundantSuppression"})
-    public void onStatusChanged(String s, int i, Bundle bundle) {}
+    public void onStatusChanged(String s, int i, Bundle bundle) {
+    }
 
     @Override
-    public void onProviderEnabled(String s) {}
+    public void onProviderEnabled(String s) {
+    }
 
     @Override
-    public void onProviderDisabled(String s) {}
+    public void onProviderDisabled(String s) {
+    }
 }

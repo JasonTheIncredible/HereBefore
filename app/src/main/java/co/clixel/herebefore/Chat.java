@@ -102,10 +102,9 @@ public class Chat extends AppCompatActivity implements
     public Uri imgURI;
     private StorageTask uploadTask;
 
-    //TODO: Click on image to expand.
+    //TODO: Move recyclerView down when new message is added.
     //TODO: Firebase caching.
     //TODO: Compress image before upload to Firebase.
-    //TODO: Move recyclerView down when new message is added.
     //TODO: Add ability to add taken pictures and video to RecyclerView.
     //TODO: Look up videos about texting apps to change design of + button.
     //TODO: Add a username (in recyclerviewlayout).
@@ -743,7 +742,7 @@ public class Chat extends AppCompatActivity implements
                 mediaButtonMenuIsOpen = false;
                 return true;
 
-            case  R.id.takePhoto:
+            case R.id.takePhoto:
 
                 Log.i(TAG, "onMenuItemClick() -> takePhoto");
 
@@ -845,7 +844,7 @@ public class Chat extends AppCompatActivity implements
             } else {
 
                 // User denied permission and checked "Don't ask again!"
-                Toast toast = Toast.makeText(Chat.this,"Camera permission is required. Please enable it manually through the Android settings menu.", Toast.LENGTH_LONG);
+                Toast toast = Toast.makeText(Chat.this, "Camera permission is required. Please enable it manually through the Android settings menu.", Toast.LENGTH_LONG);
                 toast.setGravity(Gravity.CENTER, 0, 0);
                 toast.show();
             }
@@ -875,7 +874,7 @@ public class Chat extends AppCompatActivity implements
             } else {
 
                 // User denied permission and checked "Don't ask again!"
-                Toast toast = Toast.makeText(Chat.this,"Camera permission is required. Please enable it manually through the Android settings menu.", Toast.LENGTH_LONG);
+                Toast toast = Toast.makeText(Chat.this, "Camera permission is required. Please enable it manually through the Android settings menu.", Toast.LENGTH_LONG);
                 toast.setGravity(Gravity.CENTER, 0, 0);
                 toast.show();
             }
@@ -1068,12 +1067,10 @@ public class Chat extends AppCompatActivity implements
                 if (orientation == 6) {
 
                     matrix.postRotate(90);
-                }
-                else if (orientation == 3) {
+                } else if (orientation == 3) {
 
                     matrix.postRotate(180);
-                }
-                else if (orientation == 8) {
+                } else if (orientation == 8) {
 
                     matrix.postRotate(270);
                 }

@@ -8,10 +8,10 @@ public class CircleInformation {
     public CircleOptions circleOptions;
     public String uuid;
 
-    CircleInformation(){
+    CircleInformation() {
     }
 
-    void setCircleOptions (CircleOptions circleOptions) {
+    void setCircleOptions(CircleOptions circleOptions) {
         this.circleOptions = circleOptions;
     }
 
