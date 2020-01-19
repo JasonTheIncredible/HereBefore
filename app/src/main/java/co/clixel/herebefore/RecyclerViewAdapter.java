@@ -2,6 +2,7 @@ package co.clixel.herebefore;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Resources;
 import android.graphics.Color;
 
 import androidx.annotation.NonNull;
@@ -28,6 +29,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
     private ArrayList<String> mMessageImage;
     private ArrayList<String> mMessageText;
     private Context mContext;
+    private int usableWidth;
 
     RecyclerViewAdapter(Context context, ArrayList<String> mMessageUser, ArrayList<String> mMessageTime, ArrayList<String> mMessageImage, ArrayList<String> mMessageText) {
 
@@ -43,29 +45,71 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
 
         View view = LayoutInflater.from(mContext).inflate(R.layout.recyclerviewlayout, parent, false);
-        return new ViewHolder(view);
+
+        final ViewHolder holder = new ViewHolder(view);
+
+        view.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                if (mMessageImage.get(holder.getAdapterPosition()) != null) {
+
+                    Intent Activity = new Intent(mContext, co.clixel.herebefore.PhotoView.class);
+                    Activity.putExtra("imgURL", mMessageImage.get(holder.getAdapterPosition()));
+                    mContext.startActivity(Activity);
+                }
+            }
+        });
+
+        // Sets each picture's size relative to the screen (used in onBindViewHolder().
+        int measuredWidth;
+        measuredWidth = Resources.getSystem().getDisplayMetrics().widthPixels;
+
+        if (measuredWidth > 0) {
+
+            if (measuredWidth >= 400) {
+
+                usableWidth = measuredWidth - 200;
+            } else {
+
+                usableWidth = measuredWidth;
+            }
+        } else {
+
+            usableWidth = 400;
+        }
+
+        return holder;
     }
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, final int position) {
 
-        Log.d(TAG, "onBindViewHolder: called.");
+        Log.d(TAG, "onBindViewHolder: called:" + holder.getPosition());
         //holder.messageUser.setText(mMessageUser.get(position));
         holder.messageTime.setText(mMessageTime.get(position));
-        Picasso.get()
-                .load(mMessageImage.get(position))
-                .into(holder.messageImage);
-        holder.messageText.setText(mMessageText.get(position));
         // Set messageImage or messageText to gone if an image doesn't exist for spacing consistency.
         if (mMessageImage.get(position) == null) {
 
             holder.messageImage.setVisibility(View.GONE);
+        } else {
+
+            holder.messageImage.setVisibility(View.VISIBLE);
+            Picasso.get()
+                    .load(mMessageImage.get(position))
+                    .resize(usableWidth, 0)
+                    .onlyScaleDown()
+                    .centerCrop()
+                    .into(holder.messageImage);
         }
         if (mMessageText.get(position).trim().isEmpty()) {
 
             holder.messageText.setVisibility(View.GONE);
+        } else {
+
+            holder.messageText.setVisibility(View.VISIBLE);
+            holder.messageText.setText(mMessageText.get(position));
         }
-        holder.setIsRecyclable(true);
 
         // Change the color of every other row for visual purposes.
         if (position % 2 == 0) {
@@ -76,17 +120,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
             holder.itemView.setBackgroundColor(Color.parseColor("#292929"));
         }
 
-        // Go to PhotoView.java to get a zoomed-in look at the image.
-        holder.messageImage.setOnClickListener(new View.OnClickListener() {
-
-            @Override
-            public void onClick(View v) {
-
-                Intent Activity = new Intent(mContext, co.clixel.herebefore.PhotoView.class);
-                Activity.putExtra("imgURL", mMessageImage.get(position));
-                mContext.startActivity(Activity);
-            }
-        });
+        holder.setIsRecyclable(true);
     }
 
     @Override

@@ -102,13 +102,14 @@ public class Chat extends AppCompatActivity implements
     public Uri imgURI;
     private StorageTask uploadTask;
 
-    //TODO: Move recyclerView down when new message is added.
-    //TODO: Firebase caching.
     //TODO: Compress image before upload to Firebase.
-    //TODO: Add ability to add taken pictures and video to RecyclerView.
+    //TODO: Don't send empty message string to Firebase if just uploading image.
+    //TODO: Move recyclerView down when new message is added.
+    //TODO: Add ability to add gifs and video to RecyclerView.
     //TODO: Look up videos about texting apps to change design of + button.
     //TODO: Add a username (in recyclerviewlayout).
     //TODO: Keep checking user's location while user is in recyclerviewlayout to see if they can keep messaging, add a recyclerviewlayout at the top notifying user of this. Add differentiation between messaging within area vs not.
+    //TODO: When data gets changed, try to update only the affected items: https://stackoverflow.com/questions/27188536/recyclerview-scrolling-performance.
     //TODO: Too much work on main thread.
     //TODO: Check updating in different states with another device.
     //TODO: Change popupMenu color.
@@ -126,7 +127,7 @@ public class Chat extends AppCompatActivity implements
         mInput = findViewById(R.id.input);
         sendButton = findViewById(R.id.sendButton);
         recyclerView = findViewById(R.id.messageList);
-        recyclerView.hasFixedSize();
+        recyclerView.setItemViewCacheSize(20);
 
         // Set to dark mode.
         AppCompatDelegate.setDefaultNightMode(
@@ -695,7 +696,7 @@ public class Chat extends AppCompatActivity implements
         if (index == -1 || messageSent) {
 
             // Scroll to bottom of recyclerviewlayout after first initialization and after sending a recyclerviewlayout.
-            recyclerView.scrollToPosition(mText.size() - 1);
+            recyclerView.scrollToPosition(mTime.size() - 1);
             messageSent = false;
         } else {
 
