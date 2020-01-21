@@ -88,7 +88,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
         Log.d(TAG, "onBindViewHolder: called:" + holder.getPosition());
         //holder.messageUser.setText(mMessageUser.get(position));
         holder.messageTime.setText(mMessageTime.get(position));
-        // Set messageImage or messageText to gone if an image doesn't exist for spacing consistency.
+        // Set messageImage or messageText to gone if an image or text doesn't exist, for spacing consistency.
         if (mMessageImage.get(position) == null) {
 
             holder.messageImage.setVisibility(View.GONE);
@@ -102,7 +102,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
                     .centerCrop()
                     .into(holder.messageImage);
         }
-        if (mMessageText.get(position).trim().isEmpty()) {
+        if (mMessageText.get(position) == null) {
 
             holder.messageText.setVisibility(View.GONE);
         } else {

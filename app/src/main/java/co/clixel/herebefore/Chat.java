@@ -103,7 +103,6 @@ public class Chat extends AppCompatActivity implements
     private StorageTask uploadTask;
 
     //TODO: Compress image before upload to Firebase.
-    //TODO: Don't send empty message string to Firebase if just uploading image.
     //TODO: Move recyclerView down when new message is added.
     //TODO: Add ability to add gifs and video to RecyclerView.
     //TODO: Look up videos about texting apps to change design of + button.
@@ -1105,7 +1104,6 @@ public class Chat extends AppCompatActivity implements
         // Connect to Firebase.
         StorageReference mStorageRef = FirebaseStorage.getInstance().getReference("images");
         final StorageReference storageReference = mStorageRef.child(System.currentTimeMillis() + "." + getExtension(imgURI));
-        final String input = mInput.getText().toString();
         final Bundle extras = getIntent().getExtras();
 
         // Show the loading icon while the image is being uploaded to Firebase.
@@ -1235,7 +1233,10 @@ public class Chat extends AppCompatActivity implements
 
                                 MessageInformation messageInformation = new MessageInformation();
                                 messageInformation.setImageURL(uri.toString());
-                                messageInformation.setMessage(input);
+                                if (mInput.getText().toString().trim().length() != 0) {
+
+                                    messageInformation.setMessage(mInput.getText().toString());
+                                }
                                 // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
                                 // This will cause onDataChange to fire twice; optimizations could be made in the future.
                                 Object date = ServerValue.TIMESTAMP;
