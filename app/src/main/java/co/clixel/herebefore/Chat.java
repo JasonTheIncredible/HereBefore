@@ -103,7 +103,6 @@ public class Chat extends AppCompatActivity implements
     private StorageTask uploadTask;
 
     //TODO: Compress image before upload to Firebase.
-    //TODO: Move recyclerView down when new message is added.
     //TODO: Add ability to add gifs and video to RecyclerView.
     //TODO: Look up videos about texting apps to change design of + button.
     //TODO: Add a username (in recyclerviewlayout).
@@ -580,6 +579,7 @@ public class Chat extends AppCompatActivity implements
 
                             // Change boolean to true - scrolls to the bottom of the recyclerView (in initRecyclerView()).
                             messageSent = true;
+
                             MessageInformation messageInformation = new MessageInformation();
                             messageInformation.setMessage(input);
                             // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
@@ -690,12 +690,14 @@ public class Chat extends AppCompatActivity implements
 
         RecyclerViewAdapter adapter = new RecyclerViewAdapter(this, mUser, mTime, mImage, mText);
         recyclerView.setAdapter(adapter);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
+        // Load from the bottom to show images once they load.
+        linearLayoutManager.setStackFromEnd(true);
+        recyclerView.setLayoutManager(linearLayoutManager);
 
-        if (index == -1 || messageSent) {
+        if (messageSent) {
 
-            // Scroll to bottom of recyclerviewlayout after first initialization and after sending a recyclerviewlayout.
-            recyclerView.scrollToPosition(mTime.size() - 1);
+            // Allow recyclerView to load from the bottom after sending a message.
             messageSent = false;
         } else {
 
@@ -1124,9 +1126,6 @@ public class Chat extends AppCompatActivity implements
 
                                 if (newShape) {
 
-                                    // Change boolean to true - scrolls to the bottom of the recyclerView (in initRecyclerView()).
-                                    messageSent = true;
-
                                     if (shapeIsCircle) {
 
                                         // Since the uuid doesn't already exist in Firebase, add the circle.
@@ -1230,6 +1229,9 @@ public class Chat extends AppCompatActivity implements
 
                                     newShape = false;
                                 }
+
+                                // Change boolean to true - scrolls to the bottom of the recyclerView (in initRecyclerView()).
+                                messageSent = true;
 
                                 MessageInformation messageInformation = new MessageInformation();
                                 messageInformation.setImageURL(uri.toString());
