@@ -8,7 +8,6 @@ import android.graphics.Color;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -50,6 +49,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
         final ViewHolder holder = new ViewHolder(view);
 
         view.setOnClickListener(new View.OnClickListener() {
+
             @Override
             public void onClick(View v) {
 
@@ -65,12 +65,11 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
         // Sets each picture's size relative to the screen (used in onBindViewHolder().
         int measuredWidth;
         measuredWidth = Resources.getSystem().getDisplayMetrics().widthPixels;
-
         if (measuredWidth > 0) {
 
             if (measuredWidth >= 400) {
 
-                usableWidth = measuredWidth - 200;
+                usableWidth = measuredWidth / 2;
             } else {
 
                 usableWidth = measuredWidth;
@@ -86,7 +85,6 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, final int position) {
 
-        Log.d(TAG, "onBindViewHolder: called:" + holder.getPosition());
         //holder.messageUser.setText(mMessageUser.get(position));
         holder.messageTime.setText(mMessageTime.get(position));
         // Set messageImage or messageText to gone if an image or text doesn't exist, for spacing consistency.
@@ -98,7 +96,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
             holder.messageImage.setVisibility(View.VISIBLE);
             Glide.with(mContext)
                     .load(mMessageImage.get(position))
-                    .apply(new RequestOptions().override(usableWidth, 0).centerInside())
+                    .apply(new RequestOptions().override(usableWidth, 5000).placeholder(R.drawable.ic_photo_black_1dp).centerInside())
                     .into(holder.messageImage);
         }
         if (mMessageText.get(position) == null) {

@@ -101,9 +101,9 @@ public class Chat extends AppCompatActivity implements
     private ImageView imageView;
     public Uri imgURI;
     private StorageTask uploadTask;
+    private LinearLayoutManager recyclerViewLinearLayoutManager = new LinearLayoutManager(this);
 
-    //TODO: Save scroll position after returning from PhotoView.
-    //TODO: Compress image before upload to Firebase.
+    //TODO: Compress image before upload to Firebase (java.lang.RuntimeException: Canvas: trying to draw too large(320581120bytes) bitmap).
     //TODO: Add ability to add video to RecyclerView.
     //TODO: Look up videos about texting apps to change design of + button.
     //TODO: Add a username (in recyclerviewlayout).
@@ -192,7 +192,7 @@ public class Chat extends AppCompatActivity implements
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
 
                 // Clear the RecyclerView before adding new entries to prevent duplicates.
-                if (recyclerView.getLayoutManager() != null) {
+                if (recyclerViewLinearLayoutManager != null) {
 
                     mUser.clear();
                     mTime.clear();
@@ -235,9 +235,9 @@ public class Chat extends AppCompatActivity implements
                 }
 
                 // Read RecyclerView scroll position (for use in initRecyclerView).
-                if (recyclerView.getLayoutManager() != null) {
+                if (recyclerViewLinearLayoutManager != null) {
 
-                    index = ((LinearLayoutManager) recyclerView.getLayoutManager()).findFirstVisibleItemPosition();
+                    index = recyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
                     View v = recyclerView.getChildAt(0);
                     top = (v == null) ? 0 : (v.getTop() - recyclerView.getPaddingTop());
                 }
@@ -691,26 +691,17 @@ public class Chat extends AppCompatActivity implements
 
         RecyclerViewAdapter adapter = new RecyclerViewAdapter(this, mUser, mTime, mImage, mText);
         recyclerView.setAdapter(adapter);
-        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
-        // Load from the bottom to show images once they load.
-        linearLayoutManager.setStackFromEnd(true);
-        recyclerView.setLayoutManager(linearLayoutManager);
+        recyclerView.setLayoutManager(recyclerViewLinearLayoutManager);
 
-        if (messageSent) {
+        if (index == -1 || messageSent) {
 
-            // Allow recyclerView to load from the bottom after sending a message.
+            // Scroll to bottom of recyclerviewlayout after first initialization and after sending a recyclerviewlayout.
+            recyclerView.scrollToPosition(mTime.size() - 1);
             messageSent = false;
         } else {
 
-            // Set RecyclerView scroll position to prevent movement when Firebase gets updated and after screen orientation change.
-            if (recyclerView.getLayoutManager() != null) {
-
-                ((LinearLayoutManager) recyclerView.getLayoutManager()).scrollToPositionWithOffset(index, top);
-            } else {
-
-                Log.e(TAG, "initRecyclerView -> recyclerView.getLayoutManager() == null");
-                Crashlytics.logException(new RuntimeException("initRecyclerView -> recyclerView.getLayoutManager() == null"));
-            }
+            // Set RecyclerView scroll position to prevent position change when Firebase gets updated and after screen orientation change.
+            recyclerViewLinearLayoutManager.scrollToPositionWithOffset(index, top);
         }
 
         // Close keyboard after sending a recyclerviewlayout.
