@@ -102,8 +102,9 @@ public class Chat extends AppCompatActivity implements
     public Uri imgURI;
     private StorageTask uploadTask;
 
+    //TODO: Save scroll position after returning from PhotoView.
     //TODO: Compress image before upload to Firebase.
-    //TODO: Add ability to add gifs and video to RecyclerView.
+    //TODO: Add ability to add video to RecyclerView.
     //TODO: Look up videos about texting apps to change design of + button.
     //TODO: Add a username (in recyclerviewlayout).
     //TODO: Keep checking user's location while user is in recyclerviewlayout to see if they can keep messaging, add a recyclerviewlayout at the top notifying user of this. Add differentiation between messaging within area vs not.

@@ -5,7 +5,8 @@ import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.squareup.picasso.Picasso;
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.RequestOptions;
 
 public class PhotoView extends AppCompatActivity {
 
@@ -37,9 +38,9 @@ public class PhotoView extends AppCompatActivity {
         }
 
         myImage = findViewById(R.id.myImage);
-        Picasso.get()
+        Glide.with(this)
                 .load(url)
-                .resize(usableWidth, 0)
+                .apply(new RequestOptions().override(usableWidth, 0))
                 .into(myImage);
     }
 }

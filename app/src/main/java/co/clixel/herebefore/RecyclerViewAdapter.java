@@ -16,7 +16,8 @@ import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
-import com.squareup.picasso.Picasso;
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.RequestOptions;
 
 import java.util.ArrayList;
 
@@ -95,11 +96,9 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
         } else {
 
             holder.messageImage.setVisibility(View.VISIBLE);
-            Picasso.get()
+            Glide.with(mContext)
                     .load(mMessageImage.get(position))
-                    .resize(usableWidth, 0)
-                    .onlyScaleDown()
-                    .centerCrop()
+                    .apply(new RequestOptions().override(usableWidth, 0).centerInside())
                     .into(holder.messageImage);
         }
         if (mMessageText.get(position) == null) {
