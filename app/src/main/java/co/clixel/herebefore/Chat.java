@@ -9,9 +9,9 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Matrix;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -23,7 +23,6 @@ import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
-import androidx.exifinterface.media.ExifInterface;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -35,6 +34,8 @@ import android.view.KeyEvent;
 import android.view.MenuItem;
 import android.view.View;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.RequestOptions;
 import com.crashlytics.android.Crashlytics;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
@@ -61,13 +62,18 @@ import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.StorageTask;
 import com.google.firebase.storage.UploadTask;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.ref.WeakReference;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
+
+import id.zelory.compressor.Compressor;
 
 import static java.text.DateFormat.getDateTimeInstance;
 
@@ -92,18 +98,22 @@ public class Chat extends AppCompatActivity implements
     private boolean recyclerViewHasScrolled = false;
     private boolean messageSent = false;
     private boolean mediaButtonMenuIsOpen, newShape, threeMarkers, fourMarkers, fiveMarkers, sixMarkers, sevenMarkers, eightMarkers, shapeIsCircle;
-    private Boolean userIsWithinShape;
+    private Boolean userIsWithinShape, URIisFile;
     private View.OnLayoutChangeListener onLayoutChangeListener;
-    private String uuid, currentPhotoPath;
+    private String uuid;
     private Double polygonArea, circleLatitude, circleLongitude, radius, marker0Latitude, marker0Longitude, marker1Latitude, marker1Longitude, marker2Latitude, marker2Longitude, marker3Latitude, marker3Longitude, marker4Latitude, marker4Longitude, marker5Latitude, marker5Longitude, marker6Latitude, marker6Longitude, marker7Latitude, marker7Longitude;
     private int fillColor;
     private PopupMenu mediaButtonMenu;
     private ImageView imageView;
-    public Uri imgURI;
+    public Uri imageURI;
     private StorageTask uploadTask;
     private LinearLayoutManager recyclerViewLinearLayoutManager = new LinearLayoutManager(this);
+    private File image;
+    private byte[] byteArray;
 
-    //TODO: Compress image before upload to Firebase (java.lang.RuntimeException: Canvas: trying to draw too large(320581120bytes) bitmap).
+    //TODO: Make sure picture orientation is correct in Firebase.
+    //TODO: Decode bitmaps on background thread.
+    //TODO: Save a non-compressed image to gallery and upload a compressed image to Firebase.
     //TODO: Add ability to add video to RecyclerView.
     //TODO: Look up videos about texting apps to change design of + button.
     //TODO: Add a username (in recyclerviewlayout).
@@ -868,7 +878,7 @@ public class Chat extends AppCompatActivity implements
             } else {
 
                 // User denied permission and checked "Don't ask again!"
-                Toast toast = Toast.makeText(Chat.this, "Camera permission is required. Please enable it manually through the Android settings menu.", Toast.LENGTH_LONG);
+                Toast toast = Toast.makeText(Chat.this, "Storage permission is required. Please enable it manually through the Android settings menu.", Toast.LENGTH_LONG);
                 toast.setGravity(Gravity.CENTER, 0, 0);
                 toast.show();
             }
@@ -893,16 +903,16 @@ public class Chat extends AppCompatActivity implements
             // Continue only if the File was successfully created
             if (photoFile != null) {
 
-                imgURI = FileProvider.getUriForFile(Chat.this,
+                imageURI = FileProvider.getUriForFile(Chat.this,
                         "com.example.android.fileprovider",
                         photoFile);
-                cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, imgURI);
+                cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, imageURI);
                 startActivityForResult(cameraIntent, Request_User_Camera_Code);
             }
         }
     }
 
-    // Show an explanation as to why location permission is necessary.
+    // Show an explanation as to why permission is necessary.
     private static class cameraPermissionAlertDialog extends AsyncTask<Void, Void, Void> {
 
         AlertDialog.Builder builder;
@@ -958,7 +968,7 @@ public class Chat extends AppCompatActivity implements
         }
     }
 
-    // Show an explanation as to why location permission is necessary.
+    // Show an explanation as to why permission is necessary.
     private static class writeExternalStoragePermissionAlertDialog extends AsyncTask<Void, Void, Void> {
 
         AlertDialog.Builder builder;
@@ -1019,17 +1029,14 @@ public class Chat extends AppCompatActivity implements
         Log.i(TAG, "createImageFile()");
 
         // Create an image file name
-        String timeStamp = getDateTimeInstance().format(new Date());
-        String imageFileName = "JPEG_" + timeStamp + "_";
+        String imageFileName = "HereBefore_" + System.currentTimeMillis() + "_jpeg";
         File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
-        File image = File.createTempFile(
+        image = File.createTempFile(
                 imageFileName,  /* prefix */
-                ".jpg",         /* suffix */
+                ".jpeg",         /* suffix */
                 storageDir      /* directory */
         );
 
-        // Save a file: path for use with ACTION_VIEW intents
-        currentPhotoPath = image.getAbsolutePath();
         return image;
     }
 
@@ -1042,8 +1049,71 @@ public class Chat extends AppCompatActivity implements
 
             Log.i(TAG, "onActivityResult() -> Gallery");
 
-            imgURI = data.getData();
-            imageView.setImageURI(imgURI);
+            imageURI = data.getData();
+
+            if (getExtension(imageURI).equals("gif")) {
+
+                // For use in uploadImage().
+                URIisFile = true;
+
+                // GIF. No need for compression.
+                Glide.with(this)
+                        .load(imageURI)
+                        .apply(new RequestOptions().override(640, 5000).placeholder(R.drawable.ic_recyclerview_image_placeholder))
+                        .into(imageView);
+            } else {
+
+                // Not GIF. Needs compression.
+                InputStream imageStream = null;
+                try {
+
+                    imageStream = getContentResolver().openInputStream(imageURI);
+                } catch (FileNotFoundException e) {
+
+                    e.printStackTrace();
+                }
+
+                Bitmap bmp = BitmapFactory.decodeStream(imageStream);
+                ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                bmp.compress(Bitmap.CompressFormat.JPEG, 100, stream);
+                bmp.recycle();
+                byteArray = stream.toByteArray();
+                // Check original file size.  If the compressed image is larger than the original, just upload the original.
+                String[] mediaColumns = {MediaStore.Video.Media.SIZE};
+                Cursor cursor = this.getContentResolver().query(imageURI, mediaColumns, null, null, null);
+                if (cursor != null) {
+
+                    cursor.moveToFirst();
+                    int sizeColInd = cursor.getColumnIndex(mediaColumns[0]);
+                    long fileSize = cursor.getLong(sizeColInd);
+                    cursor.close();
+                    // For use in uploadImage().
+                    URIisFile = byteArray.length >= fileSize;
+                }
+                try {
+
+                    stream.close();
+                } catch (IOException e) {
+
+                    e.printStackTrace();
+                }
+
+                // Show the preview for the lowest quality image to save time and resources.
+                if (URIisFile) {
+
+                    Glide.with(this)
+                            .load(imageURI)
+                            .apply(new RequestOptions().override(640, 5000).placeholder(R.drawable.ic_recyclerview_image_placeholder))
+                            .into(imageView);
+                } else {
+
+                    Glide.with(this)
+                            .load(byteArray)
+                            .apply(new RequestOptions().override(640, 5000).placeholder(R.drawable.ic_recyclerview_image_placeholder))
+                            .into(imageView);
+                }
+            }
+
             imageView.setVisibility(View.VISIBLE);
         }
 
@@ -1051,29 +1121,23 @@ public class Chat extends AppCompatActivity implements
 
             Log.i(TAG, "onActivityResult() -> Camera");
 
-            Bitmap myBitmap = BitmapFactory.decodeFile(currentPhotoPath);
             try {
 
-                ExifInterface exif = new ExifInterface(currentPhotoPath);
-                int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, 1);
-                Log.d("EXIF", "Exif: " + orientation);
-                Matrix matrix = new Matrix();
-                if (orientation == 6) {
+                // For use in uploadImage().
+                URIisFile = true;
 
-                    matrix.postRotate(90);
-                } else if (orientation == 3) {
-
-                    matrix.postRotate(180);
-                } else if (orientation == 8) {
-
-                    matrix.postRotate(270);
-                }
-
-                myBitmap = Bitmap.createBitmap(myBitmap, 0, 0, myBitmap.getWidth(), myBitmap.getHeight(), matrix, true); // rotating bitmap
-                String path = MediaStore.Images.Media.insertImage(Chat.this.getContentResolver(), myBitmap, "HereBefore_" + System.currentTimeMillis() + ".png", null);
-                imgURI = Uri.parse(path);
-                galleryAddPic();
-                imageView.setImageBitmap(myBitmap);
+                // Create a compressed image.
+                Bitmap imageBitmap = new Compressor(this)
+                        .setMaxWidth(640)
+                        .setMaxHeight(480)
+                        .setQuality(100)
+                        .setCompressFormat(Bitmap.CompressFormat.JPEG)
+                        .setDestinationDirectoryPath(Environment.getExternalStoragePublicDirectory(
+                                Environment.DIRECTORY_PICTURES).getAbsolutePath())
+                        .compressToBitmap(image);
+                String path = MediaStore.Images.Media.insertImage(Chat.this.getContentResolver(), imageBitmap, "HereBefore_" + System.currentTimeMillis() + "_PNG", null);
+                imageURI = Uri.parse(path);
+                imageView.setImageBitmap(imageBitmap);
                 imageView.setVisibility(View.VISIBLE);
             } catch (IOException ex) {
 
@@ -1082,29 +1146,27 @@ public class Chat extends AppCompatActivity implements
         }
     }
 
-    private void galleryAddPic() {
-
-        Log.i(TAG, "galleryAddPic()");
-
-        Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
-        mediaScanIntent.setData(imgURI);
-        this.sendBroadcast(mediaScanIntent);
-    }
-
     private void uploadImage() {
 
         Log.i(TAG, "uploadImage()");
 
         // Connect to Firebase.
         StorageReference mStorageRef = FirebaseStorage.getInstance().getReference("images");
-        final StorageReference storageReference = mStorageRef.child(System.currentTimeMillis() + "." + getExtension(imgURI));
+        final StorageReference storageReference = mStorageRef.child(System.currentTimeMillis() + "." + getExtension(imageURI));
         final Bundle extras = getIntent().getExtras();
 
         // Show the loading icon while the image is being uploaded to Firebase.
         findViewById(R.id.loadingIcon).setVisibility(View.VISIBLE);
 
-        uploadTask = storageReference.putFile(imgURI)
-                .addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+        if (URIisFile) {
+
+            uploadTask = storageReference.putFile(imageURI);
+        } else {
+
+            uploadTask = storageReference.putBytes(byteArray);
+        }
+
+        uploadTask.addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
 
                     @Override
                     public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {

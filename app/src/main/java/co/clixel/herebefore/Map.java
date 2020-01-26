@@ -126,6 +126,7 @@ public class Map extends FragmentActivity implements
     // Work on onTrimMemory().
     // Leave messages in locations that users get notified of when they enter the area.
     // Make sure uuids never overlap in Firebase.
+    // Decrease app size.
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

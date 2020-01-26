@@ -96,7 +96,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
             holder.messageImage.setVisibility(View.VISIBLE);
             Glide.with(mContext)
                     .load(mMessageImage.get(position))
-                    .apply(new RequestOptions().override(usableWidth, 5000).placeholder(R.drawable.ic_photo_black_1dp).centerInside())
+                    .apply(new RequestOptions().override(usableWidth, 5000).placeholder(R.drawable.ic_recyclerview_image_placeholder).centerInside())
                     .into(holder.messageImage);
         }
         if (mMessageText.get(position) == null) {
