@@ -111,7 +111,6 @@ public class Chat extends AppCompatActivity implements
     private File image;
     private byte[] byteArray;
 
-    //TODO: Make sure picture orientation is correct in Firebase.
     //TODO: Decode bitmaps on background thread.
     //TODO: Save a non-compressed image to gallery and upload a compressed image to Firebase.
     //TODO: Add ability to add video to RecyclerView.
