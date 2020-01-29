@@ -111,8 +111,6 @@ public class Chat extends AppCompatActivity implements
     private File image;
     private byte[] byteArray;
 
-    //TODO: Decode bitmaps on background thread.
-    //TODO: Save a non-compressed image to gallery and upload a compressed image to Firebase.
     //TODO: Add ability to add video to RecyclerView.
     //TODO: Look up videos about texting apps to change design of + button.
     //TODO: Add a username (in recyclerviewlayout).
@@ -898,6 +896,9 @@ public class Chat extends AppCompatActivity implements
                 photoFile = createImageFile();
             } catch (IOException ex) {
                 // Error occurred while creating the File
+                ex.printStackTrace();
+                Toast.makeText(Chat.this, ex.getMessage(), Toast.LENGTH_LONG).show();
+                Crashlytics.logException(new RuntimeException("startActivityTakePhoto() -> photoFile error"));
             }
             // Continue only if the File was successfully created
             if (photoFile != null) {
@@ -1067,9 +1068,11 @@ public class Chat extends AppCompatActivity implements
                 try {
 
                     imageStream = getContentResolver().openInputStream(imageURI);
-                } catch (FileNotFoundException e) {
+                } catch (FileNotFoundException ex) {
 
-                    e.printStackTrace();
+                    ex.printStackTrace();
+                    Toast.makeText(Chat.this, ex.getMessage(), Toast.LENGTH_LONG).show();
+                    Crashlytics.logException(new RuntimeException("onActivityResult() -> gallery imageStream error"));
                 }
 
                 Bitmap bmp = BitmapFactory.decodeStream(imageStream);
@@ -1092,9 +1095,11 @@ public class Chat extends AppCompatActivity implements
                 try {
 
                     stream.close();
-                } catch (IOException e) {
+                } catch (IOException ex) {
 
-                    e.printStackTrace();
+                    ex.printStackTrace();
+                    Toast.makeText(Chat.this, ex.getMessage(), Toast.LENGTH_LONG).show();
+                    Crashlytics.logException(new RuntimeException("onActivityResult() -> gallery stream.close()"));
                 }
 
                 // Show the preview for the lowest quality image to save time and resources.
@@ -1123,7 +1128,18 @@ public class Chat extends AppCompatActivity implements
             try {
 
                 // For use in uploadImage().
-                URIisFile = true;
+                URIisFile = false;
+
+                // Save a non-compressed image to the gallery.
+                Bitmap imageBitmapFull = new Compressor(this)
+                        .setMaxWidth(10000)
+                        .setMaxHeight(10000)
+                        .setQuality(100)
+                        .setCompressFormat(Bitmap.CompressFormat.PNG)
+                        .setDestinationDirectoryPath(Environment.getExternalStoragePublicDirectory(
+                                Environment.DIRECTORY_PICTURES).getAbsolutePath())
+                        .compressToBitmap(image);
+                MediaStore.Images.Media.insertImage(Chat.this.getContentResolver(), imageBitmapFull, "HereBefore_" + System.currentTimeMillis() + "_PNG", null);
 
                 // Create a compressed image.
                 Bitmap imageBitmap = new Compressor(this)
@@ -1131,16 +1147,19 @@ public class Chat extends AppCompatActivity implements
                         .setMaxHeight(480)
                         .setQuality(100)
                         .setCompressFormat(Bitmap.CompressFormat.JPEG)
-                        .setDestinationDirectoryPath(Environment.getExternalStoragePublicDirectory(
-                                Environment.DIRECTORY_PICTURES).getAbsolutePath())
                         .compressToBitmap(image);
-                String path = MediaStore.Images.Media.insertImage(Chat.this.getContentResolver(), imageBitmap, "HereBefore_" + System.currentTimeMillis() + "_PNG", null);
-                imageURI = Uri.parse(path);
                 imageView.setImageBitmap(imageBitmap);
                 imageView.setVisibility(View.VISIBLE);
+
+                // Convert the bitmap to a byteArray for use in uploadImage().
+                ByteArrayOutputStream buffer = new ByteArrayOutputStream(imageBitmap.getWidth() * imageBitmap.getHeight());
+                imageBitmap.compress(Bitmap.CompressFormat.PNG, 100, buffer);
+                byteArray = buffer.toByteArray();
             } catch (IOException ex) {
 
                 ex.printStackTrace();
+                Toast.makeText(Chat.this, ex.getMessage(), Toast.LENGTH_LONG).show();
+                Crashlytics.logException(new RuntimeException("onActivityResult() -> Request_User_Camera_Code exception"));
             }
         }
     }
@@ -1313,12 +1332,12 @@ public class Chat extends AppCompatActivity implements
                 .addOnFailureListener(new OnFailureListener() {
 
                     @Override
-                    public void onFailure(@NonNull Exception exception) {
+                    public void onFailure(@NonNull Exception ex) {
 
                         // Handle unsuccessful uploads
                         findViewById(R.id.loadingIcon).setVisibility(View.GONE);
-                        Toast.makeText(Chat.this, exception.getMessage(), Toast.LENGTH_LONG).show();
-                        Log.e(TAG, "uploadImage() -> onFailure -> " + exception.getMessage());
+                        Toast.makeText(Chat.this, ex.getMessage(), Toast.LENGTH_LONG).show();
+                        Log.e(TAG, "uploadImage() -> onFailure -> " + ex.getMessage());
                     }
                 });
     }

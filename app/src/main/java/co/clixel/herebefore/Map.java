@@ -120,6 +120,7 @@ public class Map extends FragmentActivity implements
     // The following should be implemented later:
     // Optimize Firebase loading (Google how databases are structured).
     // Log.i vs d vs w...
+    // Decode bitmaps on background thread (in Chat.java).
     // Save user map type preference.
     // Page for deleting user account, resetting password, etc.
     // Allow user to sign out from here and Chat.java.
