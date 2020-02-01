@@ -81,7 +81,8 @@ public class Chat extends AppCompatActivity implements
         PopupMenu.OnMenuItemClickListener {
 
     private static final String TAG = "Chat";
-    private static final int Request_User_Camera_Code = 1800;
+    private static final int Request_User_Camera_Code = 1700;
+    private static final int Request_User_Video_Code = 1800;
     private static final int Request_User_Write_External_Storage_Code = 1900;
     private EditText mInput;
     private ArrayList<String> mUser = new ArrayList<>();
@@ -112,7 +113,6 @@ public class Chat extends AppCompatActivity implements
     private byte[] byteArray;
 
     //TODO: Add ability to add video to RecyclerView.
-    //TODO: Look up videos about texting apps to change design of + button.
     //TODO: Add a username (in recyclerviewlayout).
     //TODO: Keep checking user's location while user is in recyclerviewlayout to see if they can keep messaging, add a recyclerviewlayout at the top notifying user of this. Add differentiation between messaging within area vs not.
     //TODO: When data gets changed, try to update only the affected items: https://stackoverflow.com/questions/27188536/recyclerview-scrolling-performance.
@@ -764,7 +764,7 @@ public class Chat extends AppCompatActivity implements
             case R.id.recordVideo:
 
                 Log.i(TAG, "onMenuItemClick() -> recordVideo");
-                
+
                 mediaButtonMenuIsOpen = false;
                 return true;
 
