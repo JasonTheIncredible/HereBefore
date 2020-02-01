@@ -7,4 +7,7 @@
     <item android:id="@+id/takePhoto"
         android:title="@string/take_photo"/>
 
+    <item android:id="@+id/recordVideo"
+        android:title="@string/record_video"/>
+
 </menu>

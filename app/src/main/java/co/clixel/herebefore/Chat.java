@@ -761,6 +761,13 @@ public class Chat extends AppCompatActivity implements
                 mediaButtonMenuIsOpen = false;
                 return true;
 
+            case R.id.recordVideo:
+
+                Log.i(TAG, "onMenuItemClick() -> recordVideo");
+                
+                mediaButtonMenuIsOpen = false;
+                return true;
+
             default:
                 return false;
         }
