@@ -28,6 +28,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.util.Base64;
+import android.util.Base64OutputStream;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.KeyEvent;
@@ -48,8 +50,11 @@ import android.view.inputmethod.InputMethodManager;
 import android.webkit.MimeTypeMap;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.MediaController;
 import android.widget.PopupMenu;
+import android.widget.RelativeLayout;
 import android.widget.Toast;
+import android.widget.VideoView;
 
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -61,13 +66,16 @@ import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.StorageTask;
 import com.google.firebase.storage.UploadTask;
+import com.iceteck.silicompressorr.SiliCompressor;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
+import java.net.URISyntaxException;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -82,7 +90,7 @@ public class Chat extends AppCompatActivity implements
 
     private static final String TAG = "Chat";
     private static final int Request_User_Camera_Code = 1700;
-    private static final int Request_User_Video_Code = 1800;
+    private static final int Request_User_Audio_Code = 1800;
     private static final int Request_User_Write_External_Storage_Code = 1900;
     private EditText mInput;
     private ArrayList<String> mUser = new ArrayList<>();
@@ -106,13 +114,25 @@ public class Chat extends AppCompatActivity implements
     private int fillColor;
     private PopupMenu mediaButtonMenu;
     private ImageView imageView;
-    public Uri imageURI;
+    private VideoView videoView;
+    public Uri imageURI, videoURI;
     private StorageTask uploadTask;
     private LinearLayoutManager recyclerViewLinearLayoutManager = new LinearLayoutManager(this);
-    private File image;
+    private File image, video;
     private byte[] byteArray;
 
     //TODO: Add ability to add video to RecyclerView.
+    //TODO: Add ability to play video before sending to Firebase.
+    //TODO: Test video permissions (and check permission involving playing in the "retry / ok" screen).
+    //TODO: Adjust compression of video.
+    //TODO: Adjust width / height of video before sending to Firebase.
+    //TODO: Add videoView to RecyclerView.
+    //TODO: Add ability to add both picture and video to RecyclerView (or change menu so only one can be added and adjust sendButton).
+    //TODO: Adjust MessageInformation class.
+    //TODO: Save uncompressed video to gallery.
+    //TODO: Decode/compress bitmaps and compress video on background thread.
+    //TODO: Set limit for recording time.
+    //TODO: Work on warnings.
     //TODO: Add a username (in recyclerviewlayout).
     //TODO: Keep checking user's location while user is in recyclerviewlayout to see if they can keep messaging, add a recyclerviewlayout at the top notifying user of this. Add differentiation between messaging within area vs not.
     //TODO: When data gets changed, try to update only the affected items: https://stackoverflow.com/questions/27188536/recyclerview-scrolling-performance.
@@ -130,6 +150,7 @@ public class Chat extends AppCompatActivity implements
 
         mediaButton = findViewById(R.id.mediaButton);
         imageView = findViewById(R.id.imageView);
+        videoView = findViewById(R.id.videoView);
         mInput = findViewById(R.id.input);
         sendButton = findViewById(R.id.sendButton);
         recyclerView = findViewById(R.id.messageList);
@@ -307,16 +328,17 @@ public class Chat extends AppCompatActivity implements
         // Add the Firebase listener.
         databaseReference.addValueEventListener(eventListener);
 
-        // Hide the imageView if user presses the delete button.
+        // Hide the imageView or videoView if user presses the delete button.
         mInput.setOnKeyListener(new View.OnKeyListener() {
 
             @Override
             public boolean onKey(View v, int keyCode, KeyEvent event) {
 
-                if (keyCode == KeyEvent.KEYCODE_DEL && imageView.getVisibility() == View.VISIBLE &&
+                if (keyCode == KeyEvent.KEYCODE_DEL && (imageView.getVisibility() == View.VISIBLE || videoView.getVisibility() == View.VISIBLE) &&
                         (mInput.getText().toString().trim().length() == 0 || mInput.getSelectionStart() == 0)) {
 
                     imageView.setVisibility(View.GONE);
+                    videoView.setVisibility(View.GONE);
                 }
 
                 if (keyCode == KeyEvent.KEYCODE_BACK && getCurrentFocus() == mInput) {
@@ -391,7 +413,7 @@ public class Chat extends AppCompatActivity implements
                                             Toast.makeText(Chat.this, "Image upload in progress", Toast.LENGTH_SHORT).show();
                                         } else {
 
-                                            uploadImage();
+                                            firebaseUpload();
                                         }
                                     } else {
 
@@ -452,7 +474,7 @@ public class Chat extends AppCompatActivity implements
                                             Toast.makeText(Chat.this, "Image upload in progress", Toast.LENGTH_SHORT).show();
                                         } else {
 
-                                            uploadImage();
+                                            firebaseUpload();
                                         }
                                     } else {
 
@@ -581,7 +603,7 @@ public class Chat extends AppCompatActivity implements
                                 Toast.makeText(Chat.this, "Image upload in progress", Toast.LENGTH_SHORT).show();
                             } else {
 
-                                uploadImage();
+                                firebaseUpload();
                             }
                         } else {
 
@@ -756,7 +778,7 @@ public class Chat extends AppCompatActivity implements
                     startActivityTakePhoto();
                 } else {
 
-                    checkPermissions();
+                    checkPermissionsPicture();
                 }
                 mediaButtonMenuIsOpen = false;
                 return true;
@@ -765,6 +787,18 @@ public class Chat extends AppCompatActivity implements
 
                 Log.i(TAG, "onMenuItemClick() -> recordVideo");
 
+                if (ContextCompat.checkSelfPermission(Chat.this,
+                        Manifest.permission.CAMERA)
+                        == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(Chat.this,
+                        Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                        == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(Chat.this,
+                        Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+
+                    startActivityRecordVideo();
+                } else {
+
+                    checkPermissionsVideo();
+                }
                 mediaButtonMenuIsOpen = false;
                 return true;
 
@@ -783,9 +817,9 @@ public class Chat extends AppCompatActivity implements
         startActivityForResult(intent, 1);
     }
 
-    private void checkPermissions() {
+    private void checkPermissionsPicture() {
 
-        Log.i(TAG, "checkPermissions()");
+        Log.i(TAG, "checkPermissionsPicture()");
 
         if (ContextCompat.checkSelfPermission(this,
                 Manifest.permission.CAMERA)
@@ -823,6 +857,61 @@ public class Chat extends AppCompatActivity implements
         }
     }
 
+    private void checkPermissionsVideo() {
+
+        Log.i(TAG, "checkPermissionsVideo()");
+
+        if (ContextCompat.checkSelfPermission(this,
+                Manifest.permission.CAMERA)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            // No explanation needed, we can request the permission.
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.CAMERA},
+                    Request_User_Camera_Code);
+        } else if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                Manifest.permission.CAMERA)) {
+
+            // Show an explanation to the user *asynchronously* -- don't block
+            // this thread waiting for the user's response! After the user
+            // sees the explanation, try again to request the permission.
+            new cameraPermissionAlertDialog(this).execute();
+        } else if (ContextCompat.checkSelfPermission(this,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            // No explanation needed, we can request the permission.
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                    Request_User_Write_External_Storage_Code);
+        } else if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+
+            // Show an explanation to the user *asynchronously* -- don't block
+            // this thread waiting for the user's response! After the user
+            // sees the explanation, try again to request the permission.
+            new writeExternalStoragePermissionAlertDialog(this).execute();
+        } else if (ContextCompat.checkSelfPermission(this,
+                Manifest.permission.RECORD_AUDIO)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            // No explanation needed, we can request the permission.
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.RECORD_AUDIO},
+                    Request_User_Audio_Code);
+        } else if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                Manifest.permission.RECORD_AUDIO)) {
+
+            // Show an explanation to the user *asynchronously* -- don't block
+            // this thread waiting for the user's response! After the user
+            // sees the explanation, try again to request the permission.
+            new audioPermissionAlertDialog(this).execute();
+        } else {
+
+            startActivityRecordVideo();
+        }
+    }
+
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
 
@@ -841,7 +930,7 @@ public class Chat extends AppCompatActivity implements
                     Manifest.permission.WRITE_EXTERNAL_STORAGE)
                     != PackageManager.PERMISSION_GRANTED) {
 
-                checkPermissions();
+                checkPermissionsPicture();
             } else if (ActivityCompat.shouldShowRequestPermissionRationale(this,
                     Manifest.permission.CAMERA)) {
 
@@ -871,7 +960,7 @@ public class Chat extends AppCompatActivity implements
                     Manifest.permission.CAMERA)
                     != PackageManager.PERMISSION_GRANTED) {
 
-                checkPermissions();
+                checkPermissionsPicture();
             } else if (ActivityCompat.shouldShowRequestPermissionRationale(this,
                     Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
 
@@ -887,21 +976,56 @@ public class Chat extends AppCompatActivity implements
                 toast.show();
             }
         }
+
+        if (requestCode == Request_User_Audio_Code) {
+
+            if (grantResults.length > 0
+                    && grantResults[0] == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(Chat.this,
+                        Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                        == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(Chat.this,
+                        Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+
+                startActivityRecordVideo();
+            } else if (grantResults.length > 0
+                    && grantResults[0] == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(this,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    != PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(this,
+                    Manifest.permission.CAMERA)
+                    != PackageManager.PERMISSION_GRANTED) {
+
+                checkPermissionsVideo();
+            } else if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                    Manifest.permission.RECORD_AUDIO)) {
+
+                // Show an explanation to the user *asynchronously* -- don't block
+                // this thread waiting for the user's response! After the user
+                // sees the explanation, try again to request the permission.
+                new audioPermissionAlertDialog(this).execute();
+            } else {
+
+                // User denied permission and checked "Don't ask again!"
+                Toast toast = Toast.makeText(Chat.this, "Audio permission is required. Please enable it manually through the Android settings menu.", Toast.LENGTH_LONG);
+                toast.setGravity(Gravity.CENTER, 0, 0);
+                toast.show();
+            }
+        }
     }
 
     private void startActivityTakePhoto() {
 
         Log.i(TAG, "startActivityTakePhoto()");
 
-        // Permission was granted, yay! Do the location-related task you need to do.
+        // Permission was granted, yay! Do the task you need to do.
         Intent cameraIntent = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
         if (cameraIntent.resolveActivity(getPackageManager()) != null) {
+
             // Create the File where the photo should go
             File photoFile = null;
             try {
 
                 photoFile = createImageFile();
             } catch (IOException ex) {
+
                 // Error occurred while creating the File
                 ex.printStackTrace();
                 Toast.makeText(Chat.this, ex.getMessage(), Toast.LENGTH_LONG).show();
@@ -915,6 +1039,38 @@ public class Chat extends AppCompatActivity implements
                         photoFile);
                 cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, imageURI);
                 startActivityForResult(cameraIntent, Request_User_Camera_Code);
+            }
+        }
+    }
+
+    private void startActivityRecordVideo() {
+
+        Log.i(TAG, "startActivityRecordVideo()");
+
+        // Permission was granted, yay! Do the task you need to do.
+        Intent videoIntent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
+        if (videoIntent.resolveActivity(getPackageManager()) != null) {
+
+            // Create the File where the video should go
+            File videoFile = null;
+            try {
+
+                videoFile = createVideoFile();
+            } catch (IOException ex) {
+
+                // Error occurred while creating the File
+                ex.printStackTrace();
+                Toast.makeText(Chat.this, ex.getMessage(), Toast.LENGTH_LONG).show();
+                Crashlytics.logException(new RuntimeException("startActivityRecordVideo() -> videoFile error"));
+            }
+            // Continue only if the File was successfully created
+            if (videoFile != null) {
+
+                videoURI = FileProvider.getUriForFile(Chat.this,
+                        "com.example.android.fileprovider",
+                        videoFile);
+                videoIntent.putExtra(MediaStore.EXTRA_OUTPUT, videoURI);
+                startActivityForResult(videoIntent, Request_User_Audio_Code);
             }
         }
     }
@@ -1031,6 +1187,62 @@ public class Chat extends AppCompatActivity implements
         }
     }
 
+    // Show an explanation as to why permission is necessary.
+    private static class audioPermissionAlertDialog extends AsyncTask<Void, Void, Void> {
+
+        AlertDialog.Builder builder;
+        private WeakReference<Activity> activityWeakRef;
+
+        audioPermissionAlertDialog(Activity activity) {
+
+            activityWeakRef = new WeakReference<>(activity);
+        }
+
+        @Override
+        protected void onPreExecute() {
+
+            super.onPreExecute();
+        }
+
+        @Override
+        protected Void doInBackground(Void... voids) {
+
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void result) {
+
+            super.onPostExecute(result);
+
+            Log.i(TAG, "audioPermissionAlertDialog -> onPostExecute()");
+
+            if (activityWeakRef != null && activityWeakRef.get() != null) {
+
+                builder = new AlertDialog.Builder(activityWeakRef.get());
+
+                // Show an explanation to the user *asynchronously* -- don't block
+                // this thread waiting for the user's response! After the user
+                // sees the explanation, try again to request the permission.
+                builder.setCancelable(false)
+                        .setTitle("Audio Permission Required")
+                        .setMessage("HereBefore needs permission to record audio during video recording.")
+                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+
+                                //Prompt the user once explanation has been shown
+                                ActivityCompat.requestPermissions(activityWeakRef.get(),
+                                        new String[]{Manifest.permission.RECORD_AUDIO},
+                                        Request_User_Audio_Code);
+                            }
+                        })
+                        .create()
+                        .show();
+            }
+        }
+    }
+
     private File createImageFile() throws IOException {
 
         Log.i(TAG, "createImageFile()");
@@ -1045,6 +1257,22 @@ public class Chat extends AppCompatActivity implements
         );
 
         return image;
+    }
+
+    private File createVideoFile() throws IOException {
+
+        Log.i(TAG, "createVideoFile()");
+
+        // Create a video file name
+        String videoFileName = "HereBefore_" + System.currentTimeMillis() + "_mp4";
+        File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        video = File.createTempFile(
+                videoFileName,  /* prefix */
+                ".mp4",         /* suffix */
+                storageDir      /* directory */
+        );
+
+        return video;
     }
 
     @Override
@@ -1125,6 +1353,11 @@ public class Chat extends AppCompatActivity implements
                 }
             }
 
+            // Change textView to be to the right of imageView.
+            RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams)mInput.getLayoutParams();
+            params.addRule(RelativeLayout.END_OF, R.id.imageView);
+            mInput.setLayoutParams(params);
+
             imageView.setVisibility(View.VISIBLE);
         }
 
@@ -1155,6 +1388,12 @@ public class Chat extends AppCompatActivity implements
                         .setQuality(100)
                         .setCompressFormat(Bitmap.CompressFormat.JPEG)
                         .compressToBitmap(image);
+
+                // Change textView to be to the right of imageView.
+                RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams)mInput.getLayoutParams();
+                params.addRule(RelativeLayout.END_OF, R.id.imageView);
+                mInput.setLayoutParams(params);
+
                 imageView.setImageBitmap(imageBitmap);
                 imageView.setVisibility(View.VISIBLE);
 
@@ -1169,15 +1408,125 @@ public class Chat extends AppCompatActivity implements
                 Crashlytics.logException(new RuntimeException("onActivityResult() -> Request_User_Camera_Code exception"));
             }
         }
+
+        if (requestCode == Request_User_Audio_Code && resultCode == RESULT_OK) {
+
+            Log.i(TAG, "onActivityResult() -> Video");
+            Log.i(TAG, "video.getAbsolutePath " + video.getAbsolutePath());
+            Log.i(TAG, "video.getParent " + video.getParent());
+
+            new videoCompressAsyncTask(this).execute(video.getAbsolutePath(), video.getParent());
+        }
     }
 
-    private void uploadImage() {
+    private class videoCompressAsyncTask extends AsyncTask<String, String, String> {
 
-        Log.i(TAG, "uploadImage()");
+        Context mContext;
+
+        private videoCompressAsyncTask(Context context) {
+
+            mContext = context;
+        }
+
+        @Override
+        protected void onPreExecute() {
+
+            super.onPreExecute();
+            // Show the loading icon while the video is being compressed.
+            findViewById(R.id.loadingIcon).setVisibility(View.VISIBLE);
+        }
+
+        @Override
+        protected String doInBackground(String... paths) {
+
+            String filePath = null;
+            try {
+
+                filePath = SiliCompressor.with(mContext).compressVideo(paths[0], paths[1], 1280, 720, 1500000);
+
+            } catch (URISyntaxException e) {
+
+                e.printStackTrace();
+            }
+
+            return filePath;
+        }
+
+
+        @Override
+        protected void onPostExecute(String compressedFilePath) {
+
+            super.onPostExecute(compressedFilePath);
+            URIisFile = true;
+            File videoFile = new File(compressedFilePath);
+
+            float length = videoFile.length() / 1024f; // Size in KB
+            String value;
+            if (length >= 1024) {
+
+                value = length / 1024f + " MB";
+            } else {
+
+                value = length + " KB";
+            }
+
+            String text = String.format(Locale.US, "%s\nName: %s\nSize: %s", "Video compression complete", videoFile.getName(), value);
+            Log.e(TAG, "text: " + text);
+            Log.e(TAG, "imageFile.getName() : " + videoFile.getName());
+            Log.e(TAG, "Path 0 : " + compressedFilePath);
+
+            try {
+
+                File file = new File(compressedFilePath);
+                InputStream inputStream; //You can get an inputStream using any IO API
+                inputStream = new FileInputStream(file.getAbsolutePath());
+                byte[] buffer = new byte[8192];
+                int bytesRead;
+                ByteArrayOutputStream output = new ByteArrayOutputStream();
+                Base64OutputStream output64 = new Base64OutputStream(output, Base64.DEFAULT);
+                videoURI = Uri.fromFile(file);
+                try {
+
+                    while ((bytesRead = inputStream.read(buffer)) != -1) {
+                        output64.write(buffer, 0, bytesRead);
+                    }
+                } catch (IOException e) {
+
+                    e.printStackTrace();
+                    Toast.makeText(Chat.this, e.getMessage(), Toast.LENGTH_LONG).show();
+                    Crashlytics.logException(new RuntimeException("videoCompressAsyncTask -> onPostExecute -> inner"));
+                }
+                output64.close();
+                MediaController mediaController = new MediaController(Chat.this);
+                mediaController.setAnchorView(videoView);
+
+                // Change textView to be to the right of videoView.
+                RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams)mInput.getLayoutParams();
+                params.addRule(RelativeLayout.END_OF, R.id.videoView);
+                mInput.setLayoutParams(params);
+
+                videoView.setMediaController(mediaController);
+                videoView.setVideoPath(compressedFilePath);
+                videoView.setVisibility(View.VISIBLE);
+
+            } catch (IOException e) {
+
+                e.printStackTrace();
+                Toast.makeText(Chat.this, e.getMessage(), Toast.LENGTH_LONG).show();
+                Crashlytics.logException(new RuntimeException("videoCompressAsyncTask -> onPostExecute -> outer"));
+            }
+
+            findViewById(R.id.loadingIcon).setVisibility(View.INVISIBLE);
+        }
+    }
+
+    private void firebaseUpload() {
+
+        Log.i(TAG, "firebaseUpload()");
 
         // Connect to Firebase.
         StorageReference mStorageRef = FirebaseStorage.getInstance().getReference("images");
-        final StorageReference storageReference = mStorageRef.child(System.currentTimeMillis() + "." + getExtension(imageURI));
+        final StorageReference storageReference = mStorageRef.child(System.currentTimeMillis() + "." + getExtension(videoURI));
         final Bundle extras = getIntent().getExtras();
 
         // Show the loading icon while the image is being uploaded to Firebase.
@@ -1185,7 +1534,7 @@ public class Chat extends AppCompatActivity implements
 
         if (URIisFile) {
 
-            uploadTask = storageReference.putFile(imageURI);
+            uploadTask = storageReference.putFile(videoURI);
         } else {
 
             uploadTask = storageReference.putBytes(byteArray);

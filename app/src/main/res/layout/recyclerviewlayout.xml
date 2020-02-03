@@ -10,10 +10,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentStart="true"
-        android:layout_alignParentLeft="true"
         android:layout_alignParentTop="true"
         android:layout_marginStart="10dp"
-        android:layout_marginLeft="10dp"
         android:layout_marginTop="4dp"
         android:textStyle="normal|bold"
         tools:text="User" />
@@ -23,13 +21,10 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentEnd="true"
-        android:layout_alignParentRight="true"
         android:layout_alignParentBottom="@+id/messageUser"
         android:layout_marginStart="10dp"
-        android:layout_marginLeft="10dp"
         android:layout_marginTop="4dp"
         android:layout_toEndOf="@+id/messageUser"
-        android:layout_toRightOf="@+id/messageUser"
         tools:text="Time" />
 
     <ImageView
@@ -38,9 +33,7 @@
         android:layout_height="wrap_content"
         android:layout_below="@id/messageUser"
         android:layout_alignParentStart="true"
-        android:layout_alignParentLeft="true"
         android:layout_marginStart="10dp"
-        android:layout_marginLeft="10dp"
         android:layout_marginTop="4dp"
         android:layout_marginBottom="2dp" />
 
@@ -57,9 +50,7 @@
         android:layout_height="wrap_content"
         android:layout_below="@id/messageImage"
         android:layout_alignParentStart="true"
-        android:layout_alignParentLeft="true"
         android:layout_marginStart="10dp"
-        android:layout_marginLeft="10dp"
         android:layout_marginBottom="4dp"
         android:textAppearance="@style/TextAppearance.AppCompat.Body1"
         android:textSize="18sp"

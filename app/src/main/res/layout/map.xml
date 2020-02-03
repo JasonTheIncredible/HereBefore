@@ -17,9 +17,7 @@
         android:layout_width="40dp"
         android:layout_height="40dp"
         android:layout_alignParentStart="true"
-        android:layout_alignParentLeft="true"
         android:layout_marginStart="14dp"
-        android:layout_marginLeft="14dp"
         android:layout_marginTop="14dp"
         android:background="@drawable/maptype_button" />
 
@@ -28,10 +26,8 @@
         android:layout_width="40dp"
         android:layout_height="40dp"
         android:layout_alignParentEnd="true"
-        android:layout_alignParentRight="true"
         android:layout_marginTop="65dp"
         android:layout_marginEnd="10dp"
-        android:layout_marginRight="10dp"
         android:background="@drawable/chatviews_button" />
 
     <Button
@@ -39,12 +35,9 @@
         android:layout_width="30dp"
         android:layout_height="30dp"
         android:layout_alignParentStart="true"
-        android:layout_alignParentLeft="true"
         android:layout_alignParentBottom="true"
         android:layout_marginStart="25dp"
-        android:layout_marginLeft="25dp"
         android:layout_marginEnd="15dp"
-        android:layout_marginRight="15dp"
         android:layout_marginBottom="25dp"
         android:background="@drawable/createchat_button" />
 
@@ -53,13 +46,10 @@
         android:layout_width="fill_parent"
         android:layout_height="60dp"
         android:layout_alignParentEnd="true"
-        android:layout_alignParentRight="true"
         android:layout_alignParentBottom="true"
         android:layout_marginEnd="10dp"
-        android:layout_marginRight="10dp"
         android:layout_marginBottom="10dp"
         android:layout_toEndOf="@+id/createChatButton"
-        android:layout_toRightOf="@+id/createChatButton"
         android:max="200"
         android:progress="0" />
 
@@ -68,13 +58,10 @@
         android:layout_width="fill_parent"
         android:layout_height="60dp"
         android:layout_alignParentEnd="true"
-        android:layout_alignParentRight="true"
         android:layout_alignParentBottom="true"
         android:layout_marginEnd="10dp"
-        android:layout_marginRight="10dp"
         android:layout_marginBottom="10dp"
         android:layout_toEndOf="@+id/createChatButton"
-        android:layout_toRightOf="@+id/createChatButton"
         android:max="10"
         android:progress="0"
         android:theme="@style/Widget.AppCompat.SeekBar.Discrete"
