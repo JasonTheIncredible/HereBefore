@@ -11,6 +11,7 @@ import android.content.res.Configuration;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -120,12 +121,11 @@ public class Chat extends AppCompatActivity implements
     private File image, video;
     private byte[] byteArray;
 
-    //TODO: Adjust compression of video.
-    //TODO: Adjust width / height of video before sending to Firebase.
+    //TODO: Save uncompressed video to gallery.
     //TODO: Add videoView to RecyclerView, allow clicking to expand like imageView, and allow clicking on imageView / videoView preview to expand like in recyclerView.
     //TODO: Add ability to add both picture and video to RecyclerView (or change menu so only one can be added and adjust sendButton).
     //TODO: Adjust MessageInformation class.
-    //TODO: Save uncompressed video to gallery.
+    //TODO: Adjust compression of video.
     //TODO: Decode/compress bitmaps and compress video on background thread.
     //TODO: Set limit for recording time.
     //TODO: Work on warnings.
@@ -1486,6 +1486,24 @@ public class Chat extends AppCompatActivity implements
                 params.addRule(RelativeLayout.END_OF, R.id.videoView);
                 mInput.setLayoutParams(params);
 
+                // Change the videoView's orientation depending on the orientation of the video.
+                MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+                // Set the video Uri as data source for MediaMetadataRetriever
+                retriever.setDataSource(compressedFilePath);
+                // Get one "frame"/bitmap - * NOTE - no time was set, so the first available frame will be used
+                Bitmap bmp = retriever.getFrameAtTime();
+                // Get the bitmap width and height
+                int videoWidth = bmp.getWidth();
+                int videoHeight = bmp.getHeight();
+
+                final float scale = mContext.getResources().getDisplayMetrics().density;
+                if (videoWidth > videoHeight) {
+
+                    videoView.getLayoutParams().width = (int) (50 * scale + 0.5f); // Convert 50dp to px.
+                } else {
+
+                    videoView.getLayoutParams().width = (int) (30 * scale + 0.5f); // Convert 30dp to px.
+                }
 
                 videoView.setVideoPath(compressedFilePath);
                 videoView.setVisibility(View.VISIBLE);

@@ -51,7 +51,7 @@
 
     <VideoView
         android:id="@+id/videoView"
-        android:layout_width="40dp"
+        android:layout_width="30dp"
         android:layout_height="40dp"
         android:layout_alignParentBottom="true"
         android:layout_marginStart="4dp"
