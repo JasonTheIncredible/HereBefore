@@ -3,6 +3,7 @@ package co.clixel.herebefore;
 import android.Manifest;
 import android.app.AlertDialog;
 import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -73,6 +74,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.ref.WeakReference;
 import java.net.URISyntaxException;
 import java.text.DateFormat;
@@ -121,7 +123,6 @@ public class Chat extends AppCompatActivity implements
     private File image, video;
     private byte[] byteArray;
 
-    //TODO: Save uncompressed video to gallery.
     //TODO: Add videoView to RecyclerView, allow clicking to expand like imageView, and allow clicking on imageView / videoView preview to expand like in recyclerView.
     //TODO: Add ability to add both picture and video to RecyclerView (or change menu so only one can be added and adjust sendButton).
     //TODO: Adjust MessageInformation class.
@@ -1441,6 +1442,46 @@ public class Chat extends AppCompatActivity implements
 
             super.onPostExecute(compressedFilePath);
             URIisFile = true;
+
+            // Add uncompressed video to gallery.
+            // Save the name and description of a video in a ContentValues map.
+            ContentValues values = new ContentValues(3);
+            values.put(MediaStore.Video.Media.TITLE, "Here_Before_" + System.currentTimeMillis());
+            values.put(MediaStore.Video.Media.MIME_TYPE, "video/mp4");
+            values.put(MediaStore.Video.Media.DATA, video.getAbsolutePath());
+
+            // Add a new record (identified by uri) without the video, but with the values just set.
+            Uri uri = getContentResolver().insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values);
+
+            // Now get a handle to the file for that record, and save the data into it.
+            try {
+                InputStream is = new FileInputStream(video);
+                if (uri != null) {
+
+                    OutputStream os = getContentResolver().openOutputStream(uri);
+                    byte[] buffer = new byte[4096]; // tweaking this number may increase performance
+                    int len;
+                    while ((len = is.read(buffer)) != -1){
+                        if (os != null) {
+
+                            os.write(buffer, 0, len);
+                            os.flush();
+                        }
+                    }
+                    is.close();
+                    if (os != null) {
+
+                        os.close();
+                    }
+                }
+            } catch (Exception e) {
+
+                Log.e(TAG, "Exception while writing video: ", e);
+            }
+
+            sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, uri));
+
+            // Now create a compressed video.
             File videoFile = new File(compressedFilePath);
 
             float length = videoFile.length() / 1024f; // Size in KB
