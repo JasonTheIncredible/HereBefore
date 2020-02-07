@@ -5,7 +5,7 @@ public class MessageInformation {
 
     public String message;
     public Object date;
-    public String uuid, imageURL;
+    public String uuid, imageURL, videoURL;
 
     MessageInformation() {
     }
@@ -16,6 +16,10 @@ public class MessageInformation {
 
     public void setImageURL(String imageURL) {
         this.imageURL = imageURL;
+    }
+
+    public void setVideoURL(String videoURL) {
+        this.videoURL = videoURL;
     }
 
     public void setMessage(String message) {

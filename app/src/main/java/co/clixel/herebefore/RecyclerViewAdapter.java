@@ -14,6 +14,7 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.VideoView;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
@@ -22,21 +23,21 @@ import java.util.ArrayList;
 
 public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapter.ViewHolder> {
 
-    private static final String TAG = "RecyclerViewAdapter";
-
     private ArrayList<String> mMessageUser;
     private ArrayList<String> mMessageTime;
     private ArrayList<String> mMessageImage;
+    private ArrayList<String> mMessageVideo;
     private ArrayList<String> mMessageText;
     private Context mContext;
     private int usableWidth;
 
-    RecyclerViewAdapter(Context context, ArrayList<String> mMessageUser, ArrayList<String> mMessageTime, ArrayList<String> mMessageImage, ArrayList<String> mMessageText) {
+    RecyclerViewAdapter(Context context, ArrayList<String> mMessageUser, ArrayList<String> mMessageTime, ArrayList<String> mMessageImage, ArrayList<String> mMessageVideo, ArrayList<String> mMessageText) {
 
         this.mContext = context;
         this.mMessageUser = mMessageUser;
         this.mMessageTime = mMessageTime;
         this.mMessageImage = mMessageImage;
+        this.mMessageVideo = mMessageVideo;
         this.mMessageText = mMessageText;
     }
 
@@ -87,7 +88,8 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
 
         //holder.messageUser.setText(mMessageUser.get(position));
         holder.messageTime.setText(mMessageTime.get(position));
-        // Set messageImage or messageText to gone if an image or text doesn't exist, for spacing consistency.
+
+        // Set messageImage, messageVideo, or messageText to gone if an image or text doesn't exist, for spacing consistency.
         if (mMessageImage.get(position) == null) {
 
             holder.messageImage.setVisibility(View.GONE);
@@ -99,6 +101,16 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
                     .apply(new RequestOptions().override(usableWidth, 5000).placeholder(R.drawable.ic_recyclerview_image_placeholder).centerInside())
                     .into(holder.messageImage);
         }
+
+        if (mMessageVideo.get(position) == null) {
+
+            holder.messageVideo.setVisibility(View.GONE);
+        } else {
+
+            holder.messageVideo.setVisibility(View.VISIBLE);
+            holder.messageVideo.setVideoPath(mMessageVideo.get(position));
+        }
+
         if (mMessageText.get(position) == null) {
 
             holder.messageText.setVisibility(View.GONE);
@@ -130,6 +142,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
 
         TextView messageUser, messageTime, messageText;
         ImageView messageImage;
+        VideoView messageVideo;
         RelativeLayout messageItem;
 
         ViewHolder(@NonNull View itemView) {
@@ -138,6 +151,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
             messageUser = itemView.findViewById(R.id.messageUser);
             messageTime = itemView.findViewById(R.id.messageTime);
             messageImage = itemView.findViewById(R.id.messageImage);
+            messageVideo = itemView.findViewById(R.id.messageVideo);
             messageText = itemView.findViewById(R.id.messageText);
             messageItem = itemView.findViewById(R.id.message);
         }
