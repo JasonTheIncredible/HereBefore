@@ -127,6 +127,7 @@ public class Map extends FragmentActivity implements
     // Leave messages in locations that users get notified of when they enter the area.
     // Make sure uuids never overlap in Firebase.
     // Decrease app size.
+    // Add ability to add both picture and video to firebase at the same time.
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
