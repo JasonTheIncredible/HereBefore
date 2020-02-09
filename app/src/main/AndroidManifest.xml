@@ -83,6 +83,12 @@
             android:theme="@style/AppTheme.NoActionBar"
             android:label="@string/title_activity_maps">
         </activity>
+
+        <activity
+            android:name=".VideoView"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:label="@string/title_activity_maps">
+        </activity>
     </application>
 
 </manifest>

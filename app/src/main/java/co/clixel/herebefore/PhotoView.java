@@ -12,8 +12,6 @@ public class PhotoView extends AppCompatActivity {
 
     // https://github.com/chrisbanes/PhotoView
     com.github.chrisbanes.photoview.PhotoView myImage;
-    private String url = "";
-    private int usableWidth;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -21,12 +19,13 @@ public class PhotoView extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.photoview);
 
-        url = getIntent().getStringExtra("imgURL");
+        String url = getIntent().getStringExtra("imgURL");
 
         // Sets each picture's size relative to the screen (used in onBindViewHolder().
         int measuredWidth;
         measuredWidth = Resources.getSystem().getDisplayMetrics().widthPixels;
 
+        int usableWidth;
         if (measuredWidth > 0) {
 
             usableWidth = measuredWidth;

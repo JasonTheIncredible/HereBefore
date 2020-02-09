@@ -12,6 +12,9 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         multiDexEnabled true
     }
+    compileOptions {
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
     buildTypes {
         release {
             minifyEnabled false
@@ -60,5 +63,7 @@ dependencies {
     implementation 'id.zelory:compressor:2.1.0'
 
     implementation 'com.iceteck.silicompressorr:silicompressor:2.1'
+
+    implementation 'com.google.android.exoplayer:exoplayer:2.11.1'
 }
 apply plugin: 'com.google.gms.google-services'

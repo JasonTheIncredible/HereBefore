@@ -64,6 +64,13 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
                     Activity.putExtra("imgURL", mMessageImage.get(holder.getAdapterPosition()));
                     mContext.startActivity(Activity);
                 }
+
+                if (mMessageVideo.get(holder.getAdapterPosition()) != null) {
+
+                    Intent Activity = new Intent(mContext, co.clixel.herebefore.VideoView.class);
+                    Activity.putExtra("videoURL", mMessageVideo.get(holder.getAdapterPosition()));
+                    mContext.startActivity(Activity);
+                }
             }
         });
 
