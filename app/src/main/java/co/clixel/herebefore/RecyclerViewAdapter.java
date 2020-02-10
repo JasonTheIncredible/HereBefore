@@ -13,6 +13,8 @@ import android.media.MediaMetadataRetriever;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -31,6 +33,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
     private ArrayList<String> mMessageImage;
     private ArrayList<String> mMessageVideo;
     private ArrayList<String> mMessageText;
+    private ImageButton playButton;
     private Context mContext;
     private int usableWidth;
     private int usableHeight;
@@ -73,6 +76,20 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
                 }
             }
         });
+
+        if (playButton != null) {
+
+            playButton.setOnClickListener(new View.OnClickListener() {
+
+                @Override
+                public void onClick(View v) {
+
+                    Intent Activity = new Intent(mContext, co.clixel.herebefore.VideoView.class);
+                    Activity.putExtra("videoURL", mMessageVideo.get(holder.getAdapterPosition()));
+                    mContext.startActivity(Activity);
+                }
+            });
+        }
 
         // Sets each picture's size relative to the screen (used in onBindViewHolder().
         int measuredWidth;
@@ -131,7 +148,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
 
         if (mMessageVideo.get(position) == null) {
 
-            holder.messageVideo.setVisibility(View.GONE);
+            holder.videoFrame.setVisibility(View.GONE);
         } else {
 
             // Change the videoView's orientation depending on the orientation of the video.
@@ -147,13 +164,14 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
             final float scale = mContext.getResources().getDisplayMetrics().density;
             if (videoWidth > videoHeight) {
 
-                holder.messageVideo.getLayoutParams().height = (int) ((usableHeight / 2) * scale + 0.5f); // Convert dp to px.
+                holder.videoFrame.getLayoutParams().height = (int) ((usableHeight / 2) * scale + 0.5f); // Convert dp to px.
             } else {
 
-                holder.messageVideo.getLayoutParams().height = (int) (usableHeight * scale + 0.5f); // Convert dp to px.
+                holder.videoFrame.getLayoutParams().height = (int) (usableHeight * scale + 0.5f); // Convert dp to px.
             }
 
             holder.messageVideo.setVideoPath(mMessageVideo.get(position));
+            holder.messageVideo.seekTo(1);
             holder.messageVideo.setVisibility(View.VISIBLE);
         }
 
@@ -188,6 +206,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
 
         TextView messageUser, messageTime, messageText;
         ImageView messageImage;
+        FrameLayout videoFrame;
         VideoView messageVideo;
         RelativeLayout messageItem;
 
@@ -197,7 +216,9 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
             messageUser = itemView.findViewById(R.id.messageUser);
             messageTime = itemView.findViewById(R.id.messageTime);
             messageImage = itemView.findViewById(R.id.messageImage);
+            videoFrame = itemView.findViewById(R.id.video_frame);
             messageVideo = itemView.findViewById(R.id.messageVideo);
+            playButton = itemView.findViewById(R.id.play_button);
             messageText = itemView.findViewById(R.id.messageText);
             messageItem = itemView.findViewById(R.id.message);
         }

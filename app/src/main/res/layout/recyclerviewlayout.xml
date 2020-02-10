@@ -37,15 +37,31 @@
         android:layout_marginTop="4dp"
         android:layout_marginBottom="2dp" />
 
-    <VideoView
-        android:id="@+id/messageVideo"
+    <FrameLayout
+        android:id="@+id/video_frame"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@id/messageUser"
         android:layout_alignParentStart="true"
         android:layout_marginStart="10dp"
         android:layout_marginTop="4dp"
-        android:layout_marginBottom="2dp" />
+        android:layout_marginBottom="2dp"
+        android:background="#000">
+
+        <VideoView
+            android:id="@+id/messageVideo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <ImageButton
+            android:id="@+id/play_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical|center_horizontal"
+            android:contentDescription="Play icon"
+            android:src="@drawable/exo_icon_play" />
+
+    </FrameLayout>
 
     <ImageView
         android:id="@+id/expanded_image"

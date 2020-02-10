@@ -124,7 +124,6 @@ public class Chat extends AppCompatActivity implements
     private File image, video;
     private byte[] byteArray;
 
-    //TODO: Add video player to videoView / allow clicking to expand videoView like imageView.
     //TODO: Allow clicking on imageView / videoView preview to expand like in recyclerView.
     //TODO: Add ability to add video from gallery to recyclerView.
     //TODO: Add ability to add both picture and video to RecyclerView (or change menu so only one can be added and adjust sendButton).
@@ -133,6 +132,7 @@ public class Chat extends AppCompatActivity implements
     //TODO: Decode/compress bitmaps and compress video on background thread.
     //TODO: Create permanent solution to video size in recyclerView issue.
     //TODO: Set limit for recording time.
+    //TODO: Nullify onClickListeners in RecyclerViewAdapter.
     //TODO: Work on warnings.
     //TODO: Add a username (in recyclerviewlayout).
     //TODO: Keep checking user's location while user is in recyclerviewlayout to see if they can keep messaging, add a recyclerviewlayout at the top notifying user of this. Add differentiation between messaging within area vs not.
@@ -1561,6 +1561,7 @@ public class Chat extends AppCompatActivity implements
                 }
 
                 videoView.setVideoPath(compressedFilePath);
+                videoView.seekTo(1);
                 videoView.setVisibility(View.VISIBLE);
 
             } catch (IOException e) {
@@ -1746,7 +1747,7 @@ public class Chat extends AppCompatActivity implements
                             Log.e(TAG, "firebaseUpload() -> URIisFile && fileIsImage -> onFailure -> " + ex.getMessage());
                         }
                     });
-        } else if (!fileIsImage){
+        } else if (!fileIsImage) {
 
             // Video.
 
