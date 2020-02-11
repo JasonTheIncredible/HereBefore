@@ -63,7 +63,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
 
                 if (mMessageImage.get(holder.getAdapterPosition()) != null) {
 
-                    Intent Activity = new Intent(mContext, co.clixel.herebefore.PhotoView.class);
+                    Intent Activity = new Intent(mContext, PhotoView.class);
                     Activity.putExtra("imgURL", mMessageImage.get(holder.getAdapterPosition()));
                     mContext.startActivity(Activity);
                 }

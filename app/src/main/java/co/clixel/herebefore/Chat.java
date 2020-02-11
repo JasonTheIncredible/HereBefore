@@ -124,11 +124,10 @@ public class Chat extends AppCompatActivity implements
     private File image, video;
     private byte[] byteArray;
 
-    //TODO: Allow clicking on imageView / videoView preview to expand like in recyclerView.
+    //TODO: Add onRestart() to PhotoView and VideoView to prevent blank screen.
     //TODO: Add ability to add video from gallery to recyclerView.
     //TODO: Add ability to add both picture and video to RecyclerView (or change menu so only one can be added and adjust sendButton).
     //TODO: Adjust MessageInformation class.
-    //TODO: Adjust compression of video.
     //TODO: Decode/compress bitmaps and compress video on background thread.
     //TODO: Create permanent solution to video size in recyclerView issue.
     //TODO: Set limit for recording time.
@@ -634,6 +633,32 @@ public class Chat extends AppCompatActivity implements
                 }
             }
         });
+
+        imageView.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+
+                Log.i(TAG, "imageView -> onClick");
+
+                Intent Activity = new Intent(Chat.this, PhotoView.class);
+                Activity.putExtra("imgURL", imageURI.toString());
+                Chat.this.startActivity(Activity);
+            }
+        });
+
+        videoView.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+
+                Log.i(TAG, "videoView -> onClick");
+
+                Intent Activity = new Intent(Chat.this, co.clixel.herebefore.VideoView.class);
+                Activity.putExtra("videoURL", videoURI.toString());
+                Chat.this.startActivity(Activity);
+            }
+        });
     }
 
     @Override
@@ -646,6 +671,12 @@ public class Chat extends AppCompatActivity implements
         if (mInput != null) {
 
             mInput.clearFocus();
+        }
+
+        // Prevent the videoView from being black after clicking on the videoView and returning from VideoView.java.
+        if (videoView.getVisibility() != View.GONE) {
+
+            videoView.seekTo(1);
         }
     }
 
@@ -682,6 +713,16 @@ public class Chat extends AppCompatActivity implements
         if (eventListener != null) {
 
             eventListener = null;
+        }
+
+        if (imageView != null) {
+
+            imageView.setOnClickListener(null);
+        }
+
+        if (videoView != null) {
+
+            videoView.setOnClickListener(null);
         }
 
         if (sendButton != null) {
@@ -1439,7 +1480,7 @@ public class Chat extends AppCompatActivity implements
             String filePath = null;
             try {
 
-                filePath = SiliCompressor.with(mContext).compressVideo(paths[0], paths[1], 1280, 720, 1500000);
+                filePath = SiliCompressor.with(mContext).compressVideo(paths[0], paths[1], 1280, 720, 3000000);
 
             } catch (URISyntaxException e) {
 
@@ -1563,6 +1604,8 @@ public class Chat extends AppCompatActivity implements
                 videoView.setVideoPath(compressedFilePath);
                 videoView.seekTo(1);
                 videoView.setVisibility(View.VISIBLE);
+                // Set videoView.requestFocus(), otherwise the user needs to click on the videoView twice for the onClickListener to work.
+                videoView.requestFocus();
 
             } catch (IOException e) {
 
