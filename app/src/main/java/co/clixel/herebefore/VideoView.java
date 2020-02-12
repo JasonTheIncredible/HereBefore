@@ -15,8 +15,9 @@ import com.google.android.exoplayer2.util.Util;
 
 public class VideoView extends AppCompatActivity {
 
-    PlayerView playerView;
-    SimpleExoPlayer player;
+    private PlayerView playerView;
+    private SimpleExoPlayer player;
+    private String url;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -26,7 +27,13 @@ public class VideoView extends AppCompatActivity {
 
         playerView = findViewById(R.id.playerView);
 
-        String url = getIntent().getStringExtra("videoURL");
+        url = getIntent().getStringExtra("videoURL");
+    }
+
+    @Override
+    protected void onStart() {
+
+        super.onStart();
 
         player = new SimpleExoPlayer.Builder(this).build();
 
@@ -48,7 +55,17 @@ public class VideoView extends AppCompatActivity {
     protected void onStop() {
 
         releasePlayer();
+
         super.onStop();
+    }
+
+    @Override
+    protected void onDestroy() {
+
+        player = null;
+        playerView = null;
+
+        super.onDestroy();
     }
 
     private void releasePlayer() {
@@ -58,9 +75,7 @@ public class VideoView extends AppCompatActivity {
             player.setPlayWhenReady(true);
             player.stop();
             player.release();
-            player = null;
             playerView.setPlayer(null);
-            playerView = null;
         }
     }
 }

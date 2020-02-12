@@ -124,9 +124,8 @@ public class Chat extends AppCompatActivity implements
     private File image, video;
     private byte[] byteArray;
 
-    //TODO: Add onRestart() to PhotoView and VideoView to prevent blank screen.
-    //TODO: Add ability to add video from gallery to recyclerView.
     //TODO: Add ability to add both picture and video to RecyclerView (or change menu so only one can be added and adjust sendButton).
+    //TODO: Add ability to add video from gallery to recyclerView.
     //TODO: Adjust MessageInformation class.
     //TODO: Decode/compress bitmaps and compress video on background thread.
     //TODO: Create permanent solution to video size in recyclerView issue.
