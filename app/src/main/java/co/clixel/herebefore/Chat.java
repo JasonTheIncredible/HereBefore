@@ -124,7 +124,6 @@ public class Chat extends AppCompatActivity implements
     private File image, video;
     private byte[] byteArray;
 
-    //TODO: Add ability to add both picture and video to RecyclerView (or change menu so only one can be added and adjust sendButton).
     //TODO: Add ability to add video from gallery to recyclerView.
     //TODO: Adjust MessageInformation class.
     //TODO: Decode/compress bitmaps and compress video on background thread.
@@ -807,6 +806,15 @@ public class Chat extends AppCompatActivity implements
                 Log.i(TAG, "onMenuItemClick() -> selectImage");
 
                 chooseImage();
+                // Set the views to GONE to prevent anything else from being sent to Firebase.
+                if (videoView != null) {
+
+                    videoView.setVisibility(View.GONE);
+                }
+                if (imageView != null) {
+
+                    imageView.setVisibility(View.GONE);
+                }
                 mediaButtonMenuIsOpen = false;
                 return true;
 
@@ -818,6 +826,15 @@ public class Chat extends AppCompatActivity implements
 
                     startActivityTakePhoto();
                 }
+                // Set the views to GONE to prevent anything else from being sent to Firebase.
+                if (videoView != null) {
+
+                    videoView.setVisibility(View.GONE);
+                }
+                if (imageView != null) {
+
+                    imageView.setVisibility(View.GONE);
+                }
                 mediaButtonMenuIsOpen = false;
                 return true;
 
@@ -828,6 +845,15 @@ public class Chat extends AppCompatActivity implements
                 if (checkPermissionsVideo()) {
 
                     startActivityRecordVideo();
+                }
+                // Set the views to GONE to prevent anything else from being sent to Firebase.
+                if (videoView != null) {
+
+                    videoView.setVisibility(View.GONE);
+                }
+                if (imageView != null) {
+
+                    imageView.setVisibility(View.GONE);
                 }
                 mediaButtonMenuIsOpen = false;
                 return true;

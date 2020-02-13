@@ -124,6 +124,7 @@ public class Map extends FragmentActivity implements
     // Page for deleting user account, resetting password, etc.
     // Allow user to sign out from here and Chat.java.
     // Work on onTrimMemory().
+    // Add ability to add both video and picture to Firebase.
     // Leave messages in locations that users get notified of when they enter the area.
     // Make sure uuids never overlap in Firebase.
     // Decrease app size.
