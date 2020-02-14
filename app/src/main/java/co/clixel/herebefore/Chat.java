@@ -13,6 +13,7 @@ import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.MediaMetadataRetriever;
+import android.media.ThumbnailUtils;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -54,7 +55,6 @@ import android.widget.ImageView;
 import android.widget.PopupMenu;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
-import android.widget.VideoView;
 
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -116,8 +116,7 @@ public class Chat extends AppCompatActivity implements
     private Double polygonArea, circleLatitude, circleLongitude, radius, marker0Latitude, marker0Longitude, marker1Latitude, marker1Longitude, marker2Latitude, marker2Longitude, marker3Latitude, marker3Longitude, marker4Latitude, marker4Longitude, marker5Latitude, marker5Longitude, marker6Latitude, marker6Longitude, marker7Latitude, marker7Longitude;
     private int fillColor;
     private PopupMenu mediaButtonMenu;
-    private ImageView imageView;
-    private VideoView videoView;
+    private ImageView imageView, videoImageView;
     public Uri imageURI, videoURI;
     private StorageTask uploadTask;
     private LinearLayoutManager recyclerViewLinearLayoutManager = new LinearLayoutManager(this);
@@ -125,9 +124,9 @@ public class Chat extends AppCompatActivity implements
     private byte[] byteArray;
 
     //TODO: Add ability to add video from gallery to recyclerView.
+    //TODO: Check app size while video is in preview.
     //TODO: Adjust MessageInformation class.
     //TODO: Decode/compress bitmaps and compress video on background thread.
-    //TODO: Create permanent solution to video size in recyclerView issue.
     //TODO: Set limit for recording time.
     //TODO: Nullify onClickListeners in RecyclerViewAdapter.
     //TODO: Work on warnings.
@@ -135,7 +134,6 @@ public class Chat extends AppCompatActivity implements
     //TODO: Keep checking user's location while user is in recyclerviewlayout to see if they can keep messaging, add a recyclerviewlayout at the top notifying user of this. Add differentiation between messaging within area vs not.
     //TODO: When data gets changed, try to update only the affected items: https://stackoverflow.com/questions/27188536/recyclerview-scrolling-performance. Also, fix issue where images / videos are changing size with orientation change.
     //TODO: Too much work on main thread.
-    //TODO: Check app size while video is in preview.
     //TODO: Check updating in different states with another device.
     //TODO: Change popupMenu color.
 
@@ -149,7 +147,7 @@ public class Chat extends AppCompatActivity implements
 
         mediaButton = findViewById(R.id.mediaButton);
         imageView = findViewById(R.id.imageView);
-        videoView = findViewById(R.id.videoView);
+        videoImageView = findViewById(R.id.videoImageView);
         mInput = findViewById(R.id.input);
         sendButton = findViewById(R.id.sendButton);
         recyclerView = findViewById(R.id.messageList);
@@ -330,17 +328,17 @@ public class Chat extends AppCompatActivity implements
         // Add the Firebase listener.
         databaseReference.addValueEventListener(eventListener);
 
-        // Hide the imageView or videoView if user presses the delete button.
+        // Hide the imageView or videoImageView if user presses the delete button.
         mInput.setOnKeyListener(new View.OnKeyListener() {
 
             @Override
             public boolean onKey(View v, int keyCode, KeyEvent event) {
 
-                if (keyCode == KeyEvent.KEYCODE_DEL && (imageView.getVisibility() == View.VISIBLE || videoView.getVisibility() == View.VISIBLE) &&
+                if (keyCode == KeyEvent.KEYCODE_DEL && (imageView.getVisibility() == View.VISIBLE || videoImageView.getVisibility() == View.VISIBLE) &&
                         (mInput.getText().toString().trim().length() == 0 || mInput.getSelectionStart() == 0)) {
 
                     imageView.setVisibility(View.GONE);
-                    videoView.setVisibility(View.GONE);
+                    videoImageView.setVisibility(View.GONE);
                 }
 
                 if (keyCode == KeyEvent.KEYCODE_BACK && getCurrentFocus() == mInput) {
@@ -392,7 +390,7 @@ public class Chat extends AppCompatActivity implements
                 final Bundle extras = getIntent().getExtras();
 
                 // Send recyclerviewlayout to Firebase.
-                if (!input.equals("") || imageView.getVisibility() != View.GONE || videoView.getVisibility() != View.GONE) {
+                if (!input.equals("") || imageView.getVisibility() != View.GONE || videoImageView.getVisibility() != View.GONE) {
 
                     // Check Boolean value from onStart();
                     if (newShape) {
@@ -407,7 +405,7 @@ public class Chat extends AppCompatActivity implements
                                 @Override
                                 public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
 
-                                    if (imageView.getVisibility() != View.GONE || videoView.getVisibility() != View.GONE) {
+                                    if (imageView.getVisibility() != View.GONE || videoImageView.getVisibility() != View.GONE) {
 
                                         // Upload the image to Firebase if it exists and is not already in the process of sending an image.
                                         if (uploadTask != null && uploadTask.isInProgress()) {
@@ -468,7 +466,7 @@ public class Chat extends AppCompatActivity implements
                                 @Override
                                 public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
 
-                                    if (imageView.getVisibility() != View.GONE || videoView.getVisibility() != View.GONE) {
+                                    if (imageView.getVisibility() != View.GONE || videoImageView.getVisibility() != View.GONE) {
 
                                         // Upload the image to Firebase if it exists and is not already in the process of sending an image.
                                         if (uploadTask != null && uploadTask.isInProgress()) {
@@ -597,7 +595,7 @@ public class Chat extends AppCompatActivity implements
 
                         // Shape is not new.
 
-                        if (imageView.getVisibility() != View.GONE || videoView.getVisibility() != View.GONE) {
+                        if (imageView.getVisibility() != View.GONE || videoImageView.getVisibility() != View.GONE) {
 
                             // Upload the image to Firebase if it exists and is not already in the process of sending an image.
                             if (uploadTask != null && uploadTask.isInProgress()) {
@@ -645,12 +643,12 @@ public class Chat extends AppCompatActivity implements
             }
         });
 
-        videoView.setOnClickListener(new View.OnClickListener() {
+        videoImageView.setOnClickListener(new View.OnClickListener() {
 
             @Override
             public void onClick(View v) {
 
-                Log.i(TAG, "videoView -> onClick");
+                Log.i(TAG, "videoImageView -> onClick");
 
                 Intent Activity = new Intent(Chat.this, co.clixel.herebefore.VideoView.class);
                 Activity.putExtra("videoURL", videoURI.toString());
@@ -669,12 +667,6 @@ public class Chat extends AppCompatActivity implements
         if (mInput != null) {
 
             mInput.clearFocus();
-        }
-
-        // Prevent the videoView from being black after clicking on the videoView and returning from VideoView.java.
-        if (videoView.getVisibility() != View.GONE) {
-
-            videoView.seekTo(1);
         }
     }
 
@@ -718,9 +710,9 @@ public class Chat extends AppCompatActivity implements
             imageView.setOnClickListener(null);
         }
 
-        if (videoView != null) {
+        if (videoImageView != null) {
 
-            videoView.setOnClickListener(null);
+            videoImageView.setOnClickListener(null);
         }
 
         if (sendButton != null) {
@@ -807,9 +799,9 @@ public class Chat extends AppCompatActivity implements
 
                 chooseImage();
                 // Set the views to GONE to prevent anything else from being sent to Firebase.
-                if (videoView != null) {
+                if (videoImageView != null) {
 
-                    videoView.setVisibility(View.GONE);
+                    videoImageView.setVisibility(View.GONE);
                 }
                 if (imageView != null) {
 
@@ -827,9 +819,9 @@ public class Chat extends AppCompatActivity implements
                     startActivityTakePhoto();
                 }
                 // Set the views to GONE to prevent anything else from being sent to Firebase.
-                if (videoView != null) {
+                if (videoImageView != null) {
 
-                    videoView.setVisibility(View.GONE);
+                    videoImageView.setVisibility(View.GONE);
                 }
                 if (imageView != null) {
 
@@ -847,9 +839,9 @@ public class Chat extends AppCompatActivity implements
                     startActivityRecordVideo();
                 }
                 // Set the views to GONE to prevent anything else from being sent to Firebase.
-                if (videoView != null) {
+                if (videoImageView != null) {
 
-                    videoView.setVisibility(View.GONE);
+                    videoImageView.setVisibility(View.GONE);
                 }
                 if (imageView != null) {
 
@@ -1602,35 +1594,32 @@ public class Chat extends AppCompatActivity implements
                 }
                 output64.close();
 
-                // Change textView to be to the right of videoView.
+                // Change textView to be to the right of videoImageView.
                 RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams) mInput.getLayoutParams();
-                params.addRule(RelativeLayout.END_OF, R.id.videoView);
+                params.addRule(RelativeLayout.END_OF, R.id.videoImageView);
                 mInput.setLayoutParams(params);
 
-                // Change the videoView's orientation depending on the orientation of the video.
+                // Change the videoImageView's orientation depending on the orientation of the video.
                 MediaMetadataRetriever retriever = new MediaMetadataRetriever();
                 // Set the video Uri as data source for MediaMetadataRetriever
                 retriever.setDataSource(compressedFilePath);
                 // Get one "frame"/bitmap - * NOTE - no time was set, so the first available frame will be used
-                Bitmap bmp = retriever.getFrameAtTime();
+                Bitmap bmp = retriever.getFrameAtTime(1);
                 // Get the bitmap width and height
-                int videoWidth = bmp.getWidth();
-                int videoHeight = bmp.getHeight();
+                int bmpWidth = bmp.getWidth();
+                int bmpHeight = bmp.getHeight();
 
                 final float scale = mContext.getResources().getDisplayMetrics().density;
-                if (videoWidth > videoHeight) {
+                if (bmpWidth > bmpHeight) {
 
-                    videoView.getLayoutParams().width = (int) (50 * scale + 0.5f); // Convert 50dp to px.
+                    videoImageView.getLayoutParams().width = (int) (50 * scale + 0.5f); // Convert 50dp to px.
                 } else {
 
-                    videoView.getLayoutParams().width = (int) (30 * scale + 0.5f); // Convert 30dp to px.
+                    videoImageView.getLayoutParams().width = (int) (30 * scale + 0.5f); // Convert 30dp to px.
                 }
 
-                videoView.setVideoPath(compressedFilePath);
-                videoView.seekTo(1);
-                videoView.setVisibility(View.VISIBLE);
-                // Set videoView.requestFocus(), otherwise the user needs to click on the videoView twice for the onClickListener to work.
-                videoView.requestFocus();
+                videoImageView.setImageBitmap(bmp);
+                videoImageView.setVisibility(View.VISIBLE);
 
             } catch (IOException e) {
 
@@ -1961,7 +1950,7 @@ public class Chat extends AppCompatActivity implements
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("messageThreads").push();
                             newMessage.setValue(messageInformation);
                             mInput.getText().clear();
-                            videoView.setVisibility(View.GONE);
+                            videoImageView.setVisibility(View.GONE);
                             findViewById(R.id.loadingIcon).setVisibility(View.GONE);
                         }
                     });
@@ -2142,8 +2131,6 @@ public class Chat extends AppCompatActivity implements
                         }
                     });
         }
-
-
     }
 
     private String getExtension(Uri uri) {

@@ -18,7 +18,6 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
-import android.widget.VideoView;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
@@ -31,20 +30,20 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
     private ArrayList<String> mMessageUser;
     private ArrayList<String> mMessageTime;
     private ArrayList<String> mMessageImage;
-    private ArrayList<String> mMessageVideo;
+    private ArrayList<String> mMessageImageVideo;
     private ArrayList<String> mMessageText;
     private ImageButton playButton;
     private Context mContext;
     private int usableWidth;
     private int usableHeight;
 
-    RecyclerViewAdapter(Context context, ArrayList<String> mMessageUser, ArrayList<String> mMessageTime, ArrayList<String> mMessageImage, ArrayList<String> mMessageVideo, ArrayList<String> mMessageText) {
+    RecyclerViewAdapter(Context context, ArrayList<String> mMessageUser, ArrayList<String> mMessageTime, ArrayList<String> mMessageImage, ArrayList<String> mMessageImageVideo, ArrayList<String> mMessageText) {
 
         this.mContext = context;
         this.mMessageUser = mMessageUser;
         this.mMessageTime = mMessageTime;
         this.mMessageImage = mMessageImage;
-        this.mMessageVideo = mMessageVideo;
+        this.mMessageImageVideo = mMessageImageVideo;
         this.mMessageText = mMessageText;
     }
 
@@ -68,10 +67,10 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
                     mContext.startActivity(Activity);
                 }
 
-                if (mMessageVideo.get(holder.getAdapterPosition()) != null) {
+                if (mMessageImageVideo.get(holder.getAdapterPosition()) != null) {
 
                     Intent Activity = new Intent(mContext, co.clixel.herebefore.VideoView.class);
-                    Activity.putExtra("videoURL", mMessageVideo.get(holder.getAdapterPosition()));
+                    Activity.putExtra("videoURL", mMessageImageVideo.get(holder.getAdapterPosition()));
                     mContext.startActivity(Activity);
                 }
             }
@@ -85,7 +84,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
                 public void onClick(View v) {
 
                     Intent Activity = new Intent(mContext, co.clixel.herebefore.VideoView.class);
-                    Activity.putExtra("videoURL", mMessageVideo.get(holder.getAdapterPosition()));
+                    Activity.putExtra("videoURL", mMessageImageVideo.get(holder.getAdapterPosition()));
                     mContext.startActivity(Activity);
                 }
             });
@@ -112,13 +111,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
 
         if (measuredHeight > 0) {
 
-            if (measuredHeight >= 400) {
-
-                usableHeight = measuredHeight / 10;
-            } else {
-
-                usableHeight = measuredHeight;
-            }
+            usableHeight = measuredHeight;
         } else {
 
             usableHeight = 400;
@@ -133,7 +126,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
         //holder.messageUser.setText(mMessageUser.get(position));
         holder.messageTime.setText(mMessageTime.get(position));
 
-        // Set messageImage, messageVideo, or messageText to gone if an image or text doesn't exist, for spacing consistency.
+        // Set messageImage, messageImageVideo, or messageText to gone if an image or text doesn't exist, for spacing consistency.
         if (mMessageImage.get(position) == null) {
 
             holder.messageImage.setVisibility(View.GONE);
@@ -146,7 +139,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
                     .into(holder.messageImage);
         }
 
-        if (mMessageVideo.get(position) == null) {
+        if (mMessageImageVideo.get(position) == null) {
 
             holder.videoFrame.setVisibility(View.GONE);
         } else {
@@ -154,25 +147,31 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
             // Change the videoView's orientation depending on the orientation of the video.
             MediaMetadataRetriever retriever = new MediaMetadataRetriever();
             // Set the video Uri as data source for MediaMetadataRetriever
-            retriever.setDataSource(mMessageVideo.get(position), new HashMap<String, String>());
+            retriever.setDataSource(mMessageImageVideo.get(position), new HashMap<String, String>());
             // Get one "frame"/bitmap - * NOTE - no time was set, so the first available frame will be used
-            Bitmap bmp = retriever.getFrameAtTime();
+            Bitmap bmp = retriever.getFrameAtTime(1);
             // Get the bitmap width and height
-            int videoWidth = bmp.getWidth();
-            int videoHeight = bmp.getHeight();
+            int bmpWidth = bmp.getWidth();
+            int bmpHeight = bmp.getHeight();
 
             final float scale = mContext.getResources().getDisplayMetrics().density;
-            if (videoWidth > videoHeight) {
+            // Adjust the size so the frame doesn't expand past the screen.
+            if (bmpWidth > bmpHeight) {
 
-                holder.videoFrame.getLayoutParams().height = (int) ((usableHeight / 2) * scale + 0.5f); // Convert dp to px.
+                if (bmpWidth > usableWidth) {
+
+                    holder.videoFrame.getLayoutParams().width = (int) ((usableWidth / 2) * scale + 0.5f); // Convert dp to px.
+                }
             } else {
 
-                holder.videoFrame.getLayoutParams().height = (int) (usableHeight * scale + 0.5f); // Convert dp to px.
+                if (bmpHeight > usableHeight) {
+
+                    holder.videoFrame.getLayoutParams().height = (int) ((usableHeight / 2) * scale + 0.5f); // Convert dp to px.
+                }
             }
 
-            holder.messageVideo.setVideoPath(mMessageVideo.get(position));
-            holder.messageVideo.seekTo(1);
-            holder.messageVideo.setVisibility(View.VISIBLE);
+            holder.messageImageVideo.setImageBitmap(bmp);
+            holder.videoFrame.setVisibility(View.VISIBLE);
         }
 
         if (mMessageText.get(position) == null) {
@@ -205,9 +204,8 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
     class ViewHolder extends RecyclerView.ViewHolder {
 
         TextView messageUser, messageTime, messageText;
-        ImageView messageImage;
+        ImageView messageImage, messageImageVideo;
         FrameLayout videoFrame;
-        VideoView messageVideo;
         RelativeLayout messageItem;
 
         ViewHolder(@NonNull View itemView) {
@@ -217,7 +215,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
             messageTime = itemView.findViewById(R.id.messageTime);
             messageImage = itemView.findViewById(R.id.messageImage);
             videoFrame = itemView.findViewById(R.id.video_frame);
-            messageVideo = itemView.findViewById(R.id.messageVideo);
+            messageImageVideo = itemView.findViewById(R.id.messageImageVideo);
             playButton = itemView.findViewById(R.id.play_button);
             messageText = itemView.findViewById(R.id.messageText);
             messageItem = itemView.findViewById(R.id.message);

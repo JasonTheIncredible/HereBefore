@@ -48,8 +48,8 @@
         android:layout_marginBottom="2dp"
         android:background="#000">
 
-        <VideoView
-            android:id="@+id/messageVideo"
+        <ImageView
+            android:id="@+id/messageImageVideo"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
 
@@ -58,7 +58,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical|center_horizontal"
-            android:contentDescription="Play icon"
+            android:contentDescription="@string/play_icon"
             android:src="@drawable/exo_icon_play" />
 
     </FrameLayout>

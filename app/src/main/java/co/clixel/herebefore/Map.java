@@ -127,6 +127,7 @@ public class Map extends FragmentActivity implements
     // Add ability to add both video and picture to Firebase.
     // Leave messages in locations that users get notified of when they enter the area.
     // Make sure uuids never overlap in Firebase.
+    // Add a play button to the videoImageView in Chat.java like recyclerviewlayout.xml.
     // Decrease app size.
     // Add ability to add both picture and video to firebase at the same time.
 
