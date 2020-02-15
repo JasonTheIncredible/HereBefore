@@ -77,6 +77,7 @@ import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LinearRing;
 import com.vividsolutions.jts.geom.impl.CoordinateArraySequence;
 
+import java.io.File;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -2080,6 +2081,9 @@ public class Map extends FragmentActivity implements
             public void onStopTrackingTouch(final SeekBar seekBar) {
             }
         });
+
+        // Clear the cache. This should clear the issue where Chat.java was creating files that were never deleted.
+        deleteDirectory(this.getCacheDir());
     }
 
     @Override
@@ -9697,6 +9701,37 @@ public class Map extends FragmentActivity implements
         double longitudeResult = (lonRad + a + 3 * Math.PI) % (2 * Math.PI) - Math.PI;
 
         return new LatLng(Math.toDegrees(latitudeResult), Math.toDegrees(longitudeResult));
+    }
+
+    private void deleteDirectory(File file) {
+
+        Log.i(TAG, "deleteDirectory()");
+
+        if(file.exists()) {
+
+            if (file.isDirectory()) {
+
+                File[] files = file.listFiles();
+
+                if (files != null) {
+
+                    for (File value : files) {
+
+                        if (value.isDirectory()) {
+
+                            deleteDirectory(value);
+                        } else {
+
+                            if (value.delete()) {
+                            } else {}
+                        }
+                    }
+                }
+            }
+
+            if (file.delete()) {
+            } else {}
+        }
     }
 
     @Override

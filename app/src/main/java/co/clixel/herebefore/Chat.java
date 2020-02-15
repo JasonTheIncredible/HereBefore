@@ -13,7 +13,6 @@ import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.MediaMetadataRetriever;
-import android.media.ThumbnailUtils;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -124,7 +123,7 @@ public class Chat extends AppCompatActivity implements
     private byte[] byteArray;
 
     //TODO: Add ability to add video from gallery to recyclerView.
-    //TODO: Check app size while video is in preview.
+    //TODO: Make video load faster in RecyclerViewAdapter.java.
     //TODO: Adjust MessageInformation class.
     //TODO: Decode/compress bitmaps and compress video on background thread.
     //TODO: Set limit for recording time.
@@ -1298,7 +1297,7 @@ public class Chat extends AppCompatActivity implements
 
         // Create an image file name
         String imageFileName = "HereBefore_" + System.currentTimeMillis() + "_jpeg";
-        File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        File storageDir = this.getCacheDir();
         image = File.createTempFile(
                 imageFileName,  /* prefix */
                 ".jpeg",         /* suffix */
@@ -1314,7 +1313,7 @@ public class Chat extends AppCompatActivity implements
 
         // Create a video file name
         String videoFileName = "HereBefore_" + System.currentTimeMillis() + "_mp4";
-        File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        File storageDir = this.getCacheDir();
         video = File.createTempFile(
                 videoFileName,  /* prefix */
                 ".mp4",         /* suffix */
@@ -1788,6 +1787,7 @@ public class Chat extends AppCompatActivity implements
                             newMessage.setValue(messageInformation);
                             mInput.getText().clear();
                             imageView.setVisibility(View.GONE);
+                            deleteDirectory(image);
                             findViewById(R.id.loadingIcon).setVisibility(View.GONE);
                         }
                     });
@@ -1951,6 +1951,7 @@ public class Chat extends AppCompatActivity implements
                             newMessage.setValue(messageInformation);
                             mInput.getText().clear();
                             videoImageView.setVisibility(View.GONE);
+                            deleteDirectory(video);
                             findViewById(R.id.loadingIcon).setVisibility(View.GONE);
                         }
                     });
@@ -2114,6 +2115,7 @@ public class Chat extends AppCompatActivity implements
                             newMessage.setValue(messageInformation);
                             mInput.getText().clear();
                             imageView.setVisibility(View.GONE);
+                            deleteDirectory(image);
                             findViewById(R.id.loadingIcon).setVisibility(View.GONE);
                         }
                     });
@@ -2140,6 +2142,37 @@ public class Chat extends AppCompatActivity implements
         ContentResolver cr = getContentResolver();
         MimeTypeMap mimeTypeMap = MimeTypeMap.getSingleton();
         return mimeTypeMap.getExtensionFromMimeType(cr.getType(uri));
+    }
+
+    private void deleteDirectory(File file) {
+
+        Log.i(TAG, "deleteDirectory()");
+
+        if(file.exists()) {
+
+            if (file.isDirectory()) {
+
+                File[] files = file.listFiles();
+
+                if (files != null) {
+
+                    for (File value : files) {
+
+                        if (value.isDirectory()) {
+
+                            deleteDirectory(value);
+                        } else {
+
+                            if (value.delete()) {
+                            } else {}
+                        }
+                    }
+                }
+            }
+
+            if (file.delete()) {
+            } else {}
+        }
     }
 
     @Override
