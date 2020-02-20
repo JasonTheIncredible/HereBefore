@@ -130,6 +130,8 @@ public class Map extends FragmentActivity implements
     // Make sure uuids never overlap in Firebase.
     // Add a play button to the videoImageView in Chat.java like recyclerviewlayout.xml.
     // Decrease app size.
+    // Add ability to filter recyclerView by type of content (recorded at the scene) to get rid of the "fluff"
+    // Add ability to add video from gallery to recyclerView. [silicompressor 2.2.3 accepts content URIs but gives a black video on the app and in Firebase. Will follow up with this later.]s
     // Add ability to add both picture and video to firebase at the same time.
 
     @Override

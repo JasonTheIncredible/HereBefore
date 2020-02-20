@@ -21,9 +21,9 @@
     <string name="create_a_circle">Create a circle</string>
     <string name="remove_the_circle">Remove the shape</string>
     <string name="or">Or Sign In Using Google:</string>
-    <string name="select_image">Select image</string>
     <string name="take_photo">Take photo</string>
     <string name="zoom_touch_close">zoom_touch_close</string>
     <string name="record_video">Record video</string>
     <string name="play_icon">Play_icon</string>
+    <string name="browse_gallery">Browse gallery</string>
 </resources>

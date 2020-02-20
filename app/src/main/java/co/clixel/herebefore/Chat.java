@@ -112,7 +112,8 @@ public class Chat extends AppCompatActivity implements
     private Boolean userIsWithinShape;
     private View.OnLayoutChangeListener onLayoutChangeListener;
     private String uuid;
-    private Double polygonArea, circleLatitude, circleLongitude, radius, marker0Latitude, marker0Longitude, marker1Latitude, marker1Longitude, marker2Latitude, marker2Longitude, marker3Latitude, marker3Longitude, marker4Latitude, marker4Longitude, marker5Latitude, marker5Longitude, marker6Latitude, marker6Longitude, marker7Latitude, marker7Longitude;
+    private Double polygonArea, circleLatitude, circleLongitude, radius,
+            marker0Latitude, marker0Longitude, marker1Latitude, marker1Longitude, marker2Latitude, marker2Longitude, marker3Latitude, marker3Longitude, marker4Latitude, marker4Longitude, marker5Latitude, marker5Longitude, marker6Latitude, marker6Longitude, marker7Latitude, marker7Longitude;
     private int fillColor;
     private PopupMenu mediaButtonMenu;
     private ImageView imageView, videoImageView;
@@ -122,7 +123,6 @@ public class Chat extends AppCompatActivity implements
     private File image, video;
     private byte[] byteArray;
 
-    //TODO: Add ability to add video from gallery to recyclerView.
     //TODO: Make video load faster in RecyclerViewAdapter.java.
     //TODO: Adjust MessageInformation class.
     //TODO: Decode/compress bitmaps and compress video on background thread.
@@ -792,11 +792,11 @@ public class Chat extends AppCompatActivity implements
 
         switch (menuItem.getItemId()) {
 
-            case R.id.selectImage:
+            case R.id.browseGallery:
 
-                Log.i(TAG, "onMenuItemClick() -> selectImage");
+                Log.i(TAG, "onMenuItemClick() -> browseGallery");
 
-                chooseImage();
+                chooseFromGallery();
                 // Set the views to GONE to prevent anything else from being sent to Firebase.
                 if (videoImageView != null) {
 
@@ -854,12 +854,12 @@ public class Chat extends AppCompatActivity implements
         }
     }
 
-    private void chooseImage() {
+    private void chooseFromGallery() {
 
-        Log.i(TAG, "chooseImage");
+        Log.i(TAG, "chooseFromGallery");
 
         Intent intent = new Intent();
-        intent.setType("image/");
+        intent.setType("image/*");
         intent.setAction(Intent.ACTION_GET_CONTENT);
         startActivityForResult(intent, 2);
     }
@@ -1464,20 +1464,18 @@ public class Chat extends AppCompatActivity implements
         if (requestCode == 4 && resultCode == RESULT_OK) {
 
             Log.i(TAG, "onActivityResult() -> Video");
-            Log.i(TAG, "video.getAbsolutePath " + video.getAbsolutePath());
-            Log.i(TAG, "video.getParent " + video.getParent());
 
             fileIsImage = false;
 
-            new videoCompressAsyncTask(this).execute(video.getAbsolutePath(), video.getParent());
+            new videoCompressAndAddToGalleryAsyncTask(this).execute(video.getAbsolutePath(), video.getParent());
         }
     }
 
-    private class videoCompressAsyncTask extends AsyncTask<String, String, String> {
+    private class videoCompressAndAddToGalleryAsyncTask extends AsyncTask<String, String, String> {
 
         Context mContext;
 
-        private videoCompressAsyncTask(Context context) {
+        private videoCompressAndAddToGalleryAsyncTask(Context context) {
 
             mContext = context;
         }
@@ -1496,8 +1494,7 @@ public class Chat extends AppCompatActivity implements
             String filePath = null;
             try {
 
-                filePath = SiliCompressor.with(mContext).compressVideo(paths[0], paths[1], 1280, 720, 3000000);
-
+                filePath = SiliCompressor.with(mContext).compressVideo(paths[0], paths[1], 0, 0, 3000000);
             } catch (URISyntaxException e) {
 
                 e.printStackTrace();
@@ -1506,12 +1503,10 @@ public class Chat extends AppCompatActivity implements
             return filePath;
         }
 
-
         @Override
         protected void onPostExecute(String compressedFilePath) {
 
             super.onPostExecute(compressedFilePath);
-            URIisFile = true;
 
             // Add uncompressed video to gallery.
             // Save the name and description of a video in a ContentValues map.
@@ -1552,7 +1547,7 @@ public class Chat extends AppCompatActivity implements
 
             sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, uri));
 
-            // Now create a compressed video.
+            // Turn the compressed video into a bitmap.
             File videoFile = new File(compressedFilePath);
 
             float length = videoFile.length() / 1024f; // Size in KB
@@ -1567,8 +1562,8 @@ public class Chat extends AppCompatActivity implements
 
             String text = String.format(Locale.US, "%s\nName: %s\nSize: %s", "Video compression complete", videoFile.getName(), value);
             Log.e(TAG, "text: " + text);
-            Log.e(TAG, "imageFile.getName() : " + videoFile.getName());
-            Log.e(TAG, "Path 0 : " + compressedFilePath);
+            Log.e(TAG, "imageFile.getName(): " + videoFile.getName());
+            Log.e(TAG, "Path 0: " + compressedFilePath);
 
             try {
 
@@ -1579,10 +1574,11 @@ public class Chat extends AppCompatActivity implements
                 int bytesRead;
                 ByteArrayOutputStream output = new ByteArrayOutputStream();
                 Base64OutputStream output64 = new Base64OutputStream(output, Base64.DEFAULT);
-                videoURI = Uri.fromFile(file);
+                videoURI = Uri.fromFile(videoFile);
                 try {
 
                     while ((bytesRead = inputStream.read(buffer)) != -1) {
+
                         output64.write(buffer, 0, bytesRead);
                     }
                 } catch (IOException e) {
@@ -1787,7 +1783,10 @@ public class Chat extends AppCompatActivity implements
                             newMessage.setValue(messageInformation);
                             mInput.getText().clear();
                             imageView.setVisibility(View.GONE);
-                            deleteDirectory(image);
+                            if (image != null) {
+
+                                deleteDirectory(image);
+                            }
                             findViewById(R.id.loadingIcon).setVisibility(View.GONE);
                         }
                     });
@@ -1951,7 +1950,10 @@ public class Chat extends AppCompatActivity implements
                             newMessage.setValue(messageInformation);
                             mInput.getText().clear();
                             videoImageView.setVisibility(View.GONE);
-                            deleteDirectory(video);
+                            if (video != null) {
+
+                                deleteDirectory(video);
+                            }
                             findViewById(R.id.loadingIcon).setVisibility(View.GONE);
                         }
                     });
@@ -2115,7 +2117,10 @@ public class Chat extends AppCompatActivity implements
                             newMessage.setValue(messageInformation);
                             mInput.getText().clear();
                             imageView.setVisibility(View.GONE);
-                            deleteDirectory(image);
+                            if (image != null) {
+
+                                deleteDirectory(image);
+                            }
                             findViewById(R.id.loadingIcon).setVisibility(View.GONE);
                         }
                     });
