@@ -123,9 +123,9 @@ public class Chat extends AppCompatActivity implements
     private File image, video;
     private byte[] byteArray;
 
+    //TODO: Make file uploaded from gallery, file uploaded after taking a picture, (and file uploaded after taking a video?) the same dimension.
     //TODO: Make video load faster in RecyclerViewAdapter.java.
     //TODO: Adjust MessageInformation class.
-    //TODO: Decode/compress bitmaps and compress video on background thread.
     //TODO: Set limit for recording time.
     //TODO: Nullify onClickListeners in RecyclerViewAdapter.
     //TODO: Work on warnings.
@@ -1349,58 +1349,7 @@ public class Chat extends AppCompatActivity implements
             } else {
 
                 // Not GIF. Needs compression.
-                InputStream imageStream = null;
-                try {
-
-                    imageStream = getContentResolver().openInputStream(imageURI);
-                } catch (FileNotFoundException ex) {
-
-                    ex.printStackTrace();
-                    Toast.makeText(Chat.this, ex.getMessage(), Toast.LENGTH_LONG).show();
-                    Crashlytics.logException(new RuntimeException("onActivityResult() -> gallery imageStream error"));
-                } 
-
-                Bitmap bmp = BitmapFactory.decodeStream(imageStream);
-                ByteArrayOutputStream stream = new ByteArrayOutputStream();
-                bmp.compress(Bitmap.CompressFormat.JPEG, 100, stream);
-                bmp.recycle();
-                byteArray = stream.toByteArray();
-                // Check original file size.  If the compressed image is larger than the original, just upload the original.
-                String[] mediaColumns = {MediaStore.Video.Media.SIZE};
-                Cursor cursor = this.getContentResolver().query(imageURI, mediaColumns, null, null, null);
-                if (cursor != null) {
-
-                    cursor.moveToFirst();
-                    int sizeColInd = cursor.getColumnIndex(mediaColumns[0]);
-                    long fileSize = cursor.getLong(sizeColInd);
-                    cursor.close();
-                    // For use in uploadImage().
-                    URIisFile = byteArray.length >= fileSize;
-                }
-                try {
-
-                    stream.close();
-                } catch (IOException ex) {
-
-                    ex.printStackTrace();
-                    Toast.makeText(Chat.this, ex.getMessage(), Toast.LENGTH_LONG).show();
-                    Crashlytics.logException(new RuntimeException("onActivityResult() -> gallery stream.close()"));
-                }
-
-                // Show the preview for the lowest quality image to save time and resources.
-                if (URIisFile) {
-
-                    Glide.with(this)
-                            .load(imageURI)
-                            .apply(new RequestOptions().override(640, 5000).placeholder(R.drawable.ic_recyclerview_image_placeholder))
-                            .into(imageView);
-                } else {
-
-                    Glide.with(this)
-                            .load(byteArray)
-                            .apply(new RequestOptions().override(640, 5000).placeholder(R.drawable.ic_recyclerview_image_placeholder))
-                            .into(imageView);
-                }
+                new imageCompressAsyncTask(this).execute(imageURI.toString());
             }
 
             // Change textView to be to the right of imageView.
@@ -1417,48 +1366,15 @@ public class Chat extends AppCompatActivity implements
 
             fileIsImage = true;
 
-            try {
+            // For use in uploadImage().
+            URIisFile = false;
 
-                // For use in uploadImage().
-                URIisFile = false;
+            // Change textView to be to the right of imageView.
+            RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams) mInput.getLayoutParams();
+            params.addRule(RelativeLayout.END_OF, R.id.imageView);
+            mInput.setLayoutParams(params);
 
-                // Save a non-compressed image to the gallery.
-                Bitmap imageBitmapFull = new Compressor(this)
-                        .setMaxWidth(10000)
-                        .setMaxHeight(10000)
-                        .setQuality(100)
-                        .setCompressFormat(Bitmap.CompressFormat.PNG)
-                        .setDestinationDirectoryPath(Environment.getExternalStoragePublicDirectory(
-                                Environment.DIRECTORY_PICTURES).getAbsolutePath())
-                        .compressToBitmap(image);
-                MediaStore.Images.Media.insertImage(Chat.this.getContentResolver(), imageBitmapFull, "HereBefore_" + System.currentTimeMillis() + "_PNG", null);
-
-                // Create a compressed image.
-                Bitmap imageBitmap = new Compressor(this)
-                        .setMaxWidth(640)
-                        .setMaxHeight(480)
-                        .setQuality(100)
-                        .setCompressFormat(Bitmap.CompressFormat.JPEG)
-                        .compressToBitmap(image);
-
-                // Change textView to be to the right of imageView.
-                RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams) mInput.getLayoutParams();
-                params.addRule(RelativeLayout.END_OF, R.id.imageView);
-                mInput.setLayoutParams(params);
-
-                imageView.setImageBitmap(imageBitmap);
-                imageView.setVisibility(View.VISIBLE);
-
-                // Convert the bitmap to a byteArray for use in uploadImage().
-                ByteArrayOutputStream buffer = new ByteArrayOutputStream(imageBitmap.getWidth() * imageBitmap.getHeight());
-                imageBitmap.compress(Bitmap.CompressFormat.PNG, 100, buffer);
-                byteArray = buffer.toByteArray();
-            } catch (IOException ex) {
-
-                ex.printStackTrace();
-                Toast.makeText(Chat.this, ex.getMessage(), Toast.LENGTH_LONG).show();
-                Crashlytics.logException(new RuntimeException("onActivityResult() -> Request_User_Camera_Code exception"));
-            }
+            new imageCompressAndAddToGalleryAsyncTask(this).execute(imageURI.toString());
         }
 
         if (requestCode == 4 && resultCode == RESULT_OK) {
@@ -1471,60 +1387,236 @@ public class Chat extends AppCompatActivity implements
         }
     }
 
-    private class videoCompressAndAddToGalleryAsyncTask extends AsyncTask<String, String, String> {
+    private static class imageCompressAsyncTask extends AsyncTask<String, String, String> {
 
-        Context mContext;
+        private WeakReference<Chat> activityWeakRef;
+        private Uri mImageURI;
 
-        private videoCompressAndAddToGalleryAsyncTask(Context context) {
+        private imageCompressAsyncTask(Chat activity) {
 
-            mContext = context;
+            activityWeakRef = new WeakReference<>(activity);
         }
 
         @Override
         protected void onPreExecute() {
 
             super.onPreExecute();
-            // Show the loading icon while the video is being compressed.
-            findViewById(R.id.loadingIcon).setVisibility(View.VISIBLE);
+
+            Chat activity = activityWeakRef.get();
+            if (activity == null || activity.isFinishing()) return;
+
+            // Show the loading icon while the image is being compressed.
+            activity.findViewById(R.id.loadingIcon).setVisibility(View.VISIBLE);
         }
 
         @Override
         protected String doInBackground(String... paths) {
 
+            Chat activity = activityWeakRef.get();
+            if (activity == null || activity.isFinishing()) return "2";
+
+            mImageURI = Uri.parse(paths[0]);
+
+            InputStream imageStream = null;
+            try {
+
+                imageStream = activity.getContentResolver().openInputStream(mImageURI);
+            } catch (FileNotFoundException ex) {
+
+                ex.printStackTrace();
+                Toast.makeText(activity, ex.getMessage(), Toast.LENGTH_LONG).show();
+                Crashlytics.logException(new RuntimeException("onActivityResult() -> gallery imageStream error"));
+            }
+            Bitmap bmp = BitmapFactory.decodeStream(imageStream);
+            ByteArrayOutputStream stream = new ByteArrayOutputStream();
+            bmp.compress(Bitmap.CompressFormat.JPEG, 50, stream);
+            activity.byteArray = stream.toByteArray();
+            bmp.recycle();
+            // Check original file size.  If the compressed image is larger than the original, just upload the original.
+            String[] mediaColumns = {MediaStore.Video.Media.SIZE};
+            Cursor cursor = activity.getContentResolver().query(mImageURI, mediaColumns, null, null, null);
+            if (cursor != null) {
+
+                cursor.moveToFirst();
+                int sizeColInd = cursor.getColumnIndex(mediaColumns[0]);
+                long fileSize = cursor.getLong(sizeColInd);
+                cursor.close();
+                // For use in onPostExecute and uploadImage().
+                activity.URIisFile = activity.byteArray.length >= fileSize;
+            }
+            try {
+
+                stream.close();
+            } catch (IOException ex) {
+
+                ex.printStackTrace();
+                Toast.makeText(activity, ex.getMessage(), Toast.LENGTH_LONG).show();
+                Crashlytics.logException(new RuntimeException("onActivityResult() -> gallery stream.close()"));
+            }
+
+            return "2";
+        }
+
+        @Override
+        protected void onPostExecute(String meaninglessString) {
+
+            super.onPostExecute(meaninglessString);
+
+            Chat activity = activityWeakRef.get();
+            if (activity == null || activity.isFinishing()) return;
+
+            // Show the preview for the lowest quality image to save time and resources.
+            if (activity.URIisFile) {
+
+                Glide.with(activity)
+                        .load(activity.imageURI)
+                        .apply(new RequestOptions().override(640, 5000).placeholder(R.drawable.ic_recyclerview_image_placeholder))
+                        .into(activity.imageView);
+            } else {
+
+                Glide.with(activity)
+                        .load(activity.byteArray)
+                        .apply(new RequestOptions().override(640, 5000).placeholder(R.drawable.ic_recyclerview_image_placeholder))
+                        .into(activity.imageView);
+            }
+
+            activity.findViewById(R.id.loadingIcon).setVisibility(View.INVISIBLE);
+        }
+    }
+
+    private static class imageCompressAndAddToGalleryAsyncTask extends AsyncTask<String, String, String> {
+
+        private WeakReference<Chat> activityWeakRef;
+        private Bitmap mImageBitmap;
+
+        private imageCompressAndAddToGalleryAsyncTask(Chat activity) {
+
+            activityWeakRef = new WeakReference<>(activity);
+        }
+
+        @Override
+        protected void onPreExecute() {
+
+            super.onPreExecute();
+
+            Chat activity = activityWeakRef.get();
+            if (activity == null || activity.isFinishing()) return;
+
+            // Show the loading icon while the image is being compressed.
+            activity.findViewById(R.id.loadingIcon).setVisibility(View.VISIBLE);
+        }
+
+        @Override
+        protected String doInBackground(String... paths) {
+
+            Chat activity = activityWeakRef.get();
+            if (activity == null || activity.isFinishing()) return "2";
+
+            try {
+                // Save a non-compressed image to the gallery.
+                Bitmap imageBitmapFull = new Compressor(activity)
+                        .setMaxWidth(10000)
+                        .setMaxHeight(10000)
+                        .setQuality(100)
+                        .setCompressFormat(Bitmap.CompressFormat.PNG)
+                        .setDestinationDirectoryPath(Environment.getExternalStoragePublicDirectory(
+                                Environment.DIRECTORY_PICTURES).getAbsolutePath())
+                        .compressToBitmap(activity.image);
+                MediaStore.Images.Media.insertImage(activity.getContentResolver(), imageBitmapFull, "HereBefore_" + System.currentTimeMillis() + "_PNG", null);
+
+                // Create a compressed image.
+                mImageBitmap = new Compressor(activity)
+                        .setMaxWidth(640)
+                        .setMaxHeight(480)
+                        .setQuality(50)
+                        .setCompressFormat(Bitmap.CompressFormat.JPEG)
+                        .compressToBitmap(activity.image);
+
+                // Convert the bitmap to a byteArray for use in uploadImage().
+                ByteArrayOutputStream buffer = new ByteArrayOutputStream(mImageBitmap.getWidth() * mImageBitmap.getHeight());
+                mImageBitmap.compress(Bitmap.CompressFormat.JPEG, 100, buffer);
+                activity.byteArray = buffer.toByteArray();
+            } catch (IOException ex) {
+
+                ex.printStackTrace();
+                Toast.makeText(activity, ex.getMessage(), Toast.LENGTH_LONG).show();
+                Crashlytics.logException(new RuntimeException("onActivityResult() -> Request_User_Camera_Code exception"));
+            }
+
+            return "2";
+        }
+
+        @Override
+        protected void onPostExecute(String meaninglessString) {
+
+            super.onPostExecute(meaninglessString);
+
+            Chat activity = activityWeakRef.get();
+            if (activity == null || activity.isFinishing()) return;
+
+            if (mImageBitmap != null) {
+
+                activity.imageView.setImageBitmap(mImageBitmap);
+                activity.imageView.setVisibility(View.VISIBLE);
+            }
+
+            activity.findViewById(R.id.loadingIcon).setVisibility(View.INVISIBLE);
+        }
+    }
+
+    private static class videoCompressAndAddToGalleryAsyncTask extends AsyncTask<String, String, String> {
+
+        private WeakReference<Chat> activityWeakRef;
+
+        private videoCompressAndAddToGalleryAsyncTask(Chat activity) {
+
+            activityWeakRef = new WeakReference<>(activity);
+        }
+
+        @Override
+        protected void onPreExecute() {
+
+            super.onPreExecute();
+
+            Chat activity = activityWeakRef.get();
+            if (activity == null || activity.isFinishing()) return;
+
+            // Show the loading icon while the video is being compressed.
+            activity.findViewById(R.id.loadingIcon).setVisibility(View.VISIBLE);
+        }
+
+        @Override
+        protected String doInBackground(String... paths) {
+
+            Chat activity = activityWeakRef.get();
+            if (activity == null || activity.isFinishing()) return "2";
+
             String filePath = null;
             try {
 
-                filePath = SiliCompressor.with(mContext).compressVideo(paths[0], paths[1], 0, 0, 3000000);
+                filePath = SiliCompressor.with(activity).compressVideo(paths[0], paths[1], 0, 0, 3000000);
             } catch (URISyntaxException e) {
 
                 e.printStackTrace();
             }
-
-            return filePath;
-        }
-
-        @Override
-        protected void onPostExecute(String compressedFilePath) {
-
-            super.onPostExecute(compressedFilePath);
 
             // Add uncompressed video to gallery.
             // Save the name and description of a video in a ContentValues map.
             ContentValues values = new ContentValues(3);
             values.put(MediaStore.Video.Media.TITLE, "Here_Before_" + System.currentTimeMillis());
             values.put(MediaStore.Video.Media.MIME_TYPE, "video/mp4");
-            values.put(MediaStore.Video.Media.DATA, video.getAbsolutePath());
+            values.put(MediaStore.Video.Media.DATA, activity.video.getAbsolutePath());
 
             // Add a new record (identified by uri) without the video, but with the values just set.
-            Uri uri = getContentResolver().insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values);
+            Uri uri = activity.getContentResolver().insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values);
 
             // Now get a handle to the file for that record, and save the data into it.
             try {
 
-                InputStream is = new FileInputStream(video);
+                InputStream is = new FileInputStream(activity.video);
                 if (uri != null) {
 
-                    OutputStream os = getContentResolver().openOutputStream(uri);
+                    OutputStream os = activity.getContentResolver().openOutputStream(uri);
                     byte[] buffer = new byte[4096]; // tweaking this number may increase performance
                     int len;
                     while ((len = is.read(buffer)) != -1) {
@@ -1545,7 +1637,18 @@ public class Chat extends AppCompatActivity implements
                 Log.e(TAG, "Exception while writing video: ", e);
             }
 
-            sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, uri));
+            activity.sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, uri));
+
+            return filePath;
+        }
+
+        @Override
+        protected void onPostExecute(String compressedFilePath) {
+
+            super.onPostExecute(compressedFilePath);
+
+            Chat activity = activityWeakRef.get();
+            if (activity == null || activity.isFinishing()) return;
 
             // Turn the compressed video into a bitmap.
             File videoFile = new File(compressedFilePath);
@@ -1574,7 +1677,7 @@ public class Chat extends AppCompatActivity implements
                 int bytesRead;
                 ByteArrayOutputStream output = new ByteArrayOutputStream();
                 Base64OutputStream output64 = new Base64OutputStream(output, Base64.DEFAULT);
-                videoURI = Uri.fromFile(videoFile);
+                activity.videoURI = Uri.fromFile(videoFile);
                 try {
 
                     while ((bytesRead = inputStream.read(buffer)) != -1) {
@@ -1584,15 +1687,15 @@ public class Chat extends AppCompatActivity implements
                 } catch (IOException e) {
 
                     e.printStackTrace();
-                    Toast.makeText(Chat.this, e.getMessage(), Toast.LENGTH_LONG).show();
+                    Toast.makeText(activity, e.getMessage(), Toast.LENGTH_LONG).show();
                     Crashlytics.logException(new RuntimeException("videoCompressAsyncTask -> onPostExecute -> inner"));
                 }
                 output64.close();
 
                 // Change textView to be to the right of videoImageView.
-                RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams) mInput.getLayoutParams();
+                RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams) activity.mInput.getLayoutParams();
                 params.addRule(RelativeLayout.END_OF, R.id.videoImageView);
-                mInput.setLayoutParams(params);
+                activity.mInput.setLayoutParams(params);
 
                 // Change the videoImageView's orientation depending on the orientation of the video.
                 MediaMetadataRetriever retriever = new MediaMetadataRetriever();
@@ -1604,26 +1707,26 @@ public class Chat extends AppCompatActivity implements
                 int bmpWidth = bmp.getWidth();
                 int bmpHeight = bmp.getHeight();
 
-                final float scale = mContext.getResources().getDisplayMetrics().density;
+                final float scale = activity.getResources().getDisplayMetrics().density;
                 if (bmpWidth > bmpHeight) {
 
-                    videoImageView.getLayoutParams().width = (int) (50 * scale + 0.5f); // Convert 50dp to px.
+                    activity.videoImageView.getLayoutParams().width = (int) (50 * scale + 0.5f); // Convert 50dp to px.
                 } else {
 
-                    videoImageView.getLayoutParams().width = (int) (30 * scale + 0.5f); // Convert 30dp to px.
+                    activity.videoImageView.getLayoutParams().width = (int) (30 * scale + 0.5f); // Convert 30dp to px.
                 }
 
-                videoImageView.setImageBitmap(bmp);
-                videoImageView.setVisibility(View.VISIBLE);
+                activity.videoImageView.setImageBitmap(bmp);
+                activity.videoImageView.setVisibility(View.VISIBLE);
 
             } catch (IOException e) {
 
                 e.printStackTrace();
-                Toast.makeText(Chat.this, e.getMessage(), Toast.LENGTH_LONG).show();
+                Toast.makeText(activity, e.getMessage(), Toast.LENGTH_LONG).show();
                 Crashlytics.logException(new RuntimeException("videoCompressAsyncTask -> onPostExecute -> outer"));
             }
 
-            findViewById(R.id.loadingIcon).setVisibility(View.INVISIBLE);
+            activity.findViewById(R.id.loadingIcon).setVisibility(View.INVISIBLE);
         }
     }
 
