@@ -1358,7 +1358,7 @@ public class Chat extends AppCompatActivity implements
                     ex.printStackTrace();
                     Toast.makeText(Chat.this, ex.getMessage(), Toast.LENGTH_LONG).show();
                     Crashlytics.logException(new RuntimeException("onActivityResult() -> gallery imageStream error"));
-                }
+                } 
 
                 Bitmap bmp = BitmapFactory.decodeStream(imageStream);
                 ByteArrayOutputStream stream = new ByteArrayOutputStream();
