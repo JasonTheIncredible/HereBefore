@@ -1567,6 +1567,9 @@ public class Chat extends AppCompatActivity implements
     private static class videoCompressAndAddToGalleryAsyncTask extends AsyncTask<String, String, String> {
 
         private WeakReference<Chat> activityWeakRef;
+        private Bitmap mBmp;
+        private int mBmpWidth;
+        private int mBmpHeight;
 
         private videoCompressAndAddToGalleryAsyncTask(Chat activity) {
 
@@ -1639,19 +1642,13 @@ public class Chat extends AppCompatActivity implements
 
             activity.sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, uri));
 
-            return filePath;
-        }
+            if (filePath == null) {
 
-        @Override
-        protected void onPostExecute(String compressedFilePath) {
-
-            super.onPostExecute(compressedFilePath);
-
-            Chat activity = activityWeakRef.get();
-            if (activity == null || activity.isFinishing()) return;
+                return "2";
+            }
 
             // Turn the compressed video into a bitmap.
-            File videoFile = new File(compressedFilePath);
+            File videoFile = new File(filePath);
 
             float length = videoFile.length() / 1024f; // Size in KB
             String value;
@@ -1666,11 +1663,11 @@ public class Chat extends AppCompatActivity implements
             String text = String.format(Locale.US, "%s\nName: %s\nSize: %s", "Video compression complete", videoFile.getName(), value);
             Log.e(TAG, "text: " + text);
             Log.e(TAG, "imageFile.getName(): " + videoFile.getName());
-            Log.e(TAG, "Path 0: " + compressedFilePath);
+            Log.e(TAG, "Path 0: " + filePath);
 
             try {
 
-                File file = new File(compressedFilePath);
+                File file = new File(filePath);
                 InputStream inputStream; //You can get an inputStream using any IO API
                 inputStream = new FileInputStream(file.getAbsolutePath());
                 byte[] buffer = new byte[8192];
@@ -1692,23 +1689,42 @@ public class Chat extends AppCompatActivity implements
                 }
                 output64.close();
 
+                // Change the videoImageView's orientation depending on the orientation of the video.
+                MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+                // Set the video Uri as data source for MediaMetadataRetriever
+                retriever.setDataSource(filePath);
+                // Get one "frame"/bitmap - * NOTE - no time was set, so the first available frame will be used
+                mBmp = retriever.getFrameAtTime(1);
+                // Get the bitmap width and height
+                mBmpWidth = mBmp.getWidth();
+                mBmpHeight = mBmp.getHeight();
+
+            } catch (IOException e) {
+
+                e.printStackTrace();
+                Toast.makeText(activity, e.getMessage(), Toast.LENGTH_LONG).show();
+                Crashlytics.logException(new RuntimeException("videoCompressAsyncTask -> onPostExecute -> outer"));
+            }
+            return "2";
+        }
+
+        @Override
+        protected void onPostExecute(String meaninglessString) {
+
+            super.onPostExecute(meaninglessString);
+
+            Chat activity = activityWeakRef.get();
+            if (activity == null || activity.isFinishing()) return;
+
+            if (mBmp != null && mBmpHeight != 0 && mBmpWidth != 0) {
+
                 // Change textView to be to the right of videoImageView.
                 RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams) activity.mInput.getLayoutParams();
                 params.addRule(RelativeLayout.END_OF, R.id.videoImageView);
                 activity.mInput.setLayoutParams(params);
 
-                // Change the videoImageView's orientation depending on the orientation of the video.
-                MediaMetadataRetriever retriever = new MediaMetadataRetriever();
-                // Set the video Uri as data source for MediaMetadataRetriever
-                retriever.setDataSource(compressedFilePath);
-                // Get one "frame"/bitmap - * NOTE - no time was set, so the first available frame will be used
-                Bitmap bmp = retriever.getFrameAtTime(1);
-                // Get the bitmap width and height
-                int bmpWidth = bmp.getWidth();
-                int bmpHeight = bmp.getHeight();
-
                 final float scale = activity.getResources().getDisplayMetrics().density;
-                if (bmpWidth > bmpHeight) {
+                if (mBmpWidth > mBmpHeight) {
 
                     activity.videoImageView.getLayoutParams().width = (int) (50 * scale + 0.5f); // Convert 50dp to px.
                 } else {
@@ -1716,14 +1732,8 @@ public class Chat extends AppCompatActivity implements
                     activity.videoImageView.getLayoutParams().width = (int) (30 * scale + 0.5f); // Convert 30dp to px.
                 }
 
-                activity.videoImageView.setImageBitmap(bmp);
+                activity.videoImageView.setImageBitmap(mBmp);
                 activity.videoImageView.setVisibility(View.VISIBLE);
-
-            } catch (IOException e) {
-
-                e.printStackTrace();
-                Toast.makeText(activity, e.getMessage(), Toast.LENGTH_LONG).show();
-                Crashlytics.logException(new RuntimeException("videoCompressAsyncTask -> onPostExecute -> outer"));
             }
 
             activity.findViewById(R.id.loadingIcon).setVisibility(View.INVISIBLE);
