@@ -9,7 +9,6 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
-import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.MediaMetadataRetriever;
@@ -123,10 +122,8 @@ public class Chat extends AppCompatActivity implements
     private File image, video;
     private byte[] byteArray;
 
-    //TODO: Make file uploaded from gallery, file uploaded after taking a picture, (and file uploaded after taking a video?) the same dimension.
-    //TODO: Make video load faster in RecyclerViewAdapter.java.
-    //TODO: Adjust MessageInformation class.
     //TODO: Set limit for recording time.
+    //TODO: Adjust MessageInformation class.
     //TODO: Nullify onClickListeners in RecyclerViewAdapter.
     //TODO: Work on warnings.
     //TODO: Add a username (in recyclerviewlayout).
@@ -1348,6 +1345,9 @@ public class Chat extends AppCompatActivity implements
                         .into(imageView);
             } else {
 
+                // For use in uploadImage().
+                URIisFile = false;
+
                 // Not GIF. Needs compression.
                 new imageCompressAsyncTask(this).execute(imageURI.toString());
             }
@@ -1374,7 +1374,7 @@ public class Chat extends AppCompatActivity implements
             params.addRule(RelativeLayout.END_OF, R.id.imageView);
             mInput.setLayoutParams(params);
 
-            new imageCompressAndAddToGalleryAsyncTask(this).execute(imageURI.toString());
+            new imageCompressAndAddToGalleryAsyncTask(this).execute();
         }
 
         if (requestCode == 4 && resultCode == RESULT_OK) {
@@ -1390,7 +1390,6 @@ public class Chat extends AppCompatActivity implements
     private static class imageCompressAsyncTask extends AsyncTask<String, String, String> {
 
         private WeakReference<Chat> activityWeakRef;
-        private Uri mImageURI;
 
         private imageCompressAsyncTask(Chat activity) {
 
@@ -1415,7 +1414,7 @@ public class Chat extends AppCompatActivity implements
             Chat activity = activityWeakRef.get();
             if (activity == null || activity.isFinishing()) return "2";
 
-            mImageURI = Uri.parse(paths[0]);
+            Uri mImageURI = Uri.parse(paths[0]);
 
             InputStream imageStream = null;
             try {
@@ -1432,18 +1431,6 @@ public class Chat extends AppCompatActivity implements
             bmp.compress(Bitmap.CompressFormat.JPEG, 50, stream);
             activity.byteArray = stream.toByteArray();
             bmp.recycle();
-            // Check original file size.  If the compressed image is larger than the original, just upload the original.
-            String[] mediaColumns = {MediaStore.Video.Media.SIZE};
-            Cursor cursor = activity.getContentResolver().query(mImageURI, mediaColumns, null, null, null);
-            if (cursor != null) {
-
-                cursor.moveToFirst();
-                int sizeColInd = cursor.getColumnIndex(mediaColumns[0]);
-                long fileSize = cursor.getLong(sizeColInd);
-                cursor.close();
-                // For use in onPostExecute and uploadImage().
-                activity.URIisFile = activity.byteArray.length >= fileSize;
-            }
             try {
 
                 stream.close();
@@ -1487,7 +1474,6 @@ public class Chat extends AppCompatActivity implements
     private static class imageCompressAndAddToGalleryAsyncTask extends AsyncTask<String, String, String> {
 
         private WeakReference<Chat> activityWeakRef;
-        private Bitmap mImageBitmap;
 
         private imageCompressAndAddToGalleryAsyncTask(Chat activity) {
 
@@ -1525,9 +1511,9 @@ public class Chat extends AppCompatActivity implements
                 MediaStore.Images.Media.insertImage(activity.getContentResolver(), imageBitmapFull, "HereBefore_" + System.currentTimeMillis() + "_PNG", null);
 
                 // Create a compressed image.
-                mImageBitmap = new Compressor(activity)
-                        .setMaxWidth(640)
-                        .setMaxHeight(480)
+                Bitmap mImageBitmap = new Compressor(activity)
+                        .setMaxWidth(480)
+                        .setMaxHeight(640)
                         .setQuality(50)
                         .setCompressFormat(Bitmap.CompressFormat.JPEG)
                         .compressToBitmap(activity.image);
@@ -1554,11 +1540,12 @@ public class Chat extends AppCompatActivity implements
             Chat activity = activityWeakRef.get();
             if (activity == null || activity.isFinishing()) return;
 
-            if (mImageBitmap != null) {
+            Glide.with(activity)
+                    .load(activity.byteArray)
+                    .apply(new RequestOptions().override(640, 5000).placeholder(R.drawable.ic_recyclerview_image_placeholder))
+                    .into(activity.imageView);
 
-                activity.imageView.setImageBitmap(mImageBitmap);
-                activity.imageView.setVisibility(View.VISIBLE);
-            }
+            activity.imageView.setVisibility(View.VISIBLE);
 
             activity.findViewById(R.id.loadingIcon).setVisibility(View.INVISIBLE);
         }
