@@ -122,7 +122,6 @@ public class Chat extends AppCompatActivity implements
     private File image, video;
     private byte[] byteArray;
 
-    //TODO: Set limit for recording time.
     //TODO: Adjust MessageInformation class.
     //TODO: Nullify onClickListeners in RecyclerViewAdapter.
     //TODO: Work on warnings.
@@ -1099,6 +1098,8 @@ public class Chat extends AppCompatActivity implements
                         "com.example.android.fileprovider",
                         videoFile);
                 videoIntent.putExtra(MediaStore.EXTRA_OUTPUT, videoURI);
+                // Limit the amount of time a video can be recorded (in seconds).
+                videoIntent.putExtra(MediaStore.EXTRA_DURATION_LIMIT, 30);
                 startActivityForResult(videoIntent, 4);
             }
         }
