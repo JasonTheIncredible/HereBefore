@@ -2560,7 +2560,7 @@ public class Map extends FragmentActivity implements
                 // sees the explanation, try again to request the permission.
                 builder.setCancelable(false)
                         .setTitle("Device Location Required")
-                        .setMessage("HereBefore needs permission to use your location to find chat areas around you.")
+                        .setMessage("Here Before needs permission to use your location to find chat areas around you.")
                         .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialogInterface, int i) {

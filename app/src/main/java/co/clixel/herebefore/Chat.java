@@ -31,7 +31,6 @@ import android.provider.MediaStore;
 import android.util.Base64;
 import android.util.Base64OutputStream;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.MenuItem;
 import android.view.View;
@@ -122,9 +121,6 @@ public class Chat extends AppCompatActivity implements
     private File image, video;
     private byte[] byteArray;
 
-    //TODO: Adjust MessageInformation class.
-    //TODO: Nullify onClickListeners in RecyclerViewAdapter.
-    //TODO: Work on warnings.
     //TODO: Add a username (in recyclerviewlayout).
     //TODO: Keep checking user's location while user is in recyclerviewlayout to see if they can keep messaging, add a recyclerviewlayout at the top notifying user of this. Add differentiation between messaging within area vs not.
     //TODO: When data gets changed, try to update only the affected items: https://stackoverflow.com/questions/27188536/recyclerview-scrolling-performance. Also, fix issue where images / videos are changing size with orientation change.
@@ -883,7 +879,7 @@ public class Chat extends AppCompatActivity implements
 
         if (!listPermissionsNeeded.isEmpty()) {
 
-            ActivityCompat.requestPermissions(this, listPermissionsNeeded.toArray(new String[listPermissionsNeeded.size()]), Request_ID_Take_Photo);
+            ActivityCompat.requestPermissions(this, listPermissionsNeeded.toArray(new String[0]), Request_ID_Take_Photo);
             return false;
         }
 
@@ -919,7 +915,7 @@ public class Chat extends AppCompatActivity implements
 
         if (!listPermissionsNeeded.isEmpty()) {
 
-            ActivityCompat.requestPermissions(this, listPermissionsNeeded.toArray(new String[listPermissionsNeeded.size()]), Request_ID_Record_Video);
+            ActivityCompat.requestPermissions(this, listPermissionsNeeded.toArray(new String[0]), Request_ID_Record_Video);
             return false;
         }
 
@@ -944,36 +940,36 @@ public class Chat extends AppCompatActivity implements
                     for (int i = 0; i < permissions.length; i++)
                         perms.put(permissions[i], grantResults[i]);
 
-                    if (perms.get(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
-                            && perms.get(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+                    Integer cameraPermissions = perms.get(Manifest.permission.CAMERA);
+                    Integer externalStoragePermissions = perms.get(Manifest.permission.WRITE_EXTERNAL_STORAGE);
 
-                        Log.d(TAG, "Request_ID_Take_Photo -> Camera and Write External Storage permission granted.");
-                        // Process the normal workflow.
-                        startActivityTakePhoto();
-                    } else {
+                    if (cameraPermissions != null && externalStoragePermissions != null) {
 
-                        Log.d(TAG, "Request_ID_Take_Photo -> Some permissions were not granted. Ask again.");
-                        if (perms.get(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                        if (cameraPermissions == PackageManager.PERMISSION_GRANTED
+                                && externalStoragePermissions == PackageManager.PERMISSION_GRANTED) {
 
-                            // Show an explanation to the user *asynchronously* -- don't block
-                            // this thread waiting for the user's response! After the user
-                            // sees the explanation, try again to request the permission.
-                            new cameraPermissionAlertDialog(this).execute(checkPermissionsPicture);
-                        } else if (perms.get(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                            Log.d(TAG, "Request_ID_Take_Photo -> Camera and Write External Storage permission granted.");
+                            // Process the normal workflow.
+                            startActivityTakePhoto();
+                        } else {
 
-                            // Show an explanation to the user *asynchronously* -- don't block
-                            // this thread waiting for the user's response! After the user
-                            // sees the explanation, try again to request the permission.
-                            new writeExternalStoragePermissionAlertDialog(this).execute(checkPermissionsPicture);
-                        }
-                        // Permission is denied (and never ask again is checked)
-                        // shouldShowRequestPermissionRationale will return false
-                        else {
+                            if (cameraPermissions != PackageManager.PERMISSION_GRANTED) {
 
-                            // User denied permission and checked "Don't ask again!"
-                            Toast toast = Toast.makeText(Chat.this, "Some permissions were denied. Please enable them manually through the Android settings menu.", Toast.LENGTH_LONG);
-                            toast.setGravity(Gravity.CENTER, 0, 0);
-                            toast.show();
+                                Log.d(TAG, "Request_ID_Take_Photo -> Camera permissions were not granted. Ask again.");
+
+                                // Show an explanation to the user *asynchronously* -- don't block
+                                // this thread waiting for the user's response! After the user
+                                // sees the explanation, try again to request the permission.
+                                new cameraPermissionAlertDialog(this).execute(checkPermissionsPicture);
+                            } else {
+
+                                Log.d(TAG, "Request_ID_Take_Photo -> Storage permissions were not granted. Ask again.");
+
+                                // Show an explanation to the user *asynchronously* -- don't block
+                                // this thread waiting for the user's response! After the user
+                                // sees the explanation, try again to request the permission.
+                                new writeExternalStoragePermissionAlertDialog(this).execute(checkPermissionsPicture);
+                            }
                         }
                     }
                 }
@@ -993,43 +989,46 @@ public class Chat extends AppCompatActivity implements
                     for (int i = 0; i < permissions.length; i++)
                         perms.put(permissions[i], grantResults[i]);
 
-                    if (perms.get(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
-                            && perms.get(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
-                            && perms.get(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                    Integer cameraPermissions = perms.get(Manifest.permission.CAMERA);
+                    Integer externalStoragePermissions = perms.get(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+                    Integer audioPermissions = perms.get(Manifest.permission.RECORD_AUDIO);
 
-                        Log.d(TAG, "Request_ID_Record_Video -> Camera, Write External Storage, and Record Audio permission granted.");
-                        // Process the normal workflow.
-                        startActivityRecordVideo();
-                    } else {
+                    if (cameraPermissions != null && externalStoragePermissions != null && audioPermissions != null) {
 
-                        Log.d(TAG, "Request_ID_Record_Video -> Some permissions were not granted. Ask again.");
-                        if (perms.get(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                        if (cameraPermissions == PackageManager.PERMISSION_GRANTED
+                                && externalStoragePermissions == PackageManager.PERMISSION_GRANTED
+                                && audioPermissions == PackageManager.PERMISSION_GRANTED) {
 
-                            // Show an explanation to the user *asynchronously* -- don't block
-                            // this thread waiting for the user's response! After the user
-                            // sees the explanation, try again to request the permission.
-                            new cameraPermissionAlertDialog(this).execute(checkPermissionsPicture);
-                        } else if (perms.get(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                            Log.d(TAG, "Request_ID_Record_Video -> Camera, Write External Storage, and Record Audio permission granted.");
+                            // Process the normal workflow.
+                            startActivityRecordVideo();
+                        } else {
 
-                            // Show an explanation to the user *asynchronously* -- don't block
-                            // this thread waiting for the user's response! After the user
-                            // sees the explanation, try again to request the permission.
-                            new writeExternalStoragePermissionAlertDialog(this).execute(checkPermissionsPicture);
-                        } else if (perms.get(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                            if (cameraPermissions != PackageManager.PERMISSION_GRANTED) {
 
-                            // Show an explanation to the user *asynchronously* -- don't block
-                            // this thread waiting for the user's response! After the user
-                            // sees the explanation, try again to request the permission.
-                            new audioPermissionAlertDialog(this).execute(checkPermissionsPicture);
-                        }
-                        // Permission is denied (and never ask again is checked)
-                        // shouldShowRequestPermissionRationale will return false
-                        else {
+                                Log.d(TAG, "Request_ID_Record_Video -> Camera permissions were not granted. Ask again.");
 
-                            // User denied permission and checked "Don't ask again!"
-                            Toast toast = Toast.makeText(Chat.this, "Some permissions were denied. Please enable them manually through the Android settings menu.", Toast.LENGTH_LONG);
-                            toast.setGravity(Gravity.CENTER, 0, 0);
-                            toast.show();
+                                // Show an explanation to the user *asynchronously* -- don't block
+                                // this thread waiting for the user's response! After the user
+                                // sees the explanation, try again to request the permission.
+                                new cameraPermissionAlertDialog(this).execute(checkPermissionsPicture);
+                            } else if (externalStoragePermissions != PackageManager.PERMISSION_GRANTED) {
+
+                                Log.d(TAG, "Request_ID_Record_Video -> Storage permissions were not granted. Ask again.");
+
+                                // Show an explanation to the user *asynchronously* -- don't block
+                                // this thread waiting for the user's response! After the user
+                                // sees the explanation, try again to request the permission.
+                                new writeExternalStoragePermissionAlertDialog(this).execute(checkPermissionsPicture);
+                            } else {
+
+                                Log.d(TAG, "Request_ID_Record_Video -> Audio permissions were not granted. Ask again.");
+
+                                // Show an explanation to the user *asynchronously* -- don't block
+                                // this thread waiting for the user's response! After the user
+                                // sees the explanation, try again to request the permission.
+                                new audioPermissionAlertDialog(this).execute(checkPermissionsPicture);
+                            }
                         }
                     }
                 }
@@ -1147,7 +1146,8 @@ public class Chat extends AppCompatActivity implements
                 // sees the explanation, try again to request the permission.
                 builder.setCancelable(false)
                         .setTitle("Camera Permission Required")
-                        .setMessage("HereBefore needs permission to use your camera to take pictures or video.")
+                        .setMessage("Here Before needs permission to use your camera to take pictures or video. " +
+                                "You may need to enable permission manually through the settings menu.")
                         .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialogInterface, int i) {
@@ -1208,7 +1208,8 @@ public class Chat extends AppCompatActivity implements
                 // sees the explanation, try again to request the permission.
                 builder.setCancelable(false)
                         .setTitle("Storage Permission Required")
-                        .setMessage("HereBefore needs permission to use your storage to save photos or video.")
+                        .setMessage("Here Before needs permission to use your storage to save photos or video. " +
+                                "You may need to enable permission manually through the settings menu.")
                         .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialogInterface, int i) {
@@ -1269,7 +1270,8 @@ public class Chat extends AppCompatActivity implements
                 // sees the explanation, try again to request the permission.
                 builder.setCancelable(false)
                         .setTitle("Audio Permission Required")
-                        .setMessage("HereBefore needs permission to record audio during video recording.")
+                        .setMessage("Here Before needs permission to record audio during video recording. " +
+                                "You may need to enable permission manually through the settings menu.")
                         .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialogInterface, int i) {
@@ -1744,7 +1746,7 @@ public class Chat extends AppCompatActivity implements
             final StorageReference storageReferenceImage = FirebaseStorage.getInstance().getReference("images").child(System.currentTimeMillis() + "." + getExtension(imageURI));
             uploadTask = storageReferenceImage.putFile(imageURI);
 
-            uploadTask.addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+            storageReferenceImage.putFile(imageURI).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
 
                 @Override
                 public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
@@ -1911,7 +1913,7 @@ public class Chat extends AppCompatActivity implements
             final StorageReference storageReferenceVideo = FirebaseStorage.getInstance().getReference("videos").child(System.currentTimeMillis() + "." + getExtension(videoURI));
             uploadTask = storageReferenceVideo.putFile(videoURI);
 
-            uploadTask.addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+            storageReferenceVideo.putFile(videoURI).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
 
                 @Override
                 public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
@@ -2078,7 +2080,7 @@ public class Chat extends AppCompatActivity implements
             final StorageReference storageReferenceImage = FirebaseStorage.getInstance().getReference("images").child(System.currentTimeMillis() + "." + getExtension(imageURI));
             uploadTask = storageReferenceImage.putBytes(byteArray);
 
-            uploadTask.addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+            storageReferenceImage.putBytes(byteArray).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
 
                 @Override
                 public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
