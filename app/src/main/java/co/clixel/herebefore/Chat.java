@@ -92,7 +92,6 @@ public class Chat extends AppCompatActivity implements
     private static final int Request_ID_Take_Photo = 1700;
     private static final int Request_ID_Record_Video = 1800;
     private EditText mInput;
-    private ArrayList<String> mUser = new ArrayList<>();
     private ArrayList<String> mTime = new ArrayList<>();
     private ArrayList<String> mImage = new ArrayList<>();
     private ArrayList<String> mVideo = new ArrayList<>();
@@ -121,12 +120,8 @@ public class Chat extends AppCompatActivity implements
     private File image, video;
     private byte[] byteArray;
 
-    //TODO: Add a username (in recyclerviewlayout).
     //TODO: Keep checking user's location while user is in recyclerviewlayout to see if they can keep messaging, add a recyclerviewlayout at the top notifying user of this. Add differentiation between messaging within area vs not.
     //TODO: When data gets changed, try to update only the affected items: https://stackoverflow.com/questions/27188536/recyclerview-scrolling-performance. Also, fix issue where images / videos are changing size with orientation change.
-    //TODO: Too much work on main thread.
-    //TODO: Check updating in different states with another device.
-    //TODO: Change popupMenu color.
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -210,7 +205,6 @@ public class Chat extends AppCompatActivity implements
                 // Clear the RecyclerView before adding new entries to prevent duplicates.
                 if (recyclerViewLinearLayoutManager != null) {
 
-                    mUser.clear();
                     mTime.clear();
                     mImage.clear();
                     mVideo.clear();
@@ -745,7 +739,7 @@ public class Chat extends AppCompatActivity implements
         // Initialize the RecyclerView
         Log.i(TAG, "initRecyclerView()");
 
-        RecyclerViewAdapter adapter = new RecyclerViewAdapter(this, mUser, mTime, mImage, mVideo, mText);
+        RecyclerViewAdapter adapter = new RecyclerViewAdapter(this, mTime, mImage, mVideo, mText);
         recyclerView.setAdapter(adapter);
         recyclerView.setLayoutManager(recyclerViewLinearLayoutManager);
 

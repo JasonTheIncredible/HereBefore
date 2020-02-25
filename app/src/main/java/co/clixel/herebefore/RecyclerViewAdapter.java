@@ -27,7 +27,6 @@ import java.util.HashMap;
 
 public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapter.ViewHolder> {
 
-    private ArrayList<String> mMessageUser;
     private ArrayList<String> mMessageTime;
     private ArrayList<String> mMessageImage;
     private ArrayList<String> mMessageImageVideo;
@@ -37,10 +36,9 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
     private int usableWidth;
     private int usableHeight;
 
-    RecyclerViewAdapter(Context context, ArrayList<String> mMessageUser, ArrayList<String> mMessageTime, ArrayList<String> mMessageImage, ArrayList<String> mMessageImageVideo, ArrayList<String> mMessageText) {
+    RecyclerViewAdapter(Context context, ArrayList<String> mMessageTime, ArrayList<String> mMessageImage, ArrayList<String> mMessageImageVideo, ArrayList<String> mMessageText) {
 
         this.mContext = context;
-        this.mMessageUser = mMessageUser;
         this.mMessageTime = mMessageTime;
         this.mMessageImage = mMessageImage;
         this.mMessageImageVideo = mMessageImageVideo;
@@ -123,7 +121,6 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, final int position) {
 
-        //holder.messageUser.setText(mMessageUser.get(position));
         holder.messageTime.setText(mMessageTime.get(position));
 
         // Set messageImage, messageImageVideo, or messageText to gone if an image or text doesn't exist, for spacing consistency.
@@ -203,7 +200,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
 
     class ViewHolder extends RecyclerView.ViewHolder {
 
-        TextView messageUser, messageTime, messageText;
+        TextView messageTime, messageText;
         ImageView messageImage, messageImageVideo;
         FrameLayout videoFrame;
         RelativeLayout messageItem;
@@ -211,7 +208,6 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
         ViewHolder(@NonNull View itemView) {
 
             super(itemView);
-            messageUser = itemView.findViewById(R.id.messageUser);
             messageTime = itemView.findViewById(R.id.messageTime);
             messageImage = itemView.findViewById(R.id.messageImage);
             videoFrame = itemView.findViewById(R.id.video_frame);

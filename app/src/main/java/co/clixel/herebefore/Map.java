@@ -6,9 +6,7 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
-import android.content.res.Configuration;
 import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationListener;
@@ -25,7 +23,6 @@ import android.util.Log;
 import android.view.Gravity;
 import android.view.MenuItem;
 import android.view.MotionEvent;
-import android.view.Surface;
 import android.view.View;
 import android.widget.Button;
 import android.widget.PopupMenu;
@@ -104,7 +101,9 @@ public class Map extends FragmentActivity implements
     private String uuid, marker0ID, marker1ID, marker2ID, marker3ID, marker4ID, marker5ID, marker6ID, marker7ID, selectedOverlappingShapeUUID;
     private Button createChatButton, chatViewsButton, mapTypeButton;
     private PopupMenu popupMapType, popupChatViews, popupCreateChat;
-    private Boolean firstLoad = true, cameraMoved = false, waitingForBetterLocationAccuracy = false, badAccuracy = false, showingEverything = true, showingLarge = false, showingMedium = false, showingSmall = false, showingPoints = false, waitingForClicksToProcess = false, waitingForShapeInformationToProcess = false, markerOutsidePolygon = false, mapTypeMenuIsOpen = false, chatViewsMenuIsOpen = false, createChatMenuIsOpen = false, usedSeekBar = false, userIsWithinShape, selectingShape = false, threeMarkers = false, fourMarkers = false, fiveMarkers = false, sixMarkers = false, sevenMarkers = false, eightMarkers = false;
+    private Boolean firstLoad = true, cameraMoved = false, waitingForBetterLocationAccuracy = false, badAccuracy = false, showingEverything = true, showingLarge = false, showingMedium = false, showingSmall = false, showingPoints = false,
+            waitingForClicksToProcess = false, waitingForShapeInformationToProcess = false, markerOutsidePolygon = false, usedSeekBar = false,
+            userIsWithinShape, selectingShape = false, threeMarkers = false, fourMarkers = false, fiveMarkers = false, sixMarkers = false, sevenMarkers = false, eightMarkers = false;
     private LatLng markerPositionAtVertexOfPolygon, marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position, selectedOverlappingShapeCircleLocation;
     private Double relativeAngle = 0.0, selectedOverlappingShapeCircleRadius;
     private Location mlocation;
@@ -119,8 +118,11 @@ public class Map extends FragmentActivity implements
     private LocationManager locationManager;
 
     // The following should be implemented later:
+    // Change design (change popupMenu color).
+    // Ads.
     // Optimize Firebase loading (Google how databases are structured).
     // Log.i vs d vs w...
+    // Add a username?
     // Save user map type preference.
     // Page for deleting user account, resetting password, etc.
     // Allow user to sign out from here and Chat.java.
@@ -202,19 +204,6 @@ public class Map extends FragmentActivity implements
                 popupMapType.setOnMenuItemClickListener(Map.this);
                 popupMapType.inflate(R.menu.maptype_menu);
                 popupMapType.show();
-                mapTypeMenuIsOpen = true;
-
-                // Changes boolean value (used in OnConfigurationChanged) to determine whether menu is currently open.
-                popupMapType.setOnDismissListener(new PopupMenu.OnDismissListener() {
-
-                    @Override
-                    public void onDismiss(PopupMenu popupMenu) {
-
-                        Log.i(TAG, "onStart() -> mapTypeButton -> onDismiss");
-                        mapTypeMenuIsOpen = false;
-                        popupMapType.setOnDismissListener(null);
-                    }
-                });
             }
         });
 
@@ -230,20 +219,6 @@ public class Map extends FragmentActivity implements
                 popupChatViews.setOnMenuItemClickListener(Map.this);
                 popupChatViews.inflate(R.menu.chatviews_menu);
                 popupChatViews.show();
-                chatViewsMenuIsOpen = true;
-
-                // Changes boolean value (used in OnConfigurationChanged) to determine whether menu is currently open.
-                popupChatViews.setOnDismissListener(new PopupMenu.OnDismissListener() {
-
-                    @Override
-                    public void onDismiss(PopupMenu popupMenu) {
-
-                        Log.i(TAG, "onStart() -> chatViewsButton -> onDismiss");
-
-                        chatViewsMenuIsOpen = false;
-                        popupChatViews.setOnDismissListener(null);
-                    }
-                });
             }
         });
 
@@ -269,19 +244,6 @@ public class Map extends FragmentActivity implements
                 }
 
                 popupCreateChat.show();
-                createChatMenuIsOpen = true;
-
-                // Changes boolean value (used in OnConfigurationChanged) to determine whether menu is currently open.
-                popupCreateChat.setOnDismissListener(new PopupMenu.OnDismissListener() {
-
-                    @Override
-                    public void onDismiss(PopupMenu popupMenu) {
-
-                        Log.i(TAG, "onStart() -> createChatButton -> onDismiss");
-                        createChatMenuIsOpen = false;
-                        popupCreateChat.setOnDismissListener(null);
-                    }
-                });
             }
         });
 
@@ -2113,7 +2075,6 @@ public class Map extends FragmentActivity implements
         if (mMap != null) {
 
             mMap.getUiSettings().setScrollGesturesEnabled(true);
-            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
 
             // Remove the polygon and markers.
             if (newPolygon != null) {
@@ -2221,27 +2182,6 @@ public class Map extends FragmentActivity implements
 
             Log.e(TAG, "onRestart() -> mMap == null");
             Crashlytics.logException(new Exception("onRestart() -> mMap == null"));
-        }
-
-        // Close any open menus.
-        if (popupMapType != null) {
-
-            popupMapType.dismiss();
-            mapTypeMenuIsOpen = false;
-        }
-
-        // Close any open menus.
-        if (popupChatViews != null) {
-
-            popupChatViews.dismiss();
-            chatViewsMenuIsOpen = false;
-        }
-
-        // Close any open menus.
-        if (popupCreateChat != null) {
-
-            popupCreateChat.dismiss();
-            createChatMenuIsOpen = false;
         }
 
         overlappingShapesUUID = new ArrayList<>();
@@ -3016,6 +2956,7 @@ public class Map extends FragmentActivity implements
 
         // Go to Chat.java when clicking on a polygon.
         mMap.setOnPolygonClickListener(new GoogleMap.OnPolygonClickListener() {
+
             @Override
             public void onPolygonClick(final Polygon polygon) {
 
@@ -3181,22 +3122,6 @@ public class Map extends FragmentActivity implements
                     if (mMap.getUiSettings().isScrollGesturesEnabled()) {
 
                         mMap.getUiSettings().setScrollGesturesEnabled(false);
-                    }
-
-                    // Prevent screen orientation change while programmatically touching circles.
-                    if (getWindowManager().getDefaultDisplay().getRotation() == Surface.ROTATION_0) {
-
-                        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-                    }
-
-                    if (getWindowManager().getDefaultDisplay().getRotation() == Surface.ROTATION_90) {
-
-                        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-                    }
-
-                    if (getWindowManager().getDefaultDisplay().getRotation() == Surface.ROTATION_270) {
-
-                        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
                     }
 
                     if (findViewById(R.id.loadingIcon).getVisibility() != View.VISIBLE) {
@@ -3458,7 +3383,6 @@ public class Map extends FragmentActivity implements
                 chatSizeSeekBar.setVisibility(View.GONE);
                 chatSelectorSeekBar.setVisibility(View.VISIBLE);
                 mMap.getUiSettings().setScrollGesturesEnabled(true);
-                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
                 findViewById(R.id.loadingIcon).setVisibility(View.GONE);
                 Toast.makeText(Map.this, "Highlight and select a shape using the SeekBar below.", Toast.LENGTH_LONG).show();
             }
@@ -3639,22 +3563,6 @@ public class Map extends FragmentActivity implements
                     if (mMap.getUiSettings().isScrollGesturesEnabled()) {
 
                         mMap.getUiSettings().setScrollGesturesEnabled(false);
-                    }
-
-                    // Prevent screen orientation change while programmatically touching circles.
-                    if (getWindowManager().getDefaultDisplay().getRotation() == Surface.ROTATION_0) {
-
-                        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-                    }
-
-                    if (getWindowManager().getDefaultDisplay().getRotation() == Surface.ROTATION_90) {
-
-                        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-                    }
-
-                    if (getWindowManager().getDefaultDisplay().getRotation() == Surface.ROTATION_270) {
-
-                        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
                     }
 
                     if (findViewById(R.id.loadingIcon).getVisibility() != View.VISIBLE) {
@@ -3928,7 +3836,6 @@ public class Map extends FragmentActivity implements
                 chatSizeSeekBar.setVisibility(View.GONE);
                 chatSelectorSeekBar.setVisibility(View.VISIBLE);
                 mMap.getUiSettings().setScrollGesturesEnabled(true);
-                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
                 findViewById(R.id.loadingIcon).setVisibility(View.GONE);
                 Toast.makeText(Map.this, "Highlight and select a shape using the SeekBar below.", Toast.LENGTH_LONG).show();
             }
@@ -5631,7 +5538,6 @@ public class Map extends FragmentActivity implements
                     Crashlytics.logException(new Exception("onMenuItemClick -> Road Map -> mMap == null"));
                 }
 
-                mapTypeMenuIsOpen = false;
                 return true;
 
             // maptype_menu
@@ -5659,7 +5565,6 @@ public class Map extends FragmentActivity implements
                     Crashlytics.logException(new Exception("onMenuItemClick -> Satellite Map -> mMap == null"));
                 }
 
-                mapTypeMenuIsOpen = false;
                 return true;
 
             // maptype_menu
@@ -5687,7 +5592,6 @@ public class Map extends FragmentActivity implements
                     Crashlytics.logException(new Exception("onMenuItemClick -> Hybrid Map -> mMap == null"));
                 }
 
-                mapTypeMenuIsOpen = false;
                 return true;
 
             // maptype_menu
@@ -5715,7 +5619,6 @@ public class Map extends FragmentActivity implements
                     Crashlytics.logException(new Exception("onMenuItemClick -> Terrain Map -> mMap == null"));
                 }
 
-                mapTypeMenuIsOpen = false;
                 return true;
 
             // chatviews_menu
@@ -6276,7 +6179,6 @@ public class Map extends FragmentActivity implements
                 showingMedium = false;
                 showingSmall = false;
                 showingPoints = false;
-                chatViewsMenuIsOpen = false;
                 return true;
 
             // chatviews_menu
@@ -6761,7 +6663,6 @@ public class Map extends FragmentActivity implements
                 showingMedium = false;
                 showingSmall = false;
                 showingPoints = false;
-                chatViewsMenuIsOpen = false;
                 return true;
 
             // chatviews_menu
@@ -7246,7 +7147,6 @@ public class Map extends FragmentActivity implements
                 showingLarge = false;
                 showingSmall = false;
                 showingPoints = false;
-                chatViewsMenuIsOpen = false;
                 return true;
 
             // chatviews_menu
@@ -7731,7 +7631,6 @@ public class Map extends FragmentActivity implements
                 showingLarge = false;
                 showingMedium = false;
                 showingPoints = false;
-                chatViewsMenuIsOpen = false;
                 return true;
 
             // chatviews_menu
@@ -7933,7 +7832,6 @@ public class Map extends FragmentActivity implements
                 showingLarge = false;
                 showingMedium = false;
                 showingSmall = false;
-                chatViewsMenuIsOpen = false;
                 return true;
 
             // createchat_menu
@@ -8244,7 +8142,6 @@ public class Map extends FragmentActivity implements
                             }
                         });
 
-                createChatMenuIsOpen = false;
                 return true;
 
             // createchat_menu
@@ -8512,7 +8409,6 @@ public class Map extends FragmentActivity implements
                             }
                         });
 
-                createChatMenuIsOpen = false;
                 return true;
 
             // createchat_menu
@@ -8600,7 +8496,6 @@ public class Map extends FragmentActivity implements
                 relativeAngle = 0.0;
                 usedSeekBar = false;
 
-                createChatMenuIsOpen = false;
                 return true;
 
             // createchat_menu
@@ -8742,7 +8637,6 @@ public class Map extends FragmentActivity implements
                             }
                         });
 
-                createChatMenuIsOpen = false;
                 return true;
 
             default:
@@ -9573,83 +9467,6 @@ public class Map extends FragmentActivity implements
         v.dispatchTouchEvent(motionEventUp);
 
         motionEventUp.recycle();
-    }
-
-    @Override
-    public void onConfigurationChanged(@NonNull Configuration newConfig) {
-
-        // Called when the orientation of the screen changes.
-        super.onConfigurationChanged(newConfig);
-        Log.i(TAG, "onConfigurationChanged()");
-
-        // Reloads the popup when the orientation changes to prevent viewing issues.
-        if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE && mapTypeMenuIsOpen) {
-
-            popupMapType.dismiss();
-            mapTypeButton.performClick();
-        } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT && mapTypeMenuIsOpen) {
-
-            popupMapType.dismiss();
-            mapTypeButton.performClick();
-        }
-
-        // Reloads the popup when the orientation changes to prevent viewing issues.
-        if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE && chatViewsMenuIsOpen) {
-
-            popupChatViews.dismiss();
-            chatViewsButton.performClick();
-        } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT && chatViewsMenuIsOpen) {
-
-            popupChatViews.dismiss();
-            chatViewsButton.performClick();
-        }
-
-        // Reloads the popup when the orientation changes to prevent viewing issues.
-        if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE && createChatMenuIsOpen) {
-
-            popupCreateChat.dismiss();
-            createChatButton.performClick();
-        } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT && createChatMenuIsOpen) {
-
-            popupCreateChat.dismiss();
-            createChatButton.performClick();
-        }
-
-        // Keep map type the same.
-        if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE && mMap.getMapType() == 1) {
-
-            mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
-        } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT && mMap.getMapType() == 1) {
-
-            mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
-        }
-
-        // Keep map type the same.
-        if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE && mMap.getMapType() == 2) {
-
-            mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
-        } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT && mMap.getMapType() == 2) {
-
-            mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
-        }
-
-        // Keep map type the same.
-        if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE && mMap.getMapType() == 4) {
-
-            mMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
-        } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT && mMap.getMapType() == 4) {
-
-            mMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
-        }
-
-        // Keep map type the same.
-        if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE && mMap.getMapType() == 3) {
-
-            mMap.setMapType(GoogleMap.MAP_TYPE_TERRAIN);
-        } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT && mMap.getMapType() == 3) {
-
-            mMap.setMapType(GoogleMap.MAP_TYPE_TERRAIN);
-        }
     }
 
     // Returns the distance between 2 latitudes and longitudes in meters.
