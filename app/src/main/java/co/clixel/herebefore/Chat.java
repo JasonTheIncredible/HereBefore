@@ -120,7 +120,7 @@ public class Chat extends AppCompatActivity implements
     private File image, video;
     private byte[] byteArray;
 
-    //TODO: Keep checking user's location while user is in recyclerviewlayout to see if they can keep messaging, add a recyclerviewlayout at the top notifying user of this. Add differentiation between messaging within area vs not.
+    //TODO: Add differentiation in recyclerView between messaging within area vs not.
     //TODO: When data gets changed, try to update only the affected items: https://stackoverflow.com/questions/27188536/recyclerview-scrolling-performance. Also, fix issue where images / videos are changing size with orientation change.
 
     @Override
@@ -185,6 +185,14 @@ public class Chat extends AppCompatActivity implements
 
             Log.e(TAG, "onStart() -> extras == null");
             Crashlytics.logException(new RuntimeException("onStart() -> extras == null"));
+        }
+
+        if (userIsWithinShape) {
+
+            mInput.setHint("Message from within shape...");
+        } else {
+
+            mInput.setHint("Message from outside shape...");
         }
     }
 
