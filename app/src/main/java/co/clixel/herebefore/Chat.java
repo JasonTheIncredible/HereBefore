@@ -430,11 +430,8 @@ public class Chat extends AppCompatActivity implements
                                         // This will cause onDataChange to fire twice; optimizations could be made in the future.
                                         Object date = ServerValue.TIMESTAMP;
                                         messageInformation.setDate(date);
-                                        if (extras != null) {
-
-                                            String uuid = extras.getString("uuid");
-                                            messageInformation.setUUID(uuid);
-                                        }
+                                        messageInformation.setUUID(uuid);
+                                        messageInformation.setUserIsWithinShape(userIsWithinShape);
                                         DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("messageThreads").push();
                                         newMessage.setValue(messageInformation);
                                         mInput.getText().clear();
@@ -565,11 +562,8 @@ public class Chat extends AppCompatActivity implements
                                         // This will cause onDataChange to fire twice; optimizations could be made in the future.
                                         Object date = ServerValue.TIMESTAMP;
                                         messageInformation.setDate(date);
-                                        if (extras != null) {
-
-                                            String uuid = extras.getString("uuid");
-                                            messageInformation.setUUID(uuid);
-                                        }
+                                        messageInformation.setUUID(uuid);
+                                        messageInformation.setUserIsWithinShape(userIsWithinShape);
                                         DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("messageThreads").push();
                                         newMessage.setValue(messageInformation);
                                         mInput.getText().clear();
@@ -609,11 +603,8 @@ public class Chat extends AppCompatActivity implements
                             // This will cause onDataChange to fire twice; optimizations could be made in the future.
                             Object date = ServerValue.TIMESTAMP;
                             messageInformation.setDate(date);
-                            if (extras != null) {
-
-                                String uuid = extras.getString("uuid");
-                                messageInformation.setUUID(uuid);
-                            }
+                            messageInformation.setUUID(uuid);
+                            messageInformation.setUserIsWithinShape(userIsWithinShape);
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("messageThreads").push();
                             newMessage.setValue(messageInformation);
                             mInput.getText().clear();
@@ -1879,11 +1870,8 @@ public class Chat extends AppCompatActivity implements
                             // This will cause onDataChange to fire twice; optimizations could be made in the future.
                             Object date = ServerValue.TIMESTAMP;
                             messageInformation.setDate(date);
-                            if (extras != null) {
-
-                                String uuid = extras.getString("uuid");
-                                messageInformation.setUUID(uuid);
-                            }
+                            messageInformation.setUUID(uuid);
+                            messageInformation.setUserIsWithinShape(userIsWithinShape);
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("messageThreads").push();
                             newMessage.setValue(messageInformation);
                             mInput.getText().clear();
@@ -2046,11 +2034,8 @@ public class Chat extends AppCompatActivity implements
                             // This will cause onDataChange to fire twice; optimizations could be made in the future.
                             Object date = ServerValue.TIMESTAMP;
                             messageInformation.setDate(date);
-                            if (extras != null) {
-
-                                String uuid = extras.getString("uuid");
-                                messageInformation.setUUID(uuid);
-                            }
+                            messageInformation.setUUID(uuid);
+                            messageInformation.setUserIsWithinShape(userIsWithinShape);
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("messageThreads").push();
                             newMessage.setValue(messageInformation);
                             mInput.getText().clear();
@@ -2213,11 +2198,8 @@ public class Chat extends AppCompatActivity implements
                             // This will cause onDataChange to fire twice; optimizations could be made in the future.
                             Object date = ServerValue.TIMESTAMP;
                             messageInformation.setDate(date);
-                            if (extras != null) {
-
-                                String uuid = extras.getString("uuid");
-                                messageInformation.setUUID(uuid);
-                            }
+                            messageInformation.setUUID(uuid);
+                            messageInformation.setUserIsWithinShape(userIsWithinShape);
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("messageThreads").push();
                             newMessage.setValue(messageInformation);
                             mInput.getText().clear();

@@ -3,9 +3,9 @@ package co.clixel.herebefore;
 // Getters and setters for messages.
 public class MessageInformation {
 
-    public String message;
+    public String message, uuid, imageURL, videoURL;
     public Object date;
-    public String uuid, imageURL, videoURL;
+    public Boolean userIsWithinShape;
 
     MessageInformation() {
     }
@@ -28,5 +28,9 @@ public class MessageInformation {
 
     public void setUUID(String uuid) {
         this.uuid = uuid;
+    }
+
+    public void setUserIsWithinShape(Boolean userIsWithinShape) {
+        this.userIsWithinShape = userIsWithinShape;
     }
 }
