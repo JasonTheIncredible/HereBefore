@@ -96,6 +96,7 @@ public class Chat extends AppCompatActivity implements
     private ArrayList<String> mImage = new ArrayList<>();
     private ArrayList<String> mVideo = new ArrayList<>();
     private ArrayList<String> mText = new ArrayList<>();
+    private ArrayList<Boolean> mUserIsWithinShape = new ArrayList<>();
     private RecyclerView recyclerView;
     private static int index = -1;
     private static int top = -1;
@@ -120,8 +121,9 @@ public class Chat extends AppCompatActivity implements
     private File image, video;
     private byte[] byteArray;
 
-    //TODO: Add differentiation in recyclerView between messaging within area vs not.
     //TODO: When data gets changed, try to update only the affected items: https://stackoverflow.com/questions/27188536/recyclerview-scrolling-performance. Also, fix issue where images / videos are changing size with orientation change.
+    //TODO: Make recyclerView load faster.
+    //TODO: Fix upside down imported photo of scale.
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -217,6 +219,7 @@ public class Chat extends AppCompatActivity implements
                     mImage.clear();
                     mVideo.clear();
                     mText.clear();
+                    mUserIsWithinShape.clear();
                 }
 
                 // If the value from Map.java is false, check Firebase and load any existing messages.
@@ -234,6 +237,7 @@ public class Chat extends AppCompatActivity implements
                                 String imageURL = (String) ds.child("imageURL").getValue();
                                 String videoURL = (String) ds.child("videoURL").getValue();
                                 String messageText = (String) ds.child("message").getValue();
+                                Boolean userIsWithinShape = (Boolean) ds.child("userIsWithinShape").getValue();
                                 DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
                                 // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
                                 // This will cause onDataChange to fire twice; optimizations could be made in the future.
@@ -250,6 +254,7 @@ public class Chat extends AppCompatActivity implements
                                 mImage.add(imageURL);
                                 mVideo.add(videoURL);
                                 mText.add(messageText);
+                                mUserIsWithinShape.add(userIsWithinShape);
                             }
                         }
                     }
@@ -738,7 +743,7 @@ public class Chat extends AppCompatActivity implements
         // Initialize the RecyclerView
         Log.i(TAG, "initRecyclerView()");
 
-        RecyclerViewAdapter adapter = new RecyclerViewAdapter(this, mTime, mImage, mVideo, mText);
+        RecyclerViewAdapter adapter = new RecyclerViewAdapter(this, mTime, mImage, mVideo, mText, mUserIsWithinShape);
         recyclerView.setAdapter(adapter);
         recyclerView.setLayoutManager(recyclerViewLinearLayoutManager);
 

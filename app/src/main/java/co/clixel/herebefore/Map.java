@@ -3005,8 +3005,102 @@ public class Map extends FragmentActivity implements
 
                                     if (location != null) {
 
-                                        // Boolean; will be true if user is within the circle upon circle click.
+                                        // Boolean; will be true if user is within the shape upon shape click.
                                         userIsWithinShape = PolyUtil.containsLocation(location.getLatitude(), location.getLongitude(), polygon.getPoints(), false);
+
+                                        // Check if the user is already signed in.
+                                        if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) instanceof GoogleSignInAccount) {
+
+                                            // User is signed in.
+
+                                            firebasePolygons.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
+
+                                                @Override
+                                                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                                                    // If the uuid already exists in Firebase, generate another uuid and try again.
+                                                    if (dataSnapshot.exists()) {
+
+                                                        Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> New polygon -> User signed in -> uuid exists");
+
+                                                        // uuid exists in Firebase. Generate another and try again.
+
+                                                        // Generate another UUID and try again.
+                                                        uuid = UUID.randomUUID().toString();
+
+                                                        // Carry the extras all the way to Chat.java.
+                                                        Intent Activity = new Intent(Map.this, Chat.class);
+
+                                                        // Pass this information to Chat.java to create a new shape in Firebase after someone writes a recyclerviewlayout.
+                                                        goToNextActivityPolygon(Activity);
+                                                    } else {
+
+                                                        Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> New polygon -> User signed in -> uuid does not exist");
+
+                                                        // uuid does not already exist in Firebase. Go to Chat.java with the uuid.
+
+                                                        // Carry the extras all the way to Chat.java.
+                                                        Intent Activity = new Intent(Map.this, Chat.class);
+
+                                                        // Pass this information to Chat.java to create a new shape in Firebase after someone writes a recyclerviewlayout.
+                                                        goToNextActivityPolygon(Activity);
+                                                    }
+                                                }
+
+                                                @Override
+                                                public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                                                    Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                                                }
+                                            });
+
+                                            // Add a return statement so chatSelectorSeekBar is not called.
+                                            return;
+                                        } else {
+
+                                            // No user is signed in.
+
+                                            firebasePolygons.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
+
+                                                @Override
+                                                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                                                    // If the uuid already exists in Firebase, generate another uuid and try again.
+                                                    if (dataSnapshot.exists()) {
+
+                                                        Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> New polygon -> No user signed in -> uuid exists");
+
+                                                        // uuid exists in Firebase. Generate another and try again.
+
+                                                        // Generate another UUID and try again.
+                                                        uuid = UUID.randomUUID().toString();
+
+                                                        // Carry the extras to SignIn.java
+                                                        Intent Activity = new Intent(Map.this, SignIn.class);
+
+                                                        // Pass this information to Chat.java to create a new shape in Firebase after someone writes a recyclerviewlayout.
+                                                        goToNextActivityPolygon(Activity);
+                                                    } else {
+
+                                                        Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> New polygon -> No user signed in -> uuid does not exist");
+
+                                                        // uuid does not already exist in Firebase. Go to SignIn.java with the uuid.
+
+                                                        // Carry the extras to SignIn.java.
+                                                        Intent Activity = new Intent(Map.this, Chat.class);
+
+                                                        // Pass this information to Chat.java to create a new shape in Firebase after someone writes a recyclerviewlayout.
+                                                        goToNextActivityPolygon(Activity);
+                                                    }
+                                                }
+
+                                                @Override
+                                                public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                                                    Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                                                }
+                                            });
+                                        }
                                     } else {
 
                                         Log.e(TAG, "onMapReadyAndRestart() -> onPolygonClick -> polygon.getTag() == null -> location == null");
@@ -3014,103 +3108,6 @@ public class Map extends FragmentActivity implements
                                     }
                                 }
                             });
-
-                    // Check if the user is already signed in.
-                    if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) instanceof GoogleSignInAccount) {
-
-                        // User is signed in.
-
-                        firebasePolygons.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
-
-                            @Override
-                            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-
-                                // If the uuid already exists in Firebase, generate another uuid and try again.
-                                if (dataSnapshot.exists()) {
-
-                                    Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> New polygon -> User signed in -> uuid exists");
-
-                                    // uuid exists in Firebase. Generate another and try again.
-
-                                    // Generate another UUID and try again.
-                                    uuid = UUID.randomUUID().toString();
-
-                                    // Carry the extras all the way to Chat.java.
-                                    Intent Activity = new Intent(Map.this, Chat.class);
-
-                                    // Pass this information to Chat.java to create a new shape in Firebase after someone writes a recyclerviewlayout.
-                                    goToNextActivityPolygon(Activity);
-                                } else {
-
-                                    Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> New polygon -> User signed in -> uuid does not exist");
-
-                                    // uuid does not already exist in Firebase. Go to Chat.java with the uuid.
-
-                                    // Carry the extras all the way to Chat.java.
-                                    Intent Activity = new Intent(Map.this, Chat.class);
-
-                                    // Pass this information to Chat.java to create a new shape in Firebase after someone writes a recyclerviewlayout.
-                                    goToNextActivityPolygon(Activity);
-                                }
-                            }
-
-                            @Override
-                            public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
-                            }
-                        });
-
-                        // Add a return statement so chatSelectorSeekBar is not called.
-                        return;
-                    } else {
-
-                        // No user is signed in.
-
-                        firebasePolygons.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
-
-                            @Override
-                            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-
-                                // If the uuid already exists in Firebase, generate another uuid and try again.
-                                if (dataSnapshot.exists()) {
-
-                                    Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> New polygon -> No user signed in -> uuid exists");
-
-                                    // uuid exists in Firebase. Generate another and try again.
-
-                                    // Generate another UUID and try again.
-                                    uuid = UUID.randomUUID().toString();
-
-                                    // Carry the extras to SignIn.java
-                                    Intent Activity = new Intent(Map.this, SignIn.class);
-
-                                    // Pass this information to Chat.java to create a new shape in Firebase after someone writes a recyclerviewlayout.
-                                    goToNextActivityPolygon(Activity);
-                                } else {
-
-                                    Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> New polygon -> No user signed in -> uuid does not exist");
-
-                                    // uuid does not already exist in Firebase. Go to SignIn.java with the uuid.
-
-                                    // Carry the extras to SignIn.java.
-                                    Intent Activity = new Intent(Map.this, Chat.class);
-
-                                    // Pass this information to Chat.java to create a new shape in Firebase after someone writes a recyclerviewlayout.
-                                    goToNextActivityPolygon(Activity);
-                                }
-                            }
-
-                            @Override
-                            public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
-                            }
-                        });
-
-                        // Add a return statement so chatSelectorSeekBar is not called.
-                        return;
-                    }
                 }
 
                 // Click all through all circles, using the z-index to figure out which ones have not been cycled through. All the information to the arrayLists to be used by chatSelectorSeekBar.
@@ -3266,8 +3263,47 @@ public class Map extends FragmentActivity implements
 
                                     if (location != null) {
 
-                                        // Boolean; will be true if user is within the circle upon circle click.
+                                        // Boolean; will be true if user is within the shape upon shape click.
                                         userIsWithinShape = PolyUtil.containsLocation(location.getLatitude(), location.getLongitude(), polygon.getPoints(), false);
+
+                                        // Check if the user is already signed in.
+                                        if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) instanceof GoogleSignInAccount) {
+
+
+                                            Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> User selected a polygon -> User signed in");
+
+                                            // User is signed in.
+
+                                            Intent Activity = new Intent(Map.this, Chat.class);
+                                            // Go to Chat.java with the boolean value.
+                                            Activity.putExtra("shapeIsCircle", false);
+                                            // Pass this boolean value to Chat.java.
+                                            Activity.putExtra("newShape", false);
+                                            // Pass this value to Chat.java to identify the shape.
+                                            Activity.putExtra("uuid", uuid);
+                                            // Pass this value to Chat.java to tell whether the user can leave a recyclerviewlayout in the recyclerviewlayout.
+                                            Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                            // Pass this information to Chat.java to create a new shape in Firebase after someone writes a recyclerviewlayout.
+                                            startActivity(Activity);
+                                        } else {
+
+                                            Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> User selected a polygon -> No user signed in");
+
+                                            // No user is signed in.
+
+                                            Intent Activity = new Intent(Map.this, SignIn.class);
+                                            // Go to Chat.java with the boolean value.
+                                            Activity.putExtra("shapeIsCircle", false);
+                                            // Pass this boolean value to Chat.java.
+                                            Activity.putExtra("newShape", false);
+                                            Activity.putExtra("shapeIsCircle", false);
+                                            // Pass this value to Chat.java to identify the shape.
+                                            Activity.putExtra("uuid", uuid);
+                                            // Pass this value to Chat.java to tell whether the user can leave a recyclerviewlayout in the recyclerviewlayout.
+                                            Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                            // Pass this information to Chat.java to create a new shape in Firebase after someone writes a recyclerviewlayout.
+                                            startActivity(Activity);
+                                        }
                                     } else {
 
                                         Log.e(TAG, "onMapReadyAndRestart() -> onPolygonClick -> User selected a polygon -> location == null");
@@ -3275,47 +3311,6 @@ public class Map extends FragmentActivity implements
                                     }
                                 }
                             });
-
-                    // Check if the user is already signed in.
-                    if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) instanceof GoogleSignInAccount) {
-
-
-                        Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> User selected a polygon -> User signed in");
-
-                        // User is signed in.
-
-                        Intent Activity = new Intent(Map.this, Chat.class);
-                        // Go to Chat.java with the boolean value.
-                        Activity.putExtra("shapeIsCircle", false);
-                        // Pass this boolean value to Chat.java.
-                        Activity.putExtra("newShape", false);
-                        // Pass this value to Chat.java to identify the shape.
-                        Activity.putExtra("uuid", uuid);
-                        // Pass this value to Chat.java to tell whether the user can leave a recyclerviewlayout in the recyclerviewlayout.
-                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                        // Pass this information to Chat.java to create a new shape in Firebase after someone writes a recyclerviewlayout.
-                        startActivity(Activity);
-                    } else {
-
-                        Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> User selected a polygon -> No user signed in");
-
-                        // No user is signed in.
-
-                        Intent Activity = new Intent(Map.this, SignIn.class);
-                        // Go to Chat.java with the boolean value.
-                        Activity.putExtra("shapeIsCircle", false);
-                        // Pass this boolean value to Chat.java.
-                        Activity.putExtra("newShape", false);
-                        Activity.putExtra("shapeIsCircle", false);
-                        // Pass this value to Chat.java to identify the shape.
-                        Activity.putExtra("uuid", uuid);
-                        // Pass this value to Chat.java to tell whether the user can leave a recyclerviewlayout in the recyclerviewlayout.
-                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                        // Pass this information to Chat.java to create a new shape in Firebase after someone writes a recyclerviewlayout.
-                        startActivity(Activity);
-                    }
-
-                    return;
                 }
 
                 selectedOverlappingShapeUUID = overlappingShapesUUID.get(0);
@@ -3446,6 +3441,102 @@ public class Map extends FragmentActivity implements
 
                                         // Boolean; will be true if user is within the circle upon circle click.
                                         userIsWithinShape = !(distance[0] > circle.getRadius());
+
+                                        // Check if the user is already signed in.
+                                        if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) instanceof GoogleSignInAccount) {
+
+                                            // User is signed in.
+
+                                            // Compare the uuid to the uuids in Firebase to prevent uuid overlap before adding it to Firebase.
+                                            firebaseCircles.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
+
+                                                @Override
+                                                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                                                    // If the uuid already exists in Firebase, generate another uuid and try again.
+                                                    if (dataSnapshot.exists()) {
+
+                                                        Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> New circle -> User signed in -> uuid exists");
+
+                                                        // uuid exists in Firebase. Generate another and try again.
+
+                                                        // Generate another UUID and try again.
+                                                        uuid = UUID.randomUUID().toString();
+
+                                                        // Carry the extras all the way to Chat.java.
+                                                        Intent Activity = new Intent(Map.this, Chat.class);
+
+                                                        // Pass this information to Chat.java to create a new shape in Firebase after someone writes a recyclerviewlayout.
+                                                        goToNextActivityCircle(Activity, circle);
+                                                    } else {
+
+                                                        Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> New circle -> User signed in -> uuid does not exists");
+
+                                                        // uuid does not already exist in Firebase. Go to Chat.java with the uuid.
+
+                                                        // Carry the extras all the way to Chat.java.
+                                                        Intent Activity = new Intent(Map.this, Chat.class);
+
+                                                        // Pass this information to Chat.java to create a new shape in Firebase after someone writes a recyclerviewlayout.
+                                                        goToNextActivityCircle(Activity, circle);
+                                                    }
+                                                }
+
+                                                @Override
+                                                public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                                                    Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                                                }
+                                            });
+
+                                            // Add a return statement so chatSelectorSeekBar is not called.
+                                            return;
+                                        } else {
+
+                                            // No user is signed in.
+
+                                            // Compare the uuid to the uuids in Firebase to prevent uuid overlap before adding it to Firebase.
+                                            firebaseCircles.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
+
+                                                @Override
+                                                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                                                    // If the uuid already exists in Firebase, generate another uuid and try again.
+                                                    if (dataSnapshot.exists()) {
+
+                                                        Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> New circle -> No user signed in -> uuid exists");
+
+                                                        // uuid exists in Firebase. Generate another and try again.
+
+                                                        // Generate another UUID and try again.
+                                                        uuid = UUID.randomUUID().toString();
+
+                                                        // Carry the extras to SignIn.java.
+                                                        Intent Activity = new Intent(Map.this, SignIn.class);
+
+                                                        // Pass this information to Chat.java to create a new shape in Firebase after someone writes a recyclerviewlayout.
+                                                        goToNextActivityCircle(Activity, circle);
+                                                    } else {
+
+                                                        Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> New circle -> No user signed in -> uuid does not exists");
+
+                                                        // uuid does not already exist in Firebase. Go to Chat.java with the uuid.
+
+                                                        // Carry the extras to SignIn.java.
+                                                        Intent Activity = new Intent(Map.this, SignIn.class);
+
+                                                        // Pass this information to Chat.java to create a new shape in Firebase after someone writes a recyclerviewlayout.
+                                                        goToNextActivityCircle(Activity, circle);
+                                                    }
+                                                }
+
+                                                @Override
+                                                public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                                                    Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                                                }
+                                            });
+                                        }
                                     } else {
 
                                         Log.e(TAG, "onMapReadyAndRestart() -> onCircleClick -> circle.getTag() == null -> location == null");
@@ -3453,105 +3544,6 @@ public class Map extends FragmentActivity implements
                                     }
                                 }
                             });
-
-                    // Check if the user is already signed in.
-                    if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) instanceof GoogleSignInAccount) {
-
-                        // User is signed in.
-
-                        // Compare the uuid to the uuids in Firebase to prevent uuid overlap before adding it to Firebase.
-                        firebaseCircles.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
-
-                            @Override
-                            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-
-                                // If the uuid already exists in Firebase, generate another uuid and try again.
-                                if (dataSnapshot.exists()) {
-
-                                    Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> New circle -> User signed in -> uuid exists");
-
-                                    // uuid exists in Firebase. Generate another and try again.
-
-                                    // Generate another UUID and try again.
-                                    uuid = UUID.randomUUID().toString();
-
-                                    // Carry the extras all the way to Chat.java.
-                                    Intent Activity = new Intent(Map.this, Chat.class);
-
-                                    // Pass this information to Chat.java to create a new shape in Firebase after someone writes a recyclerviewlayout.
-                                    goToNextActivityCircle(Activity, circle);
-                                } else {
-
-                                    Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> New circle -> User signed in -> uuid does not exists");
-
-                                    // uuid does not already exist in Firebase. Go to Chat.java with the uuid.
-
-                                    // Carry the extras all the way to Chat.java.
-                                    Intent Activity = new Intent(Map.this, Chat.class);
-
-                                    // Pass this information to Chat.java to create a new shape in Firebase after someone writes a recyclerviewlayout.
-                                    goToNextActivityCircle(Activity, circle);
-                                }
-                            }
-
-                            @Override
-                            public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
-                            }
-                        });
-
-                        // Add a return statement so chatSelectorSeekBar is not called.
-                        return;
-                    } else {
-
-                        // No user is signed in.
-
-                        // Compare the uuid to the uuids in Firebase to prevent uuid overlap before adding it to Firebase.
-                        firebaseCircles.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
-
-                            @Override
-                            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-
-                                // If the uuid already exists in Firebase, generate another uuid and try again.
-                                if (dataSnapshot.exists()) {
-
-                                    Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> New circle -> No user signed in -> uuid exists");
-
-                                    // uuid exists in Firebase. Generate another and try again.
-
-                                    // Generate another UUID and try again.
-                                    uuid = UUID.randomUUID().toString();
-
-                                    // Carry the extras to SignIn.java.
-                                    Intent Activity = new Intent(Map.this, SignIn.class);
-
-                                    // Pass this information to Chat.java to create a new shape in Firebase after someone writes a recyclerviewlayout.
-                                    goToNextActivityCircle(Activity, circle);
-                                } else {
-
-                                    Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> New circle -> No user signed in -> uuid does not exists");
-
-                                    // uuid does not already exist in Firebase. Go to Chat.java with the uuid.
-
-                                    // Carry the extras to SignIn.java.
-                                    Intent Activity = new Intent(Map.this, SignIn.class);
-
-                                    // Pass this information to Chat.java to create a new shape in Firebase after someone writes a recyclerviewlayout.
-                                    goToNextActivityCircle(Activity, circle);
-                                }
-                            }
-
-                            @Override
-                            public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
-                            }
-                        });
-
-                        // Add a return statement so chatSelectorSeekBar is not called.
-                        return;
-                    }
                 }
 
                 // Click all through all circles, using the z-index to figure out which ones have not been cycled through. All the information to the arrayLists to be used by chatSelectorSeekBar.
@@ -3715,6 +3707,41 @@ public class Map extends FragmentActivity implements
 
                                         // Boolean; will be true if user is within the circle upon circle click.
                                         userIsWithinShape = !(distance[0] > circle.getRadius());
+
+                                        // Check if the user is already signed in.
+                                        if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) instanceof GoogleSignInAccount) {
+
+                                            Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> User selected a circle -> User signed in");
+
+                                            // User is signed in.
+
+                                            Intent Activity = new Intent(Map.this, Chat.class);
+                                            // Go to Chat.java with the boolean value.
+                                            Activity.putExtra("shapeIsCircle", true);
+                                            // Pass this boolean value to Chat.java.
+                                            Activity.putExtra("newShape", false);
+                                            // Pass this value to Chat.java to identify the shape.
+                                            Activity.putExtra("uuid", uuid);
+                                            // Pass this value to Chat.java to tell whether the user can leave a recyclerviewlayout in the recyclerviewlayout.
+                                            Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                            startActivity(Activity);
+                                        } else {
+
+                                            Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> User selected a circle -> User not signed in");
+
+                                            // No user is signed in.
+
+                                            Intent Activity = new Intent(Map.this, SignIn.class);
+                                            // Go to Chat.java with the boolean value.
+                                            Activity.putExtra("shapeIsCircle", true);
+                                            // Pass this boolean value to Chat.java.
+                                            Activity.putExtra("newShape", false);
+                                            // Pass this value to Chat.java to identify the shape.
+                                            Activity.putExtra("uuid", uuid);
+                                            // Pass this value to Chat.java to tell whether the user can leave a recyclerviewlayout in the recyclerviewlayout.
+                                            Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                            startActivity(Activity);
+                                        }
                                     } else {
 
                                         Log.e(TAG, "onMapReadyAndRestart() -> onCircleClick -> User selected a circle -> location == null");
@@ -3722,41 +3749,6 @@ public class Map extends FragmentActivity implements
                                     }
                                 }
                             });
-
-                    // Check if the user is already signed in.
-                    if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) instanceof GoogleSignInAccount) {
-
-                        Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> User selected a circle -> User signed in");
-
-                        // User is signed in.
-
-                        Intent Activity = new Intent(Map.this, Chat.class);
-                        // Go to Chat.java with the boolean value.
-                        Activity.putExtra("shapeIsCircle", true);
-                        // Pass this boolean value to Chat.java.
-                        Activity.putExtra("newShape", false);
-                        // Pass this value to Chat.java to identify the shape.
-                        Activity.putExtra("uuid", uuid);
-                        // Pass this value to Chat.java to tell whether the user can leave a recyclerviewlayout in the recyclerviewlayout.
-                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                        startActivity(Activity);
-                    } else {
-
-                        Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> User selected a circle -> User not signed in");
-
-                        // No user is signed in.
-
-                        Intent Activity = new Intent(Map.this, SignIn.class);
-                        // Go to Chat.java with the boolean value.
-                        Activity.putExtra("shapeIsCircle", true);
-                        // Pass this boolean value to Chat.java.
-                        Activity.putExtra("newShape", false);
-                        // Pass this value to Chat.java to identify the shape.
-                        Activity.putExtra("uuid", uuid);
-                        // Pass this value to Chat.java to tell whether the user can leave a recyclerviewlayout in the recyclerviewlayout.
-                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                        startActivity(Activity);
-                    }
 
                     return;
                 }
@@ -5216,7 +5208,7 @@ public class Map extends FragmentActivity implements
             Activity.putExtra("newShape", true);
             // Pass this value to Chat.java to identify the shape.
             Activity.putExtra("uuid", uuid);
-            // Pass this value to Chat.java to tell whether the user can leave a recyclerviewlayout in the recyclerviewlayout.
+            // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
             Activity.putExtra("userIsWithinShape", userIsWithinShape);
             // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
             Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
@@ -5254,7 +5246,7 @@ public class Map extends FragmentActivity implements
                 Activity.putExtra("newShape", true);
                 // Pass this value to Chat.java to identify the shape.
                 Activity.putExtra("uuid", uuid);
-                // Pass this value to Chat.java to tell whether the user can leave a recyclerviewlayout in the recyclerviewlayout.
+                // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
                 Activity.putExtra("userIsWithinShape", userIsWithinShape);
                 // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                 Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
@@ -5300,7 +5292,7 @@ public class Map extends FragmentActivity implements
                 Activity.putExtra("newShape", true);
                 // Pass this value to Chat.java to identify the shape.
                 Activity.putExtra("uuid", uuid);
-                // Pass this value to Chat.java to tell whether the user can leave a recyclerviewlayout in the recyclerviewlayout.
+                // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
                 Activity.putExtra("userIsWithinShape", userIsWithinShape);
                 // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                 Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
@@ -5349,7 +5341,7 @@ public class Map extends FragmentActivity implements
                 Activity.putExtra("newShape", true);
                 // Pass this value to Chat.java to identify the shape.
                 Activity.putExtra("uuid", uuid);
-                // Pass this value to Chat.java to tell whether the user can leave a recyclerviewlayout in the recyclerviewlayout.
+                // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
                 Activity.putExtra("userIsWithinShape", userIsWithinShape);
                 // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                 Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
@@ -5401,7 +5393,7 @@ public class Map extends FragmentActivity implements
                 Activity.putExtra("newShape", true);
                 // Pass this value to Chat.java to identify the shape.
                 Activity.putExtra("uuid", uuid);
-                // Pass this value to Chat.java to tell whether the user can leave a recyclerviewlayout in the recyclerviewlayout.
+                // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
                 Activity.putExtra("userIsWithinShape", userIsWithinShape);
                 // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                 Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
@@ -5457,7 +5449,7 @@ public class Map extends FragmentActivity implements
                 Activity.putExtra("newShape", true);
                 // Pass this value to Chat.java to identify the shape.
                 Activity.putExtra("uuid", uuid);
-                // Pass this value to Chat.java to tell whether the user can leave a recyclerviewlayout in the recyclerviewlayout.
+                // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
                 Activity.putExtra("userIsWithinShape", userIsWithinShape);
                 // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
                 Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
@@ -5491,14 +5483,14 @@ public class Map extends FragmentActivity implements
     // Used by onMapReadyAndRestart() -> onCircleClickListener.
     private void goToNextActivityCircle(Intent Activity, Circle circle) {
 
-        Log.i(TAG, "goToNextActivityPolygon()");
+        Log.i(TAG, "goToNextActivityCircle()");
 
         Activity.putExtra("shapeIsCircle", true);
         // Pass this boolean value to Chat.java.
         Activity.putExtra("newShape", true);
         // Pass this value to Chat.java to identify the shape.
         Activity.putExtra("uuid", uuid);
-        // Pass this value to Chat.java to tell whether the user can leave a recyclerviewlayout in the recyclerviewlayout.
+        // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
         Activity.putExtra("userIsWithinShape", userIsWithinShape);
         // Pass this information to Chat.java to create a new circle in Firebase after someone writes a recyclerviewlayout.
         Activity.putExtra("circleLatitude", circle.getCenter().latitude);
@@ -8554,6 +8546,8 @@ public class Map extends FragmentActivity implements
                                                         Activity.putExtra("newShape", true);
                                                         // Pass this value to Chat.java to identify the shape.
                                                         Activity.putExtra("uuid", uuid);
+                                                        // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
+                                                        Activity.putExtra("userIsWithinShape", true);
                                                         // Pass this information to Chat.java to create a new circle in Firebase after someone writes a recyclerviewlayout.
                                                         Activity.putExtra("circleLatitude", location.getLatitude());
                                                         Activity.putExtra("circleLongitude", location.getLongitude());
@@ -8568,6 +8562,8 @@ public class Map extends FragmentActivity implements
                                                         Activity.putExtra("newShape", true);
                                                         // Pass this value to Chat.java to identify the shape.
                                                         Activity.putExtra("uuid", uuid);
+                                                        // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
+                                                        Activity.putExtra("userIsWithinShape", true);
                                                         // Pass this information to Chat.java to create a new circle in Firebase after someone writes a recyclerviewlayout.
                                                         Activity.putExtra("circleLatitude", location.getLatitude());
                                                         Activity.putExtra("circleLongitude", location.getLongitude());
@@ -8603,6 +8599,8 @@ public class Map extends FragmentActivity implements
                                                         Activity.putExtra("newShape", true);
                                                         // Pass this value to Chat.java to identify the shape.
                                                         Activity.putExtra("uuid", uuid);
+                                                        // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
+                                                        Activity.putExtra("userIsWithinShape", true);
                                                         // Pass this information to Chat.java to create a new circle in Firebase after someone writes a recyclerviewlayout.
                                                         Activity.putExtra("circleLatitude", location.getLatitude());
                                                         Activity.putExtra("circleLongitude", location.getLongitude());
@@ -8617,6 +8615,8 @@ public class Map extends FragmentActivity implements
                                                         Activity.putExtra("newShape", true);
                                                         // Pass this value to Chat.java to identify the shape.
                                                         Activity.putExtra("uuid", uuid);
+                                                        // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
+                                                        Activity.putExtra("userIsWithinShape", true);
                                                         // Pass this information to Chat.java to create a new circle in Firebase after someone writes a recyclerviewlayout.
                                                         Activity.putExtra("circleLatitude", location.getLatitude());
                                                         Activity.putExtra("circleLongitude", location.getLongitude());
