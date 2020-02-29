@@ -151,7 +151,10 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
                         .into(holder.messageImageInside);
             }
 
-            if (mMessageImageVideo.get(position) != null) {
+            if (mMessageImageVideo.get(position) == null) {
+
+                holder.videoFrameInside.setVisibility(View.GONE);
+            } else {
 
                 // Change the videoView's orientation depending on the orientation of the video.
                 MediaMetadataRetriever retriever = new MediaMetadataRetriever();
@@ -203,15 +206,6 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
                 holder.messageTextInside.setText(mMessageText.get(position));
                 holder.messageTextInside.setVisibility(View.VISIBLE);
             }
-
-            // Change the color of every other row for visual purposes.
-            if (position % 2 == 0) {
-
-                holder.itemView.setBackgroundColor(Color.parseColor("#222222"));
-            } else {
-
-                holder.itemView.setBackgroundColor(Color.parseColor("#292929"));
-            }
         } else {
 
             // User sent the message from outside the shape. Setup the right side.
@@ -230,7 +224,10 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
                         .into(holder.messageImageOutside);
             }
 
-            if (mMessageImageVideo.get(position) != null) {
+            if (mMessageImageVideo.get(position) == null) {
+
+                holder.videoFrameOutside.setVisibility(View.GONE);
+            } else {
 
                 // Change the videoView's orientation depending on the orientation of the video.
                 MediaMetadataRetriever retriever = new MediaMetadataRetriever();
@@ -282,15 +279,15 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
                 holder.messageTextOutside.setText(mMessageText.get(position));
                 holder.messageTextOutside.setVisibility(View.VISIBLE);
             }
+        }
 
-            // Change the color of every other row for visual purposes.
-            if (position % 2 == 0) {
+        // Change the color of every other row for visual purposes.
+        if (position % 2 == 0) {
 
-                holder.itemView.setBackgroundColor(Color.parseColor("#222222"));
-            } else {
+            holder.itemView.setBackgroundColor(Color.parseColor("#222222"));
+        } else {
 
-                holder.itemView.setBackgroundColor(Color.parseColor("#292929"));
-            }
+            holder.itemView.setBackgroundColor(Color.parseColor("#292929"));
         }
 
         holder.setIsRecyclable(true);

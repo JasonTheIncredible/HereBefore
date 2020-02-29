@@ -3000,6 +3000,7 @@ public class Map extends FragmentActivity implements
 
                     mFusedLocationClient.getLastLocation()
                             .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
+
                                 @Override
                                 public void onSuccess(Location location) {
 
@@ -3053,9 +3054,6 @@ public class Map extends FragmentActivity implements
                                                     Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
                                                 }
                                             });
-
-                                            // Add a return statement so chatSelectorSeekBar is not called.
-                                            return;
                                         } else {
 
                                             // No user is signed in.
@@ -3108,6 +3106,9 @@ public class Map extends FragmentActivity implements
                                     }
                                 }
                             });
+
+                    // As getFusedLocationProviderClient is asynchronous, this return statement will prevent executing the rest of the code.
+                    return;
                 }
 
                 // Click all through all circles, using the z-index to figure out which ones have not been cycled through. All the information to the arrayLists to be used by chatSelectorSeekBar.
@@ -3253,11 +3254,12 @@ public class Map extends FragmentActivity implements
                         uuid = selectedOverlappingShapeUUID;
                     }
 
-                    // Check if user is within the circle before going to the recyclerviewlayout.
+                    // Check if user is within the shape before going to the recyclerviewlayout.
                     FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
 
                     mFusedLocationClient.getLastLocation()
                             .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
+
                                 @Override
                                 public void onSuccess(Location location) {
 
@@ -3268,7 +3270,6 @@ public class Map extends FragmentActivity implements
 
                                         // Check if the user is already signed in.
                                         if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) instanceof GoogleSignInAccount) {
-
 
                                             Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> User selected a polygon -> User signed in");
 
@@ -3429,6 +3430,7 @@ public class Map extends FragmentActivity implements
 
                     mFusedLocationClient.getLastLocation()
                             .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
+
                                 @Override
                                 public void onSuccess(Location location) {
 
@@ -3488,9 +3490,6 @@ public class Map extends FragmentActivity implements
                                                     Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
                                                 }
                                             });
-
-                                            // Add a return statement so chatSelectorSeekBar is not called.
-                                            return;
                                         } else {
 
                                             // No user is signed in.
@@ -3544,6 +3543,9 @@ public class Map extends FragmentActivity implements
                                     }
                                 }
                             });
+
+                    // As getFusedLocationProviderClient is asynchronous, this return statement will prevent executing the rest of the code.
+                    return;
                 }
 
                 // Click all through all circles, using the z-index to figure out which ones have not been cycled through. All the information to the arrayLists to be used by chatSelectorSeekBar.

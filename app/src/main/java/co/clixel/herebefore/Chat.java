@@ -121,9 +121,9 @@ public class Chat extends AppCompatActivity implements
     private File image, video;
     private byte[] byteArray;
 
-    //TODO: When data gets changed, try to update only the affected items: https://stackoverflow.com/questions/27188536/recyclerview-scrolling-performance. Also, fix issue where images / videos are changing size with orientation change.
-    //TODO: Make recyclerView load faster.
+    //TODO: Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible.
     //TODO: Fix upside down imported photo of scale.
+    //TODO: When data gets changed, try to update only the affected items: https://stackoverflow.com/questions/27188536/recyclerview-scrolling-performance. Also, fix issue where images / videos are changing size with orientation change.
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -139,7 +139,6 @@ public class Chat extends AppCompatActivity implements
         mInput = findViewById(R.id.input);
         sendButton = findViewById(R.id.sendButton);
         recyclerView = findViewById(R.id.messageList);
-        recyclerView.setItemViewCacheSize(20);
 
         // Set to dark mode.
         AppCompatDelegate.setDefaultNightMode(
