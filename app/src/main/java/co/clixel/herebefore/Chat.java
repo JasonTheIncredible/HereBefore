@@ -11,6 +11,7 @@ import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -23,6 +24,7 @@ import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
+import androidx.exifinterface.media.ExifInterface;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -122,7 +124,6 @@ public class Chat extends AppCompatActivity implements
     private byte[] byteArray;
 
     //TODO: Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible.
-    //TODO: Fix upside down imported photo of scale.
     //TODO: When data gets changed, try to update only the affected items: https://stackoverflow.com/questions/27188536/recyclerview-scrolling-performance. Also, fix issue where images / videos are changing size with orientation change.
 
     @Override
@@ -384,7 +385,6 @@ public class Chat extends AppCompatActivity implements
                 Log.i(TAG, "onStart() -> sendButton -> onClick");
 
                 final String input = mInput.getText().toString();
-                final Bundle extras = getIntent().getExtras();
 
                 // Send recyclerviewlayout to Firebase.
                 if (!input.equals("") || imageView.getVisibility() != View.GONE || videoImageView.getVisibility() != View.GONE) {
@@ -1415,22 +1415,58 @@ public class Chat extends AppCompatActivity implements
             if (activity == null || activity.isFinishing()) return "2";
 
             Uri mImageURI = Uri.parse(paths[0]);
+            int rotation = 0;
 
-            InputStream imageStream = null;
+            InputStream imageStream0 = null;
+            InputStream imageStream1;
             try {
 
-                imageStream = activity.getContentResolver().openInputStream(mImageURI);
+                // Create 2 inputStreams - imageStream0 to decode into a bitmap and imageStream1 to find the necessary rotation.
+                imageStream0 = activity.getContentResolver().openInputStream(mImageURI);
+
+                imageStream1 = activity.getContentResolver().openInputStream(mImageURI);
+                if (imageStream1 != null) {
+
+                    ExifInterface exifInterface = new ExifInterface(imageStream1);
+                    int orientation = exifInterface.getAttributeInt(
+                            ExifInterface.TAG_ORIENTATION,
+                            ExifInterface.ORIENTATION_NORMAL);
+                    switch (orientation) {
+                        case ExifInterface.ORIENTATION_ROTATE_90:
+                            rotation = 90;
+                            imageStream1.close();
+                            break;
+                        case ExifInterface.ORIENTATION_ROTATE_180:
+                            rotation = 180;
+                            imageStream1.close();
+                            break;
+                        case ExifInterface.ORIENTATION_ROTATE_270:
+                            rotation = 270;
+                            imageStream1.close();
+                            break;
+                    }
+                }
             } catch (FileNotFoundException ex) {
 
                 ex.printStackTrace();
                 Toast.makeText(activity, ex.getMessage(), Toast.LENGTH_LONG).show();
                 Crashlytics.logException(new RuntimeException("onActivityResult() -> gallery imageStream error"));
+            } catch (IOException e) {
+
+                e.printStackTrace();
             }
-            Bitmap bmp = BitmapFactory.decodeStream(imageStream);
+
+            Bitmap bmp = BitmapFactory.decodeStream(imageStream0);
+            Matrix matrix = new Matrix();
+            matrix.postRotate(rotation);
+            Bitmap rotatedBitmap = Bitmap.createBitmap(bmp, 0, 0, bmp.getWidth(), bmp.getHeight(), matrix, false);
+
             ByteArrayOutputStream stream = new ByteArrayOutputStream();
-            bmp.compress(Bitmap.CompressFormat.JPEG, 50, stream);
+            rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, 50, stream);
+
             activity.byteArray = stream.toByteArray();
             bmp.recycle();
+            rotatedBitmap.recycle();
             try {
 
                 stream.close();
@@ -1439,6 +1475,15 @@ public class Chat extends AppCompatActivity implements
                 ex.printStackTrace();
                 Toast.makeText(activity, ex.getMessage(), Toast.LENGTH_LONG).show();
                 Crashlytics.logException(new RuntimeException("onActivityResult() -> gallery stream.close()"));
+            }
+
+            if (imageStream0 != null) {
+
+                try {
+                    imageStream0.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
 
             return "2";
@@ -1452,20 +1497,10 @@ public class Chat extends AppCompatActivity implements
             Chat activity = activityWeakRef.get();
             if (activity == null || activity.isFinishing()) return;
 
-            // Show the preview for the lowest quality image to save time and resources.
-            if (activity.URIisFile) {
-
-                Glide.with(activity)
-                        .load(activity.imageURI)
-                        .apply(new RequestOptions().override(640, 5000).placeholder(R.drawable.ic_recyclerview_image_placeholder))
-                        .into(activity.imageView);
-            } else {
-
-                Glide.with(activity)
-                        .load(activity.byteArray)
-                        .apply(new RequestOptions().override(640, 5000).placeholder(R.drawable.ic_recyclerview_image_placeholder))
-                        .into(activity.imageView);
-            }
+            Glide.with(activity)
+                    .load(activity.byteArray)
+                    .apply(new RequestOptions().override(480, 5000).placeholder(R.drawable.ic_recyclerview_image_placeholder))
+                    .into(activity.imageView);
 
             activity.findViewById(R.id.loadingIcon).setVisibility(View.INVISIBLE);
         }
