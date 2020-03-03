@@ -123,8 +123,8 @@ public class Chat extends AppCompatActivity implements
     private File image, video;
     private byte[] byteArray;
 
-    //TODO: Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible.
-    //TODO: When data gets changed, try to update only the affected items: https://stackoverflow.com/questions/27188536/recyclerview-scrolling-performance. Also, fix issue where images / videos are changing size with orientation change.
+    //TODO: Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change.
+    //TODO: When data gets changed, try to update only the affected items: https://stackoverflow.com/questions/27188536/recyclerview-scrolling-performance.
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -336,7 +336,9 @@ public class Chat extends AppCompatActivity implements
                         (mInput.getText().toString().trim().length() == 0 || mInput.getSelectionStart() == 0)) {
 
                     imageView.setVisibility(View.GONE);
+                    imageView.setImageDrawable(null);
                     videoImageView.setVisibility(View.GONE);
+                    videoImageView.setImageDrawable(null);
                 }
 
                 if (keyCode == KeyEvent.KEYCODE_BACK && getCurrentFocus() == mInput) {
@@ -1915,6 +1917,7 @@ public class Chat extends AppCompatActivity implements
                             newMessage.setValue(messageInformation);
                             mInput.getText().clear();
                             imageView.setVisibility(View.GONE);
+                            imageView.setImageDrawable(null);
                             if (image != null) {
 
                                 deleteDirectory(image);
@@ -2079,6 +2082,7 @@ public class Chat extends AppCompatActivity implements
                             newMessage.setValue(messageInformation);
                             mInput.getText().clear();
                             videoImageView.setVisibility(View.GONE);
+                            imageView.setImageDrawable(null);
                             if (video != null) {
 
                                 deleteDirectory(video);
@@ -2243,6 +2247,7 @@ public class Chat extends AppCompatActivity implements
                             newMessage.setValue(messageInformation);
                             mInput.getText().clear();
                             imageView.setVisibility(View.GONE);
+                            imageView.setImageDrawable(null);
                             if (image != null) {
 
                                 deleteDirectory(image);

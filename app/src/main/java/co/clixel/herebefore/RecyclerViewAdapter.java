@@ -3,13 +3,11 @@ package co.clixel.herebefore;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
-import android.graphics.Bitmap;
 import android.graphics.Color;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import android.media.MediaMetadataRetriever;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -23,7 +21,6 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 
 public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapter.ViewHolder> {
 
@@ -31,7 +28,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
     private ArrayList<Boolean> mUserIsWithinShape;
     private Context mContext;
     private ImageButton playButtonInside, playButtonOutside;
-    private int usableWidth, usableHeight;
+    private int usableWidth;
 
     RecyclerViewAdapter(Context context, ArrayList<String> mMessageTime, ArrayList<String> mMessageImage, ArrayList<String> mMessageImageVideo, ArrayList<String> mMessageText, ArrayList<Boolean> mUserIsWithinShape) {
 
@@ -102,9 +99,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
 
         // Sets each picture's size relative to the screen (used in onBindViewHolder().
         int measuredWidth;
-        int measuredHeight;
         measuredWidth = Resources.getSystem().getDisplayMetrics().widthPixels;
-        measuredHeight = Resources.getSystem().getDisplayMetrics().heightPixels;
         if (measuredWidth > 0) {
 
             if (measuredWidth >= 400) {
@@ -117,14 +112,6 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
         } else {
 
             usableWidth = 400;
-        }
-
-        if (measuredHeight > 0) {
-
-            usableHeight = measuredHeight;
-        } else {
-
-            usableHeight = 400;
         }
 
         return holder;
@@ -144,11 +131,12 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
                 holder.messageImageInside.setVisibility(View.GONE);
             } else {
 
-                holder.messageImageInside.setVisibility(View.VISIBLE);
                 Glide.with(mContext)
                         .load(mMessageImage.get(position))
                         .apply(new RequestOptions().override(usableWidth, 5000).placeholder(R.drawable.ic_recyclerview_image_placeholder).centerInside())
                         .into(holder.messageImageInside);
+
+                holder.messageImageInside.setVisibility(View.VISIBLE);
             }
 
             if (mMessageImageVideo.get(position) == null) {
@@ -156,33 +144,11 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
                 holder.videoFrameInside.setVisibility(View.GONE);
             } else {
 
-                // Change the videoView's orientation depending on the orientation of the video.
-                MediaMetadataRetriever retriever = new MediaMetadataRetriever();
-                // Set the video Uri as data source for MediaMetadataRetriever
-                retriever.setDataSource(mMessageImageVideo.get(position), new HashMap<String, String>());
-                // Get one "frame"/bitmap - * NOTE - no time was set, so the first available frame will be used
-                Bitmap bmp = retriever.getFrameAtTime(1);
-                // Get the bitmap width and height
-                int bmpWidth = bmp.getWidth();
-                int bmpHeight = bmp.getHeight();
+                Glide.with(mContext)
+                        .load(mMessageImageVideo.get(position))
+                        .apply(new RequestOptions().override(usableWidth, 5000).placeholder(R.drawable.ic_recyclerview_image_placeholder).centerInside())
+                        .into(holder.messageImageVideoInside);
 
-                final float scale = mContext.getResources().getDisplayMetrics().density;
-                // Adjust the size so the frame doesn't expand past the screen.
-                if (bmpWidth > bmpHeight) {
-
-                    if (bmpWidth > usableWidth) {
-
-                        holder.videoFrameInside.getLayoutParams().width = (int) ((usableWidth / 2) * scale + 0.5f); // Convert dp to px.
-                    }
-                } else {
-
-                    if (bmpHeight > usableHeight) {
-
-                        holder.videoFrameInside.getLayoutParams().height = (int) ((usableHeight / 2) * scale + 0.5f); // Convert dp to px.
-                    }
-                }
-
-                holder.messageImageVideoInside.setImageBitmap(bmp);
                 holder.videoFrameInside.setVisibility(View.VISIBLE);
             }
 
@@ -202,7 +168,6 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
                     params.addRule(RelativeLayout.BELOW, R.id.videoFrameInside);
                     holder.messageTextInside.setLayoutParams(params);
                 }
-
                 holder.messageTextInside.setText(mMessageText.get(position));
                 holder.messageTextInside.setVisibility(View.VISIBLE);
             }
@@ -217,11 +182,12 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
                 holder.messageImageOutside.setVisibility(View.GONE);
             } else {
 
-                holder.messageImageOutside.setVisibility(View.VISIBLE);
                 Glide.with(mContext)
                         .load(mMessageImage.get(position))
                         .apply(new RequestOptions().override(usableWidth, 5000).placeholder(R.drawable.ic_recyclerview_image_placeholder).centerInside())
                         .into(holder.messageImageOutside);
+
+                holder.messageImageOutside.setVisibility(View.VISIBLE);
             }
 
             if (mMessageImageVideo.get(position) == null) {
@@ -229,33 +195,11 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
                 holder.videoFrameOutside.setVisibility(View.GONE);
             } else {
 
-                // Change the videoView's orientation depending on the orientation of the video.
-                MediaMetadataRetriever retriever = new MediaMetadataRetriever();
-                // Set the video Uri as data source for MediaMetadataRetriever
-                retriever.setDataSource(mMessageImageVideo.get(position), new HashMap<String, String>());
-                // Get one "frame"/bitmap - * NOTE - no time was set, so the first available frame will be used
-                Bitmap bmp = retriever.getFrameAtTime(1);
-                // Get the bitmap width and height
-                int bmpWidth = bmp.getWidth();
-                int bmpHeight = bmp.getHeight();
+                Glide.with(mContext)
+                        .load(mMessageImageVideo.get(position))
+                        .apply(new RequestOptions().override(usableWidth, 5000).placeholder(R.drawable.ic_recyclerview_image_placeholder).centerInside())
+                        .into(holder.messageImageVideoOutside);
 
-                final float scale = mContext.getResources().getDisplayMetrics().density;
-                // Adjust the size so the frame doesn't expand past the screen.
-                if (bmpWidth > bmpHeight) {
-
-                    if (bmpWidth > usableWidth) {
-
-                        holder.videoFrameOutside.getLayoutParams().width = (int) ((usableWidth / 2) * scale + 0.5f); // Convert dp to px.
-                    }
-                } else {
-
-                    if (bmpHeight > usableHeight) {
-
-                        holder.videoFrameOutside.getLayoutParams().height = (int) ((usableHeight / 2) * scale + 0.5f); // Convert dp to px.
-                    }
-                }
-
-                holder.messageImageVideoOutside.setImageBitmap(bmp);
                 holder.videoFrameOutside.setVisibility(View.VISIBLE);
             }
 
