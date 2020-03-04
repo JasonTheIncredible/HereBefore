@@ -118,9 +118,10 @@ public class Map extends FragmentActivity implements
     private LocationManager locationManager;
 
     // The following should be implemented later:
+    // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change.
+    // Optimize Firebase loading (Google how databases are structured).
     // Change design (change popupMenu color).
     // Ads.
-    // Optimize Firebase loading (Google how databases are structured).
     // Log.i vs d vs w...
     // Add a username?
     // Save user map type preference.
