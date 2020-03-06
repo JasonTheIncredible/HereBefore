@@ -117,9 +117,10 @@ public class Map extends FragmentActivity implements
     private int chatsSize;
     private LocationManager locationManager;
 
+    //TODO: Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.
+    //TODO: Optimize Firebase loading, both in Map and Chat (Google how databases are structured).
+
     // The following should be implemented later:
-    // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change.
-    // Optimize Firebase loading (Google how databases are structured).
     // Change design (change popupMenu color).
     // Ads.
     // Log.i vs d vs w...
@@ -133,6 +134,7 @@ public class Map extends FragmentActivity implements
     // Make sure uuids never overlap in Firebase.
     // Add a play button to the videoImageView in Chat.java like recyclerviewlayout.xml.
     // Decrease app size.
+    // When not on wifi, the location may "jump" and the camera might not be correct. I'm not currently sure how to test / fix this without annoying users that are traveling at very high speeds.
     // Add ability to filter recyclerView by type of content (recorded at the scene) to get rid of the "fluff"
     // Add ability to add video from gallery to recyclerView. [silicompressor 2.2.3 accepts content URIs but gives a black video on the app and in Firebase. Will follow up with this later.]s
     // Add ability to add both picture and video to firebase at the same time.
