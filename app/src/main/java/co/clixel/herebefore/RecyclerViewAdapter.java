@@ -2,7 +2,6 @@ package co.clixel.herebefore;
 
 import android.content.Context;
 import android.content.Intent;
-import android.content.res.Resources;
 import android.graphics.Color;
 
 import androidx.annotation.NonNull;
@@ -28,7 +27,6 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
     private ArrayList<Boolean> mUserIsWithinShape;
     private Context mContext;
     private ImageButton playButtonInside, playButtonOutside;
-    private int usableWidth;
 
     RecyclerViewAdapter(Context context, ArrayList<String> mMessageTime, ArrayList<String> mMessageImage, ArrayList<String> mMessageImageVideo, ArrayList<String> mMessageText, ArrayList<Boolean> mUserIsWithinShape) {
 
@@ -97,23 +95,6 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
             });
         }
 
-        // Sets each picture's size relative to the screen (used in onBindViewHolder().
-        int measuredWidth;
-        measuredWidth = Resources.getSystem().getDisplayMetrics().widthPixels;
-        if (measuredWidth > 0) {
-
-            if (measuredWidth >= 400) {
-
-                usableWidth = measuredWidth / 2;
-            } else {
-
-                usableWidth = measuredWidth;
-            }
-        } else {
-
-            usableWidth = 400;
-        }
-
         return holder;
     }
 
@@ -133,7 +114,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
 
                 Glide.with(mContext)
                         .load(mMessageImage.get(position))
-                        .apply(new RequestOptions().override(usableWidth, 5000).placeholder(R.drawable.ic_recyclerview_image_placeholder).centerInside())
+                        .apply(new RequestOptions().override(5000, 640).placeholder(R.drawable.ic_recyclerview_image_placeholder))
                         .into(holder.messageImageInside);
 
                 holder.messageImageInside.setVisibility(View.VISIBLE);
@@ -146,7 +127,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
 
                 Glide.with(mContext)
                         .load(mMessageImageVideo.get(position))
-                        .apply(new RequestOptions().override(usableWidth, 5000).placeholder(R.drawable.ic_recyclerview_image_placeholder).centerInside())
+                        .apply(new RequestOptions().override(5000, 640).placeholder(R.drawable.ic_recyclerview_image_placeholder))
                         .into(holder.messageImageVideoInside);
 
                 holder.videoFrameInside.setVisibility(View.VISIBLE);
@@ -184,7 +165,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
 
                 Glide.with(mContext)
                         .load(mMessageImage.get(position))
-                        .apply(new RequestOptions().override(usableWidth, 5000).placeholder(R.drawable.ic_recyclerview_image_placeholder).centerInside())
+                        .apply(new RequestOptions().override(5000, 640).placeholder(R.drawable.ic_recyclerview_image_placeholder).centerInside())
                         .into(holder.messageImageOutside);
 
                 holder.messageImageOutside.setVisibility(View.VISIBLE);
@@ -197,7 +178,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
 
                 Glide.with(mContext)
                         .load(mMessageImageVideo.get(position))
-                        .apply(new RequestOptions().override(usableWidth, 5000).placeholder(R.drawable.ic_recyclerview_image_placeholder).centerInside())
+                        .apply(new RequestOptions().override(5000, 640).placeholder(R.drawable.ic_recyclerview_image_placeholder).centerInside())
                         .into(holder.messageImageVideoOutside);
 
                 holder.videoFrameOutside.setVisibility(View.VISIBLE);
