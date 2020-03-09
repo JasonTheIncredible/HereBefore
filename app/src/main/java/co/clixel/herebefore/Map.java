@@ -107,28 +107,30 @@ public class Map extends FragmentActivity implements
     private LatLng markerPositionAtVertexOfPolygon, marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position, selectedOverlappingShapeCircleLocation;
     private Double relativeAngle = 0.0, selectedOverlappingShapeCircleRadius;
     private Location mlocation;
-    private List<LatLng> polygonPointsList;
+    private List<LatLng> polygonPointsList, selectedOverlappingShapePolygonVertices;
     private ArrayList<String> overlappingShapesUUID = new ArrayList<>(), overlappingShapesCircleUUID = new ArrayList<>(), overlappingShapesPolygonUUID = new ArrayList<>();
     private ArrayList<LatLng> overlappingShapesCircleLocation = new ArrayList<>();
     private ArrayList<Double> overlappingShapesCircleRadius = new ArrayList<>();
     private ArrayList<java.util.List<LatLng>> overlappingShapesPolygonVertices = new ArrayList<>();
-    private List<LatLng> selectedOverlappingShapePolygonVertices;
     private float x, y;
     private int chatsSize;
     private LocationManager locationManager;
 
-    //TODO: Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.
-    //TODO: Optimize Firebase loading, both in Map and Chat (Google how databases are structured).
+    //TODO: Optimize Firebase loading in Map.
+    //TODO: Allow for a "reset" of highlighted shapes by clicking on another shape.
 
     // The following should be implemented later:
     // Change design (change popupMenu color).
     // Ads.
     // Log.i vs d vs w...
+    // Change Firebase rules to increase security.
+    // API key and anything else before publishing.
     // Add a username?
     // Save user map type preference.
     // Page for deleting user account, resetting password, etc.
     // Allow user to sign out from here and Chat.java.
     // Work on onTrimMemory().
+    // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.
     // Add ability to add both video and picture to Firebase.
     // Leave messages in locations that users get notified of when they enter the area.
     // Make sure uuids never overlap in Firebase.
@@ -1920,22 +1922,19 @@ public class Map extends FragmentActivity implements
                             polygonTemp.remove();
                         }
 
-                        // Change the shape color depending on the map type.
-                        if (mMap.getMapType() == 2 || mMap.getMapType() == 4) {
+                        if (combinedList.get(chatSelectorSeekBar.getProgress()) instanceof LatLng) {
 
-                            if (combinedList.get(chatSelectorSeekBar.getProgress()) instanceof LatLng) {
+                            if (overlappingShapesCircleLocation.size() > overlappingShapesPolygonVertices.size()) {
 
-                                Log.i(TAG, "onStart() -> chatSelectorSeekBar -> onProgressChanged -> yellow circle");
+                                selectedOverlappingShapeCircleLocation = overlappingShapesCircleLocation.get(chatSelectorSeekBar.getProgress() - overlappingShapesPolygonVertices.size());
+                                selectedOverlappingShapeCircleRadius = overlappingShapesCircleRadius.get(chatSelectorSeekBar.getProgress() - overlappingShapesPolygonVertices.size());
+                            } else {
 
-                                if (overlappingShapesCircleLocation.size() > overlappingShapesPolygonVertices.size()) {
+                                selectedOverlappingShapeCircleLocation = overlappingShapesCircleLocation.get(chatSelectorSeekBar.getProgress());
+                                selectedOverlappingShapeCircleRadius = overlappingShapesCircleRadius.get(chatSelectorSeekBar.getProgress());
+                            }
 
-                                    selectedOverlappingShapeCircleLocation = overlappingShapesCircleLocation.get(chatSelectorSeekBar.getProgress() - overlappingShapesPolygonVertices.size());
-                                    selectedOverlappingShapeCircleRadius = overlappingShapesCircleRadius.get(chatSelectorSeekBar.getProgress() - overlappingShapesPolygonVertices.size());
-                                } else {
-
-                                    selectedOverlappingShapeCircleLocation = overlappingShapesCircleLocation.get(chatSelectorSeekBar.getProgress());
-                                    selectedOverlappingShapeCircleRadius = overlappingShapesCircleRadius.get(chatSelectorSeekBar.getProgress());
-                                }
+                            if (mMap.getMapType() == 2 || mMap.getMapType() == 4) {
 
                                 circleTemp = mMap.addCircle(
                                         new CircleOptions()
@@ -1947,78 +1946,46 @@ public class Map extends FragmentActivity implements
                                                 .strokeWidth(3f)
                                                 .zIndex(2)
                                 );
-
-                                // Used when getting rid of the shapes in onMapClick.
-                                circleTemp.setTag(selectedOverlappingShapeUUID);
-                                circleTemp.setCenter(selectedOverlappingShapeCircleLocation);
-                                circleTemp.setRadius(selectedOverlappingShapeCircleRadius);
                             } else {
 
-                                Log.i(TAG, "onStart() -> chatSelectorSeekBar -> onProgressChanged -> yellow polygon");
-
-                                if (selectedOverlappingShapePolygonVertices.size() > overlappingShapesCircleLocation.size()) {
-
-                                    selectedOverlappingShapePolygonVertices = overlappingShapesPolygonVertices.get(chatSelectorSeekBar.getProgress() - overlappingShapesCircleLocation.size());
-                                } else {
-
-                                    selectedOverlappingShapePolygonVertices = overlappingShapesPolygonVertices.get(chatSelectorSeekBar.getProgress());
-                                }
-
-                                polygonTemp = mMap.addPolygon(
-                                        new PolygonOptions()
+                                circleTemp = mMap.addCircle(
+                                        new CircleOptions()
+                                                .center(selectedOverlappingShapeCircleLocation)
                                                 .clickable(true)
-                                                .fillColor(Color.argb(100, 255, 255, 0))
-                                                .strokeColor(Color.rgb(255, 255, 0))
+                                                .fillColor(Color.argb(100, 255, 0, 255))
+                                                .radius(selectedOverlappingShapeCircleRadius)
+                                                .strokeColor(Color.rgb(255, 0, 255))
                                                 .strokeWidth(3f)
-                                                .addAll(selectedOverlappingShapePolygonVertices)
                                                 .zIndex(2)
                                 );
-
-                                // Used when getting rid of the shapes in onMapClick.
-                                polygonTemp.setTag(selectedOverlappingShapeUUID);
                             }
+
+                            // Used when getting rid of the shapes in onMapClick.
+                            circleTemp.setTag(selectedOverlappingShapeUUID);
+                            circleTemp.setCenter(selectedOverlappingShapeCircleLocation);
+                            circleTemp.setRadius(selectedOverlappingShapeCircleRadius);
                         } else {
 
-                            if (combinedList.get(chatSelectorSeekBar.getProgress()) instanceof LatLng) {
+                            if (overlappingShapesPolygonVertices.size() > overlappingShapesCircleLocation.size()) {
 
-                                Log.i(TAG, "onStart() -> chatSelectorSeekBar -> onProgressChanged -> purple circle");
-
-                                if (overlappingShapesCircleLocation.size() > overlappingShapesPolygonVertices.size()) {
-
-                                    selectedOverlappingShapeCircleLocation = overlappingShapesCircleLocation.get(chatSelectorSeekBar.getProgress() - overlappingShapesPolygonVertices.size());
-                                    selectedOverlappingShapeCircleRadius = overlappingShapesCircleRadius.get(chatSelectorSeekBar.getProgress() - overlappingShapesPolygonVertices.size());
-                                } else {
-
-                                    selectedOverlappingShapeCircleLocation = overlappingShapesCircleLocation.get(chatSelectorSeekBar.getProgress());
-                                    selectedOverlappingShapeCircleRadius = overlappingShapesCircleRadius.get(chatSelectorSeekBar.getProgress());
-                                }
-
-                                circleTemp = mMap.addCircle(
-                                        new CircleOptions()
-                                                .center(selectedOverlappingShapeCircleLocation)
-                                                .clickable(true)
-                                                .fillColor(Color.argb(100, 255, 0, 255))
-                                                .radius(selectedOverlappingShapeCircleRadius)
-                                                .strokeColor(Color.rgb(255, 0, 255))
-                                                .strokeWidth(3f)
-                                                .zIndex(2)
-                                );
-
-                                // Used when getting rid of the shapes in onMapClick.
-                                circleTemp.setTag(selectedOverlappingShapeUUID);
-                                circleTemp.setCenter(selectedOverlappingShapeCircleLocation);
-                                circleTemp.setRadius(selectedOverlappingShapeCircleRadius);
+                                selectedOverlappingShapePolygonVertices = overlappingShapesPolygonVertices.get(chatSelectorSeekBar.getProgress() - overlappingShapesCircleLocation.size());
                             } else {
 
-                                Log.i(TAG, "onStart() -> chatSelectorSeekBar -> onProgressChanged -> purple polygon");
+                                selectedOverlappingShapePolygonVertices = overlappingShapesPolygonVertices.get(chatSelectorSeekBar.getProgress());
+                            }
 
-                                if (selectedOverlappingShapePolygonVertices.size() > overlappingShapesCircleLocation.size()) {
+                            if (mMap.getMapType() == 2 || mMap.getMapType() == 4) {
 
-                                    selectedOverlappingShapePolygonVertices = overlappingShapesPolygonVertices.get(chatSelectorSeekBar.getProgress() - overlappingShapesCircleLocation.size());
-                                } else {
-
-                                    selectedOverlappingShapePolygonVertices = overlappingShapesPolygonVertices.get(chatSelectorSeekBar.getProgress());
-                                }
+                                polygonTemp = mMap.addPolygon(
+                                        new PolygonOptions()
+                                                .clickable(true)
+                                                .fillColor(Color.argb(100, 255, 255, 0))
+                                                .strokeColor(Color.rgb(255, 255, 0))
+                                                .strokeWidth(3f)
+                                                .addAll(selectedOverlappingShapePolygonVertices)
+                                                .zIndex(2)
+                                );
+                            } else {
 
                                 polygonTemp = mMap.addPolygon(
                                         new PolygonOptions()
@@ -2029,10 +1996,10 @@ public class Map extends FragmentActivity implements
                                                 .addAll(selectedOverlappingShapePolygonVertices)
                                                 .zIndex(2)
                                 );
-
-                                // Used when getting rid of the shapes in onMapClick.
-                                polygonTemp.setTag(selectedOverlappingShapeUUID);
                             }
+
+                            // Used when getting rid of the shapes in onMapClick.
+                            polygonTemp.setTag(selectedOverlappingShapeUUID);
                         }
                     } else {
 
@@ -3317,10 +3284,18 @@ public class Map extends FragmentActivity implements
                             });
                 }
 
+                // Add a highlighted shape. Also, setting these to a lower amount (0) prevents a crash.
+                if (overlappingShapesCircleLocation.size() != 0) {
+
+                    selectedOverlappingShapeCircleLocation = overlappingShapesCircleLocation.get(0);
+                    selectedOverlappingShapeCircleRadius = overlappingShapesCircleRadius.get(0);
+                }
+
+                if (overlappingShapesPolygonVertices.size() != 0) {
+
+                    selectedOverlappingShapePolygonVertices = overlappingShapesPolygonVertices.get(0);
+                }
                 selectedOverlappingShapeUUID = overlappingShapesUUID.get(0);
-                selectedOverlappingShapeCircleLocation = overlappingShapesCircleLocation.get(0);
-                selectedOverlappingShapeCircleRadius = overlappingShapesCircleRadius.get(0);
-                selectedOverlappingShapePolygonVertices = overlappingShapesPolygonVertices.get(0);
 
                 if (selectedOverlappingShapeUUID != null) {
 
@@ -3758,10 +3733,9 @@ public class Map extends FragmentActivity implements
                     return;
                 }
 
-                // Add a highlighted shape. Also, setting these to to lower amount (0) prevents a crash.
+                // Add a highlighted shape. Also, setting these to a lower amount (0) prevents a crash.
                 if (overlappingShapesCircleLocation.size() != 0) {
 
-                    selectedOverlappingShapeUUID = overlappingShapesUUID.get(0);
                     selectedOverlappingShapeCircleLocation = overlappingShapesCircleLocation.get(0);
                     selectedOverlappingShapeCircleRadius = overlappingShapesCircleRadius.get(0);
                 }
@@ -3770,6 +3744,7 @@ public class Map extends FragmentActivity implements
 
                     selectedOverlappingShapePolygonVertices = overlappingShapesPolygonVertices.get(0);
                 }
+                selectedOverlappingShapeUUID = overlappingShapesUUID.get(0);
 
                 if (selectedOverlappingShapeUUID != null) {
 
@@ -3786,7 +3761,7 @@ public class Map extends FragmentActivity implements
                     // Change the shape color depending on the map type.
                     if (mMap.getMapType() == 2 || mMap.getMapType() == 4) {
 
-                        Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> User selected a circle -> Adding yellow circle");
+                        Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> Adding yellow circle");
 
                         circleTemp = mMap.addCircle(
                                 new CircleOptions()
@@ -3805,7 +3780,7 @@ public class Map extends FragmentActivity implements
                         circleTemp.setRadius(selectedOverlappingShapeCircleRadius);
                     } else {
 
-                        Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> User selected a circle -> Adding purple circle");
+                        Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> Adding purple circle");
 
                         circleTemp = mMap.addCircle(
                                 new CircleOptions()
@@ -3869,7 +3844,6 @@ public class Map extends FragmentActivity implements
                                     new CircleOptions()
                                             .center(overlappingShapesCircleLocation.get(i))
                                             .clickable(true)
-                                            .fillColor(0)
                                             .radius(overlappingShapesCircleRadius.get(i))
                                             .strokeColor(Color.rgb(255, 255, 0))
                                             .strokeWidth(3f)
@@ -3900,7 +3874,6 @@ public class Map extends FragmentActivity implements
                                     new CircleOptions()
                                             .center(overlappingShapesCircleLocation.get(i))
                                             .clickable(true)
-                                            .fillColor(0)
                                             .radius(overlappingShapesCircleRadius.get(i))
                                             .strokeColor(Color.rgb(255, 0, 255))
                                             .strokeWidth(3f)
@@ -4127,66 +4100,21 @@ public class Map extends FragmentActivity implements
 
                                     if (dataSnapshot.getValue() != null) {
 
-                                        // Don't use fill color on non-points (radius > 1)
-                                        if ((double) (long) ds.child("circleOptions/radius").getValue() > 1) {
+                                        LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
+                                        double radius = (double) (long) ds.child("circleOptions/radius").getValue();
+                                        Circle circle = mMap.addCircle(
+                                                new CircleOptions()
+                                                        .center(center)
+                                                        .clickable(true)
+                                                        .radius(radius)
+                                                        .strokeColor(Color.YELLOW)
+                                                        .strokeWidth(3f)
+                                        );
 
-                                            LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
-                                            double radius = (double) (long) ds.child("circleOptions/radius").getValue();
-                                            Circle circle = mMap.addCircle(
-                                                    new CircleOptions()
-                                                            .center(center)
-                                                            .clickable(true)
-                                                            .radius(radius)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
+                                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                                        uuid = (String) ds.child("uuid").getValue();
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                            uuid = (String) ds.child("uuid").getValue();
-
-                                            circle.setTag(uuid);
-                                        }
-                                    }
-                                }
-                            }
-
-                            @Override
-                            public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
-                            }
-                        });
-
-                        // Load Firebase points.
-                        firebaseCircles.addListenerForSingleValueEvent(new ValueEventListener() {
-
-                            @Override
-                            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-
-                                for (DataSnapshot ds : dataSnapshot.getChildren()) {
-
-                                    if (dataSnapshot.getValue() != null) {
-
-                                        // Only load points (radius = 1)
-                                        if ((double) (long) ds.child("circleOptions/radius").getValue() == 1) {
-
-                                            LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
-                                            double radius = (double) (long) ds.child("circleOptions/radius").getValue();
-                                            Circle circle = mMap.addCircle(
-                                                    new CircleOptions()
-                                                            .center(center)
-                                                            .clickable(true)
-                                                            .fillColor(Color.argb(100, 255, 255, 0))
-                                                            .radius(radius)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                            uuid = (String) ds.child("uuid").getValue();
-
-                                            circle.setTag(uuid);
-                                        }
+                                        circle.setTag(uuid);
                                     }
                                 }
                             }
@@ -4208,17 +4136,31 @@ public class Map extends FragmentActivity implements
 
                                     if (dataSnapshot.getValue() != null) {
 
-                                        if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
+                                        LatLng marker3Position = null;
+                                        LatLng marker4Position = null;
+                                        LatLng marker5Position = null;
+                                        LatLng marker6Position = null;
+                                        Polygon polygon;
 
-                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                            LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                            LatLng marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                            LatLng marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                            LatLng marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                                        LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                                        LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                                        LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                        if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                            marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                                        }
+                                        if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                            marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
+                                        }
+                                        if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                            marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
+                                        }
+                                        if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                            marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                                        }
+                                        if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
                                             LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
-                                            Polygon polygon = mMap.addPolygon(
+
+                                            polygon = mMap.addPolygon(
                                                     new PolygonOptions()
                                                             .clickable(true)
                                                             .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
@@ -4231,15 +4173,7 @@ public class Map extends FragmentActivity implements
 
                                             polygon.setTag(uuid);
                                         } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-
-                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                            LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                            LatLng marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                            LatLng marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                            LatLng marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
-                                            Polygon polygon = mMap.addPolygon(
+                                            polygon = mMap.addPolygon(
                                                     new PolygonOptions()
                                                             .clickable(true)
                                                             .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
@@ -4252,14 +4186,7 @@ public class Map extends FragmentActivity implements
 
                                             polygon.setTag(uuid);
                                         } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-
-                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                            LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                            LatLng marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                            LatLng marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                            Polygon polygon = mMap.addPolygon(
+                                            polygon = mMap.addPolygon(
                                                     new PolygonOptions()
                                                             .clickable(true)
                                                             .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
@@ -4272,13 +4199,7 @@ public class Map extends FragmentActivity implements
 
                                             polygon.setTag(uuid);
                                         } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-
-                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                            LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                            LatLng marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                            Polygon polygon = mMap.addPolygon(
+                                            polygon = mMap.addPolygon(
                                                     new PolygonOptions()
                                                             .clickable(true)
                                                             .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
@@ -4291,12 +4212,7 @@ public class Map extends FragmentActivity implements
 
                                             polygon.setTag(uuid);
                                         } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-
-                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                            LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                            Polygon polygon = mMap.addPolygon(
+                                            polygon = mMap.addPolygon(
                                                     new PolygonOptions()
                                                             .clickable(true)
                                                             .add(marker0Position, marker1Position, marker2Position, marker3Position)
@@ -4309,11 +4225,7 @@ public class Map extends FragmentActivity implements
 
                                             polygon.setTag(uuid);
                                         } else {
-
-                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                            Polygon polygon = mMap.addPolygon(
+                                            polygon = mMap.addPolygon(
                                                     new PolygonOptions()
                                                             .clickable(true)
                                                             .add(marker0Position, marker1Position, marker2Position)
@@ -4357,8 +4269,7 @@ public class Map extends FragmentActivity implements
 
                                     if (dataSnapshot.getValue() != null) {
 
-                                        // Don't use fill color on non-points (radius > 1)
-                                        if ((double) (long) ds.child("circleOptions/radius").getValue() > 1) {
+                                        if (mMap.getProjection().getVisibleRegion().latLngBounds.contains(new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue()))) {
 
                                             LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
                                             double radius = (double) (long) ds.child("circleOptions/radius").getValue();
@@ -4366,47 +4277,6 @@ public class Map extends FragmentActivity implements
                                                     new CircleOptions()
                                                             .center(center)
                                                             .clickable(true)
-                                                            .radius(radius)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                            uuid = (String) ds.child("uuid").getValue();
-
-                                            circle.setTag(uuid);
-                                        }
-                                    }
-                                }
-                            }
-
-                            @Override
-                            public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
-                            }
-                        });
-
-                        // Load Firebase points.
-                        firebaseCircles.addListenerForSingleValueEvent(new ValueEventListener() {
-
-                            @Override
-                            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-
-                                for (DataSnapshot ds : dataSnapshot.getChildren()) {
-
-                                    if (dataSnapshot.getValue() != null) {
-
-                                        // Only load points (radius = 1)
-                                        if ((double) (long) ds.child("circleOptions/radius").getValue() == 1) {
-
-                                            LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
-                                            double radius = (double) (long) ds.child("circleOptions/radius").getValue();
-                                            Circle circle = mMap.addCircle(
-                                                    new CircleOptions()
-                                                            .center(center)
-                                                            .clickable(true)
-                                                            .fillColor(Color.argb(100, 255, 0, 255))
                                                             .radius(radius)
                                                             .strokeColor(Color.rgb(255, 0, 255))
                                                             .strokeWidth(3f)
@@ -4438,17 +4308,31 @@ public class Map extends FragmentActivity implements
 
                                     if (dataSnapshot.getValue() != null) {
 
-                                        if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
+                                        LatLng marker3Position = null;
+                                        LatLng marker4Position = null;
+                                        LatLng marker5Position = null;
+                                        LatLng marker6Position = null;
+                                        Polygon polygon;
 
-                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                            LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                            LatLng marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                            LatLng marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                            LatLng marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                                        LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                                        LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                                        LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                        if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                            marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                                        }
+                                        if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                            marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
+                                        }
+                                        if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                            marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
+                                        }
+                                        if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                            marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                                        }
+                                        if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
                                             LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
-                                            Polygon polygon = mMap.addPolygon(
+
+                                            polygon = mMap.addPolygon(
                                                     new PolygonOptions()
                                                             .clickable(true)
                                                             .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
@@ -4461,15 +4345,7 @@ public class Map extends FragmentActivity implements
 
                                             polygon.setTag(uuid);
                                         } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-
-                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                            LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                            LatLng marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                            LatLng marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                            LatLng marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
-                                            Polygon polygon = mMap.addPolygon(
+                                            polygon = mMap.addPolygon(
                                                     new PolygonOptions()
                                                             .clickable(true)
                                                             .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
@@ -4482,14 +4358,7 @@ public class Map extends FragmentActivity implements
 
                                             polygon.setTag(uuid);
                                         } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-
-                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                            LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                            LatLng marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                            LatLng marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                            Polygon polygon = mMap.addPolygon(
+                                            polygon = mMap.addPolygon(
                                                     new PolygonOptions()
                                                             .clickable(true)
                                                             .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
@@ -4502,13 +4371,7 @@ public class Map extends FragmentActivity implements
 
                                             polygon.setTag(uuid);
                                         } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-
-                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                            LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                            LatLng marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                            Polygon polygon = mMap.addPolygon(
+                                            polygon = mMap.addPolygon(
                                                     new PolygonOptions()
                                                             .clickable(true)
                                                             .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
@@ -4521,12 +4384,7 @@ public class Map extends FragmentActivity implements
 
                                             polygon.setTag(uuid);
                                         } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-
-                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                            LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                            Polygon polygon = mMap.addPolygon(
+                                            polygon = mMap.addPolygon(
                                                     new PolygonOptions()
                                                             .clickable(true)
                                                             .add(marker0Position, marker1Position, marker2Position, marker3Position)
@@ -4539,11 +4397,7 @@ public class Map extends FragmentActivity implements
 
                                             polygon.setTag(uuid);
                                         } else {
-
-                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                            Polygon polygon = mMap.addPolygon(
+                                            polygon = mMap.addPolygon(
                                                     new PolygonOptions()
                                                             .clickable(true)
                                                             .add(marker0Position, marker1Position, marker2Position)
@@ -5738,66 +5592,21 @@ public class Map extends FragmentActivity implements
 
                                     if (dataSnapshot.getValue() != null) {
 
-                                        // Don't use fill color on non-points (radius > 1)
-                                        if ((double) (long) ds.child("circleOptions/radius").getValue() > 1) {
+                                        LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
+                                        double radius = (double) (long) ds.child("circleOptions/radius").getValue();
+                                        Circle circle = mMap.addCircle(
+                                                new CircleOptions()
+                                                        .center(center)
+                                                        .clickable(true)
+                                                        .radius(radius)
+                                                        .strokeColor(Color.YELLOW)
+                                                        .strokeWidth(3f)
+                                        );
 
-                                            LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
-                                            double radius = (double) (long) ds.child("circleOptions/radius").getValue();
-                                            Circle circle = mMap.addCircle(
-                                                    new CircleOptions()
-                                                            .center(center)
-                                                            .clickable(true)
-                                                            .radius(radius)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
+                                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                                        uuid = (String) ds.child("uuid").getValue();
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                            uuid = (String) ds.child("uuid").getValue();
-
-                                            circle.setTag(uuid);
-                                        }
-                                    }
-                                }
-                            }
-
-                            @Override
-                            public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
-                            }
-                        });
-
-                        // Load Firebase points.
-                        firebaseCircles.addListenerForSingleValueEvent(new ValueEventListener() {
-
-                            @Override
-                            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-
-                                for (DataSnapshot ds : dataSnapshot.getChildren()) {
-
-                                    if (dataSnapshot.getValue() != null) {
-
-                                        // Only load points (radius = 1)
-                                        if ((double) (long) ds.child("circleOptions/radius").getValue() == 1) {
-
-                                            LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
-                                            double radius = (double) (long) ds.child("circleOptions/radius").getValue();
-                                            Circle circle = mMap.addCircle(
-                                                    new CircleOptions()
-                                                            .center(center)
-                                                            .clickable(true)
-                                                            .fillColor(Color.argb(100, 255, 255, 0))
-                                                            .radius(radius)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                            uuid = (String) ds.child("uuid").getValue();
-
-                                            circle.setTag(uuid);
-                                        }
+                                        circle.setTag(uuid);
                                     }
                                 }
                             }
@@ -5819,17 +5628,31 @@ public class Map extends FragmentActivity implements
 
                                     if (dataSnapshot.getValue() != null) {
 
-                                        if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
+                                        LatLng marker3Position = null;
+                                        LatLng marker4Position = null;
+                                        LatLng marker5Position = null;
+                                        LatLng marker6Position = null;
+                                        Polygon polygon;
 
-                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                            LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                            LatLng marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                            LatLng marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                            LatLng marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                                        LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                                        LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                                        LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                        if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                            marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                                        }
+                                        if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                            marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
+                                        }
+                                        if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                            marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
+                                        }
+                                        if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                            marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                                        }
+                                        if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
                                             LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
-                                            Polygon polygon = mMap.addPolygon(
+
+                                            polygon = mMap.addPolygon(
                                                     new PolygonOptions()
                                                             .clickable(true)
                                                             .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
@@ -5842,15 +5665,7 @@ public class Map extends FragmentActivity implements
 
                                             polygon.setTag(uuid);
                                         } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-
-                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                            LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                            LatLng marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                            LatLng marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                            LatLng marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
-                                            Polygon polygon = mMap.addPolygon(
+                                            polygon = mMap.addPolygon(
                                                     new PolygonOptions()
                                                             .clickable(true)
                                                             .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
@@ -5863,14 +5678,7 @@ public class Map extends FragmentActivity implements
 
                                             polygon.setTag(uuid);
                                         } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-
-                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                            LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                            LatLng marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                            LatLng marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                            Polygon polygon = mMap.addPolygon(
+                                            polygon = mMap.addPolygon(
                                                     new PolygonOptions()
                                                             .clickable(true)
                                                             .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
@@ -5883,13 +5691,7 @@ public class Map extends FragmentActivity implements
 
                                             polygon.setTag(uuid);
                                         } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-
-                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                            LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                            LatLng marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                            Polygon polygon = mMap.addPolygon(
+                                            polygon = mMap.addPolygon(
                                                     new PolygonOptions()
                                                             .clickable(true)
                                                             .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
@@ -5902,12 +5704,7 @@ public class Map extends FragmentActivity implements
 
                                             polygon.setTag(uuid);
                                         } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-
-                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                            LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                            Polygon polygon = mMap.addPolygon(
+                                            polygon = mMap.addPolygon(
                                                     new PolygonOptions()
                                                             .clickable(true)
                                                             .add(marker0Position, marker1Position, marker2Position, marker3Position)
@@ -5920,11 +5717,7 @@ public class Map extends FragmentActivity implements
 
                                             polygon.setTag(uuid);
                                         } else {
-
-                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                            Polygon polygon = mMap.addPolygon(
+                                            polygon = mMap.addPolygon(
                                                     new PolygonOptions()
                                                             .clickable(true)
                                                             .add(marker0Position, marker1Position, marker2Position)
@@ -5959,66 +5752,20 @@ public class Map extends FragmentActivity implements
 
                                     if (dataSnapshot.getValue() != null) {
 
-                                        // Don't use fill color on non-points (radius > 1)
-                                        if ((double) (long) ds.child("circleOptions/radius").getValue() > 1) {
+                                        LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
+                                        double radius = (double) (long) ds.child("circleOptions/radius").getValue();
+                                        Circle circle = mMap.addCircle(
+                                                new CircleOptions()
+                                                        .center(center)
+                                                        .clickable(true)
+                                                        .radius(radius)
+                                                        .strokeWidth(3f)
+                                        );
 
-                                            LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
-                                            double radius = (double) (long) ds.child("circleOptions/radius").getValue();
-                                            Circle circle = mMap.addCircle(
-                                                    new CircleOptions()
-                                                            .center(center)
-                                                            .clickable(true)
-                                                            .radius(radius)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
+                                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                                        uuid = (String) ds.child("uuid").getValue();
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                            uuid = (String) ds.child("uuid").getValue();
-
-                                            circle.setTag(uuid);
-                                        }
-                                    }
-                                }
-                            }
-
-                            @Override
-                            public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
-                            }
-                        });
-
-                        // Load Firebase points.
-                        firebaseCircles.addListenerForSingleValueEvent(new ValueEventListener() {
-
-                            @Override
-                            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-
-                                for (DataSnapshot ds : dataSnapshot.getChildren()) {
-
-                                    if (dataSnapshot.getValue() != null) {
-
-                                        // Only load points (radius = 1)
-                                        if ((double) (long) ds.child("circleOptions/radius").getValue() == 1) {
-
-                                            LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
-                                            double radius = (double) (long) ds.child("circleOptions/radius").getValue();
-                                            Circle circle = mMap.addCircle(
-                                                    new CircleOptions()
-                                                            .center(center)
-                                                            .clickable(true)
-                                                            .fillColor(Color.argb(100, 255, 0, 255))
-                                                            .radius(radius)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                            uuid = (String) ds.child("uuid").getValue();
-
-                                            circle.setTag(uuid);
-                                        }
+                                        circle.setTag(uuid);
                                     }
                                 }
                             }
@@ -6040,17 +5787,31 @@ public class Map extends FragmentActivity implements
 
                                     if (dataSnapshot.getValue() != null) {
 
-                                        if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
+                                        LatLng marker3Position = null;
+                                        LatLng marker4Position = null;
+                                        LatLng marker5Position = null;
+                                        LatLng marker6Position = null;
+                                        Polygon polygon;
 
-                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                            LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                            LatLng marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                            LatLng marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                            LatLng marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                                        LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                                        LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                                        LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                        if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                            marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                                        }
+                                        if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                            marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
+                                        }
+                                        if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                            marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
+                                        }
+                                        if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                            marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                                        }
+                                        if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
                                             LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
-                                            Polygon polygon = mMap.addPolygon(
+
+                                            polygon = mMap.addPolygon(
                                                     new PolygonOptions()
                                                             .clickable(true)
                                                             .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
@@ -6063,15 +5824,7 @@ public class Map extends FragmentActivity implements
 
                                             polygon.setTag(uuid);
                                         } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-
-                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                            LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                            LatLng marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                            LatLng marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                            LatLng marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
-                                            Polygon polygon = mMap.addPolygon(
+                                            polygon = mMap.addPolygon(
                                                     new PolygonOptions()
                                                             .clickable(true)
                                                             .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
@@ -6084,14 +5837,7 @@ public class Map extends FragmentActivity implements
 
                                             polygon.setTag(uuid);
                                         } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-
-                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                            LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                            LatLng marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                            LatLng marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                            Polygon polygon = mMap.addPolygon(
+                                            polygon = mMap.addPolygon(
                                                     new PolygonOptions()
                                                             .clickable(true)
                                                             .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
@@ -6104,13 +5850,7 @@ public class Map extends FragmentActivity implements
 
                                             polygon.setTag(uuid);
                                         } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-
-                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                            LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                            LatLng marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                            Polygon polygon = mMap.addPolygon(
+                                            polygon = mMap.addPolygon(
                                                     new PolygonOptions()
                                                             .clickable(true)
                                                             .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
@@ -6123,12 +5863,7 @@ public class Map extends FragmentActivity implements
 
                                             polygon.setTag(uuid);
                                         } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-
-                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                            LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                            Polygon polygon = mMap.addPolygon(
+                                            polygon = mMap.addPolygon(
                                                     new PolygonOptions()
                                                             .clickable(true)
                                                             .add(marker0Position, marker1Position, marker2Position, marker3Position)
@@ -6141,11 +5876,7 @@ public class Map extends FragmentActivity implements
 
                                             polygon.setTag(uuid);
                                         } else {
-
-                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                            Polygon polygon = mMap.addPolygon(
+                                            polygon = mMap.addPolygon(
                                                     new PolygonOptions()
                                                             .clickable(true)
                                                             .add(marker0Position, marker1Position, marker2Position)
@@ -6340,17 +6071,31 @@ public class Map extends FragmentActivity implements
                                         // Only load large polygons (polygonArea > pi(50^2))
                                         if ((double) ds.child("polygonArea").getValue() > Math.PI * (Math.pow(50, 2))) {
 
-                                            if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
+                                            LatLng marker3Position = null;
+                                            LatLng marker4Position = null;
+                                            LatLng marker5Position = null;
+                                            LatLng marker6Position = null;
+                                            Polygon polygon;
 
-                                                LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                                LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                                LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                                LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                                LatLng marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                                LatLng marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                                LatLng marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                            if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
                                                 LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
-                                                Polygon polygon = mMap.addPolygon(
+
+                                                polygon = mMap.addPolygon(
                                                         new PolygonOptions()
                                                                 .clickable(true)
                                                                 .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
@@ -6363,15 +6108,7 @@ public class Map extends FragmentActivity implements
 
                                                 polygon.setTag(uuid);
                                             } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-
-                                                LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                                LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                                LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                                LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                                LatLng marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                                LatLng marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                                LatLng marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
-                                                Polygon polygon = mMap.addPolygon(
+                                                polygon = mMap.addPolygon(
                                                         new PolygonOptions()
                                                                 .clickable(true)
                                                                 .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
@@ -6384,14 +6121,7 @@ public class Map extends FragmentActivity implements
 
                                                 polygon.setTag(uuid);
                                             } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-
-                                                LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                                LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                                LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                                LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                                LatLng marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                                LatLng marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                                Polygon polygon = mMap.addPolygon(
+                                                polygon = mMap.addPolygon(
                                                         new PolygonOptions()
                                                                 .clickable(true)
                                                                 .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
@@ -6404,13 +6134,7 @@ public class Map extends FragmentActivity implements
 
                                                 polygon.setTag(uuid);
                                             } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-
-                                                LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                                LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                                LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                                LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                                LatLng marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                                Polygon polygon = mMap.addPolygon(
+                                                polygon = mMap.addPolygon(
                                                         new PolygonOptions()
                                                                 .clickable(true)
                                                                 .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
@@ -6423,12 +6147,7 @@ public class Map extends FragmentActivity implements
 
                                                 polygon.setTag(uuid);
                                             } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-
-                                                LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                                LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                                LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                                LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                                Polygon polygon = mMap.addPolygon(
+                                                polygon = mMap.addPolygon(
                                                         new PolygonOptions()
                                                                 .clickable(true)
                                                                 .add(marker0Position, marker1Position, marker2Position, marker3Position)
@@ -6441,11 +6160,7 @@ public class Map extends FragmentActivity implements
 
                                                 polygon.setTag(uuid);
                                             } else {
-
-                                                LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                                LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                                LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                                Polygon polygon = mMap.addPolygon(
+                                                polygon = mMap.addPolygon(
                                                         new PolygonOptions()
                                                                 .clickable(true)
                                                                 .add(marker0Position, marker1Position, marker2Position)
@@ -6523,17 +6238,31 @@ public class Map extends FragmentActivity implements
                                         // Only load large polygons (polygonArea > pi(50^2))
                                         if ((double) ds.child("polygonArea").getValue() > Math.PI * (Math.pow(50, 2))) {
 
-                                            if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
+                                            LatLng marker3Position = null;
+                                            LatLng marker4Position = null;
+                                            LatLng marker5Position = null;
+                                            LatLng marker6Position = null;
+                                            Polygon polygon;
 
-                                                LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                                LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                                LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                                LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                                LatLng marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                                LatLng marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                                LatLng marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                            if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
                                                 LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
-                                                Polygon polygon = mMap.addPolygon(
+
+                                                polygon = mMap.addPolygon(
                                                         new PolygonOptions()
                                                                 .clickable(true)
                                                                 .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
@@ -6546,15 +6275,7 @@ public class Map extends FragmentActivity implements
 
                                                 polygon.setTag(uuid);
                                             } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-
-                                                LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                                LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                                LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                                LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                                LatLng marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                                LatLng marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                                LatLng marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
-                                                Polygon polygon = mMap.addPolygon(
+                                                polygon = mMap.addPolygon(
                                                         new PolygonOptions()
                                                                 .clickable(true)
                                                                 .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
@@ -6567,14 +6288,7 @@ public class Map extends FragmentActivity implements
 
                                                 polygon.setTag(uuid);
                                             } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-
-                                                LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                                LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                                LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                                LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                                LatLng marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                                LatLng marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                                Polygon polygon = mMap.addPolygon(
+                                                polygon = mMap.addPolygon(
                                                         new PolygonOptions()
                                                                 .clickable(true)
                                                                 .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
@@ -6587,13 +6301,7 @@ public class Map extends FragmentActivity implements
 
                                                 polygon.setTag(uuid);
                                             } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-
-                                                LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                                LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                                LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                                LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                                LatLng marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                                Polygon polygon = mMap.addPolygon(
+                                                polygon = mMap.addPolygon(
                                                         new PolygonOptions()
                                                                 .clickable(true)
                                                                 .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
@@ -6606,12 +6314,7 @@ public class Map extends FragmentActivity implements
 
                                                 polygon.setTag(uuid);
                                             } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-
-                                                LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                                LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                                LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                                LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                                Polygon polygon = mMap.addPolygon(
+                                                polygon = mMap.addPolygon(
                                                         new PolygonOptions()
                                                                 .clickable(true)
                                                                 .add(marker0Position, marker1Position, marker2Position, marker3Position)
@@ -6624,11 +6327,7 @@ public class Map extends FragmentActivity implements
 
                                                 polygon.setTag(uuid);
                                             } else {
-
-                                                LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                                LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                                LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                                Polygon polygon = mMap.addPolygon(
+                                                polygon = mMap.addPolygon(
                                                         new PolygonOptions()
                                                                 .clickable(true)
                                                                 .add(marker0Position, marker1Position, marker2Position)
@@ -6824,17 +6523,31 @@ public class Map extends FragmentActivity implements
                                         // Only load medium polygons pi(10^2) < polygonArea <= pi(50^2))
                                         if ((double) ds.child("polygonArea").getValue() > Math.PI * (Math.pow(10, 2)) && (double) ds.child("polygonArea").getValue() <= Math.PI * (Math.pow(50, 2))) {
 
-                                            if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
+                                            LatLng marker3Position = null;
+                                            LatLng marker4Position = null;
+                                            LatLng marker5Position = null;
+                                            LatLng marker6Position = null;
+                                            Polygon polygon;
 
-                                                LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                                LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                                LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                                LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                                LatLng marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                                LatLng marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                                LatLng marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                            if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
                                                 LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
-                                                Polygon polygon = mMap.addPolygon(
+
+                                                polygon = mMap.addPolygon(
                                                         new PolygonOptions()
                                                                 .clickable(true)
                                                                 .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
@@ -6847,15 +6560,7 @@ public class Map extends FragmentActivity implements
 
                                                 polygon.setTag(uuid);
                                             } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-
-                                                LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                                LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                                LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                                LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                                LatLng marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                                LatLng marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                                LatLng marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
-                                                Polygon polygon = mMap.addPolygon(
+                                                polygon = mMap.addPolygon(
                                                         new PolygonOptions()
                                                                 .clickable(true)
                                                                 .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
@@ -6868,14 +6573,7 @@ public class Map extends FragmentActivity implements
 
                                                 polygon.setTag(uuid);
                                             } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-
-                                                LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                                LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                                LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                                LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                                LatLng marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                                LatLng marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                                Polygon polygon = mMap.addPolygon(
+                                                polygon = mMap.addPolygon(
                                                         new PolygonOptions()
                                                                 .clickable(true)
                                                                 .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
@@ -6888,13 +6586,7 @@ public class Map extends FragmentActivity implements
 
                                                 polygon.setTag(uuid);
                                             } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-
-                                                LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                                LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                                LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                                LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                                LatLng marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                                Polygon polygon = mMap.addPolygon(
+                                                polygon = mMap.addPolygon(
                                                         new PolygonOptions()
                                                                 .clickable(true)
                                                                 .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
@@ -6907,12 +6599,7 @@ public class Map extends FragmentActivity implements
 
                                                 polygon.setTag(uuid);
                                             } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-
-                                                LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                                LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                                LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                                LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                                Polygon polygon = mMap.addPolygon(
+                                                polygon = mMap.addPolygon(
                                                         new PolygonOptions()
                                                                 .clickable(true)
                                                                 .add(marker0Position, marker1Position, marker2Position, marker3Position)
@@ -6925,11 +6612,7 @@ public class Map extends FragmentActivity implements
 
                                                 polygon.setTag(uuid);
                                             } else {
-
-                                                LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                                LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                                LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                                Polygon polygon = mMap.addPolygon(
+                                                polygon = mMap.addPolygon(
                                                         new PolygonOptions()
                                                                 .clickable(true)
                                                                 .add(marker0Position, marker1Position, marker2Position)
@@ -7007,17 +6690,31 @@ public class Map extends FragmentActivity implements
                                         // Only load medium polygons pi(10^2) < polygonArea <= pi(50^2))
                                         if ((double) ds.child("polygonArea").getValue() > Math.PI * (Math.pow(10, 2)) && (double) ds.child("polygonArea").getValue() <= Math.PI * (Math.pow(50, 2))) {
 
-                                            if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
+                                            LatLng marker3Position = null;
+                                            LatLng marker4Position = null;
+                                            LatLng marker5Position = null;
+                                            LatLng marker6Position = null;
+                                            Polygon polygon;
 
-                                                LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                                LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                                LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                                LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                                LatLng marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                                LatLng marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                                LatLng marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                            if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
                                                 LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
-                                                Polygon polygon = mMap.addPolygon(
+
+                                                polygon = mMap.addPolygon(
                                                         new PolygonOptions()
                                                                 .clickable(true)
                                                                 .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
@@ -7030,15 +6727,7 @@ public class Map extends FragmentActivity implements
 
                                                 polygon.setTag(uuid);
                                             } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-
-                                                LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                                LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                                LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                                LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                                LatLng marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                                LatLng marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                                LatLng marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
-                                                Polygon polygon = mMap.addPolygon(
+                                                polygon = mMap.addPolygon(
                                                         new PolygonOptions()
                                                                 .clickable(true)
                                                                 .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
@@ -7051,14 +6740,7 @@ public class Map extends FragmentActivity implements
 
                                                 polygon.setTag(uuid);
                                             } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-
-                                                LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                                LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                                LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                                LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                                LatLng marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                                LatLng marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                                Polygon polygon = mMap.addPolygon(
+                                                polygon = mMap.addPolygon(
                                                         new PolygonOptions()
                                                                 .clickable(true)
                                                                 .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
@@ -7071,13 +6753,7 @@ public class Map extends FragmentActivity implements
 
                                                 polygon.setTag(uuid);
                                             } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-
-                                                LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                                LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                                LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                                LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                                LatLng marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                                Polygon polygon = mMap.addPolygon(
+                                                polygon = mMap.addPolygon(
                                                         new PolygonOptions()
                                                                 .clickable(true)
                                                                 .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
@@ -7090,12 +6766,7 @@ public class Map extends FragmentActivity implements
 
                                                 polygon.setTag(uuid);
                                             } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-
-                                                LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                                LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                                LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                                LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                                Polygon polygon = mMap.addPolygon(
+                                                polygon = mMap.addPolygon(
                                                         new PolygonOptions()
                                                                 .clickable(true)
                                                                 .add(marker0Position, marker1Position, marker2Position, marker3Position)
@@ -7108,11 +6779,7 @@ public class Map extends FragmentActivity implements
 
                                                 polygon.setTag(uuid);
                                             } else {
-
-                                                LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                                LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                                LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                                Polygon polygon = mMap.addPolygon(
+                                                polygon = mMap.addPolygon(
                                                         new PolygonOptions()
                                                                 .clickable(true)
                                                                 .add(marker0Position, marker1Position, marker2Position)
@@ -7308,17 +6975,31 @@ public class Map extends FragmentActivity implements
                                         // Only load small polygons (pi < polygonArea <= pi(10^2))
                                         if ((double) ds.child("polygonArea").getValue() > (Math.PI) && (double) ds.child("polygonArea").getValue() <= Math.PI * (Math.pow(10, 2))) {
 
-                                            if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
+                                            LatLng marker3Position = null;
+                                            LatLng marker4Position = null;
+                                            LatLng marker5Position = null;
+                                            LatLng marker6Position = null;
+                                            Polygon polygon;
 
-                                                LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                                LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                                LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                                LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                                LatLng marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                                LatLng marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                                LatLng marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                            if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
                                                 LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
-                                                Polygon polygon = mMap.addPolygon(
+
+                                                polygon = mMap.addPolygon(
                                                         new PolygonOptions()
                                                                 .clickable(true)
                                                                 .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
@@ -7331,15 +7012,7 @@ public class Map extends FragmentActivity implements
 
                                                 polygon.setTag(uuid);
                                             } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-
-                                                LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                                LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                                LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                                LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                                LatLng marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                                LatLng marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                                LatLng marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
-                                                Polygon polygon = mMap.addPolygon(
+                                                polygon = mMap.addPolygon(
                                                         new PolygonOptions()
                                                                 .clickable(true)
                                                                 .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
@@ -7352,14 +7025,7 @@ public class Map extends FragmentActivity implements
 
                                                 polygon.setTag(uuid);
                                             } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-
-                                                LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                                LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                                LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                                LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                                LatLng marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                                LatLng marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                                Polygon polygon = mMap.addPolygon(
+                                                polygon = mMap.addPolygon(
                                                         new PolygonOptions()
                                                                 .clickable(true)
                                                                 .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
@@ -7372,13 +7038,7 @@ public class Map extends FragmentActivity implements
 
                                                 polygon.setTag(uuid);
                                             } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-
-                                                LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                                LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                                LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                                LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                                LatLng marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                                Polygon polygon = mMap.addPolygon(
+                                                polygon = mMap.addPolygon(
                                                         new PolygonOptions()
                                                                 .clickable(true)
                                                                 .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
@@ -7391,12 +7051,7 @@ public class Map extends FragmentActivity implements
 
                                                 polygon.setTag(uuid);
                                             } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-
-                                                LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                                LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                                LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                                LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                                Polygon polygon = mMap.addPolygon(
+                                                polygon = mMap.addPolygon(
                                                         new PolygonOptions()
                                                                 .clickable(true)
                                                                 .add(marker0Position, marker1Position, marker2Position, marker3Position)
@@ -7409,11 +7064,7 @@ public class Map extends FragmentActivity implements
 
                                                 polygon.setTag(uuid);
                                             } else {
-
-                                                LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                                LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                                LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                                Polygon polygon = mMap.addPolygon(
+                                                polygon = mMap.addPolygon(
                                                         new PolygonOptions()
                                                                 .clickable(true)
                                                                 .add(marker0Position, marker1Position, marker2Position)
@@ -7491,17 +7142,31 @@ public class Map extends FragmentActivity implements
                                         // Only load small polygons (pi < polygonArea <= pi(10^2))
                                         if ((double) ds.child("polygonArea").getValue() > (Math.PI) && (double) ds.child("polygonArea").getValue() <= Math.PI * (Math.pow(10, 2))) {
 
-                                            if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
+                                            LatLng marker3Position = null;
+                                            LatLng marker4Position = null;
+                                            LatLng marker5Position = null;
+                                            LatLng marker6Position = null;
+                                            Polygon polygon;
 
-                                                LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                                LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                                LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                                LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                                LatLng marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                                LatLng marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                                LatLng marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                            if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
                                                 LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
-                                                Polygon polygon = mMap.addPolygon(
+
+                                                polygon = mMap.addPolygon(
                                                         new PolygonOptions()
                                                                 .clickable(true)
                                                                 .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
@@ -7514,15 +7179,7 @@ public class Map extends FragmentActivity implements
 
                                                 polygon.setTag(uuid);
                                             } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-
-                                                LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                                LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                                LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                                LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                                LatLng marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                                LatLng marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                                LatLng marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
-                                                Polygon polygon = mMap.addPolygon(
+                                                polygon = mMap.addPolygon(
                                                         new PolygonOptions()
                                                                 .clickable(true)
                                                                 .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
@@ -7535,14 +7192,7 @@ public class Map extends FragmentActivity implements
 
                                                 polygon.setTag(uuid);
                                             } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-
-                                                LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                                LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                                LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                                LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                                LatLng marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                                LatLng marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                                Polygon polygon = mMap.addPolygon(
+                                                polygon = mMap.addPolygon(
                                                         new PolygonOptions()
                                                                 .clickable(true)
                                                                 .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
@@ -7555,13 +7205,7 @@ public class Map extends FragmentActivity implements
 
                                                 polygon.setTag(uuid);
                                             } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-
-                                                LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                                LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                                LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                                LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                                LatLng marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                                Polygon polygon = mMap.addPolygon(
+                                                polygon = mMap.addPolygon(
                                                         new PolygonOptions()
                                                                 .clickable(true)
                                                                 .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
@@ -7574,12 +7218,7 @@ public class Map extends FragmentActivity implements
 
                                                 polygon.setTag(uuid);
                                             } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-
-                                                LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                                LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                                LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                                LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                                Polygon polygon = mMap.addPolygon(
+                                                polygon = mMap.addPolygon(
                                                         new PolygonOptions()
                                                                 .clickable(true)
                                                                 .add(marker0Position, marker1Position, marker2Position, marker3Position)
@@ -7592,11 +7231,7 @@ public class Map extends FragmentActivity implements
 
                                                 polygon.setTag(uuid);
                                             } else {
-
-                                                LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                                LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                                LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                                Polygon polygon = mMap.addPolygon(
+                                                polygon = mMap.addPolygon(
                                                         new PolygonOptions()
                                                                 .clickable(true)
                                                                 .add(marker0Position, marker1Position, marker2Position)
@@ -7759,7 +7394,6 @@ public class Map extends FragmentActivity implements
                                                     new CircleOptions()
                                                             .center(center)
                                                             .clickable(true)
-                                                            .fillColor(Color.argb(100, 255, 255, 0))
                                                             .radius(radius)
                                                             .strokeColor(Color.YELLOW)
                                                             .strokeWidth(3f)
@@ -7800,7 +7434,6 @@ public class Map extends FragmentActivity implements
                                                     new CircleOptions()
                                                             .center(center)
                                                             .clickable(true)
-                                                            .fillColor(Color.argb(100, 255, 0, 255))
                                                             .radius(1)
                                                             .strokeColor(Color.rgb(255, 0, 255))
                                                             .strokeWidth(3f)
@@ -7860,7 +7493,6 @@ public class Map extends FragmentActivity implements
                                     new CircleOptions()
                                             .center(overlappingShapesCircleLocation.get(i))
                                             .clickable(true)
-                                            .fillColor(0)
                                             .radius(overlappingShapesCircleRadius.get(i))
                                             .strokeColor(Color.rgb(255, 255, 0))
                                             .strokeWidth(3f)
@@ -7891,7 +7523,6 @@ public class Map extends FragmentActivity implements
                                     new CircleOptions()
                                             .center(overlappingShapesCircleLocation.get(i))
                                             .clickable(true)
-                                            .fillColor(0)
                                             .radius(overlappingShapesCircleRadius.get(i))
                                             .strokeColor(Color.rgb(255, 0, 255))
                                             .strokeWidth(3f)
@@ -8170,7 +7801,6 @@ public class Map extends FragmentActivity implements
                                     new CircleOptions()
                                             .center(overlappingShapesCircleLocation.get(i))
                                             .clickable(true)
-                                            .fillColor(0)
                                             .radius(overlappingShapesCircleRadius.get(i))
                                             .strokeColor(Color.rgb(255, 255, 0))
                                             .strokeWidth(3f)
@@ -8201,7 +7831,6 @@ public class Map extends FragmentActivity implements
                                     new CircleOptions()
                                             .center(overlappingShapesCircleLocation.get(i))
                                             .clickable(true)
-                                            .fillColor(0)
                                             .radius(overlappingShapesCircleRadius.get(i))
                                             .strokeColor(Color.rgb(255, 0, 255))
                                             .strokeWidth(3f)
@@ -8752,6 +8381,11 @@ public class Map extends FragmentActivity implements
         sevenMarkers = false;
         eightMarkers = false;
         polygonPointsList = null;
+        showingEverything = true;
+        showingLarge = false;
+        showingMedium = false;
+        showingSmall = false;
+        showingPoints = false;
 
         // Load shapes from Firebase and make them purple.
         purpleLoadFirebaseShapes();
@@ -8839,46 +8473,21 @@ public class Map extends FragmentActivity implements
 
                     if (dataSnapshot.getValue() != null) {
 
-                        // Only load points (radius = 1)
-                        if ((double) (long) ds.child("circleOptions/radius").getValue() == 1) {
+                        LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
+                        double radius = (double) (long) ds.child("circleOptions/radius").getValue();
+                        Circle circle = mMap.addCircle(
+                                new CircleOptions()
+                                        .center(center)
+                                        .clickable(true)
+                                        .radius(radius)
+                                        .strokeColor(Color.rgb(255, 0, 255))
+                                        .strokeWidth(3f)
+                        );
 
-                            LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
-                            double radius = (double) (long) ds.child("circleOptions/radius").getValue();
-                            Circle circle = mMap.addCircle(
-                                    new CircleOptions()
-                                            .center(center)
-                                            .clickable(true)
-                                            .fillColor(Color.argb(100, 255, 0, 255))
-                                            .radius(radius)
-                                            .strokeColor(Color.rgb(255, 0, 255))
-                                            .strokeWidth(3f)
-                            );
+                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                        uuid = (String) ds.child("uuid").getValue();
 
-                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                            uuid = (String) ds.child("uuid").getValue();
-
-                            circle.setTag(uuid);
-                        }
-
-                        // Don't use fill color on non-points (radius > 1)
-                        if ((double) (long) ds.child("circleOptions/radius").getValue() > 1) {
-
-                            LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
-                            double radius = (double) (long) ds.child("circleOptions/radius").getValue();
-                            Circle circle = mMap.addCircle(
-                                    new CircleOptions()
-                                            .center(center)
-                                            .clickable(true)
-                                            .radius(radius)
-                                            .strokeColor(Color.rgb(255, 0, 255))
-                                            .strokeWidth(3f)
-                            );
-
-                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                            uuid = (String) ds.child("uuid").getValue();
-
-                            circle.setTag(uuid);
-                        }
+                        circle.setTag(uuid);
                     }
                 }
             }
@@ -8900,17 +8509,31 @@ public class Map extends FragmentActivity implements
 
                     if (dataSnapshot.getValue() != null) {
 
-                        if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
+                        LatLng marker3Position = null;
+                        LatLng marker4Position = null;
+                        LatLng marker5Position = null;
+                        LatLng marker6Position = null;
+                        Polygon polygon;
 
-                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                            LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                            LatLng marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                            LatLng marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                            LatLng marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                        LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                        LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                        LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                        if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                            marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                        }
+                        if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                            marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
+                        }
+                        if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                            marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
+                        }
+                        if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                            marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                        }
+                        if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
                             LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
-                            Polygon polygon = mMap.addPolygon(
+
+                            polygon = mMap.addPolygon(
                                     new PolygonOptions()
                                             .clickable(true)
                                             .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
@@ -8923,15 +8546,7 @@ public class Map extends FragmentActivity implements
 
                             polygon.setTag(uuid);
                         } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-
-                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                            LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                            LatLng marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                            LatLng marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                            LatLng marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
-                            Polygon polygon = mMap.addPolygon(
+                            polygon = mMap.addPolygon(
                                     new PolygonOptions()
                                             .clickable(true)
                                             .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
@@ -8944,14 +8559,7 @@ public class Map extends FragmentActivity implements
 
                             polygon.setTag(uuid);
                         } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-
-                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                            LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                            LatLng marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                            LatLng marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                            Polygon polygon = mMap.addPolygon(
+                            polygon = mMap.addPolygon(
                                     new PolygonOptions()
                                             .clickable(true)
                                             .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
@@ -8964,13 +8572,7 @@ public class Map extends FragmentActivity implements
 
                             polygon.setTag(uuid);
                         } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-
-                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                            LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                            LatLng marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                            Polygon polygon = mMap.addPolygon(
+                            polygon = mMap.addPolygon(
                                     new PolygonOptions()
                                             .clickable(true)
                                             .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
@@ -8983,12 +8585,7 @@ public class Map extends FragmentActivity implements
 
                             polygon.setTag(uuid);
                         } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-
-                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                            LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                            Polygon polygon = mMap.addPolygon(
+                            polygon = mMap.addPolygon(
                                     new PolygonOptions()
                                             .clickable(true)
                                             .add(marker0Position, marker1Position, marker2Position, marker3Position)
@@ -9001,11 +8598,7 @@ public class Map extends FragmentActivity implements
 
                             polygon.setTag(uuid);
                         } else {
-
-                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                            Polygon polygon = mMap.addPolygon(
+                            polygon = mMap.addPolygon(
                                     new PolygonOptions()
                                             .clickable(true)
                                             .add(marker0Position, marker1Position, marker2Position)
@@ -9133,6 +8726,11 @@ public class Map extends FragmentActivity implements
         sevenMarkers = false;
         eightMarkers = false;
         polygonPointsList = null;
+        showingEverything = true;
+        showingLarge = false;
+        showingMedium = false;
+        showingSmall = false;
+        showingPoints = false;
 
         // Load shapes from Firebase and make them yellow.
         yellowLoadFirebaseShapes();
@@ -9220,46 +8818,21 @@ public class Map extends FragmentActivity implements
 
                     if (dataSnapshot.getValue() != null) {
 
-                        // Only load points (radius = 1)
-                        if ((double) (long) ds.child("circleOptions/radius").getValue() == 1) {
+                        LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
+                        double radius = (double) (long) ds.child("circleOptions/radius").getValue();
+                        Circle circle = mMap.addCircle(
+                                new CircleOptions()
+                                        .center(center)
+                                        .clickable(true)
+                                        .radius(radius)
+                                        .strokeColor(Color.YELLOW)
+                                        .strokeWidth(3f)
+                        );
 
-                            LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
-                            double radius = (double) (long) ds.child("circleOptions/radius").getValue();
-                            Circle circle = mMap.addCircle(
-                                    new CircleOptions()
-                                            .center(center)
-                                            .clickable(true)
-                                            .fillColor(Color.argb(100, 255, 255, 0))
-                                            .radius(radius)
-                                            .strokeColor(Color.YELLOW)
-                                            .strokeWidth(3f)
-                            );
+                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                        uuid = (String) ds.child("uuid").getValue();
 
-                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                            uuid = (String) ds.child("uuid").getValue();
-
-                            circle.setTag(uuid);
-                        }
-
-                        // Don't use fill color on non-points (radius > 1)
-                        if ((double) (long) ds.child("circleOptions/radius").getValue() > 1) {
-
-                            LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
-                            double radius = (double) (long) ds.child("circleOptions/radius").getValue();
-                            Circle circle = mMap.addCircle(
-                                    new CircleOptions()
-                                            .center(center)
-                                            .clickable(true)
-                                            .radius(radius)
-                                            .strokeColor(Color.YELLOW)
-                                            .strokeWidth(3f)
-                            );
-
-                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                            uuid = (String) ds.child("uuid").getValue();
-
-                            circle.setTag(uuid);
-                        }
+                        circle.setTag(uuid);
                     }
                 }
             }
@@ -9281,17 +8854,31 @@ public class Map extends FragmentActivity implements
 
                     if (dataSnapshot.getValue() != null) {
 
-                        if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
+                        LatLng marker3Position = null;
+                        LatLng marker4Position = null;
+                        LatLng marker5Position = null;
+                        LatLng marker6Position = null;
+                        Polygon polygon;
 
-                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                            LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                            LatLng marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                            LatLng marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                            LatLng marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                        LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                        LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                        LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                        if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                            marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                        }
+                        if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                            marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
+                        }
+                        if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                            marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
+                        }
+                        if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                            marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                        }
+                        if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
                             LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
-                            Polygon polygon = mMap.addPolygon(
+
+                            polygon = mMap.addPolygon(
                                     new PolygonOptions()
                                             .clickable(true)
                                             .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
@@ -9304,15 +8891,7 @@ public class Map extends FragmentActivity implements
 
                             polygon.setTag(uuid);
                         } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-
-                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                            LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                            LatLng marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                            LatLng marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                            LatLng marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
-                            Polygon polygon = mMap.addPolygon(
+                            polygon = mMap.addPolygon(
                                     new PolygonOptions()
                                             .clickable(true)
                                             .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
@@ -9325,14 +8904,7 @@ public class Map extends FragmentActivity implements
 
                             polygon.setTag(uuid);
                         } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-
-                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                            LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                            LatLng marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                            LatLng marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                            Polygon polygon = mMap.addPolygon(
+                            polygon = mMap.addPolygon(
                                     new PolygonOptions()
                                             .clickable(true)
                                             .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
@@ -9345,13 +8917,7 @@ public class Map extends FragmentActivity implements
 
                             polygon.setTag(uuid);
                         } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-
-                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                            LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                            LatLng marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                            Polygon polygon = mMap.addPolygon(
+                            polygon = mMap.addPolygon(
                                     new PolygonOptions()
                                             .clickable(true)
                                             .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
@@ -9364,12 +8930,7 @@ public class Map extends FragmentActivity implements
 
                             polygon.setTag(uuid);
                         } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-
-                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                            LatLng marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                            Polygon polygon = mMap.addPolygon(
+                            polygon = mMap.addPolygon(
                                     new PolygonOptions()
                                             .clickable(true)
                                             .add(marker0Position, marker1Position, marker2Position, marker3Position)
@@ -9382,11 +8943,7 @@ public class Map extends FragmentActivity implements
 
                             polygon.setTag(uuid);
                         } else {
-
-                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                            Polygon polygon = mMap.addPolygon(
+                            polygon = mMap.addPolygon(
                                     new PolygonOptions()
                                             .clickable(true)
                                             .add(marker0Position, marker1Position, marker2Position)
@@ -9531,7 +9088,7 @@ public class Map extends FragmentActivity implements
 
         Log.i(TAG, "deleteDirectory()");
 
-        if(file.exists()) {
+        if (file.exists()) {
 
             if (file.isDirectory()) {
 
@@ -9547,14 +9104,16 @@ public class Map extends FragmentActivity implements
                         } else {
 
                             if (value.delete()) {
-                            } else {}
+                            } else {
+                            }
                         }
                     }
                 }
             }
 
             if (file.delete()) {
-            } else {}
+            } else {
+            }
         }
     }
 
