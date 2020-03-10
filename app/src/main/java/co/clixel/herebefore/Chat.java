@@ -114,7 +114,6 @@ public class Chat extends AppCompatActivity implements
     private String uuid;
     private Double polygonArea, circleLatitude, circleLongitude, radius,
             marker0Latitude, marker0Longitude, marker1Latitude, marker1Longitude, marker2Latitude, marker2Longitude, marker3Latitude, marker3Longitude, marker4Latitude, marker4Longitude, marker5Latitude, marker5Longitude, marker6Latitude, marker6Longitude, marker7Latitude, marker7Longitude;
-    private int fillColor;
     private PopupMenu mediaButtonMenu;
     private ImageView imageView, videoImageView;
     public Uri imageURI, videoURI;
@@ -149,8 +148,6 @@ public class Chat extends AppCompatActivity implements
             newShape = extras.getBoolean("newShape");
             uuid = extras.getString("uuid");
             userIsWithinShape = extras.getBoolean("userIsWithinShape");
-            // fillColor will be null if the shape is not a point.
-            fillColor = extras.getInt("fillColor");
             // circleLatitude, circleLongitude, and radius will be null if the circle is not new (as a new circle is not being created).
             circleLatitude = extras.getDouble("circleLatitude");
             circleLongitude = extras.getDouble("circleLongitude");
@@ -419,7 +416,6 @@ public class Chat extends AppCompatActivity implements
                                         CircleOptions circleOptions = new CircleOptions()
                                                 .center(new LatLng(circleLatitude, circleLongitude))
                                                 .clickable(true)
-                                                .fillColor(fillColor)
                                                 .radius(radius);
                                         CircleInformation circleInformation = new CircleInformation();
                                         circleInformation.setCircleOptions(circleOptions);
@@ -471,93 +467,60 @@ public class Chat extends AppCompatActivity implements
                                         }
                                     } else {
 
+                                        PolygonOptions polygonOptions = null;
+
                                         // Change boolean to true - scrolls to the bottom of the recyclerView (in initRecyclerView()).
                                         messageSent = true;
 
                                         // Since the uuid doesn't already exist in Firebase, add the circle.
                                         if (threeMarkers) {
 
-                                            PolygonOptions polygonOptions = new PolygonOptions()
+                                            polygonOptions = new PolygonOptions()
                                                     .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude))
-                                                    .clickable(true)
-                                                    .fillColor(fillColor);
-                                            PolygonInformation polygonInformation = new PolygonInformation();
-                                            polygonInformation.setPolygonOptions(polygonOptions);
-                                            polygonInformation.setArea(polygonArea);
-                                            polygonInformation.setUUID(uuid);
-                                            DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
-                                            newFirebasePolygon.setValue(polygonInformation);
+                                                    .clickable(true);
                                         }
 
                                         if (fourMarkers) {
 
-                                            PolygonOptions polygonOptions = new PolygonOptions()
+                                            polygonOptions = new PolygonOptions()
                                                     .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude))
-                                                    .clickable(true)
-                                                    .fillColor(fillColor);
-                                            PolygonInformation polygonInformation = new PolygonInformation();
-                                            polygonInformation.setPolygonOptions(polygonOptions);
-                                            polygonInformation.setArea(polygonArea);
-                                            polygonInformation.setUUID(uuid);
-                                            DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
-                                            newFirebasePolygon.setValue(polygonInformation);
+                                                    .clickable(true);
                                         }
 
                                         if (fiveMarkers) {
 
-                                            PolygonOptions polygonOptions = new PolygonOptions()
+                                            polygonOptions = new PolygonOptions()
                                                     .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude))
-                                                    .clickable(true)
-                                                    .fillColor(fillColor);
-                                            PolygonInformation polygonInformation = new PolygonInformation();
-                                            polygonInformation.setPolygonOptions(polygonOptions);
-                                            polygonInformation.setArea(polygonArea);
-                                            polygonInformation.setUUID(uuid);
-                                            DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
-                                            newFirebasePolygon.setValue(polygonInformation);
+                                                    .clickable(true);
                                         }
 
                                         if (sixMarkers) {
 
-                                            PolygonOptions polygonOptions = new PolygonOptions()
+                                            polygonOptions = new PolygonOptions()
                                                     .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude))
-                                                    .clickable(true)
-                                                    .fillColor(fillColor);
-                                            PolygonInformation polygonInformation = new PolygonInformation();
-                                            polygonInformation.setPolygonOptions(polygonOptions);
-                                            polygonInformation.setArea(polygonArea);
-                                            polygonInformation.setUUID(uuid);
-                                            DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
-                                            newFirebasePolygon.setValue(polygonInformation);
+                                                    .clickable(true);
                                         }
 
                                         if (sevenMarkers) {
 
-                                            PolygonOptions polygonOptions = new PolygonOptions()
+                                            polygonOptions = new PolygonOptions()
                                                     .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude), new LatLng(marker6Latitude, marker6Longitude))
-                                                    .clickable(true)
-                                                    .fillColor(fillColor);
-                                            PolygonInformation polygonInformation = new PolygonInformation();
-                                            polygonInformation.setPolygonOptions(polygonOptions);
-                                            polygonInformation.setArea(polygonArea);
-                                            polygonInformation.setUUID(uuid);
-                                            DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
-                                            newFirebasePolygon.setValue(polygonInformation);
+                                                    .clickable(true);
                                         }
 
                                         if (eightMarkers) {
 
-                                            PolygonOptions polygonOptions = new PolygonOptions()
+                                            polygonOptions = new PolygonOptions()
                                                     .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude), new LatLng(marker6Latitude, marker6Longitude), new LatLng(marker7Latitude, marker7Longitude))
-                                                    .clickable(true)
-                                                    .fillColor(fillColor);
-                                            PolygonInformation polygonInformation = new PolygonInformation();
-                                            polygonInformation.setPolygonOptions(polygonOptions);
-                                            polygonInformation.setArea(polygonArea);
-                                            polygonInformation.setUUID(uuid);
-                                            DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
-                                            newFirebasePolygon.setValue(polygonInformation);
+                                                    .clickable(true);
                                         }
+
+                                        PolygonInformation polygonInformation = new PolygonInformation();
+                                        polygonInformation.setPolygonOptions(polygonOptions);
+                                        polygonInformation.setArea(polygonArea);
+                                        polygonInformation.setUUID(uuid);
+                                        DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
+                                        newFirebasePolygon.setValue(polygonInformation);
 
                                         MessageInformation messageInformation = new MessageInformation();
                                         messageInformation.setMessage(input);
@@ -1797,7 +1760,6 @@ public class Chat extends AppCompatActivity implements
                                     CircleOptions circleOptions = new CircleOptions()
                                             .center(new LatLng(circleLatitude, circleLongitude))
                                             .clickable(true)
-                                            .fillColor(fillColor)
                                             .radius(radius);
                                     CircleInformation circleInformation = new CircleInformation();
                                     circleInformation.setCircleOptions(circleOptions);
@@ -1806,90 +1768,56 @@ public class Chat extends AppCompatActivity implements
                                     newFirebaseCircle.setValue(circleInformation);
                                 } else {
 
+                                    PolygonOptions polygonOptions = null;
                                     // Since the uuid doesn't already exist in Firebase, add the circle.
                                     if (threeMarkers) {
 
-                                        PolygonOptions polygonOptions = new PolygonOptions()
+                                        polygonOptions = new PolygonOptions()
                                                 .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude))
-                                                .clickable(true)
-                                                .fillColor(fillColor);
-                                        PolygonInformation polygonInformation = new PolygonInformation();
-                                        polygonInformation.setPolygonOptions(polygonOptions);
-                                        polygonInformation.setArea(polygonArea);
-                                        polygonInformation.setUUID(uuid);
-                                        DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
-                                        newFirebasePolygon.setValue(polygonInformation);
+                                                .clickable(true);
                                     }
 
                                     if (fourMarkers) {
 
-                                        PolygonOptions polygonOptions = new PolygonOptions()
+                                        polygonOptions = new PolygonOptions()
                                                 .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude))
-                                                .clickable(true)
-                                                .fillColor(fillColor);
-                                        PolygonInformation polygonInformation = new PolygonInformation();
-                                        polygonInformation.setPolygonOptions(polygonOptions);
-                                        polygonInformation.setArea(polygonArea);
-                                        polygonInformation.setUUID(uuid);
-                                        DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
-                                        newFirebasePolygon.setValue(polygonInformation);
+                                                .clickable(true);
                                     }
 
                                     if (fiveMarkers) {
 
-                                        PolygonOptions polygonOptions = new PolygonOptions()
+                                        polygonOptions = new PolygonOptions()
                                                 .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude))
-                                                .clickable(true)
-                                                .fillColor(fillColor);
-                                        PolygonInformation polygonInformation = new PolygonInformation();
-                                        polygonInformation.setPolygonOptions(polygonOptions);
-                                        polygonInformation.setArea(polygonArea);
-                                        polygonInformation.setUUID(uuid);
-                                        DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
-                                        newFirebasePolygon.setValue(polygonInformation);
+                                                .clickable(true);
                                     }
 
                                     if (sixMarkers) {
 
-                                        PolygonOptions polygonOptions = new PolygonOptions()
+                                        polygonOptions = new PolygonOptions()
                                                 .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude))
-                                                .clickable(true)
-                                                .fillColor(fillColor);
-                                        PolygonInformation polygonInformation = new PolygonInformation();
-                                        polygonInformation.setPolygonOptions(polygonOptions);
-                                        polygonInformation.setArea(polygonArea);
-                                        polygonInformation.setUUID(uuid);
-                                        DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
-                                        newFirebasePolygon.setValue(polygonInformation);
+                                                .clickable(true);
                                     }
 
                                     if (sevenMarkers) {
 
-                                        PolygonOptions polygonOptions = new PolygonOptions()
+                                        polygonOptions = new PolygonOptions()
                                                 .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude), new LatLng(marker6Latitude, marker6Longitude))
-                                                .clickable(true)
-                                                .fillColor(fillColor);
-                                        PolygonInformation polygonInformation = new PolygonInformation();
-                                        polygonInformation.setPolygonOptions(polygonOptions);
-                                        polygonInformation.setArea(polygonArea);
-                                        polygonInformation.setUUID(uuid);
-                                        DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
-                                        newFirebasePolygon.setValue(polygonInformation);
+                                                .clickable(true);
                                     }
 
                                     if (eightMarkers) {
 
-                                        PolygonOptions polygonOptions = new PolygonOptions()
+                                        polygonOptions = new PolygonOptions()
                                                 .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude), new LatLng(marker6Latitude, marker6Longitude), new LatLng(marker7Latitude, marker7Longitude))
-                                                .clickable(true)
-                                                .fillColor(fillColor);
-                                        PolygonInformation polygonInformation = new PolygonInformation();
-                                        polygonInformation.setPolygonOptions(polygonOptions);
-                                        polygonInformation.setArea(polygonArea);
-                                        polygonInformation.setUUID(uuid);
-                                        DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
-                                        newFirebasePolygon.setValue(polygonInformation);
+                                                .clickable(true);
                                     }
+
+                                    PolygonInformation polygonInformation = new PolygonInformation();
+                                    polygonInformation.setPolygonOptions(polygonOptions);
+                                    polygonInformation.setArea(polygonArea);
+                                    polygonInformation.setUUID(uuid);
+                                    DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
+                                    newFirebasePolygon.setValue(polygonInformation);
                                 }
 
                                 newShape = false;
@@ -1962,7 +1890,6 @@ public class Chat extends AppCompatActivity implements
                                     CircleOptions circleOptions = new CircleOptions()
                                             .center(new LatLng(circleLatitude, circleLongitude))
                                             .clickable(true)
-                                            .fillColor(fillColor)
                                             .radius(radius);
                                     CircleInformation circleInformation = new CircleInformation();
                                     circleInformation.setCircleOptions(circleOptions);
@@ -1971,90 +1898,56 @@ public class Chat extends AppCompatActivity implements
                                     newFirebaseCircle.setValue(circleInformation);
                                 } else {
 
+                                    PolygonOptions polygonOptions = null;
                                     // Since the uuid doesn't already exist in Firebase, add the circle.
                                     if (threeMarkers) {
 
-                                        PolygonOptions polygonOptions = new PolygonOptions()
+                                        polygonOptions = new PolygonOptions()
                                                 .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude))
-                                                .clickable(true)
-                                                .fillColor(fillColor);
-                                        PolygonInformation polygonInformation = new PolygonInformation();
-                                        polygonInformation.setPolygonOptions(polygonOptions);
-                                        polygonInformation.setArea(polygonArea);
-                                        polygonInformation.setUUID(uuid);
-                                        DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
-                                        newFirebasePolygon.setValue(polygonInformation);
+                                                .clickable(true);
                                     }
 
                                     if (fourMarkers) {
 
-                                        PolygonOptions polygonOptions = new PolygonOptions()
+                                        polygonOptions = new PolygonOptions()
                                                 .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude))
-                                                .clickable(true)
-                                                .fillColor(fillColor);
-                                        PolygonInformation polygonInformation = new PolygonInformation();
-                                        polygonInformation.setPolygonOptions(polygonOptions);
-                                        polygonInformation.setArea(polygonArea);
-                                        polygonInformation.setUUID(uuid);
-                                        DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
-                                        newFirebasePolygon.setValue(polygonInformation);
+                                                .clickable(true);
                                     }
 
                                     if (fiveMarkers) {
 
-                                        PolygonOptions polygonOptions = new PolygonOptions()
+                                        polygonOptions = new PolygonOptions()
                                                 .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude))
-                                                .clickable(true)
-                                                .fillColor(fillColor);
-                                        PolygonInformation polygonInformation = new PolygonInformation();
-                                        polygonInformation.setPolygonOptions(polygonOptions);
-                                        polygonInformation.setArea(polygonArea);
-                                        polygonInformation.setUUID(uuid);
-                                        DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
-                                        newFirebasePolygon.setValue(polygonInformation);
+                                                .clickable(true);
                                     }
 
                                     if (sixMarkers) {
 
-                                        PolygonOptions polygonOptions = new PolygonOptions()
+                                        polygonOptions = new PolygonOptions()
                                                 .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude))
-                                                .clickable(true)
-                                                .fillColor(fillColor);
-                                        PolygonInformation polygonInformation = new PolygonInformation();
-                                        polygonInformation.setPolygonOptions(polygonOptions);
-                                        polygonInformation.setArea(polygonArea);
-                                        polygonInformation.setUUID(uuid);
-                                        DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
-                                        newFirebasePolygon.setValue(polygonInformation);
+                                                .clickable(true);
                                     }
 
                                     if (sevenMarkers) {
 
-                                        PolygonOptions polygonOptions = new PolygonOptions()
+                                        polygonOptions = new PolygonOptions()
                                                 .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude), new LatLng(marker6Latitude, marker6Longitude))
-                                                .clickable(true)
-                                                .fillColor(fillColor);
-                                        PolygonInformation polygonInformation = new PolygonInformation();
-                                        polygonInformation.setPolygonOptions(polygonOptions);
-                                        polygonInformation.setArea(polygonArea);
-                                        polygonInformation.setUUID(uuid);
-                                        DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
-                                        newFirebasePolygon.setValue(polygonInformation);
+                                                .clickable(true);
                                     }
 
                                     if (eightMarkers) {
 
-                                        PolygonOptions polygonOptions = new PolygonOptions()
+                                        polygonOptions = new PolygonOptions()
                                                 .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude), new LatLng(marker6Latitude, marker6Longitude), new LatLng(marker7Latitude, marker7Longitude))
-                                                .clickable(true)
-                                                .fillColor(fillColor);
-                                        PolygonInformation polygonInformation = new PolygonInformation();
-                                        polygonInformation.setPolygonOptions(polygonOptions);
-                                        polygonInformation.setArea(polygonArea);
-                                        polygonInformation.setUUID(uuid);
-                                        DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
-                                        newFirebasePolygon.setValue(polygonInformation);
+                                                .clickable(true);
                                     }
+
+                                    PolygonInformation polygonInformation = new PolygonInformation();
+                                    polygonInformation.setPolygonOptions(polygonOptions);
+                                    polygonInformation.setArea(polygonArea);
+                                    polygonInformation.setUUID(uuid);
+                                    DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
+                                    newFirebasePolygon.setValue(polygonInformation);
                                 }
 
                                 newShape = false;
@@ -2127,7 +2020,6 @@ public class Chat extends AppCompatActivity implements
                                     CircleOptions circleOptions = new CircleOptions()
                                             .center(new LatLng(circleLatitude, circleLongitude))
                                             .clickable(true)
-                                            .fillColor(fillColor)
                                             .radius(radius);
                                     CircleInformation circleInformation = new CircleInformation();
                                     circleInformation.setCircleOptions(circleOptions);
@@ -2136,90 +2028,56 @@ public class Chat extends AppCompatActivity implements
                                     newFirebaseCircle.setValue(circleInformation);
                                 } else {
 
+                                    PolygonOptions polygonOptions = null;
                                     // Since the uuid doesn't already exist in Firebase, add the circle.
                                     if (threeMarkers) {
 
-                                        PolygonOptions polygonOptions = new PolygonOptions()
+                                        polygonOptions = new PolygonOptions()
                                                 .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude))
-                                                .clickable(true)
-                                                .fillColor(fillColor);
-                                        PolygonInformation polygonInformation = new PolygonInformation();
-                                        polygonInformation.setPolygonOptions(polygonOptions);
-                                        polygonInformation.setArea(polygonArea);
-                                        polygonInformation.setUUID(uuid);
-                                        DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
-                                        newFirebasePolygon.setValue(polygonInformation);
+                                                .clickable(true);
                                     }
 
                                     if (fourMarkers) {
 
-                                        PolygonOptions polygonOptions = new PolygonOptions()
+                                        polygonOptions = new PolygonOptions()
                                                 .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude))
-                                                .clickable(true)
-                                                .fillColor(fillColor);
-                                        PolygonInformation polygonInformation = new PolygonInformation();
-                                        polygonInformation.setPolygonOptions(polygonOptions);
-                                        polygonInformation.setArea(polygonArea);
-                                        polygonInformation.setUUID(uuid);
-                                        DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
-                                        newFirebasePolygon.setValue(polygonInformation);
+                                                .clickable(true);
                                     }
 
                                     if (fiveMarkers) {
 
-                                        PolygonOptions polygonOptions = new PolygonOptions()
+                                        polygonOptions = new PolygonOptions()
                                                 .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude))
-                                                .clickable(true)
-                                                .fillColor(fillColor);
-                                        PolygonInformation polygonInformation = new PolygonInformation();
-                                        polygonInformation.setPolygonOptions(polygonOptions);
-                                        polygonInformation.setArea(polygonArea);
-                                        polygonInformation.setUUID(uuid);
-                                        DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
-                                        newFirebasePolygon.setValue(polygonInformation);
+                                                .clickable(true);
                                     }
 
                                     if (sixMarkers) {
 
-                                        PolygonOptions polygonOptions = new PolygonOptions()
+                                        polygonOptions = new PolygonOptions()
                                                 .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude))
-                                                .clickable(true)
-                                                .fillColor(fillColor);
-                                        PolygonInformation polygonInformation = new PolygonInformation();
-                                        polygonInformation.setPolygonOptions(polygonOptions);
-                                        polygonInformation.setArea(polygonArea);
-                                        polygonInformation.setUUID(uuid);
-                                        DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
-                                        newFirebasePolygon.setValue(polygonInformation);
+                                                .clickable(true);
                                     }
 
                                     if (sevenMarkers) {
 
-                                        PolygonOptions polygonOptions = new PolygonOptions()
+                                        polygonOptions = new PolygonOptions()
                                                 .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude), new LatLng(marker6Latitude, marker6Longitude))
-                                                .clickable(true)
-                                                .fillColor(fillColor);
-                                        PolygonInformation polygonInformation = new PolygonInformation();
-                                        polygonInformation.setPolygonOptions(polygonOptions);
-                                        polygonInformation.setArea(polygonArea);
-                                        polygonInformation.setUUID(uuid);
-                                        DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
-                                        newFirebasePolygon.setValue(polygonInformation);
+                                                .clickable(true);
                                     }
 
                                     if (eightMarkers) {
 
-                                        PolygonOptions polygonOptions = new PolygonOptions()
+                                        polygonOptions = new PolygonOptions()
                                                 .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude), new LatLng(marker6Latitude, marker6Longitude), new LatLng(marker7Latitude, marker7Longitude))
-                                                .clickable(true)
-                                                .fillColor(fillColor);
-                                        PolygonInformation polygonInformation = new PolygonInformation();
-                                        polygonInformation.setPolygonOptions(polygonOptions);
-                                        polygonInformation.setArea(polygonArea);
-                                        polygonInformation.setUUID(uuid);
-                                        DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
-                                        newFirebasePolygon.setValue(polygonInformation);
+                                                .clickable(true);
                                     }
+
+                                    PolygonInformation polygonInformation = new PolygonInformation();
+                                    polygonInformation.setPolygonOptions(polygonOptions);
+                                    polygonInformation.setArea(polygonArea);
+                                    polygonInformation.setUUID(uuid);
+                                    DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
+                                    newFirebasePolygon.setValue(polygonInformation);
                                 }
 
                                 newShape = false;
@@ -2281,7 +2139,7 @@ public class Chat extends AppCompatActivity implements
 
         Log.i(TAG, "deleteDirectory()");
 
-        if(file.exists()) {
+        if (file.exists()) {
 
             if (file.isDirectory()) {
 
@@ -2297,14 +2155,16 @@ public class Chat extends AppCompatActivity implements
                         } else {
 
                             if (value.delete()) {
-                            } else {}
+                            } else {
+                            }
                         }
                     }
                 }
             }
 
             if (file.delete()) {
-            } else {}
+            } else {
+            }
         }
     }
 
