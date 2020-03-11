@@ -577,6 +577,24 @@ public class Chat extends AppCompatActivity implements
                         }
                     }
                 }
+
+                // Close keyboard.
+                if (Chat.this.getCurrentFocus() != null) {
+
+                    InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                    if (imm != null) {
+
+                        imm.hideSoftInputFromWindow(Chat.this.getCurrentFocus().getWindowToken(), 0);
+                    } else {
+
+                        Log.e(TAG, "onStart() -> sendButton -> imm == null");
+                        Crashlytics.logException(new RuntimeException("onStart() -> sendButton -> imm == null"));
+                    }
+                    if (mInput != null) {
+
+                        mInput.clearFocus();
+                    }
+                }
             }
         });
 
@@ -717,24 +735,6 @@ public class Chat extends AppCompatActivity implements
 
             // Set RecyclerView scroll position to prevent position change when Firebase gets updated and after screen orientation change.
             recyclerViewLinearLayoutManager.scrollToPositionWithOffset(index, top);
-        }
-
-        // Close keyboard after sending a recyclerviewlayout.
-        if (Chat.this.getCurrentFocus() != null) {
-
-            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-            if (imm != null) {
-
-                imm.hideSoftInputFromWindow(Chat.this.getCurrentFocus().getWindowToken(), 0);
-            } else {
-
-                Log.e(TAG, "initRecyclerView -> imm == null");
-                Crashlytics.logException(new RuntimeException("initRecyclerView -> imm == null"));
-            }
-            if (mInput != null) {
-
-                mInput.clearFocus();
-            }
         }
     }
 

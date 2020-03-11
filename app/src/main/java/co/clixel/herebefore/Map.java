@@ -118,7 +118,6 @@ public class Map extends FragmentActivity implements
 
     //TODO: Optimize Firebase loading in Map.
     //TODO: Prevent double sending a message in Chat and add a loading icon while Firebase loads.
-    //TODO: Prevent keyboard from closing if the user opens it too quickly in Chat.
 
     // The following should be implemented later:
     // Change design (change popupMenu color).
@@ -3222,17 +3221,9 @@ public class Map extends FragmentActivity implements
                             });
                 }
 
-                // Add a highlighted shape. Also, setting these to a lower amount (0) prevents a crash.
-                if (overlappingShapesCircleLocation.size() != 0) {
+                selectingShape = true;
 
-                    selectedOverlappingShapeCircleLocation = overlappingShapesCircleLocation.get(0);
-                    selectedOverlappingShapeCircleRadius = overlappingShapesCircleRadius.get(0);
-                }
-
-                if (overlappingShapesPolygonVertices.size() != 0) {
-
-                    selectedOverlappingShapePolygonVertices = overlappingShapesPolygonVertices.get(0);
-                }
+                // The following shows a shape consistent with the location of the seekBar.
                 selectedOverlappingShapeUUID = overlappingShapesUUID.get(0);
 
                 if (selectedOverlappingShapeUUID != null) {
@@ -3247,36 +3238,68 @@ public class Map extends FragmentActivity implements
                         polygonTemp.remove();
                     }
 
-                    // Change the shape color depending on the map type.
-                    if (mMap.getMapType() == 2 || mMap.getMapType() == 4) {
+                    if (overlappingShapesPolygonVertices.size() > overlappingShapesCircleLocation.size() || overlappingShapesPolygonVertices.size() == overlappingShapesCircleLocation.size()) {
 
-                        Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> Adding yellow polygon");
+                        selectedOverlappingShapeCircleLocation = overlappingShapesCircleLocation.get(0);
+                        selectedOverlappingShapeCircleRadius = overlappingShapesCircleRadius.get(0);
 
-                        polygonTemp = mMap.addPolygon(
-                                new PolygonOptions()
-                                        .clickable(true)
-                                        .fillColor(Color.argb(100, 255, 255, 0))
-                                        .strokeColor(Color.rgb(255, 255, 0))
-                                        .strokeWidth(3f)
-                                        .addAll(selectedOverlappingShapePolygonVertices)
-                                        .zIndex(2)
-                        );
+                        if (mMap.getMapType() == 2 || mMap.getMapType() == 4) {
+
+                            circleTemp = mMap.addCircle(
+                                    new CircleOptions()
+                                            .center(selectedOverlappingShapeCircleLocation)
+                                            .clickable(true)
+                                            .fillColor(Color.argb(100, 255, 255, 0))
+                                            .radius(selectedOverlappingShapeCircleRadius)
+                                            .strokeColor(Color.rgb(255, 255, 0))
+                                            .strokeWidth(3f)
+                                            .zIndex(2)
+                            );
+                        } else {
+
+                            circleTemp = mMap.addCircle(
+                                    new CircleOptions()
+                                            .center(selectedOverlappingShapeCircleLocation)
+                                            .clickable(true)
+                                            .fillColor(Color.argb(100, 255, 0, 255))
+                                            .radius(selectedOverlappingShapeCircleRadius)
+                                            .strokeColor(Color.rgb(255, 0, 255))
+                                            .strokeWidth(3f)
+                                            .zIndex(2)
+                            );
+                        }
 
                         // Used when getting rid of the shapes in onMapClick.
-                        polygonTemp.setTag(selectedOverlappingShapeUUID);
+                        circleTemp.setTag(selectedOverlappingShapeUUID);
+                        circleTemp.setCenter(selectedOverlappingShapeCircleLocation);
+                        circleTemp.setRadius(selectedOverlappingShapeCircleRadius);
                     } else {
 
-                        Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> Adding purple polygon");
+                        selectedOverlappingShapePolygonVertices = overlappingShapesPolygonVertices.get(0);
 
-                        polygonTemp = mMap.addPolygon(
-                                new PolygonOptions()
-                                        .clickable(true)
-                                        .fillColor(Color.argb(100, 255, 0, 255))
-                                        .strokeColor(Color.rgb(255, 0, 255))
-                                        .strokeWidth(3f)
-                                        .addAll(selectedOverlappingShapePolygonVertices)
-                                        .zIndex(2)
-                        );
+                        if (mMap.getMapType() == 2 || mMap.getMapType() == 4) {
+
+                            polygonTemp = mMap.addPolygon(
+                                    new PolygonOptions()
+                                            .clickable(true)
+                                            .fillColor(Color.argb(100, 255, 255, 0))
+                                            .strokeColor(Color.rgb(255, 255, 0))
+                                            .strokeWidth(3f)
+                                            .addAll(selectedOverlappingShapePolygonVertices)
+                                            .zIndex(2)
+                            );
+                        } else {
+
+                            polygonTemp = mMap.addPolygon(
+                                    new PolygonOptions()
+                                            .clickable(true)
+                                            .fillColor(Color.argb(100, 255, 0, 255))
+                                            .strokeColor(Color.rgb(255, 0, 255))
+                                            .strokeWidth(3f)
+                                            .addAll(selectedOverlappingShapePolygonVertices)
+                                            .zIndex(2)
+                            );
+                        }
 
                         // Used when getting rid of the shapes in onMapClick.
                         polygonTemp.setTag(selectedOverlappingShapeUUID);
@@ -3286,8 +3309,6 @@ public class Map extends FragmentActivity implements
                     Log.e(TAG, "onMapReadyAndRestart() -> onPolygonClick -> selectedOverlappingShapeUUID == null");
                     Crashlytics.logException(new Exception("onMapReadyAndRestart() -> onPolygonClick -> selectedOverlappingShapeUUID == null"));
                 }
-
-                selectingShape = true;
 
                 // At this point, chatsSize > 1 so set the chatSelectorSeekBar to VISIBLE.
                 chatSelectorSeekBar.setMax(chatsSize - 1);
@@ -3833,17 +3854,11 @@ public class Map extends FragmentActivity implements
                     return;
                 }
 
-                // Add a highlighted shape. Also, setting these to a lower amount (0) prevents a crash.
-                if (overlappingShapesCircleLocation.size() != 0) {
+                selectedOverlappingShapeUUID = overlappingShapesUUID.get(0);
 
-                    selectedOverlappingShapeCircleLocation = overlappingShapesCircleLocation.get(0);
-                    selectedOverlappingShapeCircleRadius = overlappingShapesCircleRadius.get(0);
-                }
+                selectingShape = true;
 
-                if (overlappingShapesPolygonVertices.size() != 0) {
-
-                    selectedOverlappingShapePolygonVertices = overlappingShapesPolygonVertices.get(0);
-                }
+                // The following shows a shape consistent with the location of the seekBar.
                 selectedOverlappingShapeUUID = overlappingShapesUUID.get(0);
 
                 if (selectedOverlappingShapeUUID != null) {
@@ -3858,49 +3873,77 @@ public class Map extends FragmentActivity implements
                         polygonTemp.remove();
                     }
 
-                    // Change the shape color depending on the map type.
-                    if (mMap.getMapType() == 2 || mMap.getMapType() == 4) {
+                    if (overlappingShapesCircleLocation.size() > overlappingShapesPolygonVertices.size()) {
 
-                        Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> Adding yellow circle");
+                        selectedOverlappingShapePolygonVertices = overlappingShapesPolygonVertices.get(0);
 
-                        circleTemp = mMap.addCircle(
-                                new CircleOptions()
-                                        .center(selectedOverlappingShapeCircleLocation)
-                                        .clickable(true)
-                                        .fillColor(Color.argb(100, 255, 255, 0))
-                                        .radius(selectedOverlappingShapeCircleRadius)
-                                        .strokeColor(Color.rgb(255, 255, 0))
-                                        .strokeWidth(3f)
-                                        .zIndex(2)
-                        );
+                        if (mMap.getMapType() == 2 || mMap.getMapType() == 4) {
+
+                            polygonTemp = mMap.addPolygon(
+                                    new PolygonOptions()
+                                            .clickable(true)
+                                            .fillColor(Color.argb(100, 255, 255, 0))
+                                            .strokeColor(Color.rgb(255, 255, 0))
+                                            .strokeWidth(3f)
+                                            .addAll(selectedOverlappingShapePolygonVertices)
+                                            .zIndex(2)
+                            );
+                        } else {
+
+                            polygonTemp = mMap.addPolygon(
+                                    new PolygonOptions()
+                                            .clickable(true)
+                                            .fillColor(Color.argb(100, 255, 0, 255))
+                                            .strokeColor(Color.rgb(255, 0, 255))
+                                            .strokeWidth(3f)
+                                            .addAll(selectedOverlappingShapePolygonVertices)
+                                            .zIndex(2)
+                            );
+                        }
 
                         // Used when getting rid of the shapes in onMapClick.
-                        circleTemp.setTag(selectedOverlappingShapeUUID);
-                        circleTemp.setCenter(selectedOverlappingShapeCircleLocation);
-                        circleTemp.setRadius(selectedOverlappingShapeCircleRadius);
+                        polygonTemp.setTag(selectedOverlappingShapeUUID);
                     } else {
 
-                        Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> Adding purple circle");
+                        selectedOverlappingShapeCircleLocation = overlappingShapesCircleLocation.get(0);
+                        selectedOverlappingShapeCircleRadius = overlappingShapesCircleRadius.get(0);
 
-                        circleTemp = mMap.addCircle(
-                                new CircleOptions()
-                                        .center(selectedOverlappingShapeCircleLocation)
-                                        .clickable(true)
-                                        .fillColor(Color.argb(100, 255, 0, 255))
-                                        .radius(selectedOverlappingShapeCircleRadius)
-                                        .strokeColor(Color.rgb(255, 0, 255))
-                                        .strokeWidth(3f)
-                                        .zIndex(2)
-                        );
+                        if (mMap.getMapType() == 2 || mMap.getMapType() == 4) {
+
+                            circleTemp = mMap.addCircle(
+                                    new CircleOptions()
+                                            .center(selectedOverlappingShapeCircleLocation)
+                                            .clickable(true)
+                                            .fillColor(Color.argb(100, 255, 255, 0))
+                                            .radius(selectedOverlappingShapeCircleRadius)
+                                            .strokeColor(Color.rgb(255, 255, 0))
+                                            .strokeWidth(3f)
+                                            .zIndex(2)
+                            );
+                        } else {
+
+                            circleTemp = mMap.addCircle(
+                                    new CircleOptions()
+                                            .center(selectedOverlappingShapeCircleLocation)
+                                            .clickable(true)
+                                            .fillColor(Color.argb(100, 255, 0, 255))
+                                            .radius(selectedOverlappingShapeCircleRadius)
+                                            .strokeColor(Color.rgb(255, 0, 255))
+                                            .strokeWidth(3f)
+                                            .zIndex(2)
+                            );
+                        }
 
                         // Used when getting rid of the shapes in onMapClick.
                         circleTemp.setTag(selectedOverlappingShapeUUID);
                         circleTemp.setCenter(selectedOverlappingShapeCircleLocation);
                         circleTemp.setRadius(selectedOverlappingShapeCircleRadius);
                     }
-                }
+                } else {
 
-                selectingShape = true;
+                    Log.e(TAG, "onMapReadyAndRestart() -> onCircleClick -> selectedOverlappingShapeUUID == null");
+                    Crashlytics.logException(new Exception("onMapReadyAndRestart() -> onCircleClick -> selectedOverlappingShapeUUID == null"));
+                }
 
                 // At this point, chatsSize > 1 so set the chatSelectorSeekBar to VISIBLE.
                 chatSelectorSeekBar.setMax(chatsSize - 1);
