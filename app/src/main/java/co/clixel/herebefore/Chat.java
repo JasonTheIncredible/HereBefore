@@ -91,24 +91,16 @@ public class Chat extends AppCompatActivity implements
         PopupMenu.OnMenuItemClickListener {
 
     private static final String TAG = "Chat";
-    private static final int Request_ID_Take_Photo = 1700;
-    private static final int Request_ID_Record_Video = 1800;
+    private static final int Request_ID_Take_Photo = 1700, Request_ID_Record_Video = 1800;
     private EditText mInput;
-    private ArrayList<String> mTime = new ArrayList<>();
-    private ArrayList<String> mImage = new ArrayList<>();
-    private ArrayList<String> mVideo = new ArrayList<>();
-    private ArrayList<String> mText = new ArrayList<>();
+    private ArrayList<String> mTime = new ArrayList<>(), mImage = new ArrayList<>(), mVideo = new ArrayList<>(), mText = new ArrayList<>();
     private ArrayList<Boolean> mUserIsWithinShape = new ArrayList<>();
     private RecyclerView recyclerView;
-    private static int index = -1;
-    private static int top = -1;
+    private static int index = -1, top = -1;
     private DatabaseReference databaseReference;
     private ValueEventListener eventListener;
     private FloatingActionButton sendButton, mediaButton;
-    private boolean reachedEndOfRecyclerView = false;
-    private boolean recyclerViewHasScrolled = false;
-    private boolean messageSent = false;
-    private boolean mediaButtonMenuIsOpen, fileIsImage, checkPermissionsPicture, URIisFile, newShape, threeMarkers, fourMarkers, fiveMarkers, sixMarkers, sevenMarkers, eightMarkers, shapeIsCircle;
+    private boolean reachedEndOfRecyclerView = false, recyclerViewHasScrolled = false, messageSent = false, sendButtonClicked = false, mediaButtonMenuIsOpen, fileIsImage, checkPermissionsPicture, URIisFile, newShape, threeMarkers, fourMarkers, fiveMarkers, sixMarkers, sevenMarkers, eightMarkers, shapeIsCircle;
     private Boolean userIsWithinShape;
     private View.OnLayoutChangeListener onLayoutChangeListener;
     private String uuid;
@@ -380,6 +372,14 @@ public class Chat extends AppCompatActivity implements
 
                 Log.i(TAG, "onStart() -> sendButton -> onClick");
 
+                // Prevent double clicking the send button.
+                if (sendButtonClicked) {
+
+                    return;
+                }
+
+                sendButtonClicked = true;
+
                 final String input = mInput.getText().toString();
 
                 // Send recyclerviewlayout to Firebase.
@@ -436,6 +436,7 @@ public class Chat extends AppCompatActivity implements
                                         mInput.getText().clear();
 
                                         newShape = false;
+                                        sendButtonClicked = false;
                                     }
                                 }
 
@@ -443,6 +444,7 @@ public class Chat extends AppCompatActivity implements
                                 public void onCancelled(@NonNull DatabaseError databaseError) {
 
                                     Toast.makeText(Chat.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                                    sendButtonClicked = false;
                                 }
                             });
                         } else {
@@ -461,6 +463,7 @@ public class Chat extends AppCompatActivity implements
                                         if (uploadTask != null && uploadTask.isInProgress()) {
 
                                             Toast.makeText(Chat.this, "Upload in progress", Toast.LENGTH_SHORT).show();
+                                            sendButtonClicked = false;
                                         } else {
 
                                             firebaseUpload();
@@ -534,6 +537,7 @@ public class Chat extends AppCompatActivity implements
                                         newMessage.setValue(messageInformation);
                                         mInput.getText().clear();
                                         newShape = false;
+                                        sendButtonClicked = false;
                                     }
                                 }
 
@@ -541,6 +545,7 @@ public class Chat extends AppCompatActivity implements
                                 public void onCancelled(@NonNull DatabaseError databaseError) {
 
                                     Toast.makeText(Chat.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                                    sendButtonClicked = false;
                                 }
                             });
                         }
@@ -554,6 +559,7 @@ public class Chat extends AppCompatActivity implements
                             if (uploadTask != null && uploadTask.isInProgress()) {
 
                                 Toast.makeText(Chat.this, "Upload in progress", Toast.LENGTH_SHORT).show();
+                                sendButtonClicked = false;
                             } else {
 
                                 firebaseUpload();
@@ -574,6 +580,7 @@ public class Chat extends AppCompatActivity implements
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("messageThreads").push();
                             newMessage.setValue(messageInformation);
                             mInput.getText().clear();
+                            sendButtonClicked = false;
                         }
                     }
                 }
@@ -636,6 +643,8 @@ public class Chat extends AppCompatActivity implements
 
             mInput.clearFocus();
         }
+
+        sendButtonClicked = false;
     }
 
     @Override
@@ -1847,6 +1856,7 @@ public class Chat extends AppCompatActivity implements
 
                                 deleteDirectory(image);
                             }
+                            sendButtonClicked = false;
                             findViewById(R.id.loadingIcon).setVisibility(View.GONE);
                         }
                     });
@@ -1977,6 +1987,7 @@ public class Chat extends AppCompatActivity implements
 
                                 deleteDirectory(video);
                             }
+                            sendButtonClicked = false;
                             findViewById(R.id.loadingIcon).setVisibility(View.GONE);
                         }
                     });
@@ -2107,6 +2118,7 @@ public class Chat extends AppCompatActivity implements
 
                                 deleteDirectory(image);
                             }
+                            sendButtonClicked = false;
                             findViewById(R.id.loadingIcon).setVisibility(View.GONE);
                         }
                     });

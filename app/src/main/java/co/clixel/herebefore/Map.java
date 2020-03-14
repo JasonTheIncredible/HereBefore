@@ -117,7 +117,6 @@ public class Map extends FragmentActivity implements
     private LocationManager locationManager;
 
     //TODO: Optimize Firebase loading in Map.
-    //TODO: Prevent double sending a message in Chat and add a loading icon while Firebase loads.
 
     // The following should be implemented later:
     // Change design (change popupMenu color).
@@ -130,6 +129,7 @@ public class Map extends FragmentActivity implements
     // Page for deleting user account, resetting password, etc.
     // Allow user to sign out from here and Chat.java.
     // Work on onTrimMemory().
+    // Look into possible issue where uwser could click on a shape multiple times before it changes activity.
     // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.
     // Add ability to add both video and picture to Firebase.
     // Leave messages in locations that users get notified of when they enter the area.
