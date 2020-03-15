@@ -116,12 +116,10 @@ public class Map extends FragmentActivity implements
     private int chatsSize;
     private LocationManager locationManager;
 
-    //TODO: Optimize Firebase loading in Map.
-
-    // The following should be implemented later:
+    // Create a "build" version of the app with removed Log messages.
     // Change design (change popupMenu color).
     // Ads.
-    // Log.i vs d vs w...
+    // Optimize Firebase loading in Map.
     // Change Firebase rules to increase security.
     // API key and anything else before publishing.
     // Add a username?
@@ -129,7 +127,7 @@ public class Map extends FragmentActivity implements
     // Page for deleting user account, resetting password, etc.
     // Allow user to sign out from here and Chat.java.
     // Work on onTrimMemory().
-    // Look into possible issue where uwser could click on a shape multiple times before it changes activity.
+    // Look into possible issue where user could click on a shape multiple times before it changes activity.
     // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.
     // Add ability to add both video and picture to Firebase.
     // Leave messages in locations that users get notified of when they enter the area.
@@ -138,7 +136,7 @@ public class Map extends FragmentActivity implements
     // Decrease app size.
     // When not on wifi, the location may "jump" and the camera might not be correct. I'm not currently sure how to test / fix this without annoying users that are traveling at very high speeds.
     // Add ability to filter recyclerView by type of content (recorded at the scene) to get rid of the "fluff"
-    // Add ability to add video from gallery to recyclerView. [silicompressor 2.2.3 accepts content URIs but gives a black video on the app and in Firebase. Will follow up with this later.]s
+    // Add ability to add video from gallery to recyclerView. [silicompressor 2.2.3 accepts content URIs but gives a black video on the app and in Firebase. Will follow up with this later.]
     // Add ability to add both picture and video to firebase at the same time.
 
     @Override
@@ -3219,6 +3217,8 @@ public class Map extends FragmentActivity implements
                                     }
                                 }
                             });
+
+                    return;
                 }
 
                 selectingShape = true;
@@ -3238,7 +3238,7 @@ public class Map extends FragmentActivity implements
                         polygonTemp.remove();
                     }
 
-                    if (overlappingShapesPolygonVertices.size() > overlappingShapesCircleLocation.size() || overlappingShapesPolygonVertices.size() == overlappingShapesCircleLocation.size()) {
+                    if ((overlappingShapesPolygonVertices.size() > overlappingShapesCircleLocation.size() || overlappingShapesPolygonVertices.size() == overlappingShapesCircleLocation.size()) && overlappingShapesCircleLocation.size() > 0) {
 
                         selectedOverlappingShapeCircleLocation = overlappingShapesCircleLocation.get(0);
                         selectedOverlappingShapeCircleRadius = overlappingShapesCircleRadius.get(0);
@@ -3850,7 +3850,7 @@ public class Map extends FragmentActivity implements
                                     }
                                 }
                             });
-
+                    
                     return;
                 }
 
@@ -3873,7 +3873,7 @@ public class Map extends FragmentActivity implements
                         polygonTemp.remove();
                     }
 
-                    if (overlappingShapesCircleLocation.size() > overlappingShapesPolygonVertices.size()) {
+                    if (overlappingShapesCircleLocation.size() > overlappingShapesPolygonVertices.size() && overlappingShapesPolygonVertices.size() > 0) {
 
                         selectedOverlappingShapePolygonVertices = overlappingShapesPolygonVertices.get(0);
 
