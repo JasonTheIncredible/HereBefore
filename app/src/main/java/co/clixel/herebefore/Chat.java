@@ -113,6 +113,7 @@ public class Chat extends AppCompatActivity implements
     private LinearLayoutManager recyclerViewLinearLayoutManager = new LinearLayoutManager(this);
     private File image, video;
     private byte[] byteArray;
+    private View loadingIcon;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -128,10 +129,17 @@ public class Chat extends AppCompatActivity implements
         mInput = findViewById(R.id.input);
         sendButton = findViewById(R.id.sendButton);
         recyclerView = findViewById(R.id.messageList);
+        loadingIcon = findViewById(R.id.loadingIcon);
 
         // Set to dark mode.
         AppCompatDelegate.setDefaultNightMode(
                 AppCompatDelegate.MODE_NIGHT_YES);
+
+        // Make the loadingIcon visible upon the first load, as it can sometimes take a while to show anything. It should be made invisible in initRecyclerView().
+        if (loadingIcon != null) {
+
+            loadingIcon.setVisibility(View.VISIBLE);
+        }
 
         // Get info from Map.java
         Bundle extras = getIntent().getExtras();
@@ -744,6 +752,12 @@ public class Chat extends AppCompatActivity implements
 
             // Set RecyclerView scroll position to prevent position change when Firebase gets updated and after screen orientation change.
             recyclerViewLinearLayoutManager.scrollToPositionWithOffset(index, top);
+        }
+
+        // After the initial load, make the loadingIcon invisible.
+        if (loadingIcon != null) {
+
+            loadingIcon.setVisibility(View.INVISIBLE);
         }
     }
 
@@ -1376,7 +1390,7 @@ public class Chat extends AppCompatActivity implements
             if (activity == null || activity.isFinishing()) return;
 
             // Show the loading icon while the image is being compressed.
-            activity.findViewById(R.id.loadingIcon).setVisibility(View.VISIBLE);
+            activity.loadingIcon.setVisibility(View.VISIBLE);
         }
 
         @Override
@@ -1473,7 +1487,7 @@ public class Chat extends AppCompatActivity implements
                     .apply(new RequestOptions().override(480, 5000).placeholder(R.drawable.ic_recyclerview_image_placeholder))
                     .into(activity.imageView);
 
-            activity.findViewById(R.id.loadingIcon).setVisibility(View.INVISIBLE);
+            activity.loadingIcon.setVisibility(View.INVISIBLE);
         }
     }
 
@@ -1495,7 +1509,7 @@ public class Chat extends AppCompatActivity implements
             if (activity == null || activity.isFinishing()) return;
 
             // Show the loading icon while the image is being compressed.
-            activity.findViewById(R.id.loadingIcon).setVisibility(View.VISIBLE);
+            activity.loadingIcon.setVisibility(View.VISIBLE);
         }
 
         @Override
@@ -1553,7 +1567,7 @@ public class Chat extends AppCompatActivity implements
 
             activity.imageView.setVisibility(View.VISIBLE);
 
-            activity.findViewById(R.id.loadingIcon).setVisibility(View.INVISIBLE);
+            activity.loadingIcon.setVisibility(View.INVISIBLE);
         }
     }
 
@@ -1578,7 +1592,7 @@ public class Chat extends AppCompatActivity implements
             if (activity == null || activity.isFinishing()) return;
 
             // Show the loading icon while the video is being compressed.
-            activity.findViewById(R.id.loadingIcon).setVisibility(View.VISIBLE);
+            activity.loadingIcon.setVisibility(View.VISIBLE);
         }
 
         @Override
@@ -1729,7 +1743,7 @@ public class Chat extends AppCompatActivity implements
                 activity.videoImageView.setVisibility(View.VISIBLE);
             }
 
-            activity.findViewById(R.id.loadingIcon).setVisibility(View.INVISIBLE);
+            activity.loadingIcon.setVisibility(View.INVISIBLE);
         }
     }
 
@@ -1740,7 +1754,7 @@ public class Chat extends AppCompatActivity implements
         final Bundle extras = getIntent().getExtras();
 
         // Show the loading icon while the image is being uploaded to Firebase.
-        findViewById(R.id.loadingIcon).setVisibility(View.VISIBLE);
+        loadingIcon.setVisibility(View.VISIBLE);
 
         if (URIisFile && fileIsImage) {
 
@@ -1857,7 +1871,7 @@ public class Chat extends AppCompatActivity implements
                                 deleteDirectory(image);
                             }
                             sendButtonClicked = false;
-                            findViewById(R.id.loadingIcon).setVisibility(View.GONE);
+                            loadingIcon.setVisibility(View.GONE);
                         }
                     });
                 }
@@ -1868,7 +1882,7 @@ public class Chat extends AppCompatActivity implements
                         public void onFailure(@NonNull Exception ex) {
 
                             // Handle unsuccessful uploads
-                            findViewById(R.id.loadingIcon).setVisibility(View.GONE);
+                            loadingIcon.setVisibility(View.GONE);
                             Toast.makeText(Chat.this, ex.getMessage(), Toast.LENGTH_LONG).show();
                             Log.e(TAG, "firebaseUpload() -> URIisFile && fileIsImage -> onFailure -> " + ex.getMessage());
                         }
@@ -1988,7 +2002,7 @@ public class Chat extends AppCompatActivity implements
                                 deleteDirectory(video);
                             }
                             sendButtonClicked = false;
-                            findViewById(R.id.loadingIcon).setVisibility(View.GONE);
+                            loadingIcon.setVisibility(View.GONE);
                         }
                     });
                 }
@@ -1999,7 +2013,7 @@ public class Chat extends AppCompatActivity implements
                         public void onFailure(@NonNull Exception ex) {
 
                             // Handle unsuccessful uploads
-                            findViewById(R.id.loadingIcon).setVisibility(View.GONE);
+                            loadingIcon.setVisibility(View.GONE);
                             Toast.makeText(Chat.this, ex.getMessage(), Toast.LENGTH_LONG).show();
                             Log.e(TAG, "firebaseUpload() -> !fileIsImage -> onFailure -> " + ex.getMessage());
                         }
@@ -2119,7 +2133,7 @@ public class Chat extends AppCompatActivity implements
                                 deleteDirectory(image);
                             }
                             sendButtonClicked = false;
-                            findViewById(R.id.loadingIcon).setVisibility(View.GONE);
+                            loadingIcon.setVisibility(View.GONE);
                         }
                     });
                 }
@@ -2130,7 +2144,7 @@ public class Chat extends AppCompatActivity implements
                         public void onFailure(@NonNull Exception ex) {
 
                             // Handle unsuccessful uploads
-                            findViewById(R.id.loadingIcon).setVisibility(View.GONE);
+                            loadingIcon.setVisibility(View.GONE);
                             Toast.makeText(Chat.this, ex.getMessage(), Toast.LENGTH_LONG).show();
                             Log.e(TAG, "firebaseUpload() -> else -> onFailure -> " + ex.getMessage());
                         }

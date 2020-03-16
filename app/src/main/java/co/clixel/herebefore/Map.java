@@ -101,6 +101,7 @@ public class Map extends FragmentActivity implements
     private String uuid, marker0ID, marker1ID, marker2ID, marker3ID, marker4ID, marker5ID, marker6ID, marker7ID, selectedOverlappingShapeUUID;
     private Button createChatButton, chatViewsButton, mapTypeButton;
     private PopupMenu popupMapType, popupChatViews, popupCreateChat;
+    private boolean stillLoadingCircles = true, stillLoadingPolygons = true;
     private Boolean firstLoad = true, cameraMoved = false, waitingForBetterLocationAccuracy = false, badAccuracy = false, showingEverything = true, showingLarge = false, showingMedium = false, showingSmall = false, showingPoints = false,
             waitingForClicksToProcess = false, waitingForShapeInformationToProcess = false, markerOutsidePolygon = false, usedSeekBar = false,
             userIsWithinShape, selectingShape = false, threeMarkers = false, fourMarkers = false, fiveMarkers = false, sixMarkers = false, sevenMarkers = false, eightMarkers = false;
@@ -115,25 +116,20 @@ public class Map extends FragmentActivity implements
     private float x, y;
     private int chatsSize;
     private LocationManager locationManager;
+    private Toast selectingShapeToast;
+    private View loadingIcon;
 
-    // Create a "build" version of the app with removed Log messages.
+    // Page for deleting user account, resetting password, saving user map type preferences, signing out from here and Chat.java, etc.
+    // Allow users to message and reply to one another anonymously.
     // Change design (change popupMenu color).
-    // Ads.
-    // Optimize Firebase loading in Map.
-    // Change Firebase rules to increase security.
-    // API key and anything else before publishing.
-    // Add a username?
-    // Save user map type preference.
-    // Page for deleting user account, resetting password, etc.
-    // Allow user to sign out from here and Chat.java.
-    // Work on onTrimMemory().
-    // Look into possible issue where user could click on a shape multiple times before it changes activity.
-    // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.
-    // Add ability to add both video and picture to Firebase.
-    // Leave messages in locations that users get notified of when they enter the area.
-    // Make sure uuids never overlap in Firebase.
-    // Add a play button to the videoImageView in Chat.java like recyclerviewlayout.xml.
     // Decrease app size.
+    // Optimize Firebase loading in Map.
+    // Work on onTrimMemory().
+    // Change Firebase rules to increase security.
+    // API key and anything else before publishing / Create a "build" version of the app with removed Log messages.
+    // Ads.
+    // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.
+    // Leave messages in locations that users get notified of when they enter the area.
     // When not on wifi, the location may "jump" and the camera might not be correct. I'm not currently sure how to test / fix this without annoying users that are traveling at very high speeds.
     // Add ability to filter recyclerView by type of content (recorded at the scene) to get rid of the "fluff"
     // Add ability to add video from gallery to recyclerView. [silicompressor 2.2.3 accepts content URIs but gives a black video on the app and in Firebase. Will follow up with this later.]
@@ -163,6 +159,7 @@ public class Map extends FragmentActivity implements
         chatSizeSeekBar = findViewById(R.id.chatSizeSeekBar);
         chatViewsButton = findViewById(R.id.chatViewsButton);
         chatSelectorSeekBar = findViewById(R.id.chatSelectorSeekBar);
+        loadingIcon = findViewById(R.id.loadingIcon);
 
         // Set to dark mode.
         AppCompatDelegate.setDefaultNightMode(
@@ -2036,7 +2033,8 @@ public class Map extends FragmentActivity implements
         cameraMoved = false;
         waitingForBetterLocationAccuracy = false;
         badAccuracy = false;
-        findViewById(R.id.loadingIcon).setVisibility(View.GONE);
+        stillLoadingCircles = true;
+        stillLoadingPolygons = true;
 
         // Clear map before adding new Firebase circles in onStart() to prevent overlap.
         // Set shape to null so changing chatSizeSeekBar in onStart() will create a circle and createChatButton will reset itself.
@@ -2315,7 +2313,7 @@ public class Map extends FragmentActivity implements
             chatSelectorSeekBar.setOnSeekBarChangeListener(null);
         }
 
-        findViewById(R.id.loadingIcon).setVisibility(View.GONE);
+        loadingIcon.setVisibility(View.GONE);
 
         // Remove the listener.
         if (mMap != null) {
@@ -3046,9 +3044,9 @@ public class Map extends FragmentActivity implements
                         mMap.getUiSettings().setScrollGesturesEnabled(false);
                     }
 
-                    if (findViewById(R.id.loadingIcon).getVisibility() != View.VISIBLE) {
+                    if (loadingIcon.getVisibility() != View.VISIBLE) {
 
-                        findViewById(R.id.loadingIcon).setVisibility(View.VISIBLE);
+                        loadingIcon.setVisibility(View.VISIBLE);
                     }
 
                     // Drop the z-index to metaphorically check it off the "to click" list.
@@ -3316,8 +3314,9 @@ public class Map extends FragmentActivity implements
                 chatSizeSeekBar.setVisibility(View.GONE);
                 chatSelectorSeekBar.setVisibility(View.VISIBLE);
                 mMap.getUiSettings().setScrollGesturesEnabled(true);
-                findViewById(R.id.loadingIcon).setVisibility(View.GONE);
-                Toast.makeText(Map.this, "Highlight and select a shape using the SeekBar below.", Toast.LENGTH_LONG).show();
+                loadingIcon.setVisibility(View.GONE);
+                selectingShapeToast = Toast.makeText(Map.this, "Highlight and select a shape using the SeekBar below.", Toast.LENGTH_LONG);
+                selectingShapeToast.show();
             }
         });
 
@@ -3674,9 +3673,9 @@ public class Map extends FragmentActivity implements
                         mMap.getUiSettings().setScrollGesturesEnabled(false);
                     }
 
-                    if (findViewById(R.id.loadingIcon).getVisibility() != View.VISIBLE) {
+                    if (loadingIcon.getVisibility() != View.VISIBLE) {
 
-                        findViewById(R.id.loadingIcon).setVisibility(View.VISIBLE);
+                        loadingIcon.setVisibility(View.VISIBLE);
                     }
 
                     // Drop the z-index to metaphorically check it off the "to click" list.
@@ -3850,7 +3849,7 @@ public class Map extends FragmentActivity implements
                                     }
                                 }
                             });
-                    
+
                     return;
                 }
 
@@ -3951,8 +3950,9 @@ public class Map extends FragmentActivity implements
                 chatSizeSeekBar.setVisibility(View.GONE);
                 chatSelectorSeekBar.setVisibility(View.VISIBLE);
                 mMap.getUiSettings().setScrollGesturesEnabled(true);
-                findViewById(R.id.loadingIcon).setVisibility(View.GONE);
-                Toast.makeText(Map.this, "Highlight and select a shape using the SeekBar below.", Toast.LENGTH_LONG).show();
+                loadingIcon.setVisibility(View.GONE);
+                selectingShapeToast = Toast.makeText(Map.this, "Highlight and select a shape using the SeekBar below.", Toast.LENGTH_LONG);
+                selectingShapeToast.show();
             }
         });
 
@@ -5430,6 +5430,11 @@ public class Map extends FragmentActivity implements
         Activity.putExtra("uuid", uuid);
         // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
         Activity.putExtra("userIsWithinShape", userIsWithinShape);
+        // Cancel the toast so it doesn't show in the next activity.
+        if (selectingShapeToast != null) {
+
+            selectingShapeToast.cancel();
+        }
 
         startActivity(Activity);
     }
@@ -5451,6 +5456,11 @@ public class Map extends FragmentActivity implements
             Activity.putExtra("circleLatitude", circle.getCenter().latitude);
             Activity.putExtra("circleLongitude", circle.getCenter().longitude);
             Activity.putExtra("radius", circle.getRadius());
+        }
+        // Cancel the toast so it doesn't show in the next activity.
+        if (selectingShapeToast != null) {
+
+            selectingShapeToast.cancel();
         }
 
         startActivity(Activity);
@@ -8904,6 +8914,8 @@ public class Map extends FragmentActivity implements
 
         Log.i(TAG, "yellowLoadFirebaseShapes()");
 
+        loadingIcon.setVisibility(View.VISIBLE);
+
         // Load Firebase points and circles.
         firebaseCircles.addListenerForSingleValueEvent(new ValueEventListener() {
 
@@ -8931,11 +8943,19 @@ public class Map extends FragmentActivity implements
                         circle.setTag(uuid);
                     }
                 }
+
+                stillLoadingCircles = false;
+
+                if (!stillLoadingPolygons) {
+
+                    loadingIcon.setVisibility(View.INVISIBLE);
+                }
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {
 
+                loadingIcon.setVisibility(View.INVISIBLE);
                 Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
             }
         });
@@ -9054,11 +9074,19 @@ public class Map extends FragmentActivity implements
                         }
                     }
                 }
+
+                stillLoadingPolygons = false;
+
+                if (!stillLoadingCircles) {
+
+                    loadingIcon.setVisibility(View.INVISIBLE);
+                }
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {
 
+                loadingIcon.setVisibility(View.INVISIBLE);
                 Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
             }
         });
