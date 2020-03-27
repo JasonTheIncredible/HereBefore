@@ -7,14 +7,18 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="com.google.android.providers.gsf.permisson.READ_GSERVICES" />
-    <uses-permission android:name="android.permission.CAMERA"
+    <uses-permission
+        android:name="android.permission.CAMERA"
         android:required="false" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:required="false" />
-    <uses-permission android:name="android.permission.RECORD_AUDIO"
+    <uses-permission
+        android:name="android.permission.RECORD_AUDIO"
         android:required="false" />
 
-    <uses-feature android:name="android.hardware.camera"
+    <uses-feature
+        android:name="android.hardware.camera"
         android:required="false" />
 
     <application
@@ -24,7 +28,9 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-
+        <activity android:name=".Settings"
+            android:label="@string/title_activity_maps">
+        </activity>
         <!--
              The API key for Google Maps-based APIs is defined as a string resource.
              (See the file "res/values/google_maps_api.xml").
@@ -39,32 +45,24 @@
 
         <activity
             android:name=".SignIn"
-            android:windowSoftInputMode="adjustResize"
-            android:label="@string/title_activity_maps">
-        </activity>
-
+            android:label="@string/title_activity_maps"
+            android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".SignUp"
-            android:windowSoftInputMode="adjustResize"
-            android:label="@string/title_activity_maps">
-        </activity>
-
+            android:label="@string/title_activity_maps"
+            android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".Chat"
             android:configChanges="orientation|screenSize"
-            android:label="@string/title_activity_maps">
-        </activity>
-
+            android:label="@string/title_activity_maps" />
         <activity
             android:name=".Map"
             android:label="@string/title_activity_maps">
-
             <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
+                <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-
         </activity>
 
         <provider
@@ -79,15 +77,12 @@
 
         <activity
             android:name=".PhotoView"
-            android:theme="@style/AppTheme.NoActionBar"
-            android:label="@string/title_activity_maps">
-        </activity>
-
+            android:label="@string/title_activity_maps"
+            android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".VideoView"
-            android:theme="@style/AppTheme.NoActionBar"
-            android:label="@string/title_activity_maps">
-        </activity>
+            android:label="@string/title_activity_maps"
+            android:theme="@style/AppTheme.NoActionBar" />
     </application>
 
 </manifest>

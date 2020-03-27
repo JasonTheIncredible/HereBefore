@@ -34,6 +34,7 @@ import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
+import androidx.preference.PreferenceManager;
 
 import com.crashlytics.android.Crashlytics;
 // developers.google.com/identity/sign-in/android/sign-in
@@ -121,6 +122,7 @@ public class Map extends FragmentActivity implements
 
     // Page for deleting user account, resetting password, saving user map type preferences, signing out from here and Chat.java, etc.
     // Allow users to message and reply to one another anonymously.
+    // "How to make databases faster".
     // Change design (change popupMenu color).
     // Decrease app size.
     // Optimize Firebase loading in Map.
@@ -160,6 +162,8 @@ public class Map extends FragmentActivity implements
         chatViewsButton = findViewById(R.id.chatViewsButton);
         chatSelectorSeekBar = findViewById(R.id.chatSelectorSeekBar);
         loadingIcon = findViewById(R.id.loadingIcon);
+
+        PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
 
         // Set to dark mode.
         AppCompatDelegate.setDefaultNightMode(
