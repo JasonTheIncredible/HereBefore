@@ -22,6 +22,15 @@
         android:background="@drawable/maptype_button" />
 
     <Button
+        android:id="@+id/settingsButton"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_alignParentEnd="true"
+        android:layout_marginEnd="64dp"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/ic_more_vert_24dp" />
+
+    <Button
         android:id="@+id/chatViewsButton"
         android:layout_width="40dp"
         android:layout_height="40dp"

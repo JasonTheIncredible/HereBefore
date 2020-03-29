@@ -6,6 +6,7 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.location.Location;
@@ -100,9 +101,9 @@ public class Map extends FragmentActivity implements
     private DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference(), firebaseCircles = rootRef.child("circles"), firebasePolygons = rootRef.child("polygons");
     private SeekBar chatSizeSeekBar, chatSelectorSeekBar;
     private String uuid, marker0ID, marker1ID, marker2ID, marker3ID, marker4ID, marker5ID, marker6ID, marker7ID, selectedOverlappingShapeUUID;
-    private Button createChatButton, chatViewsButton, mapTypeButton;
+    private Button createChatButton, chatViewsButton, mapTypeButton, settingsButton;
     private PopupMenu popupMapType, popupChatViews, popupCreateChat;
-    private boolean stillLoadingCircles = true, stillLoadingPolygons = true;
+    private boolean stillLoadingCircles = true, stillLoadingPolygons = true, theme;
     private Boolean firstLoad = true, cameraMoved = false, waitingForBetterLocationAccuracy = false, badAccuracy = false, showingEverything = true, showingLarge = false, showingMedium = false, showingSmall = false, showingPoints = false,
             waitingForClicksToProcess = false, waitingForShapeInformationToProcess = false, markerOutsidePolygon = false, usedSeekBar = false,
             userIsWithinShape, selectingShape = false, threeMarkers = false, fourMarkers = false, fiveMarkers = false, sixMarkers = false, sevenMarkers = false, eightMarkers = false;
@@ -119,7 +120,10 @@ public class Map extends FragmentActivity implements
     private LocationManager locationManager;
     private Toast selectingShapeToast;
     private View loadingIcon;
+    private SharedPreferences sharedPreferences;
 
+    // Add settings menu to Chat.java.
+    // Adjust light mode design for Chat.java and look into getting rid of light / dark mode code for Map.java, as it may not do anything.
     // Page for deleting user account, resetting password, saving user map type preferences, signing out from here and Chat.java, etc.
     // Allow users to message and reply to one another anonymously.
     // "How to make databases faster".
@@ -157,17 +161,12 @@ public class Map extends FragmentActivity implements
         }
 
         mapTypeButton = findViewById(R.id.mapTypeButton);
+        settingsButton = findViewById(R.id.settingsButton);
         createChatButton = findViewById(R.id.createChatButton);
         chatSizeSeekBar = findViewById(R.id.chatSizeSeekBar);
         chatViewsButton = findViewById(R.id.chatViewsButton);
         chatSelectorSeekBar = findViewById(R.id.chatSelectorSeekBar);
         loadingIcon = findViewById(R.id.loadingIcon);
-
-        PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
-
-        // Set to dark mode.
-        AppCompatDelegate.setDefaultNightMode(
-                AppCompatDelegate.MODE_NIGHT_YES);
     }
 
     @Override
@@ -175,6 +174,10 @@ public class Map extends FragmentActivity implements
 
         super.onStart();
         Log.i(TAG, "onStart()");
+
+        // Update to the user's preferences.
+        loadPreferences();
+        updatePreferences();
 
         // Start updating location.
         if (ContextCompat.checkSelfPermission(Map.this,
@@ -208,6 +211,20 @@ public class Map extends FragmentActivity implements
                 popupMapType.setOnMenuItemClickListener(Map.this);
                 popupMapType.inflate(R.menu.maptype_menu);
                 popupMapType.show();
+            }
+        });
+
+        // Go to settings.
+        settingsButton.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+
+                Log.i(TAG, "onStart() -> settingsButton -> onClick");
+
+                Intent Activity = new Intent(Map.this, co.clixel.herebefore.Settings.class);
+
+                startActivity(Activity);
             }
         });
 
@@ -2019,6 +2036,28 @@ public class Map extends FragmentActivity implements
         deleteDirectory(this.getCacheDir());
     }
 
+    protected void loadPreferences() {
+
+        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+
+        theme = sharedPreferences.getBoolean(co.clixel.herebefore.Settings.KEY_THEME_SWITCH, false);
+    }
+
+    protected void updatePreferences() {
+
+        if (theme) {
+
+            // Set to light mode.
+            AppCompatDelegate.setDefaultNightMode(
+                    AppCompatDelegate.MODE_NIGHT_NO);
+        } else {
+
+            // Set to dark mode.
+            AppCompatDelegate.setDefaultNightMode(
+                    AppCompatDelegate.MODE_NIGHT_YES);
+        }
+    }
+
     @Override
     protected void onRestart() {
 
@@ -3427,90 +3466,90 @@ public class Map extends FragmentActivity implements
                     // Get rid of new shapes if the user clicks away from them.
                     if (newCircle != null) {
 
-                    newCircle.remove();
-                    if (marker0 != null) {
+                        newCircle.remove();
+                        if (marker0 != null) {
 
-                        marker0.remove();
+                            marker0.remove();
+                        }
+
+                        if (marker1 != null) {
+
+                            marker1.remove();
+                        }
+
+                        newCircle = null;
+                        marker0 = null;
+                        marker1 = null;
+                        marker0Position = null;
+                        marker1Position = null;
+                        marker0ID = null;
+                        marker1ID = null;
+
+                        chatSizeSeekBar.setProgress(0);
+                        relativeAngle = 0.0;
+                        usedSeekBar = false;
                     }
-
-                    if (marker1 != null) {
-
-                        marker1.remove();
-                    }
-
-                    newCircle = null;
-                    marker0 = null;
-                    marker1 = null;
-                    marker0Position = null;
-                    marker1Position = null;
-                    marker0ID = null;
-                    marker1ID = null;
-
-                    chatSizeSeekBar.setProgress(0);
-                    relativeAngle = 0.0;
-                    usedSeekBar = false;
-                }
 
                     if (newPolygon != null) {
 
-                    newPolygon.remove();
-                    marker0.remove();
-                    marker1.remove();
-                    marker2.remove();
-                    newPolygon = null;
-                    marker0 = null;
-                    marker1 = null;
-                    marker2 = null;
-                    marker0Position = null;
-                    marker1Position = null;
-                    marker2Position = null;
-                    marker0ID = null;
-                    marker1ID = null;
-                    marker2ID = null;
+                        newPolygon.remove();
+                        marker0.remove();
+                        marker1.remove();
+                        marker2.remove();
+                        newPolygon = null;
+                        marker0 = null;
+                        marker1 = null;
+                        marker2 = null;
+                        marker0Position = null;
+                        marker1Position = null;
+                        marker2Position = null;
+                        marker0ID = null;
+                        marker1ID = null;
+                        marker2ID = null;
 
-                    if (marker3 != null) {
+                        if (marker3 != null) {
 
-                        marker3.remove();
-                        marker3 = null;
-                        marker3Position = null;
-                        marker3ID = null;
+                            marker3.remove();
+                            marker3 = null;
+                            marker3Position = null;
+                            marker3ID = null;
+                        }
+
+                        if (marker4 != null) {
+
+                            marker4.remove();
+                            marker4 = null;
+                            marker4Position = null;
+                            marker4ID = null;
+                        }
+
+                        if (marker5 != null) {
+
+                            marker5.remove();
+                            marker5 = null;
+                            marker5Position = null;
+                            marker5ID = null;
+                        }
+
+                        if (marker6 != null) {
+
+                            marker6.remove();
+                            marker6 = null;
+                            marker6Position = null;
+                            marker6ID = null;
+                        }
+
+                        if (marker7 != null) {
+
+                            marker7.remove();
+                            marker7 = null;
+                            marker7Position = null;
+                            marker7ID = null;
+                        }
+
+                        chatSizeSeekBar.setProgress(0);
+                        usedSeekBar = false;
                     }
-
-                    if (marker4 != null) {
-
-                        marker4.remove();
-                        marker4 = null;
-                        marker4Position = null;
-                        marker4ID = null;
-                    }
-
-                    if (marker5 != null) {
-
-                        marker5.remove();
-                        marker5 = null;
-                        marker5Position = null;
-                        marker5ID = null;
-                    }
-
-                    if (marker6 != null) {
-
-                        marker6.remove();
-                        marker6 = null;
-                        marker6Position = null;
-                        marker6ID = null;
-                    }
-
-                    if (marker7 != null) {
-
-                        marker7.remove();
-                        marker7 = null;
-                        marker7Position = null;
-                        marker7ID = null;
-                    }
-
-                    chatSizeSeekBar.setProgress(0);
-                    usedSeekBar = false;
-                }
 
                     return;
                 }
@@ -8394,9 +8433,11 @@ public class Map extends FragmentActivity implements
         Log.i(TAG, "purpleAdjustmentsForMap()");
 
         // Change button color depending on map type.
+        chatViewsButton.setBackgroundResource(R.drawable.chatviews_button_purple);
+
         createChatButton.setBackgroundResource(R.drawable.createchat_button_purple);
 
-        chatViewsButton.setBackgroundResource(R.drawable.chatviews_button_purple);
+        settingsButton.setBackgroundResource(R.drawable.ic_more_vert_purple_24dp);
 
         // Remove the polygon and markers.
         if (newPolygon != null) {
@@ -8739,9 +8780,11 @@ public class Map extends FragmentActivity implements
         Log.i(TAG, "yellowAdjustmentsForMap()");
 
         // Change button color depending on map type.
+        chatViewsButton.setBackgroundResource(R.drawable.chatviews_button);
+
         createChatButton.setBackgroundResource(R.drawable.createchat_button);
 
-        chatViewsButton.setBackgroundResource(R.drawable.chatviews_button);
+        settingsButton.setBackgroundResource(R.drawable.ic_more_vert_24dp);
 
         // Remove the polygon and markers.
         if (newPolygon != null) {

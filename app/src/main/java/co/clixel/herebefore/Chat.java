@@ -7,6 +7,7 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
@@ -25,6 +26,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 import androidx.exifinterface.media.ExifInterface;
+import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -100,7 +102,7 @@ public class Chat extends AppCompatActivity implements
     private DatabaseReference databaseReference;
     private ValueEventListener eventListener;
     private FloatingActionButton sendButton, mediaButton;
-    private boolean reachedEndOfRecyclerView = false, recyclerViewHasScrolled = false, messageSent = false, sendButtonClicked = false, mediaButtonMenuIsOpen, fileIsImage, checkPermissionsPicture, URIisFile, newShape, threeMarkers, fourMarkers, fiveMarkers, sixMarkers, sevenMarkers, eightMarkers, shapeIsCircle;
+    private boolean theme, reachedEndOfRecyclerView = false, recyclerViewHasScrolled = false, messageSent = false, sendButtonClicked = false, mediaButtonMenuIsOpen, fileIsImage, checkPermissionsPicture, URIisFile, newShape, threeMarkers, fourMarkers, fiveMarkers, sixMarkers, sevenMarkers, eightMarkers, shapeIsCircle;
     private Boolean userIsWithinShape;
     private View.OnLayoutChangeListener onLayoutChangeListener;
     private String uuid;
@@ -114,6 +116,7 @@ public class Chat extends AppCompatActivity implements
     private File image, video;
     private byte[] byteArray;
     private View loadingIcon;
+    private SharedPreferences sharedPreferences;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -130,10 +133,6 @@ public class Chat extends AppCompatActivity implements
         sendButton = findViewById(R.id.sendButton);
         recyclerView = findViewById(R.id.messageList);
         loadingIcon = findViewById(R.id.loadingIcon);
-
-        // Set to dark mode.
-        AppCompatDelegate.setDefaultNightMode(
-                AppCompatDelegate.MODE_NIGHT_YES);
 
         // Make the loadingIcon visible upon the first load, as it can sometimes take a while to show anything. It should be made invisible in initRecyclerView().
         if (loadingIcon != null) {
@@ -197,6 +196,10 @@ public class Chat extends AppCompatActivity implements
 
         super.onStart();
         Log.i(TAG, "onStart()");
+
+        // Update to the user's preferences.
+        loadPreferences();
+        updatePreferences();
 
         // Connect to Firebase.
         DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
@@ -638,6 +641,28 @@ public class Chat extends AppCompatActivity implements
                 Chat.this.startActivity(Activity);
             }
         });
+    }
+
+    protected void loadPreferences() {
+
+        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+
+        theme = sharedPreferences.getBoolean(co.clixel.herebefore.Settings.KEY_THEME_SWITCH, false);
+    }
+
+    protected void updatePreferences() {
+
+        if (theme) {
+
+            // Set to light mode.
+            AppCompatDelegate.setDefaultNightMode(
+                    AppCompatDelegate.MODE_NIGHT_NO);
+        } else {
+
+            // Set to dark mode.
+            AppCompatDelegate.setDefaultNightMode(
+                    AppCompatDelegate.MODE_NIGHT_YES);
+        }
     }
 
     @Override

@@ -7,7 +7,7 @@
 
     <SwitchPreferenceCompat
         app:key="toggleTheme"
-        app:title="Toggle between light and dark mode" />
+        app:title="Toggle between dark and light mode" />
 
     <Preference
         app:key="mapTypePreference"
