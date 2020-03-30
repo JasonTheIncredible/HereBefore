@@ -51,6 +51,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import android.view.inputmethod.InputMethodManager;
 import android.webkit.MimeTypeMap;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.PopupMenu;
@@ -108,6 +109,7 @@ public class Chat extends AppCompatActivity implements
     private String uuid;
     private Double polygonArea, circleLatitude, circleLongitude, radius,
             marker0Latitude, marker0Longitude, marker1Latitude, marker1Longitude, marker2Latitude, marker2Longitude, marker3Latitude, marker3Longitude, marker4Latitude, marker4Longitude, marker5Latitude, marker5Longitude, marker6Latitude, marker6Longitude, marker7Latitude, marker7Longitude;
+    private Button settingsButton;
     private PopupMenu mediaButtonMenu;
     private ImageView imageView, videoImageView;
     public Uri imageURI, videoURI;
@@ -126,6 +128,7 @@ public class Chat extends AppCompatActivity implements
 
         setContentView(R.layout.chat);
 
+        settingsButton = findViewById(R.id.settingsButton);
         mediaButton = findViewById(R.id.mediaButton);
         imageView = findViewById(R.id.imageView);
         videoImageView = findViewById(R.id.videoImageView);
@@ -322,6 +325,20 @@ public class Chat extends AppCompatActivity implements
 
         // Add the Firebase listener.
         databaseReference.addValueEventListener(eventListener);
+
+        // Go to settings.
+        settingsButton.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+
+                Log.i(TAG, "onStart() -> settingsButton -> onClick");
+
+                Intent Activity = new Intent(Chat.this, co.clixel.herebefore.Settings.class);
+
+                startActivity(Activity);
+            }
+        });
 
         // Hide the imageView or videoImageView if user presses the delete button.
         mInput.setOnKeyListener(new View.OnKeyListener() {

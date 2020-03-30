@@ -31,11 +31,9 @@ import android.widget.SeekBar;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
-import androidx.preference.PreferenceManager;
 
 import com.crashlytics.android.Crashlytics;
 // developers.google.com/identity/sign-in/android/sign-in
@@ -120,11 +118,9 @@ public class Map extends FragmentActivity implements
     private LocationManager locationManager;
     private Toast selectingShapeToast;
     private View loadingIcon;
-    private SharedPreferences sharedPreferences;
 
-    // Add settings menu to Chat.java.
-    // Adjust light mode design for Chat.java and look into getting rid of light / dark mode code for Map.java, as it may not do anything.
     // Page for deleting user account, resetting password, saving user map type preferences, signing out from here and Chat.java, etc.
+    // Adjust light mode design for Chat.java.
     // Allow users to message and reply to one another anonymously.
     // "How to make databases faster".
     // Change design (change popupMenu color).
@@ -135,6 +131,7 @@ public class Map extends FragmentActivity implements
     // API key and anything else before publishing / Create a "build" version of the app with removed Log messages.
     // Ads.
     // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.
+    // Add preference for shape color.
     // Leave messages in locations that users get notified of when they enter the area.
     // When not on wifi, the location may "jump" and the camera might not be correct. I'm not currently sure how to test / fix this without annoying users that are traveling at very high speeds.
     // Add ability to filter recyclerView by type of content (recorded at the scene) to get rid of the "fluff"
@@ -174,10 +171,6 @@ public class Map extends FragmentActivity implements
 
         super.onStart();
         Log.i(TAG, "onStart()");
-
-        // Update to the user's preferences.
-        loadPreferences();
-        updatePreferences();
 
         // Start updating location.
         if (ContextCompat.checkSelfPermission(Map.this,
@@ -2034,28 +2027,6 @@ public class Map extends FragmentActivity implements
 
         // Clear the cache. This should clear the issue where Chat.java was creating files that were never deleted.
         deleteDirectory(this.getCacheDir());
-    }
-
-    protected void loadPreferences() {
-
-        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-
-        theme = sharedPreferences.getBoolean(co.clixel.herebefore.Settings.KEY_THEME_SWITCH, false);
-    }
-
-    protected void updatePreferences() {
-
-        if (theme) {
-
-            // Set to light mode.
-            AppCompatDelegate.setDefaultNightMode(
-                    AppCompatDelegate.MODE_NIGHT_NO);
-        } else {
-
-            // Set to dark mode.
-            AppCompatDelegate.setDefaultNightMode(
-                    AppCompatDelegate.MODE_NIGHT_YES);
-        }
     }
 
     @Override
@@ -8784,7 +8755,7 @@ public class Map extends FragmentActivity implements
 
         createChatButton.setBackgroundResource(R.drawable.createchat_button);
 
-        settingsButton.setBackgroundResource(R.drawable.ic_more_vert_24dp);
+        settingsButton.setBackgroundResource(R.drawable.ic_more_vert_yellow_24dp);
 
         // Remove the polygon and markers.
         if (newPolygon != null) {
