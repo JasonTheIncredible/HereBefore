@@ -118,7 +118,6 @@ public class Chat extends AppCompatActivity implements
     private File image, video;
     private byte[] byteArray;
     private View loadingIcon;
-    private SharedPreferences sharedPreferences;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -662,7 +661,7 @@ public class Chat extends AppCompatActivity implements
 
     protected void loadPreferences() {
 
-        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
 
         theme = sharedPreferences.getBoolean(co.clixel.herebefore.Settings.KEY_THEME_SWITCH, false);
     }

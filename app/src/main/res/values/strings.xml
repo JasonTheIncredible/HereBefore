@@ -26,4 +26,21 @@
     <string name="record_video">Record video</string>
     <string name="play_icon">Play_icon</string>
     <string name="browse_gallery">Browse gallery</string>
+    <string name="depends_on_connection_type">Depends on connection type</string>
+
+    <string-array name="pref_map_types_entries">
+        <item>Depends on connection type</item>
+        <item>Road map view</item>
+        <item>Satellite view</item>
+        <item>Hybrid view</item>
+        <item>Terrain view</item>
+    </string-array>
+
+    <string-array name="pref_map_types_values">
+        <item>Depends on connection type</item>
+        <item>Road map view</item>
+        <item>Satellite view</item>
+        <item>Hybrid view</item>
+        <item>Terrain view</item>
+    </string-array>
 </resources>

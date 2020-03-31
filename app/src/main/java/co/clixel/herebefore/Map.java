@@ -34,6 +34,7 @@ import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
+import androidx.preference.PreferenceManager;
 
 import com.crashlytics.android.Crashlytics;
 // developers.google.com/identity/sign-in/android/sign-in
@@ -98,10 +99,10 @@ public class Map extends FragmentActivity implements
     private Polygon newPolygon, polygonTemp;
     private DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference(), firebaseCircles = rootRef.child("circles"), firebasePolygons = rootRef.child("polygons");
     private SeekBar chatSizeSeekBar, chatSelectorSeekBar;
-    private String uuid, marker0ID, marker1ID, marker2ID, marker3ID, marker4ID, marker5ID, marker6ID, marker7ID, selectedOverlappingShapeUUID;
+    private String preferredMapType, uuid, marker0ID, marker1ID, marker2ID, marker3ID, marker4ID, marker5ID, marker6ID, marker7ID, selectedOverlappingShapeUUID;
     private Button createChatButton, chatViewsButton, mapTypeButton, settingsButton;
     private PopupMenu popupMapType, popupChatViews, popupCreateChat;
-    private boolean stillLoadingCircles = true, stillLoadingPolygons = true, theme;
+    private boolean stillLoadingCircles = true, stillLoadingPolygons = true;
     private Boolean firstLoad = true, cameraMoved = false, waitingForBetterLocationAccuracy = false, badAccuracy = false, showingEverything = true, showingLarge = false, showingMedium = false, showingSmall = false, showingPoints = false,
             waitingForClicksToProcess = false, waitingForShapeInformationToProcess = false, markerOutsidePolygon = false, usedSeekBar = false,
             userIsWithinShape, selectingShape = false, threeMarkers = false, fourMarkers = false, fiveMarkers = false, sixMarkers = false, sevenMarkers = false, eightMarkers = false;
@@ -120,6 +121,7 @@ public class Map extends FragmentActivity implements
     private View loadingIcon;
 
     // Page for deleting user account, resetting password, saving user map type preferences, signing out from here and Chat.java, etc.
+    // List the selected value in settings aka "hybrid map type" as summary.
     // Adjust light mode design for Chat.java.
     // Allow users to message and reply to one another anonymously.
     // "How to make databases faster".
@@ -2626,8 +2628,9 @@ public class Map extends FragmentActivity implements
 
         Log.i(TAG, "onMapReadyAndRestart()");
 
-        // Use the NORMAL map type if the user is not connected to WIFI for easier loading.
-        changeMapTypeDependingOnConnection();
+        // Update to the user's preferences.
+        loadPreferences();
+        updatePreferences();
 
         // Keep the marker on the shapes to allow for dragging.
         mMap.setOnMarkerDragListener(new GoogleMap.OnMarkerDragListener() {
@@ -4176,6 +4179,112 @@ public class Map extends FragmentActivity implements
         });
     }
 
+    protected void loadPreferences() {
+
+        Log.i(TAG, "loadPreferences()");
+
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+
+        preferredMapType = sharedPreferences.getString(co.clixel.herebefore.Settings.KEY_MAP_TYPE, getResources().getString(R.string.depends_on_connection_type));
+    }
+
+    protected void updatePreferences() {
+
+        Log.i(TAG, "updatePreferences()");
+
+        switch (preferredMapType) {
+
+            // Use the NORMAL map type if the user is not connected to WIFI for easier loading.
+            case "Depends on connection type":
+
+                Log.i(TAG, "updatePreferences() -> Depends on connection type");
+
+                changeMapTypeDependingOnConnection();
+
+                break;
+
+            case "Road map view":
+
+                Log.i(TAG, "updatePreferences() -> Road map view");
+
+                // Use the "road map" map type if the map is not null.
+                if (mMap != null) {
+
+                    Log.i(TAG, "updatePreferences() -> Road Map");
+
+                    purpleAdjustmentsForMap();
+
+                    mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
+                } else {
+
+                    Log.e(TAG, "updatePreferences() -> Road Map -> mMap == null");
+                    Crashlytics.logException(new Exception("onMenuItemClick -> Road Map -> mMap == null"));
+                }
+
+                break;
+
+            case "Satellite view":
+
+                Log.i(TAG, "updatePreferences() -> Satellite view");
+
+                // Use the "satellite" map type if the map is not null.
+                if (mMap != null) {
+
+                    Log.i(TAG, "updatePreferences() -> Satellite Map");
+
+                    mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
+
+                    yellowAdjustmentsForMap();
+                } else {
+
+                    Log.e(TAG, "updatePreferences() -> Satellite Map -> mMap == null");
+                    Crashlytics.logException(new Exception("onMenuItemClick -> Satellite Map -> mMap == null"));
+                }
+
+                break;
+
+            case "Hybrid view":
+
+                Log.i(TAG, "updatePreferences() -> Hybrid view");
+
+                // Use the "hybrid" map type if the map is not null.
+                if (mMap != null) {
+
+                    Log.i(TAG, "updatePreferences() -> Hybrid Map");
+
+                    mMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
+
+                    yellowAdjustmentsForMap();
+                } else {
+
+                    Log.e(TAG, "updatePreferences() -> Hybrid Map -> mMap == null");
+                    Crashlytics.logException(new Exception("onMenuItemClick -> Hybrid Map -> mMap == null"));
+                }
+
+                break;
+
+            case "Terrain view":
+
+                Log.i(TAG, "updatePreferences() -> Terrain view");
+
+                // Use the "terrain" map type if the map is not null.
+                if (mMap != null) {
+
+                    Log.i(TAG, "updatePreferences() -> Terrain Map");
+
+                    mMap.setMapType(GoogleMap.MAP_TYPE_TERRAIN);
+
+                    purpleAdjustmentsForMap();
+                } else {
+
+                    Log.e(TAG, "updatePreferences() -> Terrain Map -> mMap == null");
+                    Crashlytics.logException(new Exception("onMenuItemClick -> Terrain Map -> mMap == null"));
+                }
+
+                break;
+        }
+    }
+
     @Override
     public void onLocationChanged(Location location) {
 
@@ -4592,26 +4701,14 @@ public class Map extends FragmentActivity implements
 
                             mMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
 
-                            // Change button color depending on map type.
-                            createChatButton.setBackgroundResource(R.drawable.createchat_button);
-
-                            chatViewsButton.setBackgroundResource(R.drawable.chatviews_button);
-
-                            // Load shapes from Firebase and make them yellow.
-                            yellowLoadFirebaseShapes();
+                            yellowAdjustmentsForMap();
                         } else {
 
                             Log.i(TAG, "changeMapTypeDependingOnConnection() -> Build > 23 -> Not connected to Wifi -> load purple shapes");
 
                             mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
 
-                            // Change button color depending on map type.
-                            createChatButton.setBackgroundResource(R.drawable.createchat_button_purple);
-
-                            chatViewsButton.setBackgroundResource(R.drawable.chatviews_button_purple);
-
-                            // Load shapes from Firebase and make them purple.
-                            purpleLoadFirebaseShapes();
+                            purpleAdjustmentsForMap();
                         }
                     } else {
 
@@ -5510,7 +5607,7 @@ public class Map extends FragmentActivity implements
                     Crashlytics.logException(new Exception("onMenuItemClick -> Road Map -> mMap == null"));
                 }
 
-                return true;
+                break;
 
             // maptype_menu
             case R.id.satellite:
@@ -5537,7 +5634,7 @@ public class Map extends FragmentActivity implements
                     Crashlytics.logException(new Exception("onMenuItemClick -> Satellite Map -> mMap == null"));
                 }
 
-                return true;
+                break;
 
             // maptype_menu
             case R.id.hybrid:
@@ -5564,7 +5661,7 @@ public class Map extends FragmentActivity implements
                     Crashlytics.logException(new Exception("onMenuItemClick -> Hybrid Map -> mMap == null"));
                 }
 
-                return true;
+                break;
 
             // maptype_menu
             case R.id.terrain:
@@ -5591,7 +5688,7 @@ public class Map extends FragmentActivity implements
                     Crashlytics.logException(new Exception("onMenuItemClick -> Terrain Map -> mMap == null"));
                 }
 
-                return true;
+                break;
 
             // chatviews_menu
             case R.id.showEverything:
@@ -6028,7 +6125,8 @@ public class Map extends FragmentActivity implements
                 showingMedium = false;
                 showingSmall = false;
                 showingPoints = false;
-                return true;
+
+                break;
 
             // chatviews_menu
             case R.id.showLargeChats:
@@ -6480,7 +6578,8 @@ public class Map extends FragmentActivity implements
                 showingMedium = false;
                 showingSmall = false;
                 showingPoints = false;
-                return true;
+
+                break;
 
             // chatviews_menu
             case R.id.showMediumChats:
@@ -6932,7 +7031,8 @@ public class Map extends FragmentActivity implements
                 showingLarge = false;
                 showingSmall = false;
                 showingPoints = false;
-                return true;
+
+                break;
 
             // chatviews_menu
             case R.id.showSmallChats:
@@ -7384,7 +7484,8 @@ public class Map extends FragmentActivity implements
                 showingLarge = false;
                 showingMedium = false;
                 showingPoints = false;
-                return true;
+
+                break;
 
             // chatviews_menu
             case R.id.showPoints:
@@ -7583,7 +7684,8 @@ public class Map extends FragmentActivity implements
                 showingLarge = false;
                 showingMedium = false;
                 showingSmall = false;
-                return true;
+
+                break;
 
             // createchat_menu
             case R.id.createPolygon:
@@ -7891,7 +7993,7 @@ public class Map extends FragmentActivity implements
                             }
                         });
 
-                return true;
+                break;
 
             // createchat_menu
             case R.id.createCircle:
@@ -8155,7 +8257,7 @@ public class Map extends FragmentActivity implements
                             }
                         });
 
-                return true;
+                break;
 
             // createchat_menu
             case R.id.removeShape:
@@ -8242,7 +8344,7 @@ public class Map extends FragmentActivity implements
                 relativeAngle = 0.0;
                 usedSeekBar = false;
 
-                return true;
+                break;
 
             // createchat_menu
             case R.id.createPoint:
@@ -8391,17 +8493,22 @@ public class Map extends FragmentActivity implements
                             }
                         });
 
-                return true;
+                break;
 
             default:
-                return false;
+
+                break;
         }
+
+        return false;
     }
 
-    // Used by onMenuItemClick.
     private void purpleAdjustmentsForMap() {
 
         Log.i(TAG, "purpleAdjustmentsForMap()");
+
+        // Load shapes from Firebase and make them purple.
+        purpleLoadFirebaseShapes();
 
         // Change button color depending on map type.
         chatViewsButton.setBackgroundResource(R.drawable.chatviews_button_purple);
@@ -8509,9 +8616,6 @@ public class Map extends FragmentActivity implements
         showingSmall = false;
         showingPoints = false;
 
-        // Load shapes from Firebase and make them purple.
-        purpleLoadFirebaseShapes();
-
         // Create a circleTemp or polygonTemp if one already exists.
         if (chatSelectorSeekBar.getVisibility() == View.VISIBLE) {
 
@@ -8580,7 +8684,6 @@ public class Map extends FragmentActivity implements
         }
     }
 
-    // Used by purpleAdjustsForMap() and changeMapTypeDependingOnConnection().
     private void purpleLoadFirebaseShapes() {
 
         Log.i(TAG, "purpleLoadFirebaseShapes()");
@@ -8745,10 +8848,12 @@ public class Map extends FragmentActivity implements
         });
     }
 
-    // Used by onMenuItemClick.
     private void yellowAdjustmentsForMap() {
 
         Log.i(TAG, "yellowAdjustmentsForMap()");
+
+        // Load shapes from Firebase and make them yellow.
+        yellowLoadFirebaseShapes();
 
         // Change button color depending on map type.
         chatViewsButton.setBackgroundResource(R.drawable.chatviews_button);
@@ -8856,9 +8961,6 @@ public class Map extends FragmentActivity implements
         showingSmall = false;
         showingPoints = false;
 
-        // Load shapes from Firebase and make them yellow.
-        yellowLoadFirebaseShapes();
-
         // Create a circleTemp or polygonTemp if one already exists.
         if (chatSelectorSeekBar.getVisibility() == View.VISIBLE) {
 
@@ -8927,7 +9029,6 @@ public class Map extends FragmentActivity implements
         }
     }
 
-    // Used by yellowAdjustsForMap() and changeMapTypeDependingOnConnection().
     private void yellowLoadFirebaseShapes() {
 
         Log.i(TAG, "yellowLoadFirebaseShapes()");

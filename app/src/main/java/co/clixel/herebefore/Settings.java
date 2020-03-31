@@ -12,6 +12,7 @@ public class Settings extends AppCompatActivity implements
 
     //public static final String KEY_NOTIFICATIONS_SWITCH = "notifications";
     public static final String KEY_THEME_SWITCH = "toggleTheme";
+    public static final String KEY_MAP_TYPE = "mapTypePreference";
 
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String s) {
 

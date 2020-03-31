@@ -6,10 +6,14 @@
         app:title="Enable notifications" />
 
     <SwitchPreferenceCompat
+        app:defaultValue="false"
         app:key="toggleTheme"
         app:title="Toggle between dark and light mode" />
 
-    <Preference
+    <ListPreference
+        app:defaultValue="@string/depends_on_connection_type"
+        app:entries="@array/pref_map_types_entries"
+        app:entryValues="@array/pref_map_types_entries"
         app:key="mapTypePreference"
         app:title="Set preferred map type" />
 
