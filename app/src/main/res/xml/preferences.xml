@@ -27,7 +27,8 @@
         app:title="Send feedback" />
 
     <Preference
-        app:key="signOut"
+        app:defaultValue="false"
+        app:key="loggedIn"
         app:title="Sign Out" />
 
     <Preference

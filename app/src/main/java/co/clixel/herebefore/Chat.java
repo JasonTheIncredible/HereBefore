@@ -42,6 +42,8 @@ import android.view.View;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
 import com.crashlytics.android.Crashlytics;
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.PolygonOptions;
@@ -58,6 +60,7 @@ import android.widget.PopupMenu;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -118,6 +121,7 @@ public class Chat extends AppCompatActivity implements
     private File image, video;
     private byte[] byteArray;
     private View loadingIcon;
+    private SharedPreferences sharedPreferences;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -661,12 +665,16 @@ public class Chat extends AppCompatActivity implements
 
     protected void loadPreferences() {
 
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        Log.i(TAG, "loadPreferences()");
+
+        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
 
         theme = sharedPreferences.getBoolean(co.clixel.herebefore.Settings.KEY_THEME_SWITCH, false);
     }
 
     protected void updatePreferences() {
+
+        Log.i(TAG, "updatePreferences()");
 
         if (theme) {
 
@@ -679,6 +687,8 @@ public class Chat extends AppCompatActivity implements
             AppCompatDelegate.setDefaultNightMode(
                     AppCompatDelegate.MODE_NIGHT_YES);
         }
+
+        sharedPreferences.edit().putBoolean(Settings.KEY_LOGGED_IN, true).apply();
     }
 
     @Override
@@ -686,6 +696,13 @@ public class Chat extends AppCompatActivity implements
 
         super.onRestart();
         Log.i(TAG, "onRestart()");
+
+        // If the user logged out in settings and returns to this screen, send them back to Map.java.
+        if (FirebaseAuth.getInstance().getCurrentUser() == null && !(GoogleSignIn.getLastSignedInAccount(this) instanceof GoogleSignInAccount)) {
+
+            Intent Activity = new Intent(Chat.this, Map.class);
+            startActivity(Activity);
+        }
 
         // Prevent keyboard from opening.
         if (mInput != null) {
@@ -817,10 +834,12 @@ public class Chat extends AppCompatActivity implements
 
                     videoImageView.setVisibility(View.GONE);
                 }
+
                 if (imageView != null) {
 
                     imageView.setVisibility(View.GONE);
                 }
+
                 mediaButtonMenuIsOpen = false;
                 return true;
 
@@ -832,15 +851,18 @@ public class Chat extends AppCompatActivity implements
 
                     startActivityTakePhoto();
                 }
+
                 // Set the views to GONE to prevent anything else from being sent to Firebase.
                 if (videoImageView != null) {
 
                     videoImageView.setVisibility(View.GONE);
                 }
+
                 if (imageView != null) {
 
                     imageView.setVisibility(View.GONE);
                 }
+
                 mediaButtonMenuIsOpen = false;
                 return true;
 
@@ -852,15 +874,18 @@ public class Chat extends AppCompatActivity implements
 
                     startActivityRecordVideo();
                 }
+
                 // Set the views to GONE to prevent anything else from being sent to Firebase.
                 if (videoImageView != null) {
 
                     videoImageView.setVisibility(View.GONE);
                 }
+
                 if (imageView != null) {
 
                     imageView.setVisibility(View.GONE);
                 }
+
                 mediaButtonMenuIsOpen = false;
                 return true;
 

@@ -2058,103 +2058,6 @@ public class Map extends FragmentActivity implements
 
             mMap.getUiSettings().setScrollGesturesEnabled(true);
 
-            // Remove the polygon and markers.
-            if (newPolygon != null) {
-
-                newPolygon.remove();
-                marker0.remove();
-                marker1.remove();
-                marker2.remove();
-                newPolygon = null;
-                marker0 = null;
-                marker1 = null;
-                marker2 = null;
-                marker0Position = null;
-                marker1Position = null;
-                marker2Position = null;
-                marker0ID = null;
-                marker1ID = null;
-                marker2ID = null;
-
-                if (marker3 != null) {
-
-                    marker3.remove();
-                    marker3 = null;
-                    marker3Position = null;
-                    marker3ID = null;
-                }
-
-                if (marker4 != null) {
-
-                    marker4.remove();
-                    marker4 = null;
-                    marker4Position = null;
-                    marker4ID = null;
-                }
-
-                if (marker5 != null) {
-
-                    marker5.remove();
-                    marker5 = null;
-                    marker5Position = null;
-                    marker5ID = null;
-                }
-
-                if (marker6 != null) {
-
-                    marker6.remove();
-                    marker6 = null;
-                    marker6Position = null;
-                    marker6ID = null;
-                }
-
-                if (marker7 != null) {
-
-                    marker7.remove();
-                    marker7 = null;
-                    marker7Position = null;
-                    marker7ID = null;
-                }
-            }
-
-            // Remove the circle and markers.
-            if (newCircle != null) {
-
-                newCircle.remove();
-
-                if (marker0 != null) {
-
-                    marker0.remove();
-                }
-
-                if (marker1 != null) {
-                    marker1.remove();
-                }
-
-                newCircle = null;
-                marker0 = null;
-                marker1 = null;
-                marker0Position = null;
-                marker1Position = null;
-                marker0ID = null;
-                marker1ID = null;
-            }
-
-            mMap.clear();
-            chatSizeSeekBar.setProgress(0);
-            relativeAngle = 0.0;
-            usedSeekBar = false;
-            selectingShape = false;
-            mlocation = null;
-            threeMarkers = false;
-            fourMarkers = false;
-            fiveMarkers = false;
-            sixMarkers = false;
-            sevenMarkers = false;
-            eightMarkers = false;
-            polygonPointsList = null;
-            markerOutsidePolygon = false;
-            userIsWithinShape = false;
             // Set firstLoad to true if the camera is zoomed out. This will allow the camera to zoom in if the user left the activity from a dialog box before zooming.
             firstLoad = mMap.getCameraPosition().zoom <= 5;
 
@@ -2165,6 +2068,91 @@ public class Map extends FragmentActivity implements
             Log.e(TAG, "onRestart() -> mMap == null");
             Crashlytics.logException(new Exception("onRestart() -> mMap == null"));
         }
+
+        if (newPolygon != null) {
+
+            newPolygon = null;
+            marker0 = null;
+            marker1 = null;
+            marker2 = null;
+            marker0Position = null;
+            marker1Position = null;
+            marker2Position = null;
+            marker0ID = null;
+            marker1ID = null;
+            marker2ID = null;
+
+            if (marker3 != null) {
+
+                marker3 = null;
+                marker3Position = null;
+                marker3ID = null;
+            }
+
+            if (marker4 != null) {
+
+                marker4 = null;
+                marker4Position = null;
+                marker4ID = null;
+            }
+
+            if (marker5 != null) {
+
+                marker5 = null;
+                marker5Position = null;
+                marker5ID = null;
+            }
+
+            if (marker6 != null) {
+
+                marker6 = null;
+                marker6Position = null;
+                marker6ID = null;
+            }
+
+            if (marker7 != null) {
+
+                marker7 = null;
+                marker7Position = null;
+                marker7ID = null;
+            }
+        }
+
+        if (newCircle != null) {
+
+            newCircle = null;
+            marker0 = null;
+            marker1 = null;
+            marker0Position = null;
+            marker1Position = null;
+            marker0ID = null;
+            marker1ID = null;
+        }
+
+        if (polygonTemp != null) {
+
+            polygonTemp.remove();
+        }
+
+        if (circleTemp != null) {
+
+            circleTemp.remove();
+        }
+
+        chatSizeSeekBar.setProgress(0);
+        relativeAngle = 0.0;
+        usedSeekBar = false;
+        selectingShape = false;
+        mlocation = null;
+        threeMarkers = false;
+        fourMarkers = false;
+        fiveMarkers = false;
+        sixMarkers = false;
+        sevenMarkers = false;
+        eightMarkers = false;
+        polygonPointsList = null;
+        markerOutsidePolygon = false;
+        userIsWithinShape = false;
 
         overlappingShapesUUID = new ArrayList<>();
         overlappingShapesCircleUUID = new ArrayList<>();
@@ -3151,6 +3139,7 @@ public class Map extends FragmentActivity implements
                     if (newCircle != null) {
 
                         newCircle.remove();
+
                         if (marker0 != null) {
 
                             marker0.remove();
@@ -3441,6 +3430,7 @@ public class Map extends FragmentActivity implements
                     if (newCircle != null) {
 
                         newCircle.remove();
+
                         if (marker0 != null) {
 
                             marker0.remove();
@@ -3869,8 +3859,6 @@ public class Map extends FragmentActivity implements
 
                     return;
                 }
-
-                selectedOverlappingShapeUUID = overlappingShapesUUID.get(0);
 
                 selectingShape = true;
 
@@ -5703,10 +5691,6 @@ public class Map extends FragmentActivity implements
                     // Remove the polygon and markers.
                     if (newPolygon != null) {
 
-                        newPolygon.remove();
-                        marker0.remove();
-                        marker1.remove();
-                        marker2.remove();
                         newPolygon = null;
                         marker0 = null;
                         marker1 = null;
@@ -5720,7 +5704,6 @@ public class Map extends FragmentActivity implements
 
                         if (marker3 != null) {
 
-                            marker3.remove();
                             marker3 = null;
                             marker3Position = null;
                             marker3ID = null;
@@ -5728,7 +5711,6 @@ public class Map extends FragmentActivity implements
 
                         if (marker4 != null) {
 
-                            marker4.remove();
                             marker4 = null;
                             marker4Position = null;
                             marker4ID = null;
@@ -5736,7 +5718,6 @@ public class Map extends FragmentActivity implements
 
                         if (marker5 != null) {
 
-                            marker5.remove();
                             marker5 = null;
                             marker5Position = null;
                             marker5ID = null;
@@ -5744,7 +5725,6 @@ public class Map extends FragmentActivity implements
 
                         if (marker6 != null) {
 
-                            marker6.remove();
                             marker6 = null;
                             marker6Position = null;
                             marker6ID = null;
@@ -5752,7 +5732,6 @@ public class Map extends FragmentActivity implements
 
                         if (marker7 != null) {
 
-                            marker7.remove();
                             marker7 = null;
                             marker7Position = null;
                             marker7ID = null;
@@ -5764,9 +5743,6 @@ public class Map extends FragmentActivity implements
                     // Remove the circle and markers.
                     if (newCircle != null) {
 
-                        newCircle.remove();
-                        marker0.remove();
-                        marker1.remove();
                         newCircle = null;
                         marker0 = null;
                         marker1 = null;
@@ -5792,9 +5768,9 @@ public class Map extends FragmentActivity implements
                     if (chatSelectorSeekBar.getVisibility() != View.INVISIBLE) {
 
                         chatSelectorSeekBar.setVisibility(View.INVISIBLE);
+                        chatSizeSeekBar.setProgress(0);
                         chatSizeSeekBar.setVisibility(View.VISIBLE);
                         chatSelectorSeekBar.setProgress(0);
-                        chatSizeSeekBar.setProgress(0);
                     }
 
                     // Load different colored shapes depending on the map type.
@@ -6141,10 +6117,6 @@ public class Map extends FragmentActivity implements
                     // Remove the polygon and markers.
                     if (newPolygon != null) {
 
-                        newPolygon.remove();
-                        marker0.remove();
-                        marker1.remove();
-                        marker2.remove();
                         newPolygon = null;
                         marker0 = null;
                         marker1 = null;
@@ -6158,7 +6130,6 @@ public class Map extends FragmentActivity implements
 
                         if (marker3 != null) {
 
-                            marker3.remove();
                             marker3 = null;
                             marker3Position = null;
                             marker3ID = null;
@@ -6166,7 +6137,6 @@ public class Map extends FragmentActivity implements
 
                         if (marker4 != null) {
 
-                            marker4.remove();
                             marker4 = null;
                             marker4Position = null;
                             marker4ID = null;
@@ -6174,7 +6144,6 @@ public class Map extends FragmentActivity implements
 
                         if (marker5 != null) {
 
-                            marker5.remove();
                             marker5 = null;
                             marker5Position = null;
                             marker5ID = null;
@@ -6182,7 +6151,6 @@ public class Map extends FragmentActivity implements
 
                         if (marker6 != null) {
 
-                            marker6.remove();
                             marker6 = null;
                             marker6Position = null;
                             marker6ID = null;
@@ -6190,7 +6158,6 @@ public class Map extends FragmentActivity implements
 
                         if (marker7 != null) {
 
-                            marker7.remove();
                             marker7 = null;
                             marker7Position = null;
                             marker7ID = null;
@@ -6202,9 +6169,6 @@ public class Map extends FragmentActivity implements
                     // Remove the circle and markers.
                     if (newCircle != null) {
 
-                        newCircle.remove();
-                        marker0.remove();
-                        marker1.remove();
                         newCircle = null;
                         marker0 = null;
                         marker1 = null;
@@ -6230,9 +6194,9 @@ public class Map extends FragmentActivity implements
                     if (chatSelectorSeekBar.getVisibility() != View.INVISIBLE) {
 
                         chatSelectorSeekBar.setVisibility(View.INVISIBLE);
+                        chatSizeSeekBar.setProgress(0);
                         chatSizeSeekBar.setVisibility(View.VISIBLE);
                         chatSelectorSeekBar.setProgress(0);
-                        chatSizeSeekBar.setProgress(0);
                     }
 
                     // Load different colored shapes depending on the map type.
@@ -6594,10 +6558,6 @@ public class Map extends FragmentActivity implements
                     // Remove the polygon and markers.
                     if (newPolygon != null) {
 
-                        newPolygon.remove();
-                        marker0.remove();
-                        marker1.remove();
-                        marker2.remove();
                         newPolygon = null;
                         marker0 = null;
                         marker1 = null;
@@ -6611,7 +6571,6 @@ public class Map extends FragmentActivity implements
 
                         if (marker3 != null) {
 
-                            marker3.remove();
                             marker3 = null;
                             marker3Position = null;
                             marker3ID = null;
@@ -6619,7 +6578,6 @@ public class Map extends FragmentActivity implements
 
                         if (marker4 != null) {
 
-                            marker4.remove();
                             marker4 = null;
                             marker4Position = null;
                             marker4ID = null;
@@ -6627,7 +6585,6 @@ public class Map extends FragmentActivity implements
 
                         if (marker5 != null) {
 
-                            marker5.remove();
                             marker5 = null;
                             marker5Position = null;
                             marker5ID = null;
@@ -6635,7 +6592,6 @@ public class Map extends FragmentActivity implements
 
                         if (marker6 != null) {
 
-                            marker6.remove();
                             marker6 = null;
                             marker6Position = null;
                             marker6ID = null;
@@ -6643,7 +6599,6 @@ public class Map extends FragmentActivity implements
 
                         if (marker7 != null) {
 
-                            marker7.remove();
                             marker7 = null;
                             marker7Position = null;
                             marker7ID = null;
@@ -6655,9 +6610,6 @@ public class Map extends FragmentActivity implements
                     // Remove the circle and markers.
                     if (newCircle != null) {
 
-                        newCircle.remove();
-                        marker0.remove();
-                        marker1.remove();
                         newCircle = null;
                         marker0 = null;
                         marker1 = null;
@@ -6683,9 +6635,9 @@ public class Map extends FragmentActivity implements
                     if (chatSelectorSeekBar.getVisibility() != View.INVISIBLE) {
 
                         chatSelectorSeekBar.setVisibility(View.INVISIBLE);
+                        chatSizeSeekBar.setProgress(0);
                         chatSizeSeekBar.setVisibility(View.VISIBLE);
                         chatSelectorSeekBar.setProgress(0);
-                        chatSizeSeekBar.setProgress(0);
                     }
 
                     // Load different colored shapes depending on the map type.
@@ -7047,10 +6999,6 @@ public class Map extends FragmentActivity implements
                     // Remove the polygon and markers.
                     if (newPolygon != null) {
 
-                        newPolygon.remove();
-                        marker0.remove();
-                        marker1.remove();
-                        marker2.remove();
                         newPolygon = null;
                         marker0 = null;
                         marker1 = null;
@@ -7064,7 +7012,6 @@ public class Map extends FragmentActivity implements
 
                         if (marker3 != null) {
 
-                            marker3.remove();
                             marker3 = null;
                             marker3Position = null;
                             marker3ID = null;
@@ -7072,7 +7019,6 @@ public class Map extends FragmentActivity implements
 
                         if (marker4 != null) {
 
-                            marker4.remove();
                             marker4 = null;
                             marker4Position = null;
                             marker4ID = null;
@@ -7080,7 +7026,6 @@ public class Map extends FragmentActivity implements
 
                         if (marker5 != null) {
 
-                            marker5.remove();
                             marker5 = null;
                             marker5Position = null;
                             marker5ID = null;
@@ -7088,7 +7033,6 @@ public class Map extends FragmentActivity implements
 
                         if (marker6 != null) {
 
-                            marker6.remove();
                             marker6 = null;
                             marker6Position = null;
                             marker6ID = null;
@@ -7096,7 +7040,6 @@ public class Map extends FragmentActivity implements
 
                         if (marker7 != null) {
 
-                            marker7.remove();
                             marker7 = null;
                             marker7Position = null;
                             marker7ID = null;
@@ -7108,9 +7051,6 @@ public class Map extends FragmentActivity implements
                     // Remove the circle and markers.
                     if (newCircle != null) {
 
-                        newCircle.remove();
-                        marker0.remove();
-                        marker1.remove();
                         newCircle = null;
                         marker0 = null;
                         marker1 = null;
@@ -7136,9 +7076,9 @@ public class Map extends FragmentActivity implements
                     if (chatSelectorSeekBar.getVisibility() != View.INVISIBLE) {
 
                         chatSelectorSeekBar.setVisibility(View.INVISIBLE);
+                        chatSizeSeekBar.setProgress(0);
                         chatSizeSeekBar.setVisibility(View.VISIBLE);
                         chatSelectorSeekBar.setProgress(0);
-                        chatSizeSeekBar.setProgress(0);
                     }
 
                     // Load different colored shapes depending on the map type.
@@ -7500,10 +7440,6 @@ public class Map extends FragmentActivity implements
                     // Remove the polygon and markers.
                     if (newPolygon != null) {
 
-                        newPolygon.remove();
-                        marker0.remove();
-                        marker1.remove();
-                        marker2.remove();
                         newPolygon = null;
                         marker0 = null;
                         marker1 = null;
@@ -7517,7 +7453,6 @@ public class Map extends FragmentActivity implements
 
                         if (marker3 != null) {
 
-                            marker3.remove();
                             marker3 = null;
                             marker3Position = null;
                             marker3ID = null;
@@ -7525,7 +7460,6 @@ public class Map extends FragmentActivity implements
 
                         if (marker4 != null) {
 
-                            marker4.remove();
                             marker4 = null;
                             marker4Position = null;
                             marker4ID = null;
@@ -7533,7 +7467,6 @@ public class Map extends FragmentActivity implements
 
                         if (marker5 != null) {
 
-                            marker5.remove();
                             marker5 = null;
                             marker5Position = null;
                             marker5ID = null;
@@ -7541,7 +7474,6 @@ public class Map extends FragmentActivity implements
 
                         if (marker6 != null) {
 
-                            marker6.remove();
                             marker6 = null;
                             marker6Position = null;
                             marker6ID = null;
@@ -7549,7 +7481,6 @@ public class Map extends FragmentActivity implements
 
                         if (marker7 != null) {
 
-                            marker7.remove();
                             marker7 = null;
                             marker7Position = null;
                             marker7ID = null;
@@ -7561,9 +7492,6 @@ public class Map extends FragmentActivity implements
                     // Remove the circle and markers.
                     if (newCircle != null) {
 
-                        newCircle.remove();
-                        marker0.remove();
-                        marker1.remove();
                         newCircle = null;
                         marker0 = null;
                         marker1 = null;
@@ -7589,9 +7517,9 @@ public class Map extends FragmentActivity implements
                     if (chatSelectorSeekBar.getVisibility() != View.INVISIBLE) {
 
                         chatSelectorSeekBar.setVisibility(View.INVISIBLE);
+                        chatSizeSeekBar.setProgress(0);
                         chatSizeSeekBar.setVisibility(View.VISIBLE);
                         chatSelectorSeekBar.setProgress(0);
-                        chatSizeSeekBar.setProgress(0);
                     }
 
                     // Load different colored points depending on map type.
@@ -8520,10 +8448,6 @@ public class Map extends FragmentActivity implements
         // Remove the polygon and markers.
         if (newPolygon != null) {
 
-            newPolygon.remove();
-            marker0.remove();
-            marker1.remove();
-            marker2.remove();
             newPolygon = null;
             marker0 = null;
             marker1 = null;
@@ -8537,7 +8461,6 @@ public class Map extends FragmentActivity implements
 
             if (marker3 != null) {
 
-                marker3.remove();
                 marker3 = null;
                 marker3Position = null;
                 marker3ID = null;
@@ -8545,7 +8468,6 @@ public class Map extends FragmentActivity implements
 
             if (marker4 != null) {
 
-                marker4.remove();
                 marker4 = null;
                 marker4Position = null;
                 marker4ID = null;
@@ -8553,7 +8475,6 @@ public class Map extends FragmentActivity implements
 
             if (marker5 != null) {
 
-                marker5.remove();
                 marker5 = null;
                 marker5Position = null;
                 marker5ID = null;
@@ -8561,7 +8482,6 @@ public class Map extends FragmentActivity implements
 
             if (marker6 != null) {
 
-                marker6.remove();
                 marker6 = null;
                 marker6Position = null;
                 marker6ID = null;
@@ -8569,7 +8489,6 @@ public class Map extends FragmentActivity implements
 
             if (marker7 != null) {
 
-                marker7.remove();
                 marker7 = null;
                 marker7Position = null;
                 marker7ID = null;
@@ -8578,16 +8497,6 @@ public class Map extends FragmentActivity implements
 
         // Remove the circle and markers.
         if (newCircle != null) {
-
-            newCircle.remove();
-            if (marker0 != null) {
-
-                marker0.remove();
-            }
-
-            if (marker1 != null) {
-                marker1.remove();
-            }
 
             newCircle = null;
             marker0 = null;
@@ -8865,10 +8774,6 @@ public class Map extends FragmentActivity implements
         // Remove the polygon and markers.
         if (newPolygon != null) {
 
-            newPolygon.remove();
-            marker0.remove();
-            marker1.remove();
-            marker2.remove();
             newPolygon = null;
             marker0 = null;
             marker1 = null;
@@ -8882,7 +8787,6 @@ public class Map extends FragmentActivity implements
 
             if (marker3 != null) {
 
-                marker3.remove();
                 marker3 = null;
                 marker3Position = null;
                 marker3ID = null;
@@ -8890,7 +8794,6 @@ public class Map extends FragmentActivity implements
 
             if (marker4 != null) {
 
-                marker4.remove();
                 marker4 = null;
                 marker4Position = null;
                 marker4ID = null;
@@ -8898,7 +8801,6 @@ public class Map extends FragmentActivity implements
 
             if (marker5 != null) {
 
-                marker5.remove();
                 marker5 = null;
                 marker5Position = null;
                 marker5ID = null;
@@ -8906,7 +8808,6 @@ public class Map extends FragmentActivity implements
 
             if (marker6 != null) {
 
-                marker6.remove();
                 marker6 = null;
                 marker6Position = null;
                 marker6ID = null;
@@ -8914,7 +8815,6 @@ public class Map extends FragmentActivity implements
 
             if (marker7 != null) {
 
-                marker7.remove();
                 marker7 = null;
                 marker7Position = null;
                 marker7ID = null;
@@ -8923,16 +8823,6 @@ public class Map extends FragmentActivity implements
 
         // Remove the circle and markers.
         if (newCircle != null) {
-
-            newCircle.remove();
-            if (marker0 != null) {
-
-                marker0.remove();
-            }
-
-            if (marker1 != null) {
-                marker1.remove();
-            }
 
             newCircle = null;
             marker0 = null;
