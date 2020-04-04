@@ -688,7 +688,7 @@ public class Chat extends AppCompatActivity implements
                     AppCompatDelegate.MODE_NIGHT_YES);
         }
 
-        sharedPreferences.edit().putBoolean(Settings.KEY_LOGGED_IN, true).apply();
+        sharedPreferences.edit().putBoolean(Settings.KEY_SIGN_OUT, true).apply();
     }
 
     @Override

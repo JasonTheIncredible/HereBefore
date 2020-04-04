@@ -28,7 +28,7 @@
 
     <Preference
         app:defaultValue="false"
-        app:key="loggedIn"
+        app:key="signOut"
         app:title="Sign Out" />
 
     <Preference

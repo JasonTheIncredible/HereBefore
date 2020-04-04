@@ -120,12 +120,14 @@ public class Map extends FragmentActivity implements
     private Toast selectingShapeToast;
     private View loadingIcon;
 
+    // Prompt user to sign-in again before deleting account (don't just check that credentials exist in Firebase - check if credentials currently exist for user and that credentials match with the user's prompted input). Something similar for Google sign-in?
     // Page for deleting user account, resetting password, saving user map type preferences, signing out from here and Chat.java, etc.
     // List the selected value in settings aka "hybrid map type" as summary.
     // Adjust light mode design for Chat.java.
     // Allow users to message and reply to one another anonymously.
     // "How to make databases faster".
     // Change design (change popupMenu color).
+    // Check for any memory leaks.
     // Decrease app size.
     // Optimize Firebase loading in Map.
     // Work on onTrimMemory().
@@ -192,6 +194,17 @@ public class Map extends FragmentActivity implements
         } else {
 
             checkLocationPermission();
+        }
+
+        // Check if the user is logged in. If true, make the settings button visible.
+        boolean loggedIn = PreferenceManager.getDefaultSharedPreferences(this).getBoolean("signOut", false);
+
+        if (loggedIn) {
+
+            settingsButton.setVisibility(View.VISIBLE);
+        } else {
+
+            settingsButton.setVisibility(View.GONE);
         }
 
         // Shows a menu to change the map type.

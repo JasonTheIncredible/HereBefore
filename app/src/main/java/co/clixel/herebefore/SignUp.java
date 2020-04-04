@@ -2,11 +2,13 @@ package co.clixel.herebefore;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
+import androidx.preference.PreferenceManager;
 
 import android.util.Log;
 import android.util.Patterns;
@@ -27,7 +29,7 @@ public class SignUp extends AppCompatActivity {
     private static final String TAG = "SignUp";
     private EditText mEmail, mPassword;
     private Button createAccountButton;
-    private String uuid;
+    private String uuid, email, pass;
     private Double polygonArea, circleLatitude, circleLongitude, radius, marker0Latitude, marker0Longitude, marker1Latitude, marker1Longitude, marker2Latitude, marker2Longitude, marker3Latitude, marker3Longitude, marker4Latitude, marker4Longitude, marker5Latitude, marker5Longitude, marker6Latitude, marker6Longitude, marker7Latitude, marker7Longitude;
     private boolean newShape, userIsWithinShape, threeMarkers, fourMarkers, fiveMarkers, sixMarkers, sevenMarkers, eightMarkers, shapeIsCircle;
     private int fillColor;
@@ -106,8 +108,8 @@ public class SignUp extends AppCompatActivity {
 
                 Log.i(TAG, "onStart() -> createAccountButton -> onClick");
 
-                String email = mEmail.getText().toString().toLowerCase();
-                String pass = mPassword.getText().toString();
+                email = mEmail.getText().toString().toLowerCase();
+                pass = mPassword.getText().toString();
 
                 if (email.equals("") && !pass.equals("")) {
 
@@ -154,6 +156,12 @@ public class SignUp extends AppCompatActivity {
                     public void onComplete(@NonNull Task<AuthResult> task) {
 
                         if (task.isSuccessful()) {
+
+                            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(SignUp.this);
+                            SharedPreferences.Editor editor = sharedPreferences.edit()
+                                    .putString("userToken", email)
+                                    .putString("passToken", pass);
+                            editor.commit();
 
                             // Go to Chat.java with the extras.
                             toastMessageShort("Signed up");

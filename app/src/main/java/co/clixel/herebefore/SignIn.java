@@ -2,11 +2,13 @@ package co.clixel.herebefore;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
+import androidx.preference.PreferenceManager;
 
 import android.util.Log;
 import android.util.Patterns;
@@ -39,12 +41,13 @@ public class SignIn extends AppCompatActivity {
     private EditText mEmail, mPassword;
     private Button signInButton, goToCreateAccountButton;
     private SignInButton googleSignInButton;
-    private String uuid;
+    private String uuid, email, pass;
     private Double polygonArea, circleLatitude, circleLongitude, radius, marker0Latitude, marker0Longitude, marker1Latitude, marker1Longitude, marker2Latitude, marker2Longitude, marker3Latitude, marker3Longitude, marker4Latitude, marker4Longitude, marker5Latitude, marker5Longitude, marker6Latitude, marker6Longitude, marker7Latitude, marker7Longitude;
     private boolean newShape, userIsWithinShape, threeMarkers, fourMarkers, fiveMarkers, sixMarkers, sevenMarkers, eightMarkers, shapeIsCircle;
     private int fillColor;
     private GoogleSignInClient mGoogleSignInClient;
     private FirebaseAuth mAuth;
+    private GoogleSignInAccount googleAccount;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -138,8 +141,8 @@ public class SignIn extends AppCompatActivity {
 
                 Log.i(TAG, "onStart() -> signInButton -> onClick");
 
-                String email = mEmail.getText().toString().toLowerCase();
-                String pass = mPassword.getText().toString();
+                email = mEmail.getText().toString().toLowerCase();
+                pass = mPassword.getText().toString();
 
                 if (email.equals("") && !pass.equals("")) {
 
@@ -189,6 +192,13 @@ public class SignIn extends AppCompatActivity {
 
                             // Go to Chat.java with the extras.
                             toastMessageShort("Signed in");
+
+                            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(SignIn.this);
+                            SharedPreferences.Editor editor = sharedPreferences.edit()
+                                    .putString("userToken", email)
+                                    .putString("passToken", pass);
+                            editor.commit();
+
                             Intent Activity = new Intent(SignIn.this, Chat.class);
                             Activity.putExtra("newShape", newShape);
                             Activity.putExtra("uuid", uuid);
@@ -384,10 +394,10 @@ public class SignIn extends AppCompatActivity {
             try {
 
                 // Google sign in was successful, authenticate with Firebase
-                GoogleSignInAccount account = task.getResult(ApiException.class);
-                if (account != null) {
+                googleAccount = task.getResult(ApiException.class);
+                if (googleAccount != null) {
 
-                    firebaseAuthWithGoogle(account);
+                    firebaseAuthWithGoogle(googleAccount);
                     findViewById(R.id.loadingIcon).bringToFront();
                     findViewById(R.id.loadingIcon).setVisibility(View.VISIBLE);
                 } else {
@@ -422,6 +432,13 @@ public class SignIn extends AppCompatActivity {
 
                             // Sign-in success, update UI with the signed-in user's information
                             Log.d(TAG, "signInWithCredential:success");
+
+                            // Save token to sharedPreferences.
+                            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(SignIn.this);
+                            SharedPreferences.Editor editor = sharedPreferences.edit()
+                                    .putString("googleIdToken", googleAccount.getIdToken());
+                            editor.commit();
+
                             FirebaseUser user = mAuth.getCurrentUser();
                             // Go to Chat.java with the extras.
                             toastMessageShort("Signed in");
