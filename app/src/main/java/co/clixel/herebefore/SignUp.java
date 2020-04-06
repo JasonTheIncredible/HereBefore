@@ -33,6 +33,7 @@ public class SignUp extends AppCompatActivity {
     private Double polygonArea, circleLatitude, circleLongitude, radius, marker0Latitude, marker0Longitude, marker1Latitude, marker1Longitude, marker2Latitude, marker2Longitude, marker3Latitude, marker3Longitude, marker4Latitude, marker4Longitude, marker5Latitude, marker5Longitude, marker6Latitude, marker6Longitude, marker7Latitude, marker7Longitude;
     private boolean newShape, userIsWithinShape, threeMarkers, fourMarkers, fiveMarkers, sixMarkers, sevenMarkers, eightMarkers, shapeIsCircle;
     private int fillColor;
+    private View loadingIcon;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,6 +45,7 @@ public class SignUp extends AppCompatActivity {
         mEmail = findViewById(R.id.createEmailAddress);
         mPassword = findViewById(R.id.createPassword);
         createAccountButton = findViewById(R.id.createAccountButton);
+        loadingIcon = findViewById(R.id.loadingIcon);
 
         // Set to dark mode.
         AppCompatDelegate.setDefaultNightMode(
@@ -146,8 +148,8 @@ public class SignUp extends AppCompatActivity {
                     }
                 }
 
-                findViewById(R.id.loadingIcon).bringToFront();
-                findViewById(R.id.loadingIcon).setVisibility(View.VISIBLE);
+                loadingIcon.bringToFront();
+                loadingIcon.setVisibility(View.VISIBLE);
 
                 // Try adding the new account to Firebase.
                 FirebaseAuth.getInstance().createUserWithEmailAndPassword(email, pass).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
@@ -197,7 +199,7 @@ public class SignUp extends AppCompatActivity {
                             Activity.putExtra("marker6Longitude", marker6Longitude);
                             Activity.putExtra("marker7Latitude", marker7Latitude);
                             Activity.putExtra("marker7Longitude", marker7Longitude);
-                            findViewById(R.id.loadingIcon).setVisibility(View.GONE);
+                            loadingIcon.setVisibility(View.GONE);
                             startActivity(Activity);
                             finish();
                         }
@@ -205,12 +207,12 @@ public class SignUp extends AppCompatActivity {
                         if (!task.isSuccessful() && task.getException() != null) {
 
                             // Tell the user what happened.
-                            findViewById(R.id.loadingIcon).setVisibility(View.GONE);
+                            loadingIcon.setVisibility(View.GONE);
                             toastMessageLong("Account Creation Failed: " + task.getException().getMessage());
                         } else if (!task.isSuccessful() && task.getException() == null) {
 
                             // Tell the user something happened.
-                            findViewById(R.id.loadingIcon).setVisibility(View.GONE);
+                            loadingIcon.setVisibility(View.GONE);
                             toastMessageLong("An unknown error occurred. Please try again.");
 
                             // Send the information to Crashlytics for future debugging.
@@ -229,7 +231,7 @@ public class SignUp extends AppCompatActivity {
         super.onRestart();
         Log.i(TAG, "onRestart()");
 
-        findViewById(R.id.loadingIcon).setVisibility(View.GONE);
+        loadingIcon.setVisibility(View.GONE);
     }
 
     @Override

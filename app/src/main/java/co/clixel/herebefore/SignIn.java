@@ -48,6 +48,7 @@ public class SignIn extends AppCompatActivity {
     private GoogleSignInClient mGoogleSignInClient;
     private FirebaseAuth mAuth;
     private GoogleSignInAccount googleAccount;
+    private View loadingIcon;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,6 +66,7 @@ public class SignIn extends AppCompatActivity {
         // developers.google.com/android/reference/com/google/android/gms/common/SignInButton.html#COLOR_DARK
         googleSignInButton.setColorScheme(0);
         goToCreateAccountButton = findViewById(R.id.goToCreateAccountButton);
+        loadingIcon = findViewById(R.id.loadingIcon);
 
         // Configure Google Sign In
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
@@ -179,8 +181,8 @@ public class SignIn extends AppCompatActivity {
                     }
                 }
 
-                findViewById(R.id.loadingIcon).bringToFront();
-                findViewById(R.id.loadingIcon).setVisibility(View.VISIBLE);
+                loadingIcon.bringToFront();
+                loadingIcon.setVisibility(View.VISIBLE);
 
                 // Check if the account exists in Firebase.
                 FirebaseAuth.getInstance().signInWithEmailAndPassword(email, pass).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
@@ -231,7 +233,7 @@ public class SignIn extends AppCompatActivity {
                             Activity.putExtra("marker6Longitude", marker6Longitude);
                             Activity.putExtra("marker7Latitude", marker7Latitude);
                             Activity.putExtra("marker7Longitude", marker7Longitude);
-                            findViewById(R.id.loadingIcon).setVisibility(View.GONE);
+                            loadingIcon.setVisibility(View.GONE);
                             startActivity(Activity);
                             finish();
                         }
@@ -239,12 +241,12 @@ public class SignIn extends AppCompatActivity {
                         if (!task.isSuccessful() && task.getException() != null) {
 
                             // Tell the user what happened.
-                            findViewById(R.id.loadingIcon).setVisibility(View.GONE);
+                            loadingIcon.setVisibility(View.GONE);
                             toastMessageLong("User Authentication Failed: " + task.getException().getMessage());
                         } else if (!task.isSuccessful() && task.getException() == null) {
 
                             // Tell the user something happened.
-                            findViewById(R.id.loadingIcon).setVisibility(View.GONE);
+                            loadingIcon.setVisibility(View.GONE);
                             toastMessageLong("An unknown error occurred. Please try again.");
 
                             // Send the information to Crashlytics for future debugging.
@@ -317,7 +319,7 @@ public class SignIn extends AppCompatActivity {
         super.onRestart();
         Log.i(TAG, "onRestart()");
 
-        findViewById(R.id.loadingIcon).setVisibility(View.GONE);
+        loadingIcon.setVisibility(View.GONE);
     }
 
     @Override
@@ -398,8 +400,8 @@ public class SignIn extends AppCompatActivity {
                 if (googleAccount != null) {
 
                     firebaseAuthWithGoogle(googleAccount);
-                    findViewById(R.id.loadingIcon).bringToFront();
-                    findViewById(R.id.loadingIcon).setVisibility(View.VISIBLE);
+                    loadingIcon.bringToFront();
+                    loadingIcon.setVisibility(View.VISIBLE);
                 } else {
 
                     Log.w(TAG, "onActivityResult() -> account == null");
@@ -474,13 +476,13 @@ public class SignIn extends AppCompatActivity {
                             Activity.putExtra("marker6Longitude", marker6Longitude);
                             Activity.putExtra("marker7Latitude", marker7Latitude);
                             Activity.putExtra("marker7Longitude", marker7Longitude);
-                            findViewById(R.id.loadingIcon).setVisibility(View.GONE);
+                            loadingIcon.setVisibility(View.GONE);
                             startActivity(Activity);
                             finish();
                         } else {
 
                             // If sign in fails, display a recyclerviewlayout to the user.
-                            findViewById(R.id.loadingIcon).setVisibility(View.GONE);
+                            loadingIcon.setVisibility(View.GONE);
                             Log.w(TAG, "firebaseAuthWithGoogle() -> failed: " + task.getException());
                             toastMessageLong("Authentication failed. Try again later.");
                             Crashlytics.logException(new Exception("firebaseAuthWithGoogle() -> failed: " + task.getException()));

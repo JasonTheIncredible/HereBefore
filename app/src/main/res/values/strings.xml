@@ -27,6 +27,9 @@
     <string name="play_icon">Play_icon</string>
     <string name="browse_gallery">Browse gallery</string>
     <string name="depends_on_connection_type">Depends on connection type</string>
+    <string name="deleteAccount">Delete Account</string>
+    <string name="back">Back</string>
+    <string name="email">"Email: "</string>
 
     <string-array name="pref_map_types_entries">
         <item>Depends on connection type</item>

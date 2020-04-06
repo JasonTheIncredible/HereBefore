@@ -120,7 +120,7 @@ public class Map extends FragmentActivity implements
     private Toast selectingShapeToast;
     private View loadingIcon;
 
-    // Prompt user to sign-in again before deleting account (don't just check that credentials exist in Firebase - check if credentials currently exist for user and that credentials match with the user's prompted input). Something similar for Google sign-in?
+    // Sign in to Google account again before deletion.
     // Page for deleting user account, resetting password, saving user map type preferences, signing out from here and Chat.java, etc.
     // List the selected value in settings aka "hybrid map type" as summary.
     // Adjust light mode design for Chat.java.
@@ -231,6 +231,12 @@ public class Map extends FragmentActivity implements
                 Log.i(TAG, "onStart() -> settingsButton -> onClick");
 
                 Intent Activity = new Intent(Map.this, co.clixel.herebefore.Settings.class);
+
+                // Cancel the toast so it doesn't show in the next activity.
+                if (selectingShapeToast != null) {
+
+                    selectingShapeToast.cancel();
+                }
 
                 startActivity(Activity);
             }
@@ -2286,6 +2292,12 @@ public class Map extends FragmentActivity implements
         if (mapTypeButton != null) {
 
             mapTypeButton.setOnClickListener(null);
+        }
+
+        // Remove the listener.
+        if (settingsButton != null) {
+
+            settingsButton.setOnClickListener(null);
         }
 
         // Remove the listener.
