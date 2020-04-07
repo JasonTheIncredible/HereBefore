@@ -120,10 +120,12 @@ public class Map extends FragmentActivity implements
     private Toast selectingShapeToast;
     private View loadingIcon;
 
-    // Sign in to Google account again before deletion.
-    // Page for deleting user account, resetting password, saving user map type preferences, signing out from here and Chat.java, etc.
     // List the selected value in settings aka "hybrid map type" as summary.
+    // Page for deleting user account, resetting password, saving user map type preferences, signing out from here and Chat.java, etc.
+    // Send email to Google email before account deletion, or find another way.
+    // Authenticate user email address at sign-up.
     // Adjust light mode design for Chat.java.
+    // When not on wifi, the location may "jump" and the camera might not be correct. I'm not currently sure how to test / fix this without annoying users that are traveling at very high speeds.
     // Allow users to message and reply to one another anonymously.
     // "How to make databases faster".
     // Change design (change popupMenu color).
@@ -137,7 +139,6 @@ public class Map extends FragmentActivity implements
     // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.
     // Add preference for shape color.
     // Leave messages in locations that users get notified of when they enter the area.
-    // When not on wifi, the location may "jump" and the camera might not be correct. I'm not currently sure how to test / fix this without annoying users that are traveling at very high speeds.
     // Add ability to filter recyclerView by type of content (recorded at the scene) to get rid of the "fluff"
     // Add ability to add video from gallery to recyclerView. [silicompressor 2.2.3 accepts content URIs but gives a black video on the app and in Firebase. Will follow up with this later.]
     // Add ability to add both picture and video to firebase at the same time.

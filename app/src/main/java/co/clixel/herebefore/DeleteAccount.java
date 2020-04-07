@@ -16,6 +16,7 @@ import androidx.appcompat.app.AppCompatDelegate;
 import androidx.preference.PreferenceManager;
 
 import com.crashlytics.android.Crashlytics;
+import com.firebase.ui.auth.AuthUI;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthCredential;
@@ -29,7 +30,9 @@ public class DeleteAccount extends AppCompatActivity {
     private EditText password;
     private Button deleteAccount, goBack;
     private View loadingIcon;
-    private boolean theme;
+    private boolean theme, googleAccount;
+    private SharedPreferences sharedPreferences;
+    private String googleIdToken;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,44 +45,55 @@ public class DeleteAccount extends AppCompatActivity {
         goBack = findViewById(R.id.goBack);
         loadingIcon = findViewById(R.id.loadingIcon);
 
-        // Add a textView at the top with the user's private email address.
-        RelativeLayout relativeLayout = findViewById(R.id.deleteAccountLayout);
-        TextView textView = new TextView(this);
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(DeleteAccount.this);
-        String userToken = sharedPreferences.getString("userToken", "");
-        // Only show part of the email for privacy.
-        // Divide the email address into two parts.
-        String firstPartOfEmail = userToken.substring(0, userToken.indexOf("@"));
-        String secondPartOfEmail = userToken.substring(userToken.indexOf("@"));
-        // Cut the first part of the email in half and add asterisks for the second part.
-        StringBuilder privateEmail = new StringBuilder(firstPartOfEmail.substring(0, firstPartOfEmail.length() / 2));
-        if (firstPartOfEmail.length() % 2 == 0) {
+        // Add a textView at the top with the user's private email address if they don't have a Google account.
 
-            // Number is even.
-            for (int i = 0; i < firstPartOfEmail.length() / 2; i++) {
+        // Check if the account is a Google account.
+        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(DeleteAccount.this);
+        googleIdToken = sharedPreferences.getString("googleIdToken", "");
+        googleAccount = !googleIdToken.equals("");
+        if (!googleAccount) {
 
-                privateEmail.append("*");
+            RelativeLayout relativeLayout = findViewById(R.id.deleteAccountLayout);
+            TextView textView = new TextView(this);
+            sharedPreferences = PreferenceManager.getDefaultSharedPreferences(DeleteAccount.this);
+            String userToken = sharedPreferences.getString("userToken", "");
+            // Only show part of the email for privacy.
+            // Divide the email address into two parts.
+            String firstPartOfEmail = userToken.substring(0, userToken.indexOf("@"));
+            String secondPartOfEmail = userToken.substring(userToken.indexOf("@"));
+            // Cut the first part of the email in half and add asterisks for the second part.
+            StringBuilder privateEmail = new StringBuilder(firstPartOfEmail.substring(0, firstPartOfEmail.length() / 2));
+            if (firstPartOfEmail.length() % 2 == 0) {
+
+                // Number is even.
+                for (int i = 0; i < firstPartOfEmail.length() / 2; i++) {
+
+                    privateEmail.append("*");
+                }
+
+                // Add everything after "@".
+                privateEmail.append(secondPartOfEmail);
+            } else {
+
+                // Number is odd. Add an extra asterisk.
+                for (int i = 0; i < (firstPartOfEmail.length() / 2) + 1; i++) {
+
+                    privateEmail.append("*");
+                }
+
+                // Add everything after "@".
+                privateEmail.append(secondPartOfEmail);
             }
-
-            // Add everything after "@".
-            privateEmail.append(secondPartOfEmail);
+            textView.setText(getResources().getString(R.string.email) + privateEmail);
+            textView.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+            textView.setTextSize(20);
+            RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+            textView.setLayoutParams(params);
+            relativeLayout.addView(textView);
         } else {
 
-            // Number is odd. Add an extra asterisk.
-            for (int i = 0; i < (firstPartOfEmail.length() / 2) + 1; i++) {
-
-                privateEmail.append("*");
-            }
-
-            // Add everything after "@".
-            privateEmail.append(secondPartOfEmail);
+            password.setVisibility(View.GONE);
         }
-        textView.setText(getResources().getString(R.string.email) + privateEmail);
-        textView.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        textView.setTextSize(20);
-        RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
-        textView.setLayoutParams(params);
-        relativeLayout.addView(textView);
     }
 
     @Override
@@ -101,12 +115,8 @@ public class DeleteAccount extends AppCompatActivity {
                 // such as GoogleAuthProvider or FacebookAuthProvider.
                 AuthCredential credential = null;
 
-                SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(DeleteAccount.this);
-
                 String userToken = sharedPreferences.getString("userToken", "");
                 String passToken = sharedPreferences.getString("passToken", "");
-
-                String googleIdToken = sharedPreferences.getString("googleIdToken", "");
 
                 // Check if the account is a Google account.
                 if (!googleIdToken.equals("")) {
@@ -121,7 +131,8 @@ public class DeleteAccount extends AppCompatActivity {
 
                 if (user != null) {
 
-                    if (password.getText().toString().equals(passToken)) {
+                    // Sign out the user without asking for a password, as the user has a Google account.
+                    if (googleAccount) {
 
                         loadingIcon.bringToFront();
                         loadingIcon.setVisibility(View.VISIBLE);
@@ -137,6 +148,62 @@ public class DeleteAccount extends AppCompatActivity {
                                     public void onComplete(@NonNull Task<Void> task) {
 
                                         if (task.isSuccessful()) {
+
+                                            // Sign-out the user.
+                                            AuthUI.getInstance().signOut(DeleteAccount.this);
+
+                                            PreferenceManager.getDefaultSharedPreferences(DeleteAccount.this).edit().clear().commit();
+
+                                            Toast.makeText(DeleteAccount.this, "Account deleted", Toast.LENGTH_LONG).show();
+
+                                            Intent Activity = new Intent(DeleteAccount.this, Map.class);
+
+                                            loadingIcon.setVisibility(View.GONE);
+
+                                            startActivity(Activity);
+
+                                            finish();
+                                        }
+
+                                        if (!task.isSuccessful() && task.getException() != null) {
+
+                                            // Tell the user what happened.
+                                            loadingIcon.setVisibility(View.GONE);
+                                            Toast.makeText(DeleteAccount.this, "Account Deletion Failed: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
+                                        } else if (!task.isSuccessful() && task.getException() == null) {
+
+                                            // Tell the user something happened.
+                                            loadingIcon.setVisibility(View.GONE);
+                                            Toast.makeText(DeleteAccount.this, "An unknown error occurred. Please try again.", Toast.LENGTH_LONG).show();
+
+                                            // Send the information to Crashlytics for future debugging.
+                                            Crashlytics.logException(new RuntimeException("onStart() -> deleteAccount -> OnClick -> task.getException == null"));
+                                        }
+                                    }
+                                });
+                            }
+                        });
+                    }
+                    // Sign out the user by asking for the password, as the user has a Firebase account.
+                    else if (password.getText().toString().equals(passToken)) {
+
+                        loadingIcon.bringToFront();
+                        loadingIcon.setVisibility(View.VISIBLE);
+
+                        user.reauthenticate(credential).addOnCompleteListener(new OnCompleteListener<Void>() {
+
+                            @Override
+                            public void onComplete(@NonNull Task<Void> task) {
+
+                                user.delete().addOnCompleteListener(new OnCompleteListener<Void>() {
+
+                                    @Override
+                                    public void onComplete(@NonNull Task<Void> task) {
+
+                                        if (task.isSuccessful()) {
+
+                                            // Sign-out the user.
+                                            AuthUI.getInstance().signOut(DeleteAccount.this);
 
                                             PreferenceManager.getDefaultSharedPreferences(DeleteAccount.this).edit().clear().commit();
 
