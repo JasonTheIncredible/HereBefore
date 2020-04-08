@@ -35,7 +35,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
 
             if (key.equals("signOut")) {
 
-                boolean signOut = PreferenceManager.getDefaultSharedPreferences(getActivity()).getBoolean("signOut", false);
+                boolean signOut = PreferenceManager.getDefaultSharedPreferences(getActivity()).getBoolean(co.clixel.herebefore.Settings.KEY_SIGN_OUT, false);
 
                 if (signOut) {
 

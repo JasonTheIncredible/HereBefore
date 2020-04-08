@@ -120,13 +120,14 @@ public class Map extends FragmentActivity implements
     private Toast selectingShapeToast;
     private View loadingIcon;
 
-    // List the selected value in settings aka "hybrid map type" as summary.
-    // Page for deleting user account, resetting password, saving user map type preferences, signing out from here and Chat.java, etc.
+    // Work on resetting password and sending feedback in settings.
+    // Load preferences after logging out and back in.
     // Send email to Google email before account deletion, or find another way.
     // Authenticate user email address at sign-up.
     // Adjust light mode design for Chat.java.
     // When not on wifi, the location may "jump" and the camera might not be correct. I'm not currently sure how to test / fix this without annoying users that are traveling at very high speeds.
     // Allow users to message and reply to one another anonymously.
+    // Work on notifications in Settings.java.
     // "How to make databases faster".
     // Change design (change popupMenu color).
     // Check for any memory leaks.
@@ -198,7 +199,7 @@ public class Map extends FragmentActivity implements
         }
 
         // Check if the user is logged in. If true, make the settings button visible.
-        boolean loggedIn = PreferenceManager.getDefaultSharedPreferences(this).getBoolean("signOut", false);
+        boolean loggedIn = PreferenceManager.getDefaultSharedPreferences(this).getBoolean(co.clixel.herebefore.Settings.KEY_SIGN_OUT, false);
 
         if (loggedIn) {
 
