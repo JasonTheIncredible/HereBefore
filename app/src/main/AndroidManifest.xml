@@ -32,6 +32,9 @@
             android:name=".Settings"
             android:label="@string/title_activity_maps" />
         <activity
+            android:name=".ResetPassword"
+            android:label="@string/title_activity_maps" />
+        <activity
             android:name=".DeleteAccount"
             android:label="@string/title_activity_maps" />
         <!--

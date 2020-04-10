@@ -1,9 +1,11 @@
 package co.clixel.herebefore;
 
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.RelativeLayout;
@@ -136,6 +138,16 @@ public class DeleteAccount extends AppCompatActivity {
 
                         loadingIcon.bringToFront();
                         loadingIcon.setVisibility(View.VISIBLE);
+
+                        // Close the keyboard.
+                        if (DeleteAccount.this.getCurrentFocus() != null) {
+
+                            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                            if (imm != null) {
+
+                                imm.hideSoftInputFromWindow(DeleteAccount.this.getCurrentFocus().getWindowToken(), 0);
+                            }
+                        }
 
                         user.reauthenticate(credential).addOnCompleteListener(new OnCompleteListener<Void>() {
 

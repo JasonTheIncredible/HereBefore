@@ -110,7 +110,7 @@ public class SignUp extends AppCompatActivity {
 
                 Log.i(TAG, "onStart() -> createAccountButton -> onClick");
 
-                email = mEmail.getText().toString().toLowerCase();
+                email = mEmail.getText().toString().toLowerCase().trim();
                 pass = mPassword.getText().toString();
 
                 if (email.equals("") && !pass.equals("")) {

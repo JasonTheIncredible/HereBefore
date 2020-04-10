@@ -33,33 +33,52 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
 
         if (getActivity() != null) {
 
-            if (key.equals("signOut")) {
+            switch (key) {
 
-                boolean signOut = PreferenceManager.getDefaultSharedPreferences(getActivity()).getBoolean(co.clixel.herebefore.Settings.KEY_SIGN_OUT, false);
+                case "resetPassword": {
 
-                if (signOut) {
-
-                    AuthUI.getInstance().signOut(getActivity());
-                    PreferenceManager.getDefaultSharedPreferences(getActivity()).edit().clear().commit();
-
-                    Toast.makeText(getActivity(), "Signed out", Toast.LENGTH_SHORT).show();
-
-                    Intent Activity = new Intent(getActivity(), Map.class);
+                    Intent Activity = new Intent(getActivity(), ResetPassword.class);
 
                     startActivity(Activity);
 
                     getActivity().finish();
-                } else {
 
-                    Toast.makeText(getActivity(), "No user signed in", Toast.LENGTH_SHORT).show();
+                    break;
                 }
-            } else if (key.equals("deleteAccount")) {
 
-                Intent Activity = new Intent(getActivity(), DeleteAccount.class);
+                case "signOut":
 
-                startActivity(Activity);
+                    boolean signOut = PreferenceManager.getDefaultSharedPreferences(getActivity()).getBoolean(Settings.KEY_SIGN_OUT, false);
 
-                getActivity().finish();
+                    if (signOut) {
+
+                        AuthUI.getInstance().signOut(getActivity());
+                        PreferenceManager.getDefaultSharedPreferences(getActivity()).edit().clear().commit();
+
+                        Toast.makeText(getActivity(), "Signed out", Toast.LENGTH_SHORT).show();
+
+                        Intent Activity = new Intent(getActivity(), Map.class);
+
+                        startActivity(Activity);
+
+                        getActivity().finish();
+                    } else {
+
+                        Toast.makeText(getActivity(), "No user signed in", Toast.LENGTH_SHORT).show();
+                    }
+
+                    break;
+
+                case "deleteAccount": {
+
+                    Intent Activity = new Intent(getActivity(), DeleteAccount.class);
+
+                    startActivity(Activity);
+
+                    getActivity().finish();
+
+                    break;
+                }
             }
         }
 

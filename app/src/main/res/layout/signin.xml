@@ -79,13 +79,30 @@
                 android:layout_height="65dp"
                 android:layout_below="@id/orSignInWithGoogle"
                 android:layout_centerHorizontal="true"
-                android:layout_marginBottom="30dp" />
+                android:layout_marginBottom="20dp" />
+
+            <TextView
+                android:id="@+id/forgotPasswordText"
+                android:layout_width="match_parent"
+                android:layout_height="30dp"
+                android:layout_below="@id/googleSignInButton"
+                android:text="@string/forgot_password"
+                android:textAlignment="center" />
+
+            <Button
+                android:id="@+id/resetPasswordButton"
+                android:layout_width="150dp"
+                android:layout_height="65dp"
+                android:layout_below="@id/forgotPasswordText"
+                android:layout_centerHorizontal="true"
+                android:layout_marginBottom="20dp"
+                android:text="@string/reset_password" />
 
             <TextView
                 android:id="@+id/newUserQuestionText"
                 android:layout_width="match_parent"
                 android:layout_height="30dp"
-                android:layout_below="@id/googleSignInButton"
+                android:layout_below="@id/resetPasswordButton"
                 android:text="@string/new_question"
                 android:textAlignment="center" />
 

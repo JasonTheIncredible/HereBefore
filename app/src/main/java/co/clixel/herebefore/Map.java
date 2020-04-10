@@ -120,9 +120,12 @@ public class Map extends FragmentActivity implements
     private Toast selectingShapeToast;
     private View loadingIcon;
 
-    // Work on resetting password and sending feedback in settings.
-    // Load preferences after logging out and back in.
+    // Have resetting password work for Google account.
     // Send email to Google email before account deletion, or find another way.
+    // Work on sending feedback in settings.
+    // Load preferences after logging out and back in.
+    // Allow user to back out into Settings.java.
+    // Adjust look of sign in page if possible.
     // Authenticate user email address at sign-up.
     // Adjust light mode design for Chat.java.
     // When not on wifi, the location may "jump" and the camera might not be correct. I'm not currently sure how to test / fix this without annoying users that are traveling at very high speeds.
@@ -143,6 +146,7 @@ public class Map extends FragmentActivity implements
     // Add ability to filter recyclerView by type of content (recorded at the scene) to get rid of the "fluff"
     // Add ability to add video from gallery to recyclerView. [silicompressor 2.2.3 accepts content URIs but gives a black video on the app and in Firebase. Will follow up with this later.]
     // Add ability to add both picture and video to firebase at the same time.
+    // App that scrolls through youtube previews while phone is on charger and allows user to click on one whenever.
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

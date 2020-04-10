@@ -39,7 +39,7 @@ public class SignIn extends AppCompatActivity {
     private static final String TAG = "SignIn";
     private static final int RC_SIGN_IN = 0;
     private EditText mEmail, mPassword;
-    private Button signInButton, goToCreateAccountButton;
+    private Button signInButton, resetPasswordButton, goToCreateAccountButton;
     private SignInButton googleSignInButton;
     private String uuid, email, pass;
     private Double polygonArea, circleLatitude, circleLongitude, radius, marker0Latitude, marker0Longitude, marker1Latitude, marker1Longitude, marker2Latitude, marker2Longitude, marker3Latitude, marker3Longitude, marker4Latitude, marker4Longitude, marker5Latitude, marker5Longitude, marker6Latitude, marker6Longitude, marker7Latitude, marker7Longitude;
@@ -65,6 +65,7 @@ public class SignIn extends AppCompatActivity {
         // Set the color scheme for the Google sign-in button. Documentation found here:
         // developers.google.com/android/reference/com/google/android/gms/common/SignInButton.html#COLOR_DARK
         googleSignInButton.setColorScheme(0);
+        resetPasswordButton = findViewById(R.id.resetPasswordButton);
         goToCreateAccountButton = findViewById(R.id.goToCreateAccountButton);
         loadingIcon = findViewById(R.id.loadingIcon);
 
@@ -143,7 +144,7 @@ public class SignIn extends AppCompatActivity {
 
                 Log.i(TAG, "onStart() -> signInButton -> onClick");
 
-                email = mEmail.getText().toString().toLowerCase();
+                email = mEmail.getText().toString().toLowerCase().trim();
                 pass = mPassword.getText().toString();
 
                 if (email.equals("") && !pass.equals("")) {
@@ -269,6 +270,17 @@ public class SignIn extends AppCompatActivity {
             }
         });
 
+        // Go to ResetPassword.java.
+        resetPasswordButton.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+
+                Intent Activity = new Intent(SignIn.this, ResetPassword.class);
+                startActivity(Activity);
+            }
+        });
+
         // Go to the SignUp.java with the extras.
         goToCreateAccountButton.setOnClickListener(new View.OnClickListener() {
 
@@ -351,6 +363,12 @@ public class SignIn extends AppCompatActivity {
         if (googleSignInButton != null) {
 
             googleSignInButton.setOnClickListener(null);
+        }
+
+        // Remove the listener.
+        if (resetPasswordButton != null) {
+
+            resetPasswordButton.setOnClickListener(null);
         }
 
         // Remove the listener.
