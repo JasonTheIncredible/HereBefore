@@ -41,8 +41,6 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
 
                     startActivity(Activity);
 
-                    getActivity().finish();
-
                     break;
                 }
 
@@ -61,7 +59,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
 
                         startActivity(Activity);
 
-                        getActivity().finish();
+                        getActivity().finishAffinity();
                     } else {
 
                         Toast.makeText(getActivity(), "No user signed in", Toast.LENGTH_SHORT).show();
@@ -74,8 +72,6 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
                     Intent Activity = new Intent(getActivity(), DeleteAccount.class);
 
                     startActivity(Activity);
-
-                    getActivity().finish();
 
                     break;
                 }

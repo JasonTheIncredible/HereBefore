@@ -174,7 +174,7 @@ public class DeleteAccount extends AppCompatActivity {
 
                                             startActivity(Activity);
 
-                                            finish();
+                                            finishAffinity();
                                         }
 
                                         if (!task.isSuccessful() && task.getException() != null) {

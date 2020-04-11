@@ -120,11 +120,10 @@ public class Map extends FragmentActivity implements
     private Toast selectingShapeToast;
     private View loadingIcon;
 
+    // Work on sending feedback in settings.
+    // Add preference for shape color.
     // Have resetting password work for Google account.
     // Send email to Google email before account deletion, or find another way.
-    // Work on sending feedback in settings.
-    // Load preferences after logging out and back in.
-    // Allow user to back out into Settings.java.
     // Adjust look of sign in page if possible.
     // Authenticate user email address at sign-up.
     // Adjust light mode design for Chat.java.
@@ -141,7 +140,7 @@ public class Map extends FragmentActivity implements
     // API key and anything else before publishing / Create a "build" version of the app with removed Log messages.
     // Ads.
     // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.
-    // Add preference for shape color.
+    // Load preferences after logging out and back in.
     // Leave messages in locations that users get notified of when they enter the area.
     // Add ability to filter recyclerView by type of content (recorded at the scene) to get rid of the "fluff"
     // Add ability to add video from gallery to recyclerView. [silicompressor 2.2.3 accepts content URIs but gives a black video on the app and in Firebase. Will follow up with this later.]
