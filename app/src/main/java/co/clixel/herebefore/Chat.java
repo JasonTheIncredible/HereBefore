@@ -209,7 +209,7 @@ public class Chat extends AppCompatActivity implements
 
         // Connect to Firebase.
         DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-        databaseReference = rootRef.child("messageThreads");
+        databaseReference = rootRef.child("MessageThreads");
         eventListener = new ValueEventListener() {
 
             @Override
@@ -423,7 +423,7 @@ public class Chat extends AppCompatActivity implements
 
                         if (shapeIsCircle) {
 
-                            DatabaseReference firebaseCircles = rootRef.child("circles");
+                            DatabaseReference firebaseCircles = rootRef.child("Circles");
                             firebaseCircles.addListenerForSingleValueEvent(new ValueEventListener() {
 
                                 @Override
@@ -451,7 +451,7 @@ public class Chat extends AppCompatActivity implements
                                         CircleInformation circleInformation = new CircleInformation();
                                         circleInformation.setCircleOptions(circleOptions);
                                         circleInformation.setUUID(uuid);
-                                        DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("circles").push();
+                                        DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("Circles").push();
                                         newFirebaseCircle.setValue(circleInformation);
 
                                         MessageInformation messageInformation = new MessageInformation();
@@ -462,7 +462,7 @@ public class Chat extends AppCompatActivity implements
                                         messageInformation.setDate(date);
                                         messageInformation.setUUID(uuid);
                                         messageInformation.setUserIsWithinShape(userIsWithinShape);
-                                        DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("messageThreads").push();
+                                        DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                                         newMessage.setValue(messageInformation);
                                         mInput.getText().clear();
 
@@ -482,7 +482,7 @@ public class Chat extends AppCompatActivity implements
 
                             // Shape is not a circle.
 
-                            DatabaseReference firebasePolygons = rootRef.child("polygons");
+                            DatabaseReference firebasePolygons = rootRef.child("Polygons");
                             firebasePolygons.addListenerForSingleValueEvent(new ValueEventListener() {
 
                                 @Override
@@ -553,7 +553,7 @@ public class Chat extends AppCompatActivity implements
                                         polygonInformation.setPolygonOptions(polygonOptions);
                                         polygonInformation.setArea(polygonArea);
                                         polygonInformation.setUUID(uuid);
-                                        DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
+                                        DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("Polygons").push();
                                         newFirebasePolygon.setValue(polygonInformation);
 
                                         MessageInformation messageInformation = new MessageInformation();
@@ -564,7 +564,7 @@ public class Chat extends AppCompatActivity implements
                                         messageInformation.setDate(date);
                                         messageInformation.setUUID(uuid);
                                         messageInformation.setUserIsWithinShape(userIsWithinShape);
-                                        DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("messageThreads").push();
+                                        DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                                         newMessage.setValue(messageInformation);
                                         mInput.getText().clear();
                                         newShape = false;
@@ -608,7 +608,7 @@ public class Chat extends AppCompatActivity implements
                             messageInformation.setDate(date);
                             messageInformation.setUUID(uuid);
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
-                            DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("messageThreads").push();
+                            DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                             newMessage.setValue(messageInformation);
                             mInput.getText().clear();
                             sendButtonClicked = false;
@@ -1853,7 +1853,7 @@ public class Chat extends AppCompatActivity implements
                                     CircleInformation circleInformation = new CircleInformation();
                                     circleInformation.setCircleOptions(circleOptions);
                                     circleInformation.setUUID(uuid);
-                                    DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("circles").push();
+                                    DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("Circles").push();
                                     newFirebaseCircle.setValue(circleInformation);
                                 } else {
 
@@ -1905,7 +1905,7 @@ public class Chat extends AppCompatActivity implements
                                     polygonInformation.setPolygonOptions(polygonOptions);
                                     polygonInformation.setArea(polygonArea);
                                     polygonInformation.setUUID(uuid);
-                                    DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
+                                    DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("Polygons").push();
                                     newFirebasePolygon.setValue(polygonInformation);
                                 }
 
@@ -1927,7 +1927,7 @@ public class Chat extends AppCompatActivity implements
                             messageInformation.setDate(date);
                             messageInformation.setUUID(uuid);
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
-                            DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("messageThreads").push();
+                            DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                             newMessage.setValue(messageInformation);
                             mInput.getText().clear();
                             imageView.setVisibility(View.GONE);
@@ -1984,7 +1984,7 @@ public class Chat extends AppCompatActivity implements
                                     CircleInformation circleInformation = new CircleInformation();
                                     circleInformation.setCircleOptions(circleOptions);
                                     circleInformation.setUUID(uuid);
-                                    DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("circles").push();
+                                    DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("Circles").push();
                                     newFirebaseCircle.setValue(circleInformation);
                                 } else {
 
@@ -2036,7 +2036,7 @@ public class Chat extends AppCompatActivity implements
                                     polygonInformation.setPolygonOptions(polygonOptions);
                                     polygonInformation.setArea(polygonArea);
                                     polygonInformation.setUUID(uuid);
-                                    DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
+                                    DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("Polygons").push();
                                     newFirebasePolygon.setValue(polygonInformation);
                                 }
 
@@ -2058,7 +2058,7 @@ public class Chat extends AppCompatActivity implements
                             messageInformation.setDate(date);
                             messageInformation.setUUID(uuid);
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
-                            DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("messageThreads").push();
+                            DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                             newMessage.setValue(messageInformation);
                             mInput.getText().clear();
                             videoImageView.setVisibility(View.GONE);
@@ -2115,7 +2115,7 @@ public class Chat extends AppCompatActivity implements
                                     CircleInformation circleInformation = new CircleInformation();
                                     circleInformation.setCircleOptions(circleOptions);
                                     circleInformation.setUUID(uuid);
-                                    DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("circles").push();
+                                    DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("Circles").push();
                                     newFirebaseCircle.setValue(circleInformation);
                                 } else {
 
@@ -2167,7 +2167,7 @@ public class Chat extends AppCompatActivity implements
                                     polygonInformation.setPolygonOptions(polygonOptions);
                                     polygonInformation.setArea(polygonArea);
                                     polygonInformation.setUUID(uuid);
-                                    DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("polygons").push();
+                                    DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("Polygons").push();
                                     newFirebasePolygon.setValue(polygonInformation);
                                 }
 
@@ -2189,7 +2189,7 @@ public class Chat extends AppCompatActivity implements
                             messageInformation.setDate(date);
                             messageInformation.setUUID(uuid);
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
-                            DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("messageThreads").push();
+                            DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                             newMessage.setValue(messageInformation);
                             mInput.getText().clear();
                             imageView.setVisibility(View.GONE);

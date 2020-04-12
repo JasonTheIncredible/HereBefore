@@ -97,7 +97,7 @@ public class Map extends FragmentActivity implements
     private Marker marker0, marker1, marker2, marker3, marker4, marker5, marker6, marker7;
     private Circle newCircle, circleTemp;
     private Polygon newPolygon, polygonTemp;
-    private DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference(), firebaseCircles = rootRef.child("circles"), firebasePolygons = rootRef.child("polygons");
+    private DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference(), firebaseCircles = rootRef.child("Circles"), firebasePolygons = rootRef.child("Polygons");
     private SeekBar chatSizeSeekBar, chatSelectorSeekBar;
     private String preferredMapType, uuid, marker0ID, marker1ID, marker2ID, marker3ID, marker4ID, marker5ID, marker6ID, marker7ID, selectedOverlappingShapeUUID;
     private Button createChatButton, chatViewsButton, mapTypeButton, settingsButton;
@@ -120,8 +120,6 @@ public class Map extends FragmentActivity implements
     private Toast selectingShapeToast;
     private View loadingIcon;
 
-    // Work on sending feedback in settings.
-    // Add preference for shape color.
     // Have resetting password work for Google account.
     // Send email to Google email before account deletion, or find another way.
     // Adjust look of sign in page if possible.
@@ -141,6 +139,7 @@ public class Map extends FragmentActivity implements
     // Ads.
     // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.
     // Load preferences after logging out and back in.
+    // Add preference for shape color.
     // Leave messages in locations that users get notified of when they enter the area.
     // Add ability to filter recyclerView by type of content (recorded at the scene) to get rid of the "fluff"
     // Add ability to add video from gallery to recyclerView. [silicompressor 2.2.3 accepts content URIs but gives a black video on the app and in Firebase. Will follow up with this later.]

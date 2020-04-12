@@ -44,6 +44,15 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
                     break;
                 }
 
+                case "feedback": {
+
+                    Intent Activity = new Intent(getActivity(), Feedback.class);
+
+                    startActivity(Activity);
+
+                    break;
+                }
+
                 case "signOut":
 
                     boolean signOut = PreferenceManager.getDefaultSharedPreferences(getActivity()).getBoolean(Settings.KEY_SIGN_OUT, false);
