@@ -20,7 +20,6 @@
     <string name="create_a_polygon">Create a polygon</string>
     <string name="create_a_circle">Create a circle</string>
     <string name="remove_the_circle">Remove the shape</string>
-    <string name="or">Or Sign In / Create Account Using Google:</string>
     <string name="take_photo">Take photo</string>
     <string name="zoom_touch_close">zoom_touch_close</string>
     <string name="record_video">Record video</string>
@@ -35,6 +34,9 @@
     <string name="send_email">Send Email</string>
     <string name="feedback">Feedback</string>
     <string name="send_feedback">Send Feedback</string>
+    <string name="orUseGoogle">Or Use Google:</string>
+    <string name="signIntoExistingAccountWithPassword">Sign Into Existing Account With Password:</string>
+    <string name="createAccountWithPassword">Create Account With Password:</string>
 
     <string-array name="pref_map_types_entries">
         <item>Depends on connection type</item>

@@ -2,6 +2,7 @@ package co.clixel.herebefore;
 
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.widget.Toast;
 
@@ -23,7 +24,20 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
     @Override
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
 
-        setPreferencesFromResource(R.xml.preferences, rootKey);
+        if (getActivity() != null) {
+
+            // Check if the account is a Google account. If not, hide "Reset Password".
+            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
+            String googleIdToken = sharedPreferences.getString("googleIdToken", "");
+            boolean googleAccount = !googleIdToken.equals("");
+            if (!googleAccount) {
+
+                setPreferencesFromResource(R.xml.preferences_herebefore, rootKey);
+            } else {
+
+                setPreferencesFromResource(R.xml.preferences_google, rootKey);
+            }
+        }
     }
 
     @Override

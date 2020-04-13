@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <SwitchPreferenceCompat
+        app:key="notifications"
+        app:title="Enable notifications" />
+
+    <SwitchPreferenceCompat
+        app:defaultValue="false"
+        app:key="toggleTheme"
+        app:title="Toggle between dark and light mode" />
+
+    <ListPreference
+        app:defaultValue="@string/depends_on_connection_type"
+        app:entries="@array/pref_map_types_entries"
+        app:entryValues="@array/pref_map_types_entries"
+        app:key="mapTypePreference"
+        app:summary="%s"
+        app:title="Set preferred map type" />
+
+    <Preference
+        app:key="feedback"
+        app:summary="Report technical issues or suggest new features"
+        app:title="Send feedback anonymously" />
+
+    <Preference
+        app:defaultValue="false"
+        app:key="signOut"
+        app:title="Sign Out" />
+
+    <Preference
+        app:key="deleteAccount"
+        app:summary="Permanently delete this account"
+        app:title="Delete Account" />
+
+</PreferenceScreen>

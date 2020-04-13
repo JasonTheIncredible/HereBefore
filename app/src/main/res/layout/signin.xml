@@ -32,10 +32,18 @@
             android:focusableInTouchMode="true"
             android:orientation="vertical">
 
+            <TextView
+                android:id="@+id/signIntoExistingAccount"
+                android:layout_width="match_parent"
+                android:layout_height="30dp"
+                android:text="@string/signIntoExistingAccountWithPassword"
+                android:textAlignment="center" />
+
             <EditText
                 android:id="@+id/emailAddress"
                 android:layout_width="match_parent"
                 android:layout_height="50dp"
+                android:layout_below="@id/signIntoExistingAccount"
                 android:layout_marginLeft="50dp"
                 android:layout_marginRight="50dp"
                 android:ems="10"
@@ -61,8 +69,6 @@
                 android:layout_height="65dp"
                 android:layout_below="@id/password"
                 android:layout_centerHorizontal="true"
-                android:layout_marginTop="20dp"
-                android:layout_marginBottom="10dp"
                 android:text="@string/sign_in" />
 
             <TextView
@@ -70,7 +76,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="30dp"
                 android:layout_below="@id/signInButton"
-                android:text="@string/or"
+                android:layout_marginTop="10dp"
+                android:text="@string/orUseGoogle"
                 android:textAlignment="center" />
 
             <com.google.android.gms.common.SignInButton
@@ -81,38 +88,58 @@
                 android:layout_centerHorizontal="true"
                 android:layout_marginBottom="20dp" />
 
-            <TextView
-                android:id="@+id/forgotPasswordText"
-                android:layout_width="match_parent"
-                android:layout_height="30dp"
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:layout_below="@id/googleSignInButton"
-                android:text="@string/forgot_password"
-                android:textAlignment="center" />
-
-            <Button
-                android:id="@+id/resetPasswordButton"
-                android:layout_width="150dp"
-                android:layout_height="65dp"
-                android:layout_below="@id/forgotPasswordText"
                 android:layout_centerHorizontal="true"
-                android:layout_marginBottom="20dp"
-                android:text="@string/reset_password" />
+                android:orientation="horizontal">
 
-            <TextView
-                android:id="@+id/newUserQuestionText"
-                android:layout_width="match_parent"
-                android:layout_height="30dp"
-                android:layout_below="@id/resetPasswordButton"
-                android:text="@string/new_question"
-                android:textAlignment="center" />
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginRight="10dp"
+                    android:orientation="vertical">
 
-            <Button
-                android:id="@+id/goToCreateAccountButton"
-                android:layout_width="150dp"
-                android:layout_height="65dp"
-                android:layout_below="@id/newUserQuestionText"
-                android:layout_centerHorizontal="true"
-                android:text="@string/create_account" />
+                    <TextView
+                        android:id="@+id/forgotPasswordText"
+                        android:layout_width="match_parent"
+                        android:layout_height="30dp"
+                        android:text="@string/forgot_password"
+                        android:textAlignment="center" />
+
+                    <Button
+                        android:id="@+id/resetPasswordButton"
+                        android:layout_width="150dp"
+                        android:layout_height="65dp"
+                        android:layout_below="@id/forgotPasswordText"
+                        android:layout_centerHorizontal="true"
+                        android:layout_marginBottom="20dp"
+                        android:text="@string/reset_password" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="10dp"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/newUserQuestionText"
+                        android:layout_width="match_parent"
+                        android:layout_height="30dp"
+                        android:text="@string/new_question"
+                        android:textAlignment="center" />
+
+                    <Button
+                        android:id="@+id/goToCreateAccountButton"
+                        android:layout_width="150dp"
+                        android:layout_height="65dp"
+                        android:layout_below="@id/newUserQuestionText"
+                        android:layout_centerHorizontal="true"
+                        android:text="@string/create_account" />
+                </LinearLayout>
+            </LinearLayout>
         </RelativeLayout>
     </ScrollView>
 
