@@ -36,6 +36,7 @@ import android.util.Base64;
 import android.util.Base64OutputStream;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 
@@ -53,7 +54,6 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import android.view.inputmethod.InputMethodManager;
 import android.webkit.MimeTypeMap;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.PopupMenu;
@@ -112,7 +112,6 @@ public class Chat extends AppCompatActivity implements
     private String uuid;
     private Double polygonArea, circleLatitude, circleLongitude, radius,
             marker0Latitude, marker0Longitude, marker1Latitude, marker1Longitude, marker2Latitude, marker2Longitude, marker3Latitude, marker3Longitude, marker4Latitude, marker4Longitude, marker5Latitude, marker5Longitude, marker6Latitude, marker6Longitude, marker7Latitude, marker7Longitude;
-    private Button settingsButton;
     private PopupMenu mediaButtonMenu;
     private ImageView imageView, videoImageView;
     public Uri imageURI, videoURI;
@@ -121,7 +120,6 @@ public class Chat extends AppCompatActivity implements
     private File image, video;
     private byte[] byteArray;
     private View loadingIcon;
-    private SharedPreferences sharedPreferences;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -131,7 +129,6 @@ public class Chat extends AppCompatActivity implements
 
         setContentView(R.layout.chat);
 
-        settingsButton = findViewById(R.id.settingsButton);
         mediaButton = findViewById(R.id.mediaButton);
         imageView = findViewById(R.id.imageView);
         videoImageView = findViewById(R.id.videoImageView);
@@ -225,40 +222,36 @@ public class Chat extends AppCompatActivity implements
                     mUserIsWithinShape.clear();
                 }
 
-                // If the value from Map.java is false, check Firebase and load any existing messages.
-                if (!newShape) {
+                for (DataSnapshot ds : dataSnapshot.getChildren()) {
 
-                    for (DataSnapshot ds : dataSnapshot.getChildren()) {
+                    // If the uuid brought from Map.java equals the uuid attached to the recyclerviewlayout in Firebase, load it into the RecyclerView.
+                    String firebaseUUID = (String) ds.child("uuid").getValue();
+                    if (firebaseUUID != null) {
 
-                        // If the uuid brought from Map.java equals the uuid attached to the recyclerviewlayout in Firebase, load it into the RecyclerView.
-                        String firebaseUUID = (String) ds.child("uuid").getValue();
-                        if (firebaseUUID != null) {
+                        if (firebaseUUID.equals(uuid)) {
 
-                            if (firebaseUUID.equals(uuid)) {
+                            Long serverDate = (Long) ds.child("date").getValue();
+                            String imageURL = (String) ds.child("imageURL").getValue();
+                            String videoURL = (String) ds.child("videoURL").getValue();
+                            String messageText = (String) ds.child("message").getValue();
+                            Boolean userIsWithinShape = (Boolean) ds.child("userIsWithinShape").getValue();
+                            DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
+                            // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+                            // This will cause onDataChange to fire twice; optimizations could be made in the future.
+                            if (serverDate != null) {
 
-                                Long serverDate = (Long) ds.child("date").getValue();
-                                String imageURL = (String) ds.child("imageURL").getValue();
-                                String videoURL = (String) ds.child("videoURL").getValue();
-                                String messageText = (String) ds.child("message").getValue();
-                                Boolean userIsWithinShape = (Boolean) ds.child("userIsWithinShape").getValue();
-                                DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
-                                // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                                // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                                if (serverDate != null) {
+                                Date netDate = (new Date(serverDate));
+                                String messageTime = dateFormat.format(netDate);
+                                mTime.add(messageTime);
+                            } else {
 
-                                    Date netDate = (new Date(serverDate));
-                                    String messageTime = dateFormat.format(netDate);
-                                    mTime.add(messageTime);
-                                } else {
-
-                                    Log.e(TAG, "onStart() -> serverDate == null");
-                                    Crashlytics.logException(new RuntimeException("onStart() -> serverDate == null"));
-                                }
-                                mImage.add(imageURL);
-                                mVideo.add(videoURL);
-                                mText.add(messageText);
-                                mUserIsWithinShape.add(userIsWithinShape);
+                                Log.e(TAG, "onStart() -> serverDate == null");
+                                Crashlytics.logException(new RuntimeException("onStart() -> serverDate == null"));
                             }
+                            mImage.add(imageURL);
+                            mVideo.add(videoURL);
+                            mText.add(messageText);
+                            mUserIsWithinShape.add(userIsWithinShape);
                         }
                     }
                 }
@@ -328,20 +321,6 @@ public class Chat extends AppCompatActivity implements
 
         // Add the Firebase listener.
         databaseReference.addValueEventListener(eventListener);
-
-        // Go to settings.
-        settingsButton.setOnClickListener(new View.OnClickListener() {
-
-            @Override
-            public void onClick(View v) {
-
-                Log.i(TAG, "onStart() -> settingsButton -> onClick");
-
-                Intent Activity = new Intent(Chat.this, co.clixel.herebefore.Settings.class);
-
-                startActivity(Activity);
-            }
-        });
 
         // Hide the imageView or videoImageView if user presses the delete button.
         mInput.setOnKeyListener(new View.OnKeyListener() {
@@ -667,7 +646,7 @@ public class Chat extends AppCompatActivity implements
 
         Log.i(TAG, "loadPreferences()");
 
-        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
 
         theme = sharedPreferences.getBoolean(co.clixel.herebefore.Settings.KEY_THEME_SWITCH, false);
     }
@@ -687,8 +666,6 @@ public class Chat extends AppCompatActivity implements
             AppCompatDelegate.setDefaultNightMode(
                     AppCompatDelegate.MODE_NIGHT_YES);
         }
-
-        sharedPreferences.edit().putBoolean(Settings.KEY_SIGN_OUT, true).apply();
     }
 
     @Override
@@ -718,6 +695,39 @@ public class Chat extends AppCompatActivity implements
 
         super.onResume();
         Log.i(TAG, "onResume()");
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+
+        Log.i(TAG, "onCreateOptionsMenu()");
+
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.chatsettings_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        int id = item.getItemId();
+
+        // noinspection SimplifiableIfStatement
+        if (id == R.id.settingsButton) {
+
+            Log.i(TAG, "onOptionsItemSelected() -> settingsButton");
+
+            Intent Activity = new Intent(Chat.this, co.clixel.herebefore.Settings.class);
+
+            startActivity(Activity);
+
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
     }
 
     @Override
@@ -1826,7 +1836,7 @@ public class Chat extends AppCompatActivity implements
 
             // File and image.
 
-            final StorageReference storageReferenceImage = FirebaseStorage.getInstance().getReference("images").child(System.currentTimeMillis() + "." + getExtension(imageURI));
+            final StorageReference storageReferenceImage = FirebaseStorage.getInstance().getReference("Images").child(System.currentTimeMillis() + "." + getExtension(imageURI));
             uploadTask = storageReferenceImage.putFile(imageURI);
 
             storageReferenceImage.putFile(imageURI).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
@@ -1957,7 +1967,7 @@ public class Chat extends AppCompatActivity implements
 
             // Video.
 
-            final StorageReference storageReferenceVideo = FirebaseStorage.getInstance().getReference("videos").child(System.currentTimeMillis() + "." + getExtension(videoURI));
+            final StorageReference storageReferenceVideo = FirebaseStorage.getInstance().getReference("Video").child(System.currentTimeMillis() + "." + getExtension(videoURI));
             uploadTask = storageReferenceVideo.putFile(videoURI);
 
             storageReferenceVideo.putFile(videoURI).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
@@ -2088,7 +2098,7 @@ public class Chat extends AppCompatActivity implements
 
             // byteArray and image.
 
-            final StorageReference storageReferenceImage = FirebaseStorage.getInstance().getReference("images").child(System.currentTimeMillis() + "." + getExtension(imageURI));
+            final StorageReference storageReferenceImage = FirebaseStorage.getInstance().getReference("Images").child(System.currentTimeMillis() + "." + getExtension(imageURI));
             uploadTask = storageReferenceImage.putBytes(byteArray);
 
             storageReferenceImage.putBytes(byteArray).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {

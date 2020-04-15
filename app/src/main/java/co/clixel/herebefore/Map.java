@@ -120,8 +120,6 @@ public class Map extends FragmentActivity implements
     private Toast selectingShapeToast;
     private View loadingIcon;
 
-    // Send email to Google email before account deletion, or find another way.
-    // Adjust light mode design for Chat.java.
     // When not on wifi, the location may "jump" and the camera might not be correct. I'm not currently sure how to test / fix this without annoying users that are traveling at very high speeds.
     // Allow users to message and reply to one another anonymously.
     // Work on notifications in Settings.java.
@@ -137,6 +135,7 @@ public class Map extends FragmentActivity implements
     // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.
     // Load preferences after logging out and back in.
     // Authenticate user email address at sign-up.
+    // Send email to Google email before account deletion, or find another way.
     // Add preference for shape color.
     // Leave messages in locations that users get notified of when they enter the area.
     // Add ability to filter recyclerView by type of content (recorded at the scene) to get rid of the "fluff"
@@ -3845,6 +3844,7 @@ public class Map extends FragmentActivity implements
 
                     mFusedLocationClient.getLastLocation()
                             .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
+
                                 @Override
                                 public void onSuccess(Location location) {
 

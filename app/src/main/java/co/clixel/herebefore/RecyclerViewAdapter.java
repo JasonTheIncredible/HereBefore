@@ -2,9 +2,11 @@ package co.clixel.herebefore;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 
 import androidx.annotation.NonNull;
+import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.view.LayoutInflater;
@@ -27,6 +29,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
     private ArrayList<Boolean> mUserIsWithinShape;
     private Context mContext;
     private ImageButton playButtonInside, playButtonOutside;
+    private boolean theme;
 
     RecyclerViewAdapter(Context context, ArrayList<String> mMessageTime, ArrayList<String> mMessageImage, ArrayList<String> mMessageImageVideo, ArrayList<String> mMessageText, ArrayList<Boolean> mUserIsWithinShape) {
 
@@ -43,6 +46,8 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
 
         View view = LayoutInflater.from(mContext).inflate(R.layout.recyclerviewlayout, parent, false);
+
+        loadPreferences();
 
         final ViewHolder holder = new ViewHolder(view);
 
@@ -207,12 +212,24 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
         }
 
         // Change the color of every other row for visual purposes.
-        if (position % 2 == 0) {
+        if (!theme) {
 
-            holder.itemView.setBackgroundColor(Color.parseColor("#222222"));
+            if (position % 2 == 0) {
+
+                holder.itemView.setBackgroundColor(Color.parseColor("#222222"));
+            } else {
+
+                holder.itemView.setBackgroundColor(Color.parseColor("#292929"));
+            }
         } else {
 
-            holder.itemView.setBackgroundColor(Color.parseColor("#292929"));
+            if (position % 2 == 0) {
+
+                holder.itemView.setBackgroundColor(Color.parseColor("#D9D9D9"));
+            } else {
+
+                holder.itemView.setBackgroundColor(Color.parseColor("#F2F2F2"));
+            }
         }
 
         holder.setIsRecyclable(true);
@@ -222,6 +239,13 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
     public int getItemCount() {
 
         return mMessageTime.size();
+    }
+
+    protected void loadPreferences() {
+
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+
+        theme = sharedPreferences.getBoolean(co.clixel.herebefore.Settings.KEY_THEME_SWITCH, false);
     }
 
     class ViewHolder extends RecyclerView.ViewHolder {
