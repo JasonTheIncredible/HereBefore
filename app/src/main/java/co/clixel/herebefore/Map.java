@@ -80,6 +80,7 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 import static com.google.android.gms.location.LocationServices.getFusedLocationProviderClient;
@@ -102,7 +103,7 @@ public class Map extends FragmentActivity implements
     private String preferredMapType, uuid, marker0ID, marker1ID, marker2ID, marker3ID, marker4ID, marker5ID, marker6ID, marker7ID, selectedOverlappingShapeUUID;
     private Button createChatButton, chatViewsButton, mapTypeButton, settingsButton;
     private PopupMenu popupMapType, popupChatViews, popupCreateChat;
-    private boolean stillLoadingCircles = true, stillLoadingPolygons = true;
+    private boolean stillLoadingCircles = true, stillLoadingPolygons = true, stillUpdatingCamera = true;
     private Boolean firstLoad = true, cameraMoved = false, waitingForBetterLocationAccuracy = false, badAccuracy = false, showingEverything = true, showingLarge = false, showingMedium = false, showingSmall = false, showingPoints = false,
             waitingForClicksToProcess = false, waitingForShapeInformationToProcess = false, markerOutsidePolygon = false, usedSeekBar = false,
             userIsWithinShape, selectingShape = false, threeMarkers = false, fourMarkers = false, fiveMarkers = false, sixMarkers = false, sevenMarkers = false, eightMarkers = false;
@@ -120,7 +121,6 @@ public class Map extends FragmentActivity implements
     private Toast selectingShapeToast;
     private View loadingIcon;
 
-    // When not on wifi, the location may "jump" and the camera might not be correct. I'm not currently sure how to test / fix this without annoying users that are traveling at very high speeds.
     // Allow users to message and reply to one another anonymously.
     // Work on notifications in Settings.java.
     // "How to make databases faster".
@@ -2057,6 +2057,7 @@ public class Map extends FragmentActivity implements
         super.onRestart();
         Log.i(TAG, "onRestart()");
 
+        firstLoad = false;
         waitingForShapeInformationToProcess = false;
         waitingForClicksToProcess = false;
         selectingShape = false;
@@ -2066,20 +2067,16 @@ public class Map extends FragmentActivity implements
         showingMedium = false;
         showingSmall = false;
         showingPoints = false;
-        cameraMoved = false;
-        waitingForBetterLocationAccuracy = false;
-        badAccuracy = false;
         stillLoadingCircles = true;
         stillLoadingPolygons = true;
+        // Update the following boolean to prevent the loading icon from appearing after the user restarts.
+        stillUpdatingCamera = false;
 
         // Clear map before adding new Firebase circles in onStart() to prevent overlap.
         // Set shape to null so changing chatSizeSeekBar in onStart() will create a circle and createChatButton will reset itself.
         if (mMap != null) {
 
             mMap.getUiSettings().setScrollGesturesEnabled(true);
-
-            // Set firstLoad to true if the camera is zoomed out. This will allow the camera to zoom in if the user left the activity from a dialog box before zooming.
-            firstLoad = mMap.getCameraPosition().zoom <= 5;
 
             // Cut down on code by using one method for the shared code from onMapReady() and onRestart().
             onMapReadyAndRestart();
@@ -2525,8 +2522,8 @@ public class Map extends FragmentActivity implements
         long UPDATE_INTERVAL = 10 * 1000;
         mLocationRequest.setInterval(UPDATE_INTERVAL);
 
-        /* 5 sec */
-        long FASTEST_INTERVAL = 5 * 1000;
+        /* 1 sec */
+        long FASTEST_INTERVAL = 1000;
         mLocationRequest.setFastestInterval(FASTEST_INTERVAL);
 
         // Create LocationSettingsRequest object using location request
@@ -2546,11 +2543,6 @@ public class Map extends FragmentActivity implements
                     public void onLocationResult(LocationResult locationResult) {
 
                         onLocationChanged(locationResult.getLastLocation());
-
-                        if (firstLoad && !cameraMoved) {
-
-                            moveCameraOnFirstLoad();
-                        }
                     }
                 },
 
@@ -2569,72 +2561,8 @@ public class Map extends FragmentActivity implements
             mMap.setMyLocationEnabled(true);
         }
 
-        // Move camera on first load. Continue trying to call this as long as the user has not manually moved the camera.
-        if (firstLoad && !cameraMoved) {
-
-            moveCameraOnFirstLoad();
-        }
-
         // Cut down on code by using one method for the shared code from onMapReady() and onRestart().
         onMapReadyAndRestart();
-    }
-
-    // Move the camera on the first load. This is used to potentially update the camera faster than waiting for onLocationChanged() to be called.
-    public void moveCameraOnFirstLoad() {
-
-        Log.i(TAG, "moveCameraOnFirstLoad()");
-
-        // If this is the first time loading the map and the user has NOT changed the camera position manually (from onMapReadyAndRestart() -> onCameraMoveListener) after the camera was changed programmatically with bad accuracy,
-        // OR the camera position was changed by the user BEFORE the camera position was changed programmatically, this will get called to either change the camera position programmatically with good accuracy
-        // or update it with bad accuracy and then wait to update it again with good accuracy assuming the user does not update it manually before it can be updated with good accuracy.
-        FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
-
-        mFusedLocationClient.getLastLocation()
-                .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
-
-                    @Override
-                    public void onSuccess(Location location) {
-
-                        if (location != null) {
-
-                            if (firstLoad && !cameraMoved && location.getAccuracy() < 60) {
-
-                                Log.i(TAG, "moveCameraOnFirstLoad() -> Good accuracy");
-
-                                CameraPosition cameraPosition = new CameraPosition.Builder()
-                                        .target(new LatLng(location.getLatitude(), location.getLongitude()))      // Sets the center of the map to user's location
-                                        .zoom(18)                   // Sets the zoom
-                                        .bearing(0)                // Sets the orientation of the camera
-                                        .tilt(0)                   // Sets the tilt of the camera
-                                        .build();                   // Creates a CameraPosition from the builder
-
-                                // Move the camera to the user's location once the map is available.
-                                mMap.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
-
-                                // Adjust boolean values to prevent this logic from being called again.
-                                firstLoad = false;
-                                cameraMoved = true;
-                            } else if (firstLoad && !badAccuracy && location.getAccuracy() >= 60) {
-
-                                Log.i(TAG, "moveCameraOnFirstLoad() -> Bad accuracy");
-
-                                CameraPosition cameraPosition = new CameraPosition.Builder()
-                                        .target(new LatLng(location.getLatitude(), location.getLongitude()))      // Sets the center of the map to user's location
-                                        .zoom(18)                   // Sets the zoom
-                                        .bearing(0)                // Sets the orientation of the camera
-                                        .tilt(0)                   // Sets the tilt of the camera
-                                        .build();                   // Creates a CameraPosition from the builder
-
-                                // Move the camera to the user's location once the map is available.
-                                mMap.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
-
-                                // Adjust boolean values to prevent this logic from being called again.
-                                badAccuracy = true;
-                                waitingForBetterLocationAccuracy = true;
-                            }
-                        }
-                    }
-                });
     }
 
     // Cut down on code by using one method for the shared code from onMapReady() and onRestart().
@@ -4324,6 +4252,14 @@ public class Map extends FragmentActivity implements
             // Adjust boolean values to prevent this logic from being called again.
             firstLoad = false;
             cameraMoved = true;
+
+            // The following 3 boolean will determine when the loading icon will disappear. It should only disappear once the camera is adjusted and all shapes are loaded.
+            stillUpdatingCamera = false;
+
+            if (!stillLoadingCircles && !stillLoadingPolygons) {
+
+                loadingIcon.setVisibility(View.INVISIBLE);
+            }
         } else if (firstLoad && !badAccuracy && location.getAccuracy() >= 60) {
 
             Log.i(TAG, "onLocationChanged() -> Bad accuracy");
@@ -4341,6 +4277,14 @@ public class Map extends FragmentActivity implements
             // Adjust boolean values to prevent this logic from being called again.
             badAccuracy = true;
             waitingForBetterLocationAccuracy = true;
+
+            // The following 3 boolean will determine when the loading icon will disappear. It should only disappear once the camera is adjusted and all shapes are loaded.
+            stillUpdatingCamera = false;
+
+            if (!stillLoadingCircles && !stillLoadingPolygons) {
+
+                loadingIcon.setVisibility(View.INVISIBLE);
+            }
         }
     }
 
@@ -8624,6 +8568,8 @@ public class Map extends FragmentActivity implements
 
         Log.i(TAG, "purpleLoadFirebaseShapes()");
 
+        loadingIcon.setVisibility(View.VISIBLE);
+
         // Load Firebase points and circles.
         firebaseCircles.addListenerForSingleValueEvent(new ValueEventListener() {
 
@@ -8634,8 +8580,13 @@ public class Map extends FragmentActivity implements
 
                     if (dataSnapshot.getValue() != null) {
 
+                        double radius = 0;
+
                         LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
-                        double radius = ((Number) (ds.child("circleOptions/radius").getValue())).doubleValue();
+                        if ((ds.child("circleOptions/radius").getValue()) != null) {
+
+                            radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
+                        }
                         Circle circle = mMap.addCircle(
                                 new CircleOptions()
                                         .center(center)
@@ -8650,6 +8601,14 @@ public class Map extends FragmentActivity implements
 
                         circle.setTag(uuid);
                     }
+                }
+
+                // The following 3 boolean will determine when the loading icon will disappear. It should only disappear once the camera is adjusted and all shapes are loaded.
+                stillLoadingCircles = false;
+
+                if (!stillLoadingPolygons && !stillUpdatingCamera) {
+
+                    loadingIcon.setVisibility(View.INVISIBLE);
                 }
             }
 
@@ -8773,6 +8732,14 @@ public class Map extends FragmentActivity implements
                             polygon.setTag(uuid);
                         }
                     }
+                }
+
+                // The following 3 boolean will determine when the loading icon will disappear. It should only disappear once the camera is adjusted and all shapes are loaded.
+                stillLoadingPolygons = false;
+
+                if (!stillLoadingCircles && !stillUpdatingCamera) {
+
+                    loadingIcon.setVisibility(View.INVISIBLE);
                 }
             }
 
@@ -8962,8 +8929,13 @@ public class Map extends FragmentActivity implements
 
                     if (dataSnapshot.getValue() != null) {
 
+                        double radius = 0;
+
                         LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
-                        double radius = ((Number) (ds.child("circleOptions/radius").getValue())).doubleValue();
+                        if ((ds.child("circleOptions/radius").getValue()) != null) {
+
+                            radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
+                        }
                         Circle circle = mMap.addCircle(
                                 new CircleOptions()
                                         .center(center)
@@ -8980,9 +8952,10 @@ public class Map extends FragmentActivity implements
                     }
                 }
 
+                // The following 3 boolean will determine when the loading icon will disappear. It should only disappear once the camera is adjusted and all shapes are loaded.
                 stillLoadingCircles = false;
 
-                if (!stillLoadingPolygons) {
+                if (!stillLoadingPolygons && !stillUpdatingCamera) {
 
                     loadingIcon.setVisibility(View.INVISIBLE);
                 }
@@ -9111,9 +9084,10 @@ public class Map extends FragmentActivity implements
                     }
                 }
 
+                // The following 3 boolean will determine when the loading icon will disappear. It should only disappear once the camera is adjusted and all shapes are loaded.
                 stillLoadingPolygons = false;
 
-                if (!stillLoadingCircles) {
+                if (!stillLoadingCircles && !stillUpdatingCamera) {
 
                     loadingIcon.setVisibility(View.INVISIBLE);
                 }
