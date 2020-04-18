@@ -120,6 +120,7 @@ public class Chat extends AppCompatActivity implements
     private File image, video;
     private byte[] byteArray;
     private View loadingIcon;
+    private SharedPreferences sharedPreferences;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -225,10 +226,10 @@ public class Chat extends AppCompatActivity implements
                 for (DataSnapshot ds : dataSnapshot.getChildren()) {
 
                     // If the uuid brought from Map.java equals the uuid attached to the recyclerviewlayout in Firebase, load it into the RecyclerView.
-                    String firebaseUUID = (String) ds.child("uuid").getValue();
-                    if (firebaseUUID != null) {
+                    String shapeUUID = (String) ds.child("uuid").getValue();
+                    if (shapeUUID != null) {
 
-                        if (firebaseUUID.equals(uuid)) {
+                        if (shapeUUID.equals(uuid)) {
 
                             Long serverDate = (Long) ds.child("date").getValue();
                             String imageURL = (String) ds.child("imageURL").getValue();
@@ -646,7 +647,7 @@ public class Chat extends AppCompatActivity implements
 
         Log.i(TAG, "loadPreferences()");
 
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
 
         theme = sharedPreferences.getBoolean(co.clixel.herebefore.Settings.KEY_THEME_SWITCH, false);
     }
@@ -666,6 +667,9 @@ public class Chat extends AppCompatActivity implements
             AppCompatDelegate.setDefaultNightMode(
                     AppCompatDelegate.MODE_NIGHT_YES);
         }
+
+        // This will allow the settings button to appear in Map.java.
+        sharedPreferences.edit().putBoolean(Settings.KEY_SIGN_OUT, true).apply();
     }
 
     @Override
@@ -704,6 +708,7 @@ public class Chat extends AppCompatActivity implements
 
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.chatsettings_menu, menu);
+
         return true;
     }
 
@@ -728,6 +733,25 @@ public class Chat extends AppCompatActivity implements
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public boolean onContextItemSelected(final MenuItem item) {
+
+        if (item.getItemId() == R.string.report_post) {
+
+            loadingIcon.setVisibility(View.VISIBLE);
+
+            ReportPost reportPost = new ReportPost();
+            reportPost.setUUID(uuid);
+            reportPost.setPosition(item.getGroupId());
+            DatabaseReference newReportedPost = FirebaseDatabase.getInstance().getReference().child("Reported_Post").push();
+            newReportedPost.setValue(reportPost);
+            loadingIcon.setVisibility(View.GONE);
+            Toast.makeText(getApplication(), "Post reported. Thank you!", Toast.LENGTH_SHORT).show();
+        }
+
+        return super.onContextItemSelected(item);
     }
 
     @Override
@@ -804,7 +828,7 @@ public class Chat extends AppCompatActivity implements
 
     private void initRecyclerView() {
 
-        // Initialize the RecyclerView
+        // Initialize the RecyclerView.
         Log.i(TAG, "initRecyclerView()");
 
         RecyclerViewAdapter adapter = new RecyclerViewAdapter(this, mTime, mImage, mVideo, mText, mUserIsWithinShape);

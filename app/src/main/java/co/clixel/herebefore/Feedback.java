@@ -79,7 +79,7 @@ public class Feedback extends AppCompatActivity {
 
                 DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
 
-                DatabaseReference Feedback = rootRef.child("feedback");
+                DatabaseReference Feedback = rootRef.child("Feedback");
                 Feedback.addListenerForSingleValueEvent(new ValueEventListener() {
 
                     @Override
@@ -91,7 +91,7 @@ public class Feedback extends AppCompatActivity {
                         RelativeLayout layout = findViewById(R.id.layout);
                         layout.requestFocus();
                         loadingIcon.setVisibility(View.GONE);
-                        Toast.makeText(getApplication(), "Thank you :)", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getApplication(), "Feedback sent. Thank you!", Toast.LENGTH_SHORT).show();
                     }
 
                     @Override

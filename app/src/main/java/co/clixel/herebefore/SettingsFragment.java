@@ -67,28 +67,21 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
                     break;
                 }
 
-                case "signOut":
+                case "signOut": {
 
-                    boolean signOut = PreferenceManager.getDefaultSharedPreferences(getActivity()).getBoolean(Settings.KEY_SIGN_OUT, false);
+                    AuthUI.getInstance().signOut(getActivity());
+                    PreferenceManager.getDefaultSharedPreferences(getActivity()).edit().clear().apply();
 
-                    if (signOut) {
+                    Toast.makeText(getActivity(), "Signed out", Toast.LENGTH_SHORT).show();
 
-                        AuthUI.getInstance().signOut(getActivity());
-                        PreferenceManager.getDefaultSharedPreferences(getActivity()).edit().clear().commit();
+                    Intent Activity = new Intent(getActivity(), Map.class);
 
-                        Toast.makeText(getActivity(), "Signed out", Toast.LENGTH_SHORT).show();
+                    startActivity(Activity);
 
-                        Intent Activity = new Intent(getActivity(), Map.class);
-
-                        startActivity(Activity);
-
-                        getActivity().finishAffinity();
-                    } else {
-
-                        Toast.makeText(getActivity(), "No user signed in", Toast.LENGTH_SHORT).show();
-                    }
+                    getActivity().finishAffinity();
 
                     break;
+                }
 
                 case "deleteAccount": {
 

@@ -37,6 +37,7 @@
     <string name="orUseGoogle">Or Use Google:</string>
     <string name="signIntoExistingAccountWithPassword">Sign Into Existing Account With Password:</string>
     <string name="createAccountWithPassword">Create Account With Password:</string>
+    <string name="report_post">Report Post</string>
 
     <string-array name="pref_map_types_entries">
         <item>Depends on connection type</item>

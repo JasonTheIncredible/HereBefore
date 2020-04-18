@@ -121,8 +121,6 @@ public class Map extends FragmentActivity implements
     private Toast selectingShapeToast;
     private View loadingIcon;
 
-    // Allow users to message and reply to one another anonymously.
-    // Work on notifications in Settings.java.
     // "How to make databases faster".
     // Change design (change popupMenu color).
     // Check for any memory leaks.
@@ -137,6 +135,7 @@ public class Map extends FragmentActivity implements
     // Authenticate user email address at sign-up.
     // Send email to Google email before account deletion, or find another way.
     // Add preference for shape color.
+    // Allow users to message and reply to one another anonymously and add notifications to settings - problem: if I know who posted what, then anyone could know.
     // Leave messages in locations that users get notified of when they enter the area.
     // Add ability to filter recyclerView by type of content (recorded at the scene) to get rid of the "fluff"
     // Add ability to add video from gallery to recyclerView. [silicompressor 2.2.3 accepts content URIs but gives a black video on the app and in Firebase. Will follow up with this later.]
