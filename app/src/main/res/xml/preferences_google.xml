@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <SwitchPreferenceCompat
+    <!-- <SwitchPreferenceCompat
         app:key="notifications"
-        app:title="Enable notifications" />
+        app:title="Enable notifications" /> -->
 
     <SwitchPreferenceCompat
         app:defaultValue="false"

@@ -121,13 +121,10 @@ public class Map extends FragmentActivity implements
     private Toast selectingShapeToast;
     private View loadingIcon;
 
-    // "How to make databases faster".
     // Change design (change popupMenu color).
     // Check for any memory leaks.
     // Decrease app size.
-    // Optimize Firebase loading in Map.
-    // Work on onTrimMemory().
-    // Change Firebase rules to increase security.
+    // Change Firebase rules to increase security - "Firebase launch checklist" in bookmarks.
     // API key and anything else before publishing / Create a "build" version of the app with removed Log messages.
     // Ads.
     // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.
@@ -135,6 +132,7 @@ public class Map extends FragmentActivity implements
     // Authenticate user email address at sign-up.
     // Send email to Google email before account deletion, or find another way.
     // Add preference for shape color.
+    // "How to make databases faster"? Optimize Firebase loading in Map.
     // Allow users to message and reply to one another anonymously and add notifications to settings - problem: if I know who posted what, then anyone could know.
     // Leave messages in locations that users get notified of when they enter the area.
     // Add ability to filter recyclerView by type of content (recorded at the scene) to get rid of the "fluff"
@@ -2355,25 +2353,6 @@ public class Map extends FragmentActivity implements
         super.onStop();
     }
 
-    /**
-     * Release memory when the UI becomes hidden or when system resources become low.
-     *
-     * @param level the memory-related event that was raised.
-     */
-    @Override
-    public void onTrimMemory(int level) {
-
-        Log.i(TAG, "onTrimMemory()");
-        super.onTrimMemory(level);
-    }
-
-    @Override
-    public void onLowMemory() {
-
-        Log.i(TAG, "OnLowMemory()");
-        super.onLowMemory();
-    }
-
     @Override
     protected void onDestroy() {
 
@@ -2443,7 +2422,8 @@ public class Map extends FragmentActivity implements
                 // this thread waiting for the user's response! After the user
                 // sees the explanation, try again to request the permission.
                 new locationPermissionAlertDialog(this).execute();
-            } else {
+            } else if (grantResults.length > 0
+                    && grantResults[0] != PackageManager.PERMISSION_GRANTED) {
 
                 // User denied permission and checked "Don't ask again!"
                 Toast toast = Toast.makeText(Map.this, "Location permission is required. Please enable it manually through the Android settings menu.", Toast.LENGTH_LONG);
