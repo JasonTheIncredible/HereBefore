@@ -121,10 +121,10 @@ public class Map extends FragmentActivity implements
     private Toast selectingShapeToast;
     private View loadingIcon;
 
-    // Change design (change popupMenu color).
+    // Hide top bar on scroll.
     // Check for any memory leaks.
     // Decrease app size.
-    // Change Firebase rules to increase security - "Firebase launch checklist" in bookmarks.
+    // Change Firebase rules to increase security for storage and database - "Firebase launch checklist" in bookmarks.
     // API key and anything else before publishing / Create a "build" version of the app with removed Log messages.
     // Ads.
     // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.

@@ -1,6 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#008577</color>
-    <color name="colorPrimaryDark">#00574B</color>
-    <color name="colorAccent">#D81B60</color>
+
+    <!-- Very Top Notifications Bar -->
+    <color name="colorPrimaryDark">#777</color>
+    <!-- Top Toolbar and Menu Confirmation Text-->
+    <color name="colorPrimary">#888</color>
+    <!-- Send Button Circle -->
+    <color name="colorPrimaryVariant">#0000ff</color>
+    <!-- Created Button Text -->
+    <!-- <color name="colorOnPrimary">#000000</color> -->
+    <!-- Chat Buttons Inside -->
+    <color name="colorOnSecondary">#ffffff</color>
+    <!-- Settings Switch? and Loading Icon -->
+    <color name="colorAccent">#d81b60</color>
+
+    <color name="colorPrimaryDarkNight">#000</color>
+    <color name="colorPrimaryNight">#111</color>
+    <color name="colorPrimaryVariantNight">#0000ff</color>
+    <color name="colorOnPrimaryNight">#ffffff</color>
+    <color name="colorOnSecondaryNight">#000</color>
+    <color name="colorAccentNight">#d81b60</color>
+
 </resources>
