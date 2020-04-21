@@ -106,7 +106,7 @@ public class Chat extends AppCompatActivity implements
     private DatabaseReference databaseReference;
     private ValueEventListener eventListener;
     private FloatingActionButton sendButton, mediaButton;
-    private boolean theme, reachedEndOfRecyclerView = false, recyclerViewHasScrolled = false, messageSent = false, sendButtonClicked = false, mediaButtonMenuIsOpen, fileIsImage, checkPermissionsPicture, URIisFile, newShape, threeMarkers, fourMarkers, fiveMarkers, sixMarkers, sevenMarkers, eightMarkers, shapeIsCircle;
+    private boolean theme, needLoadingIcon = false, reachedEndOfRecyclerView = false, recyclerViewHasScrolled = false, messageSent = false, sendButtonClicked = false, mediaButtonMenuIsOpen, fileIsImage, checkPermissionsPicture, URIisFile, newShape, threeMarkers, fourMarkers, fiveMarkers, sixMarkers, sevenMarkers, eightMarkers, shapeIsCircle;
     private Boolean userIsWithinShape;
     private View.OnLayoutChangeListener onLayoutChangeListener;
     private String uuid;
@@ -691,6 +691,7 @@ public class Chat extends AppCompatActivity implements
             mInput.clearFocus();
         }
 
+        needLoadingIcon = false;
         sendButtonClicked = false;
     }
 
@@ -833,7 +834,7 @@ public class Chat extends AppCompatActivity implements
         }
 
         // After the initial load, make the loadingIcon invisible.
-        if (loadingIcon != null) {
+        if (loadingIcon != null && !needLoadingIcon) {
 
             loadingIcon.setVisibility(View.INVISIBLE);
         }
@@ -1416,6 +1417,9 @@ public class Chat extends AppCompatActivity implements
                         .into(imageView);
             } else {
 
+                // Prevents the loadingIcon from being removed by initRecyclerView().
+                needLoadingIcon = true;
+
                 // For use in uploadImage().
                 URIisFile = false;
 
@@ -1435,6 +1439,9 @@ public class Chat extends AppCompatActivity implements
 
             Log.i(TAG, "onActivityResult() -> Camera");
 
+            // Prevents the loadingIcon from being removed by initRecyclerView().
+            needLoadingIcon = true;
+
             fileIsImage = true;
 
             // For use in uploadImage().
@@ -1451,6 +1458,9 @@ public class Chat extends AppCompatActivity implements
         if (requestCode == 4 && resultCode == RESULT_OK) {
 
             Log.i(TAG, "onActivityResult() -> Video");
+
+            // Prevents the loadingIcon from being removed by initRecyclerView().
+            needLoadingIcon = true;
 
             fileIsImage = false;
 
@@ -1574,6 +1584,8 @@ public class Chat extends AppCompatActivity implements
                     .into(activity.imageView);
 
             activity.loadingIcon.setVisibility(View.INVISIBLE);
+            // Allow initRecyclerView() to get rid of the loadingIcon with this boolean.
+            activity.needLoadingIcon = false;
         }
     }
 
@@ -1651,9 +1663,9 @@ public class Chat extends AppCompatActivity implements
                     .apply(new RequestOptions().override(640, 5000).placeholder(R.drawable.ic_recyclerview_image_placeholder))
                     .into(activity.imageView);
 
-            activity.imageView.setVisibility(View.VISIBLE);
-
             activity.loadingIcon.setVisibility(View.INVISIBLE);
+            // Allow initRecyclerView() to get rid of the loadingIcon with this boolean.
+            activity.needLoadingIcon = false;
         }
     }
 
@@ -1830,14 +1842,14 @@ public class Chat extends AppCompatActivity implements
             }
 
             activity.loadingIcon.setVisibility(View.INVISIBLE);
+            // Allow initRecyclerView() to get rid of the loadingIcon with this boolean.
+            activity.needLoadingIcon = false;
         }
     }
 
     private void firebaseUpload() {
 
         Log.i(TAG, "firebaseUploadImage()");
-
-        final Bundle extras = getIntent().getExtras();
 
         // Show the loading icon while the image is being uploaded to Firebase.
         loadingIcon.setVisibility(View.VISIBLE);

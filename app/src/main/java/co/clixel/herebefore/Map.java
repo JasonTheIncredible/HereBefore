@@ -121,10 +121,10 @@ public class Map extends FragmentActivity implements
     private Toast selectingShapeToast;
     private View loadingIcon;
 
-    // Hide top bar on scroll.
-    // Check for any memory leaks.
-    // Decrease app size.
+    // Fix bug where clicking on circles when map is zoomed out will do nothing.
+    // Hide toasts when exiting / changing activity.
     // Change Firebase rules to increase security for storage and database - "Firebase launch checklist" in bookmarks.
+    // Decrease app size.
     // API key and anything else before publishing / Create a "build" version of the app with removed Log messages.
     // Ads.
     // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.
@@ -132,6 +132,8 @@ public class Map extends FragmentActivity implements
     // Authenticate user email address at sign-up.
     // Send email to Google email before account deletion, or find another way.
     // Add preference for shape color.
+    // Hide top bar on scroll.
+    // Add leak listener to canary versions.
     // "How to make databases faster"? Optimize Firebase loading in Map.
     // Allow users to message and reply to one another anonymously and add notifications to settings - problem: if I know who posted what, then anyone could know.
     // Leave messages in locations that users get notified of when they enter the area.
