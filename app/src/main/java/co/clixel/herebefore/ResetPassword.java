@@ -27,6 +27,7 @@ public class ResetPassword extends AppCompatActivity {
     private Button sendEmail, goBack;
     private View loadingIcon;
     private boolean theme;
+    private Toast shortToast, longToast;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -167,16 +168,33 @@ public class ResetPassword extends AppCompatActivity {
             goBack.setOnClickListener(null);
         }
 
+        cancelToasts();
+
         super.onStop();
+    }
+
+    private void cancelToasts() {
+
+        if (shortToast != null) {
+
+            shortToast.cancel();
+        }
+
+        if (longToast != null) {
+
+            longToast.cancel();
+        }
     }
 
     private void toastMessageShort(String message) {
 
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+        shortToast = Toast.makeText(this, message, Toast.LENGTH_SHORT);
+        shortToast.show();
     }
 
     private void toastMessageLong(String message) {
 
-        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+        longToast = Toast.makeText(this, message, Toast.LENGTH_LONG);
+        longToast.show();
     }
 }

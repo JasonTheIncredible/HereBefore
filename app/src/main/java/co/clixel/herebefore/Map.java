@@ -96,8 +96,8 @@ public class Map extends FragmentActivity implements
     private GoogleMap mMap;
     private static final int Request_User_Location_Code = 99;
     private Marker marker0, marker1, marker2, marker3, marker4, marker5, marker6, marker7;
-    private Circle newCircle, circleTemp;
-    private Polygon newPolygon, polygonTemp;
+    private Circle newCircle, circleTemp, mCircle = null;
+    private Polygon newPolygon, polygonTemp, mPolygon = null;
     private DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference(), firebaseCircles = rootRef.child("Circles"), firebasePolygons = rootRef.child("Polygons");
     private SeekBar chatSizeSeekBar, chatSelectorSeekBar;
     private String preferredMapType, uuid, marker0ID, marker1ID, marker2ID, marker3ID, marker4ID, marker5ID, marker6ID, marker7ID, selectedOverlappingShapeUUID;
@@ -118,11 +118,11 @@ public class Map extends FragmentActivity implements
     private float x, y;
     private int chatsSize;
     private LocationManager locationManager;
-    private Toast selectingShapeToast;
+    private Toast shortToast, longToast;
     private View loadingIcon;
 
-    // Fix bug where clicking on circles when map is zoomed out will do nothing.
-    // Hide toasts when exiting / changing activity.
+    // Add loading icon to loading shapes through menu.
+    // DeleteAccount, SignIn, SignUp.java warning messages.
     // Change Firebase rules to increase security for storage and database - "Firebase launch checklist" in bookmarks.
     // Decrease app size.
     // API key and anything else before publishing / Create a "build" version of the app with removed Log messages.
@@ -232,11 +232,7 @@ public class Map extends FragmentActivity implements
 
                 Intent Activity = new Intent(Map.this, co.clixel.herebefore.Settings.class);
 
-                // Cancel the toast so it doesn't show in the next activity.
-                if (selectingShapeToast != null) {
-
-                    selectingShapeToast.cancel();
-                }
+                cancelToasts();
 
                 startActivity(Activity);
             }
@@ -2155,6 +2151,8 @@ public class Map extends FragmentActivity implements
             circleTemp.remove();
         }
 
+        mCircle = null;
+        mPolygon = null;
         chatSizeSeekBar.setProgress(0);
         relativeAngle = 0.0;
         usedSeekBar = false;
@@ -2262,14 +2260,6 @@ public class Map extends FragmentActivity implements
     }
 
     @Override
-    protected void onPause() {
-
-        Log.i(TAG, "onPause()");
-
-        super.onPause();
-    }
-
-    @Override
     protected void onStop() {
 
         Log.i(TAG, "onStop()");
@@ -2339,8 +2329,6 @@ public class Map extends FragmentActivity implements
             chatSelectorSeekBar.setOnSeekBarChangeListener(null);
         }
 
-        loadingIcon.setVisibility(View.GONE);
-
         // Remove the listener.
         if (mMap != null) {
 
@@ -2352,14 +2340,24 @@ public class Map extends FragmentActivity implements
             mMap.setOnCameraMoveListener(null);
         }
 
+        cancelToasts();
+
+        loadingIcon.setVisibility(View.GONE);
+
         super.onStop();
     }
 
-    @Override
-    protected void onDestroy() {
+    private void cancelToasts() {
 
-        Log.i(TAG, "onDestroy()");
-        super.onDestroy();
+        if (shortToast != null) {
+
+            shortToast.cancel();
+        }
+
+        if (longToast != null) {
+
+            longToast.cancel();
+        }
     }
 
     private void checkLocationPermission() {
@@ -2428,9 +2426,9 @@ public class Map extends FragmentActivity implements
                     && grantResults[0] != PackageManager.PERMISSION_GRANTED) {
 
                 // User denied permission and checked "Don't ask again!"
-                Toast toast = Toast.makeText(Map.this, "Location permission is required. Please enable it manually through the Android settings menu.", Toast.LENGTH_LONG);
-                toast.setGravity(Gravity.CENTER, 0, 0);
-                toast.show();
+                Toast locationPermissionToast = Toast.makeText(Map.this, "Location permission is required. Please enable it manually through the Android settings menu.", Toast.LENGTH_LONG);
+                locationPermissionToast.setGravity(Gravity.CENTER, 0, 0);
+                locationPermissionToast.show();
             }
         }
     }
@@ -2692,8 +2690,8 @@ public class Map extends FragmentActivity implements
                         // Inform the user is the circle is too small.
                         if (newCircle.getRadius() < 1) {
 
-                            Toast.makeText(Map.this, "Please make the shape larger", Toast.LENGTH_LONG).show();
-                            waitingForShapeInformationToProcess = false;
+                            toastMessageLong("Please make the shape larger");
+
                             return false;
                         }
 
@@ -2764,7 +2762,7 @@ public class Map extends FragmentActivity implements
                                 @Override
                                 public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                                    Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                                    toastMessageLong(databaseError.getMessage());
                                 }
                             });
                         } else {
@@ -2805,7 +2803,7 @@ public class Map extends FragmentActivity implements
                                 @Override
                                 public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                                    Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                                    toastMessageLong(databaseError.getMessage());
                                 }
                             });
                         }
@@ -2849,8 +2847,8 @@ public class Map extends FragmentActivity implements
                     // Inform the user is the circle is too small.
                     if (SphericalUtil.computeArea(polygonPointsList) < Math.PI) {
 
-                        Toast.makeText(Map.this, "Please make the shape larger", Toast.LENGTH_LONG).show();
-                        waitingForShapeInformationToProcess = false;
+                        toastMessageLong("Please make the shape larger");
+
                         return;
                     }
 
@@ -2913,7 +2911,7 @@ public class Map extends FragmentActivity implements
                                                 @Override
                                                 public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                                                    Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                                                    toastMessageLong(databaseError.getMessage());
                                                 }
                                             });
                                         } else {
@@ -2957,7 +2955,7 @@ public class Map extends FragmentActivity implements
                                                 @Override
                                                 public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                                                    Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                                                    toastMessageLong(databaseError.getMessage());
                                                 }
                                             });
                                         }
@@ -2996,6 +2994,10 @@ public class Map extends FragmentActivity implements
                     overlappingShapesUUID.add(polygon.getTag().toString());
                     overlappingShapesPolygonUUID.add(polygon.getTag().toString());
                     overlappingShapesPolygonVertices.add(polygon.getPoints());
+
+                    // If the user zooms out and a shape is too small, touchAgain() will not touch the shape again (I'm not sure why).
+                    // Therefore, save an instance of the shape so that if onMapClick is called, it will just go to the last shape.
+                    mPolygon = polygon;
 
                     // Programmatically click the same spot again.
                     touchAgain();
@@ -3256,8 +3258,7 @@ public class Map extends FragmentActivity implements
                 chatSelectorSeekBar.setVisibility(View.VISIBLE);
                 mMap.getUiSettings().setScrollGesturesEnabled(true);
                 loadingIcon.setVisibility(View.GONE);
-                selectingShapeToast = Toast.makeText(Map.this, "Highlight and select a shape using the SeekBar below.", Toast.LENGTH_LONG);
-                selectingShapeToast.show();
+                toastMessageLong("Highlight and select a shape using the SeekBar below");
             }
         });
 
@@ -3473,8 +3474,8 @@ public class Map extends FragmentActivity implements
                     // Inform the user is the circle is too small.
                     if (circle.getRadius() < 1) {
 
-                        Toast.makeText(Map.this, "Please make the shape larger", Toast.LENGTH_LONG).show();
-                        waitingForShapeInformationToProcess = false;
+                        toastMessageLong("Please make the shape larger");
+
                         return;
                     }
 
@@ -3543,7 +3544,7 @@ public class Map extends FragmentActivity implements
                                                 @Override
                                                 public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                                                    Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                                                    toastMessageLong(databaseError.getMessage());
                                                 }
                                             });
                                         } else {
@@ -3588,7 +3589,7 @@ public class Map extends FragmentActivity implements
                                                 @Override
                                                 public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                                                    Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                                                    toastMessageLong(databaseError.getMessage());
                                                 }
                                             });
                                         }
@@ -3628,6 +3629,10 @@ public class Map extends FragmentActivity implements
                     overlappingShapesCircleUUID.add(circle.getTag().toString());
                     overlappingShapesCircleLocation.add(circle.getCenter());
                     overlappingShapesCircleRadius.add(circle.getRadius());
+
+                    // If the user zooms out and a shape is too small, touchAgain() will not touch the shape again (I'm not sure why).
+                    // Therefore, save an instance of the shape so that if onMapClick is called, it will just go to the last shape.
+                    mCircle = circle;
 
                     // Programmatically click the same spot again.
                     touchAgain();
@@ -3892,8 +3897,7 @@ public class Map extends FragmentActivity implements
                 chatSelectorSeekBar.setVisibility(View.VISIBLE);
                 mMap.getUiSettings().setScrollGesturesEnabled(true);
                 loadingIcon.setVisibility(View.GONE);
-                selectingShapeToast = Toast.makeText(Map.this, "Highlight and select a shape using the SeekBar below.", Toast.LENGTH_LONG);
-                selectingShapeToast.show();
+                toastMessageLong("Highlight and select a shape using the SeekBar below");
             }
         });
 
@@ -3995,6 +3999,133 @@ public class Map extends FragmentActivity implements
                     chatSelectorSeekBar.setProgress(0);
 
                     chatsSize = 0;
+                }
+
+                // If the user zooms out and a shape is too small, touchAgain() will not touch the shape again (I'm not sure why).
+                // Therefore, just follow through with the on[Shape]Click code without getting ALL the shapes.
+                if (loadingIcon.getVisibility() == View.VISIBLE && mCircle != null) {
+
+                    Log.i(TAG, "onMapReadyAndRestart() -> onMapClick -> User selected a circle");
+
+                    chatsSize = overlappingShapesUUID.size();
+
+                    // End this method if the method is already being processed from another shape clicking event.
+                    if (waitingForShapeInformationToProcess) {
+
+                        return;
+                    }
+
+                    // Update boolean to prevent double clicking a shape.
+                    waitingForShapeInformationToProcess = true;
+
+                    uuid = (String) mCircle.getTag();
+
+                    // Check if user is within the circle before going to the recyclerviewlayout.
+                    FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
+
+                    mFusedLocationClient.getLastLocation()
+                            .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
+
+                                @Override
+                                public void onSuccess(Location location) {
+
+                                    if (location != null) {
+
+                                        float[] distance = new float[2];
+
+                                        Location.distanceBetween(location.getLatitude(), location.getLongitude(),
+                                                mCircle.getCenter().latitude, mCircle.getCenter().longitude, distance);
+
+                                        // Boolean; will be true if user is within the circle upon circle click.
+                                        userIsWithinShape = !(distance[0] > mCircle.getRadius());
+
+                                        // Check if the user is already signed in.
+                                        if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) instanceof GoogleSignInAccount) {
+
+                                            Log.i(TAG, "onMapReadyAndRestart() -> onMapClick -> User selected a circle -> User signed in");
+
+                                            // User is signed in.
+
+                                            Intent Activity = new Intent(Map.this, Chat.class);
+                                            goToNextActivityCircle(Activity, mCircle, false);
+                                        } else {
+
+                                            Log.i(TAG, "onMapReadyAndRestart() -> onMapClick -> User selected a circle -> User not signed in");
+
+                                            // No user is signed in.
+
+                                            Intent Activity = new Intent(Map.this, SignIn.class);
+                                            goToNextActivityCircle(Activity, mCircle, false);
+                                        }
+                                    } else {
+
+                                        Log.e(TAG, "onMapReadyAndRestart() -> onMapClick -> User selected a circle -> location == null");
+                                        Crashlytics.logException(new Exception("onMapReadyAndRestart() -> onMapClick -> User selected a circle -> location == null"));
+                                    }
+                                }
+                            });
+
+                    return;
+                }
+
+                if (loadingIcon.getVisibility() == View.VISIBLE && mPolygon != null) {
+
+                    Log.i(TAG, "onMapReadyAndRestart() -> onMapClick -> User selected a polygon");
+
+                    chatsSize = overlappingShapesUUID.size();
+
+                    // End this method if the method is already being processed from another shape clicking event.
+                    if (waitingForShapeInformationToProcess) {
+
+                        return;
+                    }
+
+                    // Update boolean to prevent double clicking a shape.
+                    waitingForShapeInformationToProcess = true;
+
+                    uuid = (String) mPolygon.getTag();
+
+                    // Check if user is within the shape before going to the recyclerviewlayout.
+                    FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
+
+                    mFusedLocationClient.getLastLocation()
+                            .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
+
+                                @Override
+                                public void onSuccess(Location location) {
+
+                                    if (location != null) {
+
+                                        // Boolean; will be true if user is within the shape upon shape click.
+                                        userIsWithinShape = PolyUtil.containsLocation(location.getLatitude(), location.getLongitude(), mPolygon.getPoints(), false);
+
+                                        // Check if the user is already signed in.
+                                        if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) instanceof GoogleSignInAccount) {
+
+                                            Log.i(TAG, "onMapReadyAndRestart() -> onMapClick -> User selected a polygon -> User signed in");
+
+                                            // User is signed in.
+
+                                            Intent Activity = new Intent(Map.this, Chat.class);
+                                            goToNextActivityPolygon(Activity, false);
+                                        } else {
+
+                                            Log.i(TAG, "onMapReadyAndRestart() -> onMapClick -> User selected a polygon -> No user signed in");
+
+                                            // No user is signed in.
+
+                                            Intent Activity = new Intent(Map.this, SignIn.class);
+                                            goToNextActivityPolygon(Activity, false);
+                                        }
+                                    } else {
+
+                                        Log.e(TAG, "onMapReadyAndRestart() -> onMapClick -> User selected a polygon -> location == null");
+                                        Crashlytics.logException(new Exception("onMapReadyAndRestart() -> onMapClick -> User selected a polygon -> location == null"));
+                                    }
+                                }
+                            });
+
+                    return;
                 }
 
                 // Get rid of new shapes if the user clicks away from them.
@@ -4328,7 +4459,7 @@ public class Map extends FragmentActivity implements
                             @Override
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                                toastMessageLong(databaseError.getMessage());
                             }
                         });
 
@@ -4451,7 +4582,7 @@ public class Map extends FragmentActivity implements
                             @Override
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                                toastMessageLong(databaseError.getMessage());
                             }
                         });
                     } else {
@@ -4497,7 +4628,7 @@ public class Map extends FragmentActivity implements
                             @Override
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                                toastMessageLong(databaseError.getMessage());
                             }
                         });
 
@@ -4620,7 +4751,7 @@ public class Map extends FragmentActivity implements
                             @Override
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                                toastMessageLong(databaseError.getMessage());
                             }
                         });
                     }
@@ -5294,8 +5425,11 @@ public class Map extends FragmentActivity implements
                 Activity.putExtra("marker3Longitude", marker3Position.longitude);
             } else {
 
-                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                toastMessageShort("The shape must not overlap itself");
+
                 waitingForShapeInformationToProcess = false;
+
+                return;
             }
         }
 
@@ -5333,8 +5467,11 @@ public class Map extends FragmentActivity implements
                 Activity.putExtra("marker4Longitude", marker4Position.longitude);
             } else {
 
-                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                toastMessageShort("The shape must not overlap itself");
+
                 waitingForShapeInformationToProcess = false;
+
+                return;
             }
         }
 
@@ -5375,8 +5512,11 @@ public class Map extends FragmentActivity implements
                 Activity.putExtra("marker5Longitude", marker5Position.longitude);
             } else {
 
-                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                toastMessageShort("The shape must not overlap itself");
+
                 waitingForShapeInformationToProcess = false;
+
+                return;
             }
         }
 
@@ -5420,8 +5560,11 @@ public class Map extends FragmentActivity implements
                 Activity.putExtra("marker6Longitude", marker6Position.longitude);
             } else {
 
-                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                toastMessageShort("The shape must not overlap itself");
+
                 waitingForShapeInformationToProcess = false;
+
+                return;
             }
         }
 
@@ -5469,8 +5612,11 @@ public class Map extends FragmentActivity implements
                 Activity.putExtra("marker7Latitude", marker7Position.longitude);
             } else {
 
-                Toast.makeText(Map.this, "The shape must not overlap itself", Toast.LENGTH_SHORT).show();
+                toastMessageShort("The shape must not overlap itself");
+
                 waitingForShapeInformationToProcess = false;
+
+                return;
             }
         }
 
@@ -5481,11 +5627,8 @@ public class Map extends FragmentActivity implements
         Activity.putExtra("uuid", uuid);
         // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
         Activity.putExtra("userIsWithinShape", userIsWithinShape);
-        // Cancel the toast so it doesn't show in the next activity.
-        if (selectingShapeToast != null) {
 
-            selectingShapeToast.cancel();
-        }
+        cancelToasts();
 
         startActivity(Activity);
     }
@@ -5508,11 +5651,8 @@ public class Map extends FragmentActivity implements
             Activity.putExtra("circleLongitude", circle.getCenter().longitude);
             Activity.putExtra("radius", circle.getRadius());
         }
-        // Cancel the toast so it doesn't show in the next activity.
-        if (selectingShapeToast != null) {
 
-            selectingShapeToast.cancel();
-        }
+        cancelToasts();
 
         startActivity(Activity);
     }
@@ -5760,7 +5900,7 @@ public class Map extends FragmentActivity implements
                             @Override
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                                toastMessageLong(databaseError.getMessage());
                             }
                         });
 
@@ -5883,7 +6023,7 @@ public class Map extends FragmentActivity implements
                             @Override
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                                toastMessageLong(databaseError.getMessage());
                             }
                         });
                     } else {
@@ -5919,7 +6059,7 @@ public class Map extends FragmentActivity implements
                             @Override
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                                toastMessageLong(databaseError.getMessage());
                             }
                         });
 
@@ -6042,7 +6182,7 @@ public class Map extends FragmentActivity implements
                             @Override
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                                toastMessageLong(databaseError.getMessage());
                             }
                         });
                     }
@@ -6190,7 +6330,7 @@ public class Map extends FragmentActivity implements
                             @Override
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                                toastMessageLong(databaseError.getMessage());
                             }
                         });
 
@@ -6316,7 +6456,7 @@ public class Map extends FragmentActivity implements
                             @Override
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                                toastMessageLong(databaseError.getMessage());
                             }
                         });
                     } else {
@@ -6357,7 +6497,7 @@ public class Map extends FragmentActivity implements
                             @Override
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                                toastMessageLong(databaseError.getMessage());
                             }
                         });
 
@@ -6483,7 +6623,7 @@ public class Map extends FragmentActivity implements
                             @Override
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                                toastMessageLong(databaseError.getMessage());
                             }
                         });
                     }
@@ -6631,7 +6771,7 @@ public class Map extends FragmentActivity implements
                             @Override
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                                toastMessageLong(databaseError.getMessage());
                             }
                         });
 
@@ -6757,7 +6897,7 @@ public class Map extends FragmentActivity implements
                             @Override
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                                toastMessageLong(databaseError.getMessage());
                             }
                         });
                     } else {
@@ -6798,7 +6938,7 @@ public class Map extends FragmentActivity implements
                             @Override
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                                toastMessageLong(databaseError.getMessage());
                             }
                         });
 
@@ -6924,7 +7064,7 @@ public class Map extends FragmentActivity implements
                             @Override
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                                toastMessageLong(databaseError.getMessage());
                             }
                         });
                     }
@@ -7072,7 +7212,7 @@ public class Map extends FragmentActivity implements
                             @Override
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                                toastMessageLong(databaseError.getMessage());
                             }
                         });
 
@@ -7198,7 +7338,7 @@ public class Map extends FragmentActivity implements
                             @Override
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                                toastMessageLong(databaseError.getMessage());
                             }
                         });
                     } else {
@@ -7239,7 +7379,7 @@ public class Map extends FragmentActivity implements
                             @Override
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                                toastMessageLong(databaseError.getMessage());
                             }
                         });
 
@@ -7365,7 +7505,7 @@ public class Map extends FragmentActivity implements
                             @Override
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                                toastMessageLong(databaseError.getMessage());
                             }
                         });
                     }
@@ -7513,7 +7653,7 @@ public class Map extends FragmentActivity implements
                             @Override
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                                toastMessageLong(databaseError.getMessage());
                             }
                         });
                     } else {
@@ -7553,7 +7693,7 @@ public class Map extends FragmentActivity implements
                             @Override
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                                toastMessageLong(databaseError.getMessage());
                             }
                         });
                     }
@@ -8311,7 +8451,7 @@ public class Map extends FragmentActivity implements
                                                 @Override
                                                 public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                                                    Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                                                    toastMessageLong(databaseError.getMessage());
                                                 }
                                             });
                                         } else {
@@ -8364,7 +8504,7 @@ public class Map extends FragmentActivity implements
                                                 @Override
                                                 public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                                                    Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                                                    toastMessageLong(databaseError.getMessage());
                                                 }
                                             });
                                         }
@@ -8596,7 +8736,9 @@ public class Map extends FragmentActivity implements
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                loadingIcon.setVisibility(View.INVISIBLE);
+
+                toastMessageLong(databaseError.getMessage());
             }
         });
 
@@ -8727,7 +8869,9 @@ public class Map extends FragmentActivity implements
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                loadingIcon.setVisibility(View.INVISIBLE);
+
+                toastMessageLong(databaseError.getMessage());
             }
         });
     }
@@ -8946,7 +9090,8 @@ public class Map extends FragmentActivity implements
             public void onCancelled(@NonNull DatabaseError databaseError) {
 
                 loadingIcon.setVisibility(View.INVISIBLE);
-                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+
+                toastMessageLong(databaseError.getMessage());
             }
         });
 
@@ -9078,7 +9223,8 @@ public class Map extends FragmentActivity implements
             public void onCancelled(@NonNull DatabaseError databaseError) {
 
                 loadingIcon.setVisibility(View.INVISIBLE);
-                Toast.makeText(Map.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+
+                toastMessageLong(databaseError.getMessage());
             }
         });
     }
@@ -9230,6 +9376,18 @@ public class Map extends FragmentActivity implements
             } else {
             }
         }
+    }
+
+    private void toastMessageShort(String message) {
+
+        shortToast = Toast.makeText(this, message, Toast.LENGTH_SHORT);
+        shortToast.show();
+    }
+
+    private void toastMessageLong(String message) {
+
+        longToast = Toast.makeText(this, message, Toast.LENGTH_LONG);
+        longToast.show();
     }
 
     @Override

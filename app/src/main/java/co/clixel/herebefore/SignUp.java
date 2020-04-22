@@ -34,6 +34,7 @@ public class SignUp extends AppCompatActivity {
     private boolean newShape, userIsWithinShape, threeMarkers, fourMarkers, fiveMarkers, sixMarkers, sevenMarkers, eightMarkers, shapeIsCircle;
     private int fillColor;
     private View loadingIcon;
+    private Toast shortToast, longToast;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -166,7 +167,8 @@ public class SignUp extends AppCompatActivity {
                             editor.commit();
 
                             // Go to Chat.java with the extras.
-                            toastMessageShort("Signed up");
+                            Toast signedUpToast = Toast.makeText(SignUp.this, "Signed up", Toast.LENGTH_SHORT);
+                            signedUpToast.show();
                             Intent Activity = new Intent(SignUp.this, Chat.class);
                             Activity.putExtra("newShape", newShape);
                             Activity.putExtra("uuid", uuid);
@@ -235,20 +237,6 @@ public class SignUp extends AppCompatActivity {
     }
 
     @Override
-    protected void onResume() {
-
-        super.onResume();
-        Log.i(TAG, "onResume()");
-    }
-
-    @Override
-    protected void onPause() {
-
-        Log.i(TAG, "onPause()");
-        super.onPause();
-    }
-
-    @Override
     protected void onStop() {
 
         Log.i(TAG, "onStop()");
@@ -259,37 +247,35 @@ public class SignUp extends AppCompatActivity {
             createAccountButton.setOnClickListener(null);
         }
 
+        cancelToasts();
+
         super.onStop();
     }
 
-    @Override
-    public void onTrimMemory(int level) {
+    private void cancelToasts() {
 
-        Log.i(TAG, "onTrimMemory()");
-        super.onTrimMemory(level);
-    }
+        // Do not cancel signUpToast, as the activity is always changed right afterward.
 
-    @Override
-    public void onLowMemory() {
+        if (shortToast != null) {
 
-        Log.i(TAG, "OnLowMemory()");
-        super.onLowMemory();
-    }
+            shortToast.cancel();
+        }
 
-    @Override
-    protected void onDestroy() {
+        if (longToast != null) {
 
-        Log.i(TAG, "onDestroy()");
-        super.onDestroy();
+            longToast.cancel();
+        }
     }
 
     private void toastMessageShort(String message) {
 
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+        shortToast = Toast.makeText(this, message, Toast.LENGTH_SHORT);
+        shortToast.show();
     }
 
     private void toastMessageLong(String message) {
 
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+        longToast = Toast.makeText(this, message, Toast.LENGTH_LONG);
+        longToast.show();
     }
 }

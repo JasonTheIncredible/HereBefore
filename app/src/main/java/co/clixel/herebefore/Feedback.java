@@ -28,6 +28,7 @@ public class Feedback extends AppCompatActivity {
     private Button sendFeedback, goBack;
     private View loadingIcon;
     private boolean theme;
+    private Toast shortToast;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,7 +60,7 @@ public class Feedback extends AppCompatActivity {
 
                 if (feedback.equals("")) {
 
-                    Toast.makeText(getApplication(), "Please enter feedback", Toast.LENGTH_SHORT).show();
+                    toastMessageShort("Please enter feedback");
                     mFeedback.requestFocus();
                     return;
                 }
@@ -91,14 +92,14 @@ public class Feedback extends AppCompatActivity {
                         RelativeLayout layout = findViewById(R.id.layout);
                         layout.requestFocus();
                         loadingIcon.setVisibility(View.GONE);
-                        Toast.makeText(getApplication(), "Feedback sent. Thank you!", Toast.LENGTH_SHORT).show();
+                        toastMessageShort("Feedback sent. Thank you!");
                     }
 
                     @Override
                     public void onCancelled(@NonNull DatabaseError databaseError) {
 
                         loadingIcon.setVisibility(View.GONE);
-                        Toast.makeText(Feedback.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                        toastMessageShort("Feedback sent. Thank you!");
                     }
                 });
             }
@@ -157,6 +158,22 @@ public class Feedback extends AppCompatActivity {
             goBack.setOnClickListener(null);
         }
 
+        cancelToasts();
+
         super.onStop();
+    }
+
+    private void cancelToasts() {
+
+        if (shortToast != null) {
+
+            shortToast.cancel();
+        }
+    }
+
+    private void toastMessageShort(String message) {
+
+        shortToast = Toast.makeText(this, message, Toast.LENGTH_SHORT);
+        shortToast.show();
     }
 }

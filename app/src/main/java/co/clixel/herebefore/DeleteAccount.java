@@ -35,6 +35,7 @@ public class DeleteAccount extends AppCompatActivity {
     private boolean theme, googleAccount;
     private SharedPreferences sharedPreferences;
     private String googleIdToken;
+    private Toast shortToast, longToast;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -166,7 +167,8 @@ public class DeleteAccount extends AppCompatActivity {
 
                                             PreferenceManager.getDefaultSharedPreferences(DeleteAccount.this).edit().clear().commit();
 
-                                            Toast.makeText(DeleteAccount.this, "Account deleted", Toast.LENGTH_LONG).show();
+                                            Toast accountDeletedToast = Toast.makeText(DeleteAccount.this, "Account deleted", Toast.LENGTH_LONG);
+                                            accountDeletedToast.show();
 
                                             Intent Activity = new Intent(DeleteAccount.this, Map.class);
 
@@ -181,12 +183,12 @@ public class DeleteAccount extends AppCompatActivity {
 
                                             // Tell the user what happened.
                                             loadingIcon.setVisibility(View.GONE);
-                                            Toast.makeText(DeleteAccount.this, "Account Deletion Failed: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
+                                            toastMessageLong("Account Deletion Failed: " + task.getException().getMessage());
                                         } else if (!task.isSuccessful() && task.getException() == null) {
 
                                             // Tell the user something happened.
                                             loadingIcon.setVisibility(View.GONE);
-                                            Toast.makeText(DeleteAccount.this, "An unknown error occurred. Please try again.", Toast.LENGTH_LONG).show();
+                                            toastMessageLong("An unknown error occurred. Please try again.");
 
                                             // Send the information to Crashlytics for future debugging.
                                             Crashlytics.logException(new RuntimeException("onStart() -> deleteAccount -> OnClick -> task.getException == null"));
@@ -219,7 +221,8 @@ public class DeleteAccount extends AppCompatActivity {
 
                                             PreferenceManager.getDefaultSharedPreferences(DeleteAccount.this).edit().clear().commit();
 
-                                            Toast.makeText(DeleteAccount.this, "Account deleted", Toast.LENGTH_LONG).show();
+                                            Toast accountDeletedToast = Toast.makeText(DeleteAccount.this, "Account deleted", Toast.LENGTH_LONG);
+                                            accountDeletedToast.show();
 
                                             Intent Activity = new Intent(DeleteAccount.this, Map.class);
 
@@ -234,12 +237,12 @@ public class DeleteAccount extends AppCompatActivity {
 
                                             // Tell the user what happened.
                                             loadingIcon.setVisibility(View.GONE);
-                                            Toast.makeText(DeleteAccount.this, "Account Deletion Failed: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
+                                            toastMessageLong("Account Deletion Failed: " + task.getException().getMessage());
                                         } else if (!task.isSuccessful() && task.getException() == null) {
 
                                             // Tell the user something happened.
                                             loadingIcon.setVisibility(View.GONE);
-                                            Toast.makeText(DeleteAccount.this, "An unknown error occurred. Please try again.", Toast.LENGTH_LONG).show();
+                                            toastMessageLong("An unknown error occurred. Please try again.");
 
                                             // Send the information to Crashlytics for future debugging.
                                             Crashlytics.logException(new RuntimeException("onStart() -> deleteAccount -> OnClick -> task.getException == null"));
@@ -251,11 +254,11 @@ public class DeleteAccount extends AppCompatActivity {
                     } else if (password.getText().toString().equals("")) {
 
                         password.requestFocus();
-                        Toast.makeText(DeleteAccount.this, "Please re-enter password for this account", Toast.LENGTH_SHORT).show();
+                        toastMessageShort("Please re-enter password for this account");
                     } else {
 
                         password.getText().clear();
-                        Toast.makeText(DeleteAccount.this, "Incorrect password", Toast.LENGTH_SHORT).show();
+                        toastMessageShort("Incorrect password");
                     }
                 }
             }
@@ -314,6 +317,35 @@ public class DeleteAccount extends AppCompatActivity {
             goBack.setOnClickListener(null);
         }
 
+        cancelToasts();
+
         super.onStop();
+    }
+
+    private void cancelToasts() {
+
+        // Do not cancel the accountDeletedToast, as the activity is always changed right afterward.
+
+        if (shortToast != null) {
+
+            shortToast.cancel();
+        }
+
+        if (longToast != null) {
+
+            longToast.cancel();
+        }
+    }
+
+    private void toastMessageShort(String message) {
+
+        shortToast = Toast.makeText(this, message, Toast.LENGTH_SHORT);
+        shortToast.show();
+    }
+
+    private void toastMessageLong(String message) {
+
+        longToast = Toast.makeText(this, message, Toast.LENGTH_LONG);
+        longToast.show();
     }
 }

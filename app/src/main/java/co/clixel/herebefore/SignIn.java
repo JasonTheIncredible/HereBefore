@@ -49,6 +49,7 @@ public class SignIn extends AppCompatActivity {
     private FirebaseAuth mAuth;
     private GoogleSignInAccount googleAccount;
     private View loadingIcon;
+    private Toast shortToast, longToast;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -194,7 +195,8 @@ public class SignIn extends AppCompatActivity {
                         if (task.isSuccessful()) {
 
                             // Go to Chat.java with the extras.
-                            toastMessageShort("Signed in");
+                            Toast signedInToast = Toast.makeText(SignIn.this, "Signed in", Toast.LENGTH_SHORT);
+                            signedInToast.show();
 
                             SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(SignIn.this);
                             SharedPreferences.Editor editor = sharedPreferences.edit()
@@ -377,28 +379,24 @@ public class SignIn extends AppCompatActivity {
             goToCreateAccountButton.setOnClickListener(null);
         }
 
+        cancelToasts();
+
         super.onStop();
     }
 
-    @Override
-    public void onTrimMemory(int level) {
+    private void cancelToasts() {
 
-        Log.i(TAG, "onTrimMemory()");
-        super.onTrimMemory(level);
-    }
+        // Do not cancel signedInToast, as the activity is always changed right afterward.
 
-    @Override
-    public void onLowMemory() {
+        if (shortToast != null) {
 
-        Log.i(TAG, "OnLowMemory()");
-        super.onLowMemory();
-    }
+            shortToast.cancel();
+        }
 
-    @Override
-    protected void onDestroy() {
+        if (longToast != null) {
 
-        Log.i(TAG, "onDestroy()");
-        super.onDestroy();
+            longToast.cancel();
+        }
     }
 
     // Sign in using Google.
@@ -511,11 +509,13 @@ public class SignIn extends AppCompatActivity {
 
     private void toastMessageShort(String message) {
 
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+        shortToast = Toast.makeText(this, message, Toast.LENGTH_SHORT);
+        shortToast.show();
     }
 
     private void toastMessageLong(String message) {
 
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+        longToast = Toast.makeText(this, message, Toast.LENGTH_LONG);
+        longToast.show();
     }
 }

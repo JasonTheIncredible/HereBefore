@@ -121,6 +121,7 @@ public class Chat extends AppCompatActivity implements
     private byte[] byteArray;
     private View loadingIcon;
     private SharedPreferences sharedPreferences;
+    private Toast shortToast, longToast;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -316,7 +317,7 @@ public class Chat extends AppCompatActivity implements
 
             public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                Toast.makeText(Chat.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                toastMessageLong(databaseError.getMessage());
             }
         };
 
@@ -414,7 +415,7 @@ public class Chat extends AppCompatActivity implements
                                         // Upload the image to Firebase if it exists and is not already in the process of sending an image.
                                         if (uploadTask != null && uploadTask.isInProgress()) {
 
-                                            Toast.makeText(Chat.this, "Upload in progress", Toast.LENGTH_SHORT).show();
+                                            toastMessageShort("Upload in progress");
                                         } else {
 
                                             firebaseUpload();
@@ -454,7 +455,8 @@ public class Chat extends AppCompatActivity implements
                                 @Override
                                 public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                                    Toast.makeText(Chat.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                                    toastMessageLong(databaseError.getMessage());
+
                                     sendButtonClicked = false;
                                 }
                             });
@@ -473,7 +475,8 @@ public class Chat extends AppCompatActivity implements
                                         // Upload the image to Firebase if it exists and is not already in the process of sending an image.
                                         if (uploadTask != null && uploadTask.isInProgress()) {
 
-                                            Toast.makeText(Chat.this, "Upload in progress", Toast.LENGTH_SHORT).show();
+                                            toastMessageShort("Upload in progress");
+
                                             sendButtonClicked = false;
                                         } else {
 
@@ -555,7 +558,8 @@ public class Chat extends AppCompatActivity implements
                                 @Override
                                 public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                                    Toast.makeText(Chat.this, databaseError.getMessage(), Toast.LENGTH_LONG).show();
+                                    toastMessageLong(databaseError.getMessage());
+
                                     sendButtonClicked = false;
                                 }
                             });
@@ -569,7 +573,8 @@ public class Chat extends AppCompatActivity implements
                             // Upload the image to Firebase if it exists and is not already in the process of sending an image.
                             if (uploadTask != null && uploadTask.isInProgress()) {
 
-                                Toast.makeText(Chat.this, "Upload in progress", Toast.LENGTH_SHORT).show();
+                                toastMessageShort("Upload in progress");
+
                                 sendButtonClicked = false;
                             } else {
 
@@ -623,6 +628,8 @@ public class Chat extends AppCompatActivity implements
 
                 Log.i(TAG, "imageView -> onClick");
 
+                cancelToasts();
+
                 Intent Activity = new Intent(Chat.this, PhotoView.class);
                 Activity.putExtra("imgURL", imageURI.toString());
                 Chat.this.startActivity(Activity);
@@ -635,6 +642,8 @@ public class Chat extends AppCompatActivity implements
             public void onClick(View v) {
 
                 Log.i(TAG, "videoImageView -> onClick");
+
+                cancelToasts();
 
                 Intent Activity = new Intent(Chat.this, co.clixel.herebefore.VideoView.class);
                 Activity.putExtra("videoURL", videoURI.toString());
@@ -696,13 +705,6 @@ public class Chat extends AppCompatActivity implements
     }
 
     @Override
-    protected void onResume() {
-
-        super.onResume();
-        Log.i(TAG, "onResume()");
-    }
-
-    @Override
     public boolean onCreateOptionsMenu(Menu menu) {
 
         Log.i(TAG, "onCreateOptionsMenu()");
@@ -725,6 +727,8 @@ public class Chat extends AppCompatActivity implements
         if (id == R.id.settingsButton) {
 
             Log.i(TAG, "onOptionsItemSelected() -> settingsButton");
+
+            cancelToasts();
 
             Intent Activity = new Intent(Chat.this, co.clixel.herebefore.Settings.class);
 
@@ -749,17 +753,10 @@ public class Chat extends AppCompatActivity implements
             DatabaseReference newReportedPost = FirebaseDatabase.getInstance().getReference().child("Reported_Post").push();
             newReportedPost.setValue(reportPost);
             loadingIcon.setVisibility(View.GONE);
-            Toast.makeText(getApplication(), "Post reported. Thank you!", Toast.LENGTH_SHORT).show();
+            toastMessageShort("Post reported. Thank you!");
         }
 
         return super.onContextItemSelected(item);
-    }
-
-    @Override
-    protected void onPause() {
-
-        Log.i(TAG, "onPause()");
-        super.onPause();
     }
 
     @Override
@@ -803,14 +800,22 @@ public class Chat extends AppCompatActivity implements
             mInput.setOnKeyListener(null);
         }
 
+        cancelToasts();
+
         super.onStop();
     }
 
-    @Override
-    protected void onDestroy() {
+    private void cancelToasts() {
 
-        Log.i(TAG, "onDestroy()");
-        super.onDestroy();
+        if (shortToast != null) {
+
+            shortToast.cancel();
+        }
+
+        if (longToast != null) {
+
+            longToast.cancel();
+        }
     }
 
     private void initRecyclerView() {
@@ -849,6 +854,8 @@ public class Chat extends AppCompatActivity implements
 
                 Log.i(TAG, "onMenuItemClick() -> browseGallery");
 
+                cancelToasts();
+
                 chooseFromGallery();
                 // Set the views to GONE to prevent anything else from being sent to Firebase.
                 if (videoImageView != null) {
@@ -862,6 +869,7 @@ public class Chat extends AppCompatActivity implements
                 }
 
                 mediaButtonMenuIsOpen = false;
+
                 return true;
 
             case R.id.takePhoto:
@@ -869,6 +877,8 @@ public class Chat extends AppCompatActivity implements
                 Log.i(TAG, "onMenuItemClick() -> takePhoto");
 
                 if (checkPermissionsPicture()) {
+
+                    cancelToasts();
 
                     startActivityTakePhoto();
                 }
@@ -885,6 +895,7 @@ public class Chat extends AppCompatActivity implements
                 }
 
                 mediaButtonMenuIsOpen = false;
+
                 return true;
 
             case R.id.recordVideo:
@@ -892,6 +903,8 @@ public class Chat extends AppCompatActivity implements
                 Log.i(TAG, "onMenuItemClick() -> recordVideo");
 
                 if (checkPermissionsVideo()) {
+
+                    cancelToasts();
 
                     startActivityRecordVideo();
                 }
@@ -908,9 +921,11 @@ public class Chat extends AppCompatActivity implements
                 }
 
                 mediaButtonMenuIsOpen = false;
+
                 return true;
 
             default:
+
                 return false;
         }
     }
@@ -1124,7 +1139,7 @@ public class Chat extends AppCompatActivity implements
 
                 // Error occurred while creating the File
                 ex.printStackTrace();
-                Toast.makeText(Chat.this, ex.getMessage(), Toast.LENGTH_LONG).show();
+                toastMessageLong(ex.getMessage());
                 Crashlytics.logException(new RuntimeException("startActivityTakePhoto() -> photoFile error"));
             }
             // Continue only if the File was successfully created
@@ -1156,7 +1171,7 @@ public class Chat extends AppCompatActivity implements
 
                 // Error occurred while creating the File
                 ex.printStackTrace();
-                Toast.makeText(Chat.this, ex.getMessage(), Toast.LENGTH_LONG).show();
+                toastMessageLong(ex.getMessage());
                 Crashlytics.logException(new RuntimeException("startActivityRecordVideo() -> videoFile error"));
             }
             // Continue only if the File was successfully created
@@ -1530,7 +1545,7 @@ public class Chat extends AppCompatActivity implements
             } catch (FileNotFoundException ex) {
 
                 ex.printStackTrace();
-                Toast.makeText(activity, ex.getMessage(), Toast.LENGTH_LONG).show();
+                activity.toastMessageLong(ex.getMessage());
                 Crashlytics.logException(new RuntimeException("onActivityResult() -> gallery imageStream error"));
             } catch (IOException e) {
 
@@ -1554,7 +1569,7 @@ public class Chat extends AppCompatActivity implements
             } catch (IOException ex) {
 
                 ex.printStackTrace();
-                Toast.makeText(activity, ex.getMessage(), Toast.LENGTH_LONG).show();
+                activity.toastMessageLong(ex.getMessage());
                 Crashlytics.logException(new RuntimeException("onActivityResult() -> gallery stream.close()"));
             }
 
@@ -1643,7 +1658,7 @@ public class Chat extends AppCompatActivity implements
             } catch (IOException ex) {
 
                 ex.printStackTrace();
-                Toast.makeText(activity, ex.getMessage(), Toast.LENGTH_LONG).show();
+                activity.toastMessageLong(ex.getMessage());
                 Crashlytics.logException(new RuntimeException("onActivityResult() -> Request_User_Camera_Code exception"));
             }
 
@@ -1786,10 +1801,10 @@ public class Chat extends AppCompatActivity implements
 
                         output64.write(buffer, 0, bytesRead);
                     }
-                } catch (IOException e) {
+                } catch (IOException ex) {
 
-                    e.printStackTrace();
-                    Toast.makeText(activity, e.getMessage(), Toast.LENGTH_LONG).show();
+                    ex.printStackTrace();
+                    activity.toastMessageLong(ex.getMessage());
                     Crashlytics.logException(new RuntimeException("videoCompressAsyncTask -> onPostExecute -> inner"));
                 }
                 output64.close();
@@ -1804,10 +1819,10 @@ public class Chat extends AppCompatActivity implements
                 mBmpWidth = mBmp.getWidth();
                 mBmpHeight = mBmp.getHeight();
 
-            } catch (IOException e) {
+            } catch (IOException ex) {
 
-                e.printStackTrace();
-                Toast.makeText(activity, e.getMessage(), Toast.LENGTH_LONG).show();
+                ex.printStackTrace();
+                activity.toastMessageLong(ex.getMessage());
                 Crashlytics.logException(new RuntimeException("videoCompressAsyncTask -> onPostExecute -> outer"));
             }
             return "2";
@@ -1981,7 +1996,7 @@ public class Chat extends AppCompatActivity implements
 
                             // Handle unsuccessful uploads
                             loadingIcon.setVisibility(View.GONE);
-                            Toast.makeText(Chat.this, ex.getMessage(), Toast.LENGTH_LONG).show();
+                            toastMessageLong(ex.getMessage());
                             Log.e(TAG, "firebaseUpload() -> URIisFile && fileIsImage -> onFailure -> " + ex.getMessage());
                         }
                     });
@@ -2112,7 +2127,7 @@ public class Chat extends AppCompatActivity implements
 
                             // Handle unsuccessful uploads
                             loadingIcon.setVisibility(View.GONE);
-                            Toast.makeText(Chat.this, ex.getMessage(), Toast.LENGTH_LONG).show();
+                            toastMessageLong(ex.getMessage());
                             Log.e(TAG, "firebaseUpload() -> !fileIsImage -> onFailure -> " + ex.getMessage());
                         }
                     });
@@ -2243,7 +2258,7 @@ public class Chat extends AppCompatActivity implements
 
                             // Handle unsuccessful uploads
                             loadingIcon.setVisibility(View.GONE);
-                            Toast.makeText(Chat.this, ex.getMessage(), Toast.LENGTH_LONG).show();
+                            toastMessageLong(ex.getMessage());
                             Log.e(TAG, "firebaseUpload() -> else -> onFailure -> " + ex.getMessage());
                         }
                     });
@@ -2309,5 +2324,17 @@ public class Chat extends AppCompatActivity implements
             mediaButtonMenu.dismiss();
             mediaButton.performClick();
         }
+    }
+
+    private void toastMessageShort(String message) {
+
+        shortToast = Toast.makeText(this, message, Toast.LENGTH_SHORT);
+        shortToast.show();
+    }
+
+    private void toastMessageLong(String message) {
+
+        longToast = Toast.makeText(this, message, Toast.LENGTH_LONG);
+        longToast.show();
     }
 }
