@@ -36,7 +36,7 @@
                 android:id="@+id/signIntoExistingAccount"
                 android:layout_width="match_parent"
                 android:layout_height="30dp"
-                android:text="@string/signIntoExistingAccountWithPassword"
+                android:text="@string/signIntoExistingAccount"
                 android:textAlignment="center" />
 
             <EditText
@@ -65,6 +65,7 @@
 
             <Button
                 android:id="@+id/signInButton"
+                android:layout_marginTop="10dp"
                 android:layout_width="150dp"
                 android:layout_height="65dp"
                 android:layout_below="@id/password"
@@ -98,7 +99,7 @@
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginRight="10dp"
+                    android:layout_marginEnd="10dp"
                     android:orientation="vertical">
 
                     <TextView
@@ -112,16 +113,13 @@
                         android:id="@+id/resetPasswordButton"
                         android:layout_width="150dp"
                         android:layout_height="65dp"
-                        android:layout_below="@id/forgotPasswordText"
-                        android:layout_centerHorizontal="true"
-                        android:layout_marginBottom="20dp"
                         android:text="@string/reset_password" />
                 </LinearLayout>
 
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginLeft="10dp"
+                    android:layout_marginStart="10dp"
                     android:orientation="vertical">
 
                     <TextView
@@ -135,8 +133,6 @@
                         android:id="@+id/goToCreateAccountButton"
                         android:layout_width="150dp"
                         android:layout_height="65dp"
-                        android:layout_below="@id/newUserQuestionText"
-                        android:layout_centerHorizontal="true"
                         android:text="@string/create_account" />
                 </LinearLayout>
             </LinearLayout>

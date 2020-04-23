@@ -3,7 +3,7 @@
 
     <!-- Very Top Notifications Bar -->
     <color name="colorPrimaryDark">#777</color>
-    <!-- Top Toolbar and Menu Confirmation Text-->
+    <!-- Top Toolbar, Buttons, Menu Confirmation Text-->
     <color name="colorPrimary">#888</color>
     <!-- Send Button Circle -->
     <color name="colorPrimaryVariant">#0000ff</color>
@@ -15,7 +15,7 @@
     <color name="colorAccent">#d81b60</color>
 
     <color name="colorPrimaryDarkNight">#000</color>
-    <color name="colorPrimaryNight">#111</color>
+    <color name="colorPrimaryNight">#777</color>
     <color name="colorPrimaryVariantNight">#0000ff</color>
     <color name="colorOnPrimaryNight">#ffffff</color>
     <color name="colorOnSecondaryNight">#000</color>

@@ -202,7 +202,7 @@ public class SignIn extends AppCompatActivity {
                             SharedPreferences.Editor editor = sharedPreferences.edit()
                                     .putString("userToken", email)
                                     .putString("passToken", pass);
-                            editor.commit();
+                            editor.apply();
 
                             Intent Activity = new Intent(SignIn.this, Chat.class);
                             Activity.putExtra("newShape", newShape);
@@ -455,7 +455,7 @@ public class SignIn extends AppCompatActivity {
                             SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(SignIn.this);
                             SharedPreferences.Editor editor = sharedPreferences.edit()
                                     .putString("googleIdToken", googleAccount.getIdToken());
-                            editor.commit();
+                            editor.apply();
 
                             FirebaseUser user = mAuth.getCurrentUser();
                             // Go to Chat.java with the extras.

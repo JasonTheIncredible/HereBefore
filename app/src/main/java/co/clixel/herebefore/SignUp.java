@@ -164,7 +164,7 @@ public class SignUp extends AppCompatActivity {
                             SharedPreferences.Editor editor = sharedPreferences.edit()
                                     .putString("userToken", email)
                                     .putString("passToken", pass);
-                            editor.commit();
+                            editor.apply();
 
                             // Go to Chat.java with the extras.
                             Toast signedUpToast = Toast.makeText(SignUp.this, "Signed up", Toast.LENGTH_SHORT);

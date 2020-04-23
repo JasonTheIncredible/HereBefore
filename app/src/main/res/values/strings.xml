@@ -35,7 +35,7 @@
     <string name="feedback">Feedback</string>
     <string name="send_feedback">Send Feedback</string>
     <string name="orUseGoogle">Or Use Google:</string>
-    <string name="signIntoExistingAccountWithPassword">Sign Into Existing Account With Password:</string>
+    <string name="signIntoExistingAccount">Sign Into Existing Account:</string>
     <string name="createAccountWithPassword">Create Account With Password:</string>
     <string name="report_post">Report Post</string>
 

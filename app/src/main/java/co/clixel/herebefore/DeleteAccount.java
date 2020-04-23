@@ -165,7 +165,7 @@ public class DeleteAccount extends AppCompatActivity {
                                             // Sign-out the user.
                                             AuthUI.getInstance().signOut(DeleteAccount.this);
 
-                                            PreferenceManager.getDefaultSharedPreferences(DeleteAccount.this).edit().clear().commit();
+                                            PreferenceManager.getDefaultSharedPreferences(DeleteAccount.this).edit().clear().apply();
 
                                             Toast accountDeletedToast = Toast.makeText(DeleteAccount.this, "Account deleted", Toast.LENGTH_LONG);
                                             accountDeletedToast.show();
@@ -219,7 +219,7 @@ public class DeleteAccount extends AppCompatActivity {
                                             // Sign-out the user.
                                             AuthUI.getInstance().signOut(DeleteAccount.this);
 
-                                            PreferenceManager.getDefaultSharedPreferences(DeleteAccount.this).edit().clear().commit();
+                                            PreferenceManager.getDefaultSharedPreferences(DeleteAccount.this).edit().clear().apply();
 
                                             Toast accountDeletedToast = Toast.makeText(DeleteAccount.this, "Account deleted", Toast.LENGTH_LONG);
                                             accountDeletedToast.show();
