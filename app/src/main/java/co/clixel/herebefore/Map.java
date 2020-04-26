@@ -124,7 +124,6 @@ public class Map extends FragmentActivity implements
     // Change Firebase rules to increase security for storage and database - "Firebase launch checklist" in bookmarks.
     // Decrease app size.
     // API key and anything else before publishing / Create a "build" version of the app with removed Log messages.
-    // Ads.
     // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.
     // Load preferences after logging out and back in.
     // Authenticate user email address at sign-up.

@@ -92,6 +92,10 @@
             android:name=".VideoView"
             android:label="@string/title_activity_maps"
             android:theme="@style/AppTheme.NoActionBar" />
+
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-7112137006158207~2322836157"/>
     </application>
 
 </manifest>

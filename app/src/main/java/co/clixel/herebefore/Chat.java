@@ -43,6 +43,10 @@ import android.view.View;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
 import com.crashlytics.android.Crashlytics;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdView;
+import com.google.android.gms.ads.MobileAds;
+import com.google.android.gms.ads.RequestConfiguration;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.maps.model.CircleOptions;
@@ -84,6 +88,7 @@ import java.lang.ref.WeakReference;
 import java.net.URISyntaxException;
 import java.text.DateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -130,6 +135,19 @@ public class Chat extends AppCompatActivity implements
         Log.i(TAG, "onCreate()");
 
         setContentView(R.layout.chat);
+
+        AdView bannerAd = findViewById(R.id.chatBanner);
+
+        // Search I/Ads: in Logcat to find ID and/or W/Ads for other info.
+        List<String> testDeviceIds = Collections.singletonList("814BF63877CBD71E91F9D7241907F4FF");
+        RequestConfiguration requestConfiguration
+                = new RequestConfiguration.Builder()
+                .setTestDeviceIds(testDeviceIds)
+                .build();
+        MobileAds.setRequestConfiguration(requestConfiguration);
+
+        AdRequest adRequest = new AdRequest.Builder().build();
+        bannerAd.loadAd(adRequest);
 
         mediaButton = findViewById(R.id.mediaButton);
         imageView = findViewById(R.id.imageView);

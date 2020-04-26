@@ -10,13 +10,22 @@
     android:paddingTop="16dp"
     android:paddingBottom="16dp">
 
+    <com.google.android.gms.ads.AdView xmlns:ads="http://schemas.android.com/apk/res-auto"
+        android:id="@+id/chatBanner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        ads:adSize="BANNER"
+        ads:adUnitId="ca-app-pub-7112137006158207/1950181503" />
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/messageList"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_above="@+id/input"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentTop="true"
+        android:layout_below="@+id/chatBanner"
+        android:layout_marginTop="16dp"
         android:layout_marginBottom="16dp"
         android:divider="@android:color/transparent"
         android:dividerHeight="16dp"
