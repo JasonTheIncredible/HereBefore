@@ -121,15 +121,16 @@ public class Map extends FragmentActivity implements
     private Toast shortToast, longToast;
     private View loadingIcon;
 
-    // Change Firebase rules to increase security for storage and database - "Firebase launch checklist" in bookmarks.
+    // "Firebase launch checklist" in bookmarks.
+    // Check licensing.
     // Decrease app size.
     // API key and anything else before publishing / Create a "build" version of the app with removed Log messages.
-    // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.
     // Load preferences after logging out and back in.
     // Authenticate user email address at sign-up.
     // Send email to Google email before account deletion, or find another way.
     // Add preference for shape color.
     // Hide top bar on scroll.
+    // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.
     // Add leak listener to canary versions.
     // "How to make databases faster"? Optimize Firebase loading in Map.
     // Allow users to message and reply to one another anonymously and add notifications to settings - problem: if I know who posted what, then anyone could know.
@@ -2072,10 +2073,6 @@ public class Map extends FragmentActivity implements
 
             // Cut down on code by using one method for the shared code from onMapReady() and onRestart().
             onMapReadyAndRestart();
-        } else {
-
-            Log.e(TAG, "onRestart() -> mMap == null");
-            Crashlytics.logException(new Exception("onRestart() -> mMap == null"));
         }
 
         if (newPolygon != null) {
