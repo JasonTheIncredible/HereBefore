@@ -33,4 +33,9 @@
         app:summary="Permanently delete this account"
         app:title="Delete Account" />
 
+    <Preference
+        app:key="about"
+        app:summary="More information about this application"
+        app:title="About" />
+
 </PreferenceScreen>

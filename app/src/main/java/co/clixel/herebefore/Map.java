@@ -121,8 +121,9 @@ public class Map extends FragmentActivity implements
     private Toast shortToast, longToast;
     private View loadingIcon;
 
+    // Licensing - deal with non-Apache libraries, and add a license to this project.
+    // Work on issue where settings theme flips if set to "light" and it's entered from Map.java but not from Chat.java.
     // "Firebase launch checklist" in bookmarks.
-    // Check licensing.
     // Decrease app size.
     // API key and anything else before publishing / Create a "build" version of the app with removed Log messages.
     // Load preferences after logging out and back in.

@@ -14,23 +14,7 @@ public class Settings extends AppCompatActivity implements
     public static final String KEY_THEME_SWITCH = "toggleTheme";
     public static final String KEY_MAP_TYPE = "mapTypePreference";
     public static final String KEY_SIGN_OUT = "signOut";
-
-    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String s) {
-
-        boolean theme = sharedPreferences.getBoolean("toggleTheme", false);
-
-        if (theme) {
-
-            // Set to light mode.
-            AppCompatDelegate.setDefaultNightMode(
-                    AppCompatDelegate.MODE_NIGHT_NO);
-        } else {
-
-            // Set to dark mode.
-            AppCompatDelegate.setDefaultNightMode(
-                    AppCompatDelegate.MODE_NIGHT_YES);
-        }
-    }
+    private boolean theme;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,7 +34,50 @@ public class Settings extends AppCompatActivity implements
 
         super.onStart();
 
+        // Update to the user's preferences.
+        loadPreferences();
+        updatePreferences();
+
         PreferenceManager.getDefaultSharedPreferences(this).registerOnSharedPreferenceChangeListener(this);
+    }
+
+    protected void loadPreferences() {
+
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+
+        theme = sharedPreferences.getBoolean(KEY_THEME_SWITCH, false);
+    }
+
+    protected void updatePreferences() {
+
+        if (theme) {
+
+            // Set to light mode.
+            AppCompatDelegate.setDefaultNightMode(
+                    AppCompatDelegate.MODE_NIGHT_NO);
+        } else {
+
+            // Set to dark mode.
+            AppCompatDelegate.setDefaultNightMode(
+                    AppCompatDelegate.MODE_NIGHT_YES);
+        }
+    }
+
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String s) {
+
+        theme = sharedPreferences.getBoolean(KEY_THEME_SWITCH, false);
+
+        if (theme) {
+
+            // Set to light mode.
+            AppCompatDelegate.setDefaultNightMode(
+                    AppCompatDelegate.MODE_NIGHT_NO);
+        } else {
+
+            // Set to dark mode.
+            AppCompatDelegate.setDefaultNightMode(
+                    AppCompatDelegate.MODE_NIGHT_YES);
+        }
     }
 
     @Override
