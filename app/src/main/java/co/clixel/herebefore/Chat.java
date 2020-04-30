@@ -362,7 +362,8 @@ public class Chat extends AppCompatActivity implements
                     mInput.clearFocus();
                 }
 
-                return true;
+                // Keep "return false" or the enter key will not go to the next line.
+                return false;
             }
         });
 

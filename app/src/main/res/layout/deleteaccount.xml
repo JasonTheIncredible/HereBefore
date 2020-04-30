@@ -18,54 +18,70 @@
             android:indeterminate="true" />
     </RelativeLayout>
 
-    <ScrollView
-        android:id="@+id/scrollView"
+    <com.google.android.gms.ads.AdView xmlns:ads="http://schemas.android.com/apk/res-auto"
+        android:id="@+id/chatBanner"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_centerInParent="true"
-        android:fillViewport="true"
-        tools:ignore="UselessParent">
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="16dp"
+        ads:adSize="BANNER"
+        ads:adUnitId="ca-app-pub-7112137006158207/1950181503" />
 
-        <RelativeLayout
-            android:id="@+id/deleteAccountLayout"
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/chatBanner">
+
+        <ScrollView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:descendantFocusability="beforeDescendants"
-            android:focusableInTouchMode="true"
-            android:orientation="vertical">
+            android:layout_centerInParent="true"
+            android:fillViewport="true"
+            tools:ignore="UselessParent">
 
-            <EditText
-                android:id="@+id/password"
+            <RelativeLayout
+                android:id="@+id/deleteAccountLayout"
                 android:layout_width="match_parent"
-                android:layout_height="50dp"
-                android:layout_marginLeft="50dp"
-                android:layout_marginTop="30dp"
-                android:layout_marginRight="50dp"
-                android:ems="10"
-                android:hint="@string/password"
-                android:importantForAutofill="no"
-                android:inputType="textPassword" />
+                android:layout_height="wrap_content"
+                android:descendantFocusability="beforeDescendants"
+                android:focusableInTouchMode="true"
+                android:orientation="vertical">
 
-            <Button
-                android:id="@+id/confirmDeleteAccount"
-                android:layout_width="150dp"
-                android:layout_height="65dp"
-                android:layout_below="@id/password"
-                android:layout_centerHorizontal="true"
-                android:layout_marginTop="20dp"
-                android:layout_marginBottom="10dp"
-                android:text="@string/deleteAccount" />
+                <EditText
+                    android:id="@+id/password"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="50dp"
+                    android:layout_marginTop="30dp"
+                    android:layout_marginRight="50dp"
+                    android:hint="@string/password"
+                    android:importantForAutofill="no"
+                    android:inputType="textPassword"
+                    android:singleLine="true" />
 
-            <Button
-                android:id="@+id/goBack"
-                android:layout_width="150dp"
-                android:layout_height="65dp"
-                android:layout_below="@id/confirmDeleteAccount"
-                android:layout_centerHorizontal="true"
-                android:layout_marginTop="20dp"
-                android:layout_marginBottom="10dp"
-                android:text="@string/back" />
-        </RelativeLayout>
-    </ScrollView>
+                <Button
+                    android:id="@+id/confirmDeleteAccount"
+                    android:layout_width="150dp"
+                    android:layout_height="65dp"
+                    android:layout_below="@id/password"
+                    android:layout_centerHorizontal="true"
+                    android:layout_marginTop="20dp"
+                    android:layout_marginBottom="10dp"
+                    android:text="@string/deleteAccount" />
+
+                <Button
+                    android:id="@+id/goBack"
+                    android:layout_width="150dp"
+                    android:layout_height="65dp"
+                    android:layout_below="@id/confirmDeleteAccount"
+                    android:layout_centerHorizontal="true"
+                    android:layout_marginTop="20dp"
+                    android:layout_marginBottom="10dp"
+                    android:text="@string/back" />
+            </RelativeLayout>
+        </ScrollView>
+    </RelativeLayout>
 
 </RelativeLayout>

@@ -16,9 +16,16 @@ import androidx.appcompat.app.AppCompatDelegate;
 import androidx.preference.PreferenceManager;
 
 import com.crashlytics.android.Crashlytics;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdView;
+import com.google.android.gms.ads.MobileAds;
+import com.google.android.gms.ads.RequestConfiguration;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
+
+import java.util.Collections;
+import java.util.List;
 
 public class ResetPassword extends AppCompatActivity {
 
@@ -33,7 +40,21 @@ public class ResetPassword extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.resetpassword);
+
+        AdView bannerAd = findViewById(R.id.chatBanner);
+
+        // Search I/Ads: in Logcat to find ID and/or W/Ads for other info.
+        List<String> testDeviceIds = Collections.singletonList("814BF63877CBD71E91F9D7241907F4FF");
+        RequestConfiguration requestConfiguration
+                = new RequestConfiguration.Builder()
+                .setTestDeviceIds(testDeviceIds)
+                .build();
+        MobileAds.setRequestConfiguration(requestConfiguration);
+
+        AdRequest adRequest = new AdRequest.Builder().build();
+        bannerAd.loadAd(adRequest);
 
         mEmailAddress = findViewById(R.id.emailAddress);
         sendEmail = findViewById(R.id.sendEmailButton);

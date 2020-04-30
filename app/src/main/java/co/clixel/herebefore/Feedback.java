@@ -15,11 +15,18 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.preference.PreferenceManager;
 
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdView;
+import com.google.android.gms.ads.MobileAds;
+import com.google.android.gms.ads.RequestConfiguration;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+
+import java.util.Collections;
+import java.util.List;
 
 public class Feedback extends AppCompatActivity {
 
@@ -34,7 +41,21 @@ public class Feedback extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.feedback);
+
+        AdView bannerAd = findViewById(R.id.chatBanner);
+
+        // Search I/Ads: in Logcat to find ID and/or W/Ads for other info.
+        List<String> testDeviceIds = Collections.singletonList("814BF63877CBD71E91F9D7241907F4FF");
+        RequestConfiguration requestConfiguration
+                = new RequestConfiguration.Builder()
+                .setTestDeviceIds(testDeviceIds)
+                .build();
+        MobileAds.setRequestConfiguration(requestConfiguration);
+
+        AdRequest adRequest = new AdRequest.Builder().build();
+        bannerAd.loadAd(adRequest);
 
         mFeedback = findViewById(R.id.feedbackEditText);
         sendFeedback = findViewById(R.id.sendFeedbackButton);

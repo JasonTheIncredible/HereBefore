@@ -79,7 +79,10 @@
         android:layout_toStartOf="@+id/sendButton"
         android:layout_toEndOf="@id/imageView"
         android:hint="@string/message"
-        android:importantForAutofill="no" />
+        android:inputType="textCapSentences|textMultiLine"
+        android:maxLength="2000"
+        android:maxLines="4"
+        android:scrollHorizontally="false" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/sendButton"

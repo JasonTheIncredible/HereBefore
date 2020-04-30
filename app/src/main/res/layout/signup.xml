@@ -46,10 +46,10 @@
                 android:layout_below="@id/createAccountWithPassword"
                 android:layout_marginLeft="50dp"
                 android:layout_marginRight="50dp"
-                android:ems="10"
                 android:hint="@string/email_address"
                 android:importantForAutofill="no"
-                android:inputType="textEmailAddress" />
+                android:inputType="textEmailAddress"
+                android:singleLine="true" />
 
             <EditText
                 android:id="@+id/createPassword"
@@ -61,7 +61,8 @@
                 android:ems="10"
                 android:hint="@string/password"
                 android:importantForAutofill="no"
-                android:inputType="textPassword" />
+                android:inputType="textPassword"
+                android:singleLine="true" />
 
             <Button
                 android:id="@+id/createAccountButton"

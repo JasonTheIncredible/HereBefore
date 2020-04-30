@@ -19,6 +19,10 @@ import androidx.preference.PreferenceManager;
 
 import com.crashlytics.android.Crashlytics;
 import com.firebase.ui.auth.AuthUI;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdView;
+import com.google.android.gms.ads.MobileAds;
+import com.google.android.gms.ads.RequestConfiguration;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthCredential;
@@ -26,6 +30,9 @@ import com.google.firebase.auth.EmailAuthProvider;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
+
+import java.util.Collections;
+import java.util.List;
 
 public class DeleteAccount extends AppCompatActivity {
 
@@ -41,7 +48,21 @@ public class DeleteAccount extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.deleteaccount);
+
+        AdView bannerAd = findViewById(R.id.chatBanner);
+
+        // Search I/Ads: in Logcat to find ID and/or W/Ads for other info.
+        List<String> testDeviceIds = Collections.singletonList("814BF63877CBD71E91F9D7241907F4FF");
+        RequestConfiguration requestConfiguration
+                = new RequestConfiguration.Builder()
+                .setTestDeviceIds(testDeviceIds)
+                .build();
+        MobileAds.setRequestConfiguration(requestConfiguration);
+
+        AdRequest adRequest = new AdRequest.Builder().build();
+        bannerAd.loadAd(adRequest);
 
         password = findViewById(R.id.password);
         deleteAccount = findViewById(R.id.confirmDeleteAccount);
