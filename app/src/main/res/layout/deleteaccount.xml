@@ -24,8 +24,8 @@
         android:layout_height="wrap_content"
         android:layout_alignParentStart="true"
         android:layout_alignParentTop="true"
-        android:layout_marginTop="16dp"
-        android:layout_marginBottom="16dp"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="4dp"
         ads:adSize="BANNER"
         ads:adUnitId="ca-app-pub-7112137006158207/1950181503" />
 

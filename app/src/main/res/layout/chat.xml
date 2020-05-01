@@ -7,8 +7,8 @@
     android:focusable="true"
     android:focusableInTouchMode="true"
     android:orientation="vertical"
-    android:paddingTop="16dp"
-    android:paddingBottom="16dp">
+    android:paddingTop="4dp"
+    android:paddingBottom="4dp">
 
     <com.google.android.gms.ads.AdView xmlns:ads="http://schemas.android.com/apk/res-auto"
         android:id="@+id/chatBanner"
@@ -25,10 +25,9 @@
         android:layout_height="match_parent"
         android:layout_above="@+id/input"
         android:layout_below="@+id/chatBanner"
-        android:layout_marginTop="16dp"
-        android:layout_marginBottom="16dp"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="4dp"
         android:divider="@android:color/transparent"
-        android:dividerHeight="16dp"
         android:scrollbars="vertical" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
