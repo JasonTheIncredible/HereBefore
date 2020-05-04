@@ -37,7 +37,6 @@ import androidx.fragment.app.FragmentActivity;
 import androidx.preference.PreferenceManager;
 
 import com.crashlytics.android.Crashlytics;
-// developers.google.com/identity/sign-in/android/sign-in
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -66,14 +65,8 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
-// https://googlemaps.github.io/android-maps-utils/javadoc/com/google/maps/android/PolyUtil.html
 import com.google.maps.android.PolyUtil;
-// http://www.tsusiatsoftware.net/jts/javadoc//com/vividsolutions/jts/geom/Polygon.html
 import com.google.maps.android.SphericalUtil;
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.GeometryFactory;
-import com.vividsolutions.jts.geom.LinearRing;
-import com.vividsolutions.jts.geom.impl.CoordinateArraySequence;
 
 import java.io.File;
 import java.lang.ref.WeakReference;
@@ -121,9 +114,8 @@ public class Map extends FragmentActivity implements
     private Toast shortToast, longToast;
     private View loadingIcon;
 
-    // Licensing - deal with non-Apache libraries, and add a license to this project.
+    // Add one license, edit message about this app, and add a license to this project.
     // Deal with .null video in Firebase.
-    // Work on issue where settings theme flips if set to "light" and it's entered from Map.java but not from Chat.java.
     // "Firebase launch checklist" in bookmarks.
     // Decrease app size.
     // Work on deprecated methods.
@@ -5395,226 +5387,105 @@ public class Map extends FragmentActivity implements
 
             Log.i(TAG, "goToNextActivityPolygon() -> fourMarkers");
 
-            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
-            GeometryFactory gf = new GeometryFactory();
-
-            ArrayList<Coordinate> points = new ArrayList<>();
-            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
-            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
-            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
-            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
-            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
-            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
-                    .toArray(new Coordinate[5])), gf), null);
-
-            if (polygon1.isSimple()) {
-
-                // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
-                Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
-                Activity.putExtra("fourMarkers", true);
-                Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                Activity.putExtra("marker3Longitude", marker3Position.longitude);
-            } else {
-
-                toastMessageShort("The shape must not overlap itself");
-
-                waitingForShapeInformationToProcess = false;
-
-                return;
-            }
+            // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
+            Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
+            Activity.putExtra("fourMarkers", true);
+            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+            Activity.putExtra("marker3Latitude", marker3Position.latitude);
+            Activity.putExtra("marker3Longitude", marker3Position.longitude);
         }
 
         if (fiveMarkers) {
 
             Log.i(TAG, "goToNextActivityPolygon() -> fiveMarkers");
 
-            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
-            GeometryFactory gf = new GeometryFactory();
-
-            ArrayList<Coordinate> points = new ArrayList<>();
-            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
-            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
-            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
-            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
-            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
-            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
-            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
-                    .toArray(new Coordinate[6])), gf), null);
-
-            if (polygon1.isSimple()) {
-
-                // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
-                Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
-                Activity.putExtra("fiveMarkers", true);
-                Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                Activity.putExtra("marker3Longitude", marker3Position.longitude);
-                Activity.putExtra("marker4Latitude", marker4Position.latitude);
-                Activity.putExtra("marker4Longitude", marker4Position.longitude);
-            } else {
-
-                toastMessageShort("The shape must not overlap itself");
-
-                waitingForShapeInformationToProcess = false;
-
-                return;
-            }
+            // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
+            Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
+            Activity.putExtra("fiveMarkers", true);
+            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+            Activity.putExtra("marker3Latitude", marker3Position.latitude);
+            Activity.putExtra("marker3Longitude", marker3Position.longitude);
+            Activity.putExtra("marker4Latitude", marker4Position.latitude);
+            Activity.putExtra("marker4Longitude", marker4Position.longitude);
         }
 
         if (sixMarkers) {
 
             Log.i(TAG, "goToNextActivityPolygon() -> sixMarkers");
 
-            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
-            GeometryFactory gf = new GeometryFactory();
-
-            ArrayList<Coordinate> points = new ArrayList<>();
-            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
-            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
-            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
-            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
-            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
-            points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
-            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
-            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
-                    .toArray(new Coordinate[7])), gf), null);
-
-            if (polygon1.isSimple()) {
-
-                // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
-                Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
-                Activity.putExtra("sixMarkers", true);
-                Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                Activity.putExtra("marker3Longitude", marker3Position.longitude);
-                Activity.putExtra("marker4Latitude", marker4Position.latitude);
-                Activity.putExtra("marker4Longitude", marker4Position.longitude);
-                Activity.putExtra("marker5Latitude", marker5Position.latitude);
-                Activity.putExtra("marker5Longitude", marker5Position.longitude);
-            } else {
-
-                toastMessageShort("The shape must not overlap itself");
-
-                waitingForShapeInformationToProcess = false;
-
-                return;
-            }
+            // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
+            Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
+            Activity.putExtra("sixMarkers", true);
+            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+            Activity.putExtra("marker3Latitude", marker3Position.latitude);
+            Activity.putExtra("marker3Longitude", marker3Position.longitude);
+            Activity.putExtra("marker4Latitude", marker4Position.latitude);
+            Activity.putExtra("marker4Longitude", marker4Position.longitude);
+            Activity.putExtra("marker5Latitude", marker5Position.latitude);
+            Activity.putExtra("marker5Longitude", marker5Position.longitude);
         }
 
         if (sevenMarkers) {
 
             Log.i(TAG, "goToNextActivityPolygon() -> sevenMarkers");
 
-            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
-            GeometryFactory gf = new GeometryFactory();
-
-            ArrayList<Coordinate> points = new ArrayList<>();
-            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
-            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
-            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
-            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
-            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
-            points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
-            points.add(new Coordinate(marker6Position.latitude, marker6Position.longitude));
-            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
-            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
-                    .toArray(new Coordinate[8])), gf), null);
-
-            if (polygon1.isSimple()) {
-
-                // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
-                Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
-                Activity.putExtra("sevenMarkers", true);
-                Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                Activity.putExtra("marker3Longitude", marker3Position.longitude);
-                Activity.putExtra("marker4Latitude", marker4Position.latitude);
-                Activity.putExtra("marker4Longitude", marker4Position.longitude);
-                Activity.putExtra("marker5Latitude", marker5Position.latitude);
-                Activity.putExtra("marker5Longitude", marker5Position.longitude);
-                Activity.putExtra("marker6Latitude", marker6Position.latitude);
-                Activity.putExtra("marker6Longitude", marker6Position.longitude);
-            } else {
-
-                toastMessageShort("The shape must not overlap itself");
-
-                waitingForShapeInformationToProcess = false;
-
-                return;
-            }
+            // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
+            Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
+            Activity.putExtra("sevenMarkers", true);
+            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+            Activity.putExtra("marker3Latitude", marker3Position.latitude);
+            Activity.putExtra("marker3Longitude", marker3Position.longitude);
+            Activity.putExtra("marker4Latitude", marker4Position.latitude);
+            Activity.putExtra("marker4Longitude", marker4Position.longitude);
+            Activity.putExtra("marker5Latitude", marker5Position.latitude);
+            Activity.putExtra("marker5Longitude", marker5Position.longitude);
+            Activity.putExtra("marker6Latitude", marker6Position.latitude);
+            Activity.putExtra("marker6Longitude", marker6Position.longitude);
         }
 
         if (eightMarkers) {
 
             Log.i(TAG, "goToNextActivityPolygon() -> eightMarkers");
 
-            // The following creates a polygon using the polygon's markers. If the polygon is simple (does not overlap itself), it will start a new activity.
-            GeometryFactory gf = new GeometryFactory();
-
-            ArrayList<Coordinate> points = new ArrayList<>();
-            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
-            points.add(new Coordinate(marker1Position.latitude, marker1Position.longitude));
-            points.add(new Coordinate(marker2Position.latitude, marker2Position.longitude));
-            points.add(new Coordinate(marker3Position.latitude, marker3Position.longitude));
-            points.add(new Coordinate(marker4Position.latitude, marker4Position.longitude));
-            points.add(new Coordinate(marker5Position.latitude, marker5Position.longitude));
-            points.add(new Coordinate(marker6Position.latitude, marker6Position.longitude));
-            points.add(new Coordinate(marker7Position.latitude, marker7Position.longitude));
-            points.add(new Coordinate(marker0Position.latitude, marker0Position.longitude));
-
-            com.vividsolutions.jts.geom.Polygon polygon1 = gf.createPolygon(new LinearRing(new CoordinateArraySequence(points
-                    .toArray(new Coordinate[9])), gf), null);
-
-            if (polygon1.isSimple()) {
-
-                // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
-                Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
-                Activity.putExtra("eightMarkers", true);
-                Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                Activity.putExtra("marker3Longitude", marker3Position.longitude);
-                Activity.putExtra("marker4Latitude", marker4Position.latitude);
-                Activity.putExtra("marker4Longitude", marker4Position.longitude);
-                Activity.putExtra("marker5Latitude", marker5Position.latitude);
-                Activity.putExtra("marker5Longitude", marker5Position.longitude);
-                Activity.putExtra("marker6Latitude", marker6Position.latitude);
-                Activity.putExtra("marker6Longitude", marker6Position.longitude);
-                Activity.putExtra("marker7Latitude", marker7Position.latitude);
-                Activity.putExtra("marker7Latitude", marker7Position.longitude);
-            } else {
-
-                toastMessageShort("The shape must not overlap itself");
-
-                waitingForShapeInformationToProcess = false;
-
-                return;
-            }
+            // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
+            Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
+            Activity.putExtra("eightMarkers", true);
+            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+            Activity.putExtra("marker3Latitude", marker3Position.latitude);
+            Activity.putExtra("marker3Longitude", marker3Position.longitude);
+            Activity.putExtra("marker4Latitude", marker4Position.latitude);
+            Activity.putExtra("marker4Longitude", marker4Position.longitude);
+            Activity.putExtra("marker5Latitude", marker5Position.latitude);
+            Activity.putExtra("marker5Longitude", marker5Position.longitude);
+            Activity.putExtra("marker6Latitude", marker6Position.latitude);
+            Activity.putExtra("marker6Longitude", marker6Position.longitude);
+            Activity.putExtra("marker7Latitude", marker7Position.latitude);
+            Activity.putExtra("marker7Latitude", marker7Position.longitude);
         }
 
         Activity.putExtra("shapeIsCircle", false);
@@ -5628,6 +5499,7 @@ public class Map extends FragmentActivity implements
         cancelToasts();
 
         startActivity(Activity);
+
     }
 
     private void goToNextActivityCircle(Intent Activity, Circle circle, Boolean newShape) {
