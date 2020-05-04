@@ -114,7 +114,7 @@ public class Map extends FragmentActivity implements
     private Toast shortToast, longToast;
     private View loadingIcon;
 
-    // Add one license, edit message about this app, and add a license to this project.
+    // Edit message about this app, and add a license to this project.
     // Deal with .null video in Firebase.
     // "Firebase launch checklist" in bookmarks.
     // Decrease app size.
