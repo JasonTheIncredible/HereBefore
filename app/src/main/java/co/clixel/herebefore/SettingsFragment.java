@@ -98,7 +98,6 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
                     new LibsBuilder()
                             .withAboutVersionShown(true)
                             .withAboutIconShown(true)
-                            .withAboutDescription("This is a small sample which can be set in the about my app description file.<br /><b>You can style this with html markup :D</b>")
                             .withLicenseShown(true)
                             .withVersionShown(true)
                             .start(getActivity());
