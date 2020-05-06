@@ -241,8 +241,6 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
                 holder.itemView.setBackgroundColor(Color.parseColor("#F2F2F2"));
             }
         }
-
-        holder.setIsRecyclable(true);
     }
 
     @Override

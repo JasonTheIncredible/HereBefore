@@ -876,16 +876,6 @@ public class Chat extends AppCompatActivity implements
                 cancelToasts();
 
                 chooseFromGallery();
-                // Set the views to GONE to prevent anything else from being sent to Firebase.
-                if (videoImageView != null) {
-
-                    videoImageView.setVisibility(View.GONE);
-                }
-
-                if (imageView != null) {
-
-                    imageView.setVisibility(View.GONE);
-                }
 
                 mediaButtonMenuIsOpen = false;
 
@@ -902,17 +892,6 @@ public class Chat extends AppCompatActivity implements
                     startActivityTakePhoto();
                 }
 
-                // Set the views to GONE to prevent anything else from being sent to Firebase.
-                if (videoImageView != null) {
-
-                    videoImageView.setVisibility(View.GONE);
-                }
-
-                if (imageView != null) {
-
-                    imageView.setVisibility(View.GONE);
-                }
-
                 mediaButtonMenuIsOpen = false;
 
                 return true;
@@ -926,17 +905,6 @@ public class Chat extends AppCompatActivity implements
                     cancelToasts();
 
                     startActivityRecordVideo();
-                }
-
-                // Set the views to GONE to prevent anything else from being sent to Firebase.
-                if (videoImageView != null) {
-
-                    videoImageView.setVisibility(View.GONE);
-                }
-
-                if (imageView != null) {
-
-                    imageView.setVisibility(View.GONE);
                 }
 
                 mediaButtonMenuIsOpen = false;
@@ -1435,6 +1403,19 @@ public class Chat extends AppCompatActivity implements
 
             Log.i(TAG, "onActivityResult() -> Gallery");
 
+            // Set the views to GONE to prevent anything else from being sent to Firebase.
+            if (videoImageView != null) {
+
+                videoImageView.setVisibility(View.GONE);
+                videoImageView.setImageResource(0);
+            }
+
+            if (imageView != null) {
+
+                imageView.setVisibility(View.GONE);
+                imageView.setImageResource(0);
+            }
+
             fileIsImage = true;
 
             imageURI = data.getData();
@@ -1449,6 +1430,8 @@ public class Chat extends AppCompatActivity implements
                         .load(imageURI)
                         .apply(new RequestOptions().override(640, 5000).placeholder(R.drawable.ic_recyclerview_image_placeholder))
                         .into(imageView);
+
+                imageView.setVisibility(View.VISIBLE);
             } else {
 
                 // Prevents the loadingIcon from being removed by initRecyclerView().
@@ -1465,13 +1448,24 @@ public class Chat extends AppCompatActivity implements
             RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams) mInput.getLayoutParams();
             params.addRule(RelativeLayout.END_OF, R.id.imageView);
             mInput.setLayoutParams(params);
-
-            imageView.setVisibility(View.VISIBLE);
         }
 
         if (requestCode == 3 && resultCode == RESULT_OK) {
 
             Log.i(TAG, "onActivityResult() -> Camera");
+
+            // Set the views to GONE to prevent anything else from being sent to Firebase.
+            if (videoImageView != null) {
+
+                videoImageView.setVisibility(View.GONE);
+                videoImageView.setImageResource(0);
+            }
+
+            if (imageView != null) {
+
+                imageView.setVisibility(View.GONE);
+                imageView.setImageResource(0);
+            }
 
             // Prevents the loadingIcon from being removed by initRecyclerView().
             needLoadingIcon = true;
@@ -1493,6 +1487,19 @@ public class Chat extends AppCompatActivity implements
 
             Log.i(TAG, "onActivityResult() -> Video");
 
+            // Set the views to GONE to prevent anything else from being sent to Firebase.
+            if (videoImageView != null) {
+
+                videoImageView.setVisibility(View.GONE);
+                videoImageView.setImageResource(0);
+            }
+
+            if (imageView != null) {
+
+                imageView.setVisibility(View.GONE);
+                imageView.setImageResource(0);
+            }
+
             // Prevents the loadingIcon from being removed by initRecyclerView().
             needLoadingIcon = true;
 
@@ -1500,6 +1507,15 @@ public class Chat extends AppCompatActivity implements
 
             new videoCompressAndAddToGalleryAsyncTask(this).execute(video.getAbsolutePath(), video.getParent());
         }
+    }
+
+    private String getExtension(Uri uri) {
+
+        Log.i(TAG, "getExtension()");
+
+        ContentResolver cr = getContentResolver();
+        MimeTypeMap mimeTypeMap = MimeTypeMap.getSingleton();
+        return mimeTypeMap.getExtensionFromMimeType(cr.getType(uri));
     }
 
     private static class imageCompressAsyncTask extends AsyncTask<String, String, String> {
@@ -1617,6 +1633,7 @@ public class Chat extends AppCompatActivity implements
                     .apply(new RequestOptions().override(480, 5000).placeholder(R.drawable.ic_recyclerview_image_placeholder))
                     .into(activity.imageView);
 
+            activity.imageView.setVisibility(View.VISIBLE);
             activity.loadingIcon.setVisibility(View.INVISIBLE);
             // Allow initRecyclerView() to get rid of the loadingIcon with this boolean.
             activity.needLoadingIcon = false;
@@ -1694,9 +1711,10 @@ public class Chat extends AppCompatActivity implements
 
             Glide.with(activity)
                     .load(activity.byteArray)
-                    .apply(new RequestOptions().override(640, 5000).placeholder(R.drawable.ic_recyclerview_image_placeholder))
+                    .apply(new RequestOptions().override(480, 5000).placeholder(R.drawable.ic_recyclerview_image_placeholder))
                     .into(activity.imageView);
 
+            activity.imageView.setVisibility(View.VISIBLE);
             activity.loadingIcon.setVisibility(View.INVISIBLE);
             // Allow initRecyclerView() to get rid of the loadingIcon with this boolean.
             activity.needLoadingIcon = false;
@@ -1891,8 +1909,7 @@ public class Chat extends AppCompatActivity implements
         if (URIisFile && fileIsImage) {
 
             // File and image.
-
-            final StorageReference storageReferenceImage = FirebaseStorage.getInstance().getReference("Images").child(System.currentTimeMillis() + "." + getExtension(imageURI));
+            final StorageReference storageReferenceImage = FirebaseStorage.getInstance().getReference("Images").child(String.valueOf(System.currentTimeMillis()));
             uploadTask = storageReferenceImage.putFile(imageURI);
 
             storageReferenceImage.putFile(imageURI).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
@@ -2022,8 +2039,7 @@ public class Chat extends AppCompatActivity implements
         } else if (!fileIsImage) {
 
             // Video.
-
-            final StorageReference storageReferenceVideo = FirebaseStorage.getInstance().getReference("Video").child(System.currentTimeMillis() + "." + getExtension(videoURI));
+            final StorageReference storageReferenceVideo = FirebaseStorage.getInstance().getReference("Video").child(String.valueOf(System.currentTimeMillis()));
             uploadTask = storageReferenceVideo.putFile(videoURI);
 
             storageReferenceVideo.putFile(videoURI).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
@@ -2153,8 +2169,7 @@ public class Chat extends AppCompatActivity implements
         } else {
 
             // byteArray and image.
-
-            final StorageReference storageReferenceImage = FirebaseStorage.getInstance().getReference("Images").child(System.currentTimeMillis() + "." + getExtension(imageURI));
+            final StorageReference storageReferenceImage = FirebaseStorage.getInstance().getReference("Images").child(String.valueOf(System.currentTimeMillis()));
             uploadTask = storageReferenceImage.putBytes(byteArray);
 
             storageReferenceImage.putBytes(byteArray).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
@@ -2282,15 +2297,6 @@ public class Chat extends AppCompatActivity implements
                         }
                     });
         }
-    }
-
-    private String getExtension(Uri uri) {
-
-        Log.i(TAG, "getExtension()");
-
-        ContentResolver cr = getContentResolver();
-        MimeTypeMap mimeTypeMap = MimeTypeMap.getSingleton();
-        return mimeTypeMap.getExtensionFromMimeType(cr.getType(uri));
     }
 
     private void deleteDirectory(File file) {
