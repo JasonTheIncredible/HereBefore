@@ -114,8 +114,7 @@ public class Map extends FragmentActivity implements
     private Toast shortToast, longToast;
     private View loadingIcon;
 
-    // Decrease app size / learn about debug vs release.
-    // "Firebase launch checklist" in bookmarks.
+    // Create version ready for release (ads, manifest...) / sign it..
     // Work on deprecated methods.
     // API key and anything else before publishing / Create a "build" version of the app with removed Log messages.
     // Load preferences after logging out and back in.
