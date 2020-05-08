@@ -114,7 +114,7 @@ public class Map extends FragmentActivity implements
     private Toast shortToast, longToast;
     private View loadingIcon;
 
-    // Create version ready for release (ads, manifest...) / sign it..
+    // Create version ready for release (ads, google maps API key)
     // Work on deprecated methods.
     // API key and anything else before publishing / Create a "build" version of the app with removed Log messages.
     // Load preferences after logging out and back in.
