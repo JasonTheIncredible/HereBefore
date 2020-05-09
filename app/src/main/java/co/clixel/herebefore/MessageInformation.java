@@ -1,12 +1,16 @@
 package co.clixel.herebefore;
 
+import androidx.annotation.Keep;
+
 // Getters and setters for messages.
+@Keep
 public class MessageInformation {
 
     public String message, uuid, imageURL, videoURL;
     public Object date;
     public Boolean userIsWithinShape;
 
+    @Keep
     MessageInformation() {
     }
 

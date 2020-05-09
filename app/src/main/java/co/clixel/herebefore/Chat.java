@@ -139,10 +139,10 @@ public class Chat extends AppCompatActivity implements
         AdView bannerAd = findViewById(R.id.chatBanner);
 
         // Search I/Ads: in Logcat to find ID and/or W/Ads for other info.
-        List<String> testDeviceIds = Collections.singletonList("814BF63877CBD71E91F9D7241907F4FF");
+        // List<String> testDeviceIds = Collections.singletonList("814BF63877CBD71E91F9D7241907F4FF");
         RequestConfiguration requestConfiguration
                 = new RequestConfiguration.Builder()
-                .setTestDeviceIds(testDeviceIds)
+                //.setTestDeviceIds(testDeviceIds)
                 .build();
         MobileAds.setRequestConfiguration(requestConfiguration);
 
