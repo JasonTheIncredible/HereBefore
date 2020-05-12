@@ -114,8 +114,7 @@ public class Map extends FragmentActivity implements
     private Toast shortToast, longToast;
     private View loadingIcon;
 
-    // Work on deprecated methods.
-    // API key and anything else before publishing / Create a "build" version of the app with removed Log messages.
+    // Last things before publishing
     // Load preferences after logging out and back in.
     // Authenticate user email address at sign-up.
     // Send email to Google email before account deletion, or find another way.
@@ -128,6 +127,7 @@ public class Map extends FragmentActivity implements
     // Leave messages in locations that users get notified of when they enter the area.
     // Add ability to filter recyclerView by type of content (recorded at the scene) to get rid of the "fluff"
     // Add ability to add video from gallery to recyclerView. [silicompressor 2.2.3 accepts content URIs but gives a black video on the app and in Firebase. Will follow up with this later.]
+    // Work on deprecated methods.
     // Add ability to add both picture and video to firebase at the same time.
     // App that scrolls through youtube previews while phone is on charger and allows user to click on one whenever.
 
