@@ -11,7 +11,7 @@ android {
         minSdkVersion 19
         targetSdkVersion 29
         versionCode 1
-        versionName "1.04.1"
+        versionName "1.04.2"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         multiDexEnabled true
     }
@@ -88,4 +88,7 @@ dependencies {
     implementation 'com.google.android.exoplayer:exoplayer:2.11.3'
 
     implementation "com.mikepenz:aboutlibraries:8.1.2"
+
+    // debugImplementation because LeakCanary should only run in debug builds.
+    debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.3'
 }

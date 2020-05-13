@@ -115,19 +115,16 @@ public class Map extends FragmentActivity implements
     private View loadingIcon;
 
     // Last things before publishing
-    // Load preferences after logging out and back in.
-    // Authenticate user email address at sign-up.
     // Send email to Google email before account deletion, or find another way.
     // Add preference for shape color.
-    // Hide top bar on scroll.
     // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.
-    // Add leak listener to canary versions.
     // "How to make databases faster"? Optimize Firebase loading in Map.
     // Allow users to message and reply to one another anonymously and add notifications to settings - problem: if I know who posted what, then anyone could know.
     // Leave messages in locations that users get notified of when they enter the area.
     // Add ability to filter recyclerView by type of content (recorded at the scene) to get rid of the "fluff"
     // Add ability to add video from gallery to recyclerView. [silicompressor 2.2.3 accepts content URIs but gives a black video on the app and in Firebase. Will follow up with this later.]
     // Work on deprecated methods.
+    // Load preferences after logging out and back in - looks like it will require saving info to database; is this worth it?
     // Add ability to add both picture and video to firebase at the same time.
     // App that scrolls through youtube previews while phone is on charger and allows user to click on one whenever.
 
