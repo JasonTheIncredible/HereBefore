@@ -77,9 +77,9 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
 
                     Intent Activity = new Intent(getActivity(), Map.class);
 
-                    startActivity(Activity);
-
                     getActivity().finishAffinity();
+
+                    startActivity(Activity);
 
                     break;
                 }

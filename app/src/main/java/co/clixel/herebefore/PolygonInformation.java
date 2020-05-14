@@ -4,7 +4,6 @@ import androidx.annotation.Keep;
 
 import com.google.android.gms.maps.model.PolygonOptions;
 
-// Getters and setters for chatCircles.
 @Keep
 public class PolygonInformation {
 

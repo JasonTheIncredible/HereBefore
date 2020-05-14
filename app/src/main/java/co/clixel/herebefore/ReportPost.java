@@ -1,7 +1,5 @@
 package co.clixel.herebefore;
 
-import com.google.android.gms.maps.model.CircleOptions;
-
 // Getters and setters for chatCircles.
 public class ReportPost {
 

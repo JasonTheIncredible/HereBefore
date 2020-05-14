@@ -10,7 +10,6 @@ import com.bumptech.glide.request.RequestOptions;
 
 public class PhotoView extends AppCompatActivity {
 
-    // https://github.com/chrisbanes/PhotoView
     com.github.chrisbanes.photoview.PhotoView myImage;
 
     @Override

@@ -195,9 +195,9 @@ public class DeleteAccount extends AppCompatActivity {
 
                                             loadingIcon.setVisibility(View.GONE);
 
-                                            startActivity(Activity);
-
                                             finishAffinity();
+
+                                            startActivity(Activity);
                                         }
 
                                         if (!task.isSuccessful() && task.getException() != null) {
