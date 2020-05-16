@@ -26,16 +26,17 @@ import java.util.ArrayList;
 
 public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapter.ViewHolder> {
 
-    private ArrayList<String> mMessageTime, mMessageImage, mMessageImageVideo, mMessageText;
+    private ArrayList<String> mMessageTime, mMessageUser, mMessageImage, mMessageImageVideo, mMessageText;
     private ArrayList<Boolean> mUserIsWithinShape;
     private Context mContext;
     private ImageButton playButtonInside, playButtonOutside;
     private boolean theme;
 
-    RecyclerViewAdapter(Context context, ArrayList<String> mMessageTime, ArrayList<String> mMessageImage, ArrayList<String> mMessageImageVideo, ArrayList<String> mMessageText, ArrayList<Boolean> mUserIsWithinShape) {
+    RecyclerViewAdapter(Context context, ArrayList<String> mMessageTime, ArrayList<String> mMessageUser, ArrayList<String> mMessageImage, ArrayList<String> mMessageImageVideo, ArrayList<String> mMessageText, ArrayList<Boolean> mUserIsWithinShape) {
 
         this.mContext = context;
         this.mMessageTime = mMessageTime;
+        this.mMessageUser = mMessageUser;
         this.mMessageImage = mMessageImage;
         this.mMessageImageVideo = mMessageImageVideo;
         this.mMessageText = mMessageText;
@@ -121,6 +122,8 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
 
             holder.messageTimeInside.setText(mMessageTime.get(position));
 
+            holder.messageUserInside.setText(mMessageUser.get(position));
+
             // Set messageImage, messageImageVideo, or messageText to gone if an image or text doesn't exist, for spacing consistency.
             if (mMessageImage.get(position) == null) {
 
@@ -171,6 +174,8 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
 
             // User sent the message from outside the shape. Setup the right side.
             holder.messageTimeOutside.setText(mMessageTime.get(position));
+
+            holder.messageUserOutside.setText(mMessageUser.get(position));
 
             // Set messageImage, messageImageVideo, or messageText to gone if an image or text doesn't exist, for spacing consistency.
             if (mMessageImage.get(position) == null) {
@@ -258,7 +263,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
 
     class ViewHolder extends RecyclerView.ViewHolder {
 
-        TextView messageTimeInside, messageTimeOutside, messageTextInside, messageTextOutside;
+        TextView messageTimeInside, messageTimeOutside, messageUserInside, messageUserOutside, messageTextInside, messageTextOutside;
         ImageView messageImageInside, messageImageOutside, messageImageVideoInside, messageImageVideoOutside;
         FrameLayout videoFrameInside, videoFrameOutside;
         RelativeLayout messageItem;
@@ -268,6 +273,8 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
             super(itemView);
             messageTimeInside = itemView.findViewById(R.id.messageTimeInside);
             messageTimeOutside = itemView.findViewById(R.id.messageTimeOutside);
+            messageUserInside = itemView.findViewById(R.id.messageUserInside);
+            messageUserOutside = itemView.findViewById(R.id.messageUserOutside);
             messageImageInside = itemView.findViewById(R.id.messageImageInside);
             messageImageOutside = itemView.findViewById(R.id.messageImageOutside);
             videoFrameInside = itemView.findViewById(R.id.videoFrameInside);

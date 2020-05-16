@@ -92,6 +92,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
 
 import id.zelory.compressor.Compressor;
 
@@ -103,7 +104,7 @@ public class Chat extends AppCompatActivity implements
     private static final String TAG = "Chat";
     private static final int Request_ID_Take_Photo = 1700, Request_ID_Record_Video = 1800;
     private EditText mInput;
-    private ArrayList<String> mTime = new ArrayList<>(), mImage = new ArrayList<>(), mVideo = new ArrayList<>(), mText = new ArrayList<>();
+    private ArrayList<String> mTime = new ArrayList<>(), mUser = new ArrayList<>(), mImage = new ArrayList<>(), mVideo = new ArrayList<>(), mText = new ArrayList<>();
     private ArrayList<Boolean> mUserIsWithinShape = new ArrayList<>();
     private RecyclerView recyclerView;
     private static int index = -1, top = -1;
@@ -235,6 +236,7 @@ public class Chat extends AppCompatActivity implements
                 if (recyclerViewLinearLayoutManager != null) {
 
                     mTime.clear();
+                    mUser.clear();
                     mImage.clear();
                     mVideo.clear();
                     mText.clear();
@@ -250,6 +252,7 @@ public class Chat extends AppCompatActivity implements
                         if (shapeUUID.equals(uuid)) {
 
                             Long serverDate = (Long) ds.child("date").getValue();
+                            String user = (String) ds.child("user").getValue();
                             String imageURL = (String) ds.child("imageURL").getValue();
                             String videoURL = (String) ds.child("videoURL").getValue();
                             String messageText = (String) ds.child("message").getValue();
@@ -267,6 +270,7 @@ public class Chat extends AppCompatActivity implements
                                 Log.e(TAG, "onStart() -> serverDate == null");
                                 Crashlytics.logException(new RuntimeException("onStart() -> serverDate == null"));
                             }
+                            mUser.add(user);
                             mImage.add(imageURL);
                             mVideo.add(videoURL);
                             mText.add(messageText);
@@ -459,6 +463,7 @@ public class Chat extends AppCompatActivity implements
                                         // This will cause onDataChange to fire twice; optimizations could be made in the future.
                                         Object date = ServerValue.TIMESTAMP;
                                         messageInformation.setDate(date);
+                                        messageInformation.setUser(UUID.randomUUID().toString());
                                         messageInformation.setUUID(uuid);
                                         messageInformation.setUserIsWithinShape(userIsWithinShape);
                                         DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
@@ -563,6 +568,7 @@ public class Chat extends AppCompatActivity implements
                                         // This will cause onDataChange to fire twice; optimizations could be made in the future.
                                         Object date = ServerValue.TIMESTAMP;
                                         messageInformation.setDate(date);
+                                        messageInformation.setUser(UUID.randomUUID().toString());
                                         messageInformation.setUUID(uuid);
                                         messageInformation.setUserIsWithinShape(userIsWithinShape);
                                         DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
@@ -609,6 +615,7 @@ public class Chat extends AppCompatActivity implements
                             // This will cause onDataChange to fire twice; optimizations could be made in the future.
                             Object date = ServerValue.TIMESTAMP;
                             messageInformation.setDate(date);
+                            messageInformation.setUser(UUID.randomUUID().toString());
                             messageInformation.setUUID(uuid);
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
@@ -841,7 +848,7 @@ public class Chat extends AppCompatActivity implements
         // Initialize the RecyclerView.
         Log.i(TAG, "initRecyclerView()");
 
-        RecyclerViewAdapter adapter = new RecyclerViewAdapter(this, mTime, mImage, mVideo, mText, mUserIsWithinShape);
+        RecyclerViewAdapter adapter = new RecyclerViewAdapter(this, mTime, mUser, mImage, mVideo, mText, mUserIsWithinShape);
         recyclerView.setAdapter(adapter);
         recyclerView.setLayoutManager(recyclerViewLinearLayoutManager);
 
@@ -2007,6 +2014,7 @@ public class Chat extends AppCompatActivity implements
                             // This will cause onDataChange to fire twice; optimizations could be made in the future.
                             Object date = ServerValue.TIMESTAMP;
                             messageInformation.setDate(date);
+                            messageInformation.setUser(UUID.randomUUID().toString());
                             messageInformation.setUUID(uuid);
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
@@ -2137,6 +2145,7 @@ public class Chat extends AppCompatActivity implements
                             // This will cause onDataChange to fire twice; optimizations could be made in the future.
                             Object date = ServerValue.TIMESTAMP;
                             messageInformation.setDate(date);
+                            messageInformation.setUser(UUID.randomUUID().toString());
                             messageInformation.setUUID(uuid);
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
@@ -2267,6 +2276,7 @@ public class Chat extends AppCompatActivity implements
                             // This will cause onDataChange to fire twice; optimizations could be made in the future.
                             Object date = ServerValue.TIMESTAMP;
                             messageInformation.setDate(date);
+                            messageInformation.setUser(UUID.randomUUID().toString());
                             messageInformation.setUUID(uuid);
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();

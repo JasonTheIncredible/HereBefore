@@ -2,11 +2,10 @@ package co.clixel.herebefore;
 
 import androidx.annotation.Keep;
 
-// Getters and setters for messages.
 @Keep
 public class MessageInformation {
 
-    public String message, uuid, imageURL, videoURL;
+    public String user, message, uuid, imageURL, videoURL;
     public Object date;
     public Boolean userIsWithinShape;
 
@@ -16,6 +15,10 @@ public class MessageInformation {
 
     public void setDate(Object date) {
         this.date = date;
+    }
+
+    public void setUser(String user) {
+        this.user = user;
     }
 
     public void setImageURL(String imageURL) {
