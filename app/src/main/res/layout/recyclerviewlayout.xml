@@ -17,12 +17,14 @@
 
     <TextView
         android:id="@+id/messageUserInside"
-        android:layout_width="wrap_content"
+        android:layout_width="80dp"
         android:layout_height="wrap_content"
-        android:layout_toEndOf="@id/messageTimeInside"
         android:layout_alignParentTop="true"
         android:layout_marginStart="10dp"
         android:layout_marginTop="4dp"
+        android:layout_toEndOf="@id/messageTimeInside"
+        android:ellipsize="end"
+        android:singleLine="true"
         tools:text="User" />
 
     <ImageView
@@ -85,12 +87,14 @@
 
     <TextView
         android:id="@+id/messageUserOutside"
-        android:layout_width="wrap_content"
+        android:layout_width="80dp"
         android:layout_height="wrap_content"
-        android:layout_toStartOf="@id/messageTimeOutside"
         android:layout_alignParentTop="true"
-        android:layout_marginEnd="10dp"
         android:layout_marginTop="4dp"
+        android:layout_marginEnd="10dp"
+        android:layout_toStartOf="@id/messageTimeOutside"
+        android:ellipsize="end"
+        android:singleLine="true"
         tools:text="User" />
 
     <ImageView
