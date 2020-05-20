@@ -24,7 +24,7 @@ import com.bumptech.glide.request.RequestOptions;
 
 import java.util.ArrayList;
 
-public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapter.ViewHolder> {
+public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ViewHolder> {
 
     private ArrayList<String> mMessageTime, mMessageUser, mMessageImage, mMessageImageVideo, mMessageText;
     private ArrayList<Boolean> mUserIsWithinShape;
@@ -32,7 +32,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
     private ImageButton playButtonInside, playButtonOutside;
     private boolean theme;
 
-    RecyclerViewAdapter(Context context, ArrayList<String> mMessageTime, ArrayList<String> mMessageUser, ArrayList<String> mMessageImage, ArrayList<String> mMessageImageVideo, ArrayList<String> mMessageText, ArrayList<Boolean> mUserIsWithinShape) {
+    ChatAdapter(Context context, ArrayList<String> mMessageTime, ArrayList<String> mMessageUser, ArrayList<String> mMessageImage, ArrayList<String> mMessageImageVideo, ArrayList<String> mMessageText, ArrayList<Boolean> mUserIsWithinShape) {
 
         this.mContext = context;
         this.mMessageTime = mMessageTime;
@@ -47,7 +47,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
 
-        View view = LayoutInflater.from(mContext).inflate(R.layout.recyclerviewlayout, parent, false);
+        View view = LayoutInflater.from(mContext).inflate(R.layout.chatadapterlayout, parent, false);
 
         loadPreferences();
 

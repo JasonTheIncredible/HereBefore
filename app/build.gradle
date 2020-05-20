@@ -8,7 +8,7 @@ android {
     compileSdkVersion 29
     defaultConfig {
         applicationId "co.clixel.herebefore"
-        minSdkVersion 19
+        minSdkVersion 21
         targetSdkVersion 29
         versionCode 1
         versionName "1.04.2"
@@ -95,4 +95,6 @@ dependencies {
 
     // debugImplementation because LeakCanary should only run in debug builds.
     debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.3'
+
+    api 'com.linkedin.android.spyglass:spyglass:2.1.0'
 }

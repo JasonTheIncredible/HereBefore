@@ -58,7 +58,6 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import android.view.inputmethod.InputMethodManager;
 import android.webkit.MimeTypeMap;
-import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.PopupMenu;
 import android.widget.RelativeLayout;
@@ -76,6 +75,12 @@ import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.StorageTask;
 import com.google.firebase.storage.UploadTask;
 import com.iceteck.silicompressorr.SiliCompressor;
+import com.linkedin.android.spyglass.suggestions.interfaces.SuggestionsVisibilityManager;
+import com.linkedin.android.spyglass.tokenization.QueryToken;
+import com.linkedin.android.spyglass.tokenization.impl.WordTokenizer;
+import com.linkedin.android.spyglass.tokenization.impl.WordTokenizerConfig;
+import com.linkedin.android.spyglass.tokenization.interfaces.QueryTokenReceiver;
+import com.linkedin.android.spyglass.ui.MentionsEditText;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -88,6 +93,7 @@ import java.lang.ref.WeakReference;
 import java.net.URISyntaxException;
 import java.text.DateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -99,19 +105,22 @@ import id.zelory.compressor.Compressor;
 import static java.text.DateFormat.getDateTimeInstance;
 
 public class Chat extends AppCompatActivity implements
-        PopupMenu.OnMenuItemClickListener {
+        PopupMenu.OnMenuItemClickListener,
+        QueryTokenReceiver,
+        SuggestionsVisibilityManager {
 
     private static final String TAG = "Chat";
     private static final int Request_ID_Take_Photo = 1700, Request_ID_Record_Video = 1800;
-    private EditText mInput;
-    private ArrayList<String> mTime = new ArrayList<>(), mUser = new ArrayList<>(), mImage = new ArrayList<>(), mVideo = new ArrayList<>(), mText = new ArrayList<>();
+    private MentionsEditText mInput;
+    private ArrayList<String> mTime = new ArrayList<>(), mUser = new ArrayList<>(), mImage = new ArrayList<>(), mVideo = new ArrayList<>(), mText = new ArrayList<>(), mSuggestions = new ArrayList<>();
     private ArrayList<Boolean> mUserIsWithinShape = new ArrayList<>();
-    private RecyclerView recyclerView;
+    private RecyclerView chatRecyclerView, mentionsRecyclerView;
     private static int index = -1, top = -1;
     private DatabaseReference databaseReference;
     private ValueEventListener eventListener;
     private FloatingActionButton sendButton, mediaButton;
-    private boolean theme, needLoadingIcon = false, reachedEndOfRecyclerView = false, recyclerViewHasScrolled = false, messageSent = false, sendButtonClicked = false, mediaButtonMenuIsOpen, fileIsImage, checkPermissionsPicture, URIisFile, newShape, threeMarkers, fourMarkers, fiveMarkers, sixMarkers, sevenMarkers, eightMarkers, shapeIsCircle;
+    private boolean theme, needLoadingIcon = false, reachedEndOfRecyclerView = false, recyclerViewHasScrolled = false, messageSent = false, sendButtonClicked = false, mediaButtonMenuIsOpen, fileIsImage, checkPermissionsPicture, URIisFile,
+            newShape, threeMarkers, fourMarkers, fiveMarkers, sixMarkers, sevenMarkers, eightMarkers, shapeIsCircle;
     private Boolean userIsWithinShape;
     private View.OnLayoutChangeListener onLayoutChangeListener;
     private String uuid;
@@ -121,12 +130,19 @@ public class Chat extends AppCompatActivity implements
     private ImageView imageView, videoImageView;
     public Uri imageURI, videoURI;
     private StorageTask uploadTask;
-    private LinearLayoutManager recyclerViewLinearLayoutManager = new LinearLayoutManager(this);
+    private LinearLayoutManager chatRecyclerViewLinearLayoutManager = new LinearLayoutManager(this);
     private File image, video;
     private byte[] byteArray;
     private View loadingIcon;
     private SharedPreferences sharedPreferences;
     private Toast shortToast, longToast;
+    private static final String BUCKET = "text-suggestions";
+    private static final WordTokenizerConfig tokenizerConfig = new WordTokenizerConfig
+            .Builder()
+            .setWordBreakChars(", ")
+            .setExplicitChars("@")
+            .setThreshold(1)
+            .build();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -154,7 +170,8 @@ public class Chat extends AppCompatActivity implements
         videoImageView = findViewById(R.id.videoImageView);
         mInput = findViewById(R.id.input);
         sendButton = findViewById(R.id.sendButton);
-        recyclerView = findViewById(R.id.messageList);
+        chatRecyclerView = findViewById(R.id.messageList);
+        mentionsRecyclerView = findViewById(R.id.suggestionsList);
         loadingIcon = findViewById(R.id.loadingIcon);
 
         // Make the loadingIcon visible upon the first load, as it can sometimes take a while to show anything. It should be made invisible in initRecyclerView().
@@ -233,7 +250,7 @@ public class Chat extends AppCompatActivity implements
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
 
                 // Clear the RecyclerView before adding new entries to prevent duplicates.
-                if (recyclerViewLinearLayoutManager != null) {
+                if (chatRecyclerViewLinearLayoutManager != null) {
 
                     mTime.clear();
                     mUser.clear();
@@ -253,6 +270,8 @@ public class Chat extends AppCompatActivity implements
 
                             Long serverDate = (Long) ds.child("date").getValue();
                             String user = (String) ds.child("user").getValue();
+                            // Used when a user mentions another user with "@".
+                            mSuggestions.add(user);
                             String imageURL = (String) ds.child("imageURL").getValue();
                             String videoURL = (String) ds.child("videoURL").getValue();
                             String messageText = (String) ds.child("message").getValue();
@@ -280,17 +299,17 @@ public class Chat extends AppCompatActivity implements
                 }
 
                 // Read RecyclerView scroll position (for use in initRecyclerView).
-                if (recyclerViewLinearLayoutManager != null) {
+                if (chatRecyclerViewLinearLayoutManager != null) {
 
-                    index = recyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
-                    View v = recyclerView.getChildAt(0);
-                    top = (v == null) ? 0 : (v.getTop() - recyclerView.getPaddingTop());
+                    index = chatRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
+                    View v = chatRecyclerView.getChildAt(0);
+                    top = (v == null) ? 0 : (v.getTop() - chatRecyclerView.getPaddingTop());
                 }
 
-                initRecyclerView();
+                initChatAdapter();
 
                 // Check RecyclerView scroll state (to allow the layout to move up when keyboard appears).
-                recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+                chatRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
 
                     @Override
                     public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
@@ -306,7 +325,7 @@ public class Chat extends AppCompatActivity implements
                 });
 
                 // If RecyclerView is scrolled to the bottom, move the layout up when the keyboard appears.
-                recyclerView.addOnLayoutChangeListener(onLayoutChangeListener = new View.OnLayoutChangeListener() {
+                chatRecyclerView.addOnLayoutChangeListener(onLayoutChangeListener = new View.OnLayoutChangeListener() {
 
                     @Override
                     public void onLayoutChange(View v,
@@ -317,16 +336,16 @@ public class Chat extends AppCompatActivity implements
 
                             if (bottom < oldBottom) {
 
-                                if (recyclerView.getAdapter() != null && recyclerView.getAdapter().getItemCount() > 0) {
+                                if (chatRecyclerView.getAdapter() != null && chatRecyclerView.getAdapter().getItemCount() > 0) {
 
-                                    recyclerView.postDelayed(new Runnable() {
+                                    chatRecyclerView.postDelayed(new Runnable() {
 
                                         @Override
                                         public void run() {
 
-                                            recyclerView.smoothScrollToPosition(
+                                            chatRecyclerView.smoothScrollToPosition(
 
-                                                    recyclerView.getAdapter().getItemCount() - 1);
+                                                    chatRecyclerView.getAdapter().getItemCount() - 1);
                                         }
                                     }, 100);
                                 }
@@ -360,15 +379,14 @@ public class Chat extends AppCompatActivity implements
                     videoImageView.setImageDrawable(null);
                 }
 
-                if (keyCode == KeyEvent.KEYCODE_BACK && getCurrentFocus() == mInput) {
-
-                    mInput.clearFocus();
-                }
-
                 // Keep "return false" or the enter key will not go to the next line.
                 return false;
             }
         });
+
+        mInput.setTokenizer(new WordTokenizer(tokenizerConfig));
+        mInput.setQueryTokenReceiver(this);
+        mInput.setSuggestionsVisibilityManager(this);
 
         mediaButton.setOnClickListener(new View.OnClickListener() {
 
@@ -677,6 +695,90 @@ public class Chat extends AppCompatActivity implements
         });
     }
 
+    @Override
+    protected void onRestart() {
+
+        super.onRestart();
+        Log.i(TAG, "onRestart()");
+
+        // If the user logged out in settings and returns to this screen, send them back to Map.java.
+        if (FirebaseAuth.getInstance().getCurrentUser() == null && !(GoogleSignIn.getLastSignedInAccount(this) instanceof GoogleSignInAccount)) {
+
+            Intent Activity = new Intent(Chat.this, Map.class);
+            startActivity(Activity);
+        }
+
+        // Clear text and prevent keyboard from opening.
+        if (mInput != null) {
+
+            mInput.getText().clear();
+            mInput.clearFocus();
+        }
+
+        // Hide and clear recyclerView if necessary.
+        if (mentionsRecyclerView != null) {
+
+            mentionsRecyclerView.setVisibility(View.GONE);
+        }
+
+        needLoadingIcon = false;
+        sendButtonClicked = false;
+    }
+
+    @Override
+    protected void onStop() {
+
+        Log.i(TAG, "onStop()");
+
+        if (databaseReference != null) {
+
+            databaseReference.removeEventListener(eventListener);
+        }
+
+        if (chatRecyclerView != null) {
+
+            chatRecyclerView.clearOnScrollListeners();
+            chatRecyclerView.removeOnLayoutChangeListener(onLayoutChangeListener);
+        }
+
+        if (mentionsRecyclerView != null) {
+
+            mentionsRecyclerView.clearOnScrollListeners();
+            mentionsRecyclerView.removeOnLayoutChangeListener(onLayoutChangeListener);
+        }
+
+        if (eventListener != null) {
+
+            eventListener = null;
+        }
+
+        if (imageView != null) {
+
+            imageView.setOnClickListener(null);
+        }
+
+        if (videoImageView != null) {
+
+            videoImageView.setOnClickListener(null);
+        }
+
+        if (sendButton != null) {
+
+            sendButton.setOnClickListener(null);
+        }
+
+        if (mInput != null) {
+
+            mInput.setOnKeyListener(null);
+            mInput.setQueryTokenReceiver(null);
+            mInput.setSuggestionsVisibilityManager(null);
+        }
+
+        cancelToasts();
+
+        super.onStop();
+    }
+
     protected void loadPreferences() {
 
         Log.i(TAG, "loadPreferences()");
@@ -706,27 +808,113 @@ public class Chat extends AppCompatActivity implements
         sharedPreferences.edit().putBoolean(Settings.KEY_SIGN_OUT, true).apply();
     }
 
+    private void initChatAdapter() {
+
+        // Initialize the RecyclerView.
+        Log.i(TAG, "initChatAdapter");
+
+        ChatAdapter adapter = new ChatAdapter(this, mTime, mUser, mImage, mVideo, mText, mUserIsWithinShape);
+        chatRecyclerView.swapAdapter(adapter, true);
+        chatRecyclerView.setLayoutManager(chatRecyclerViewLinearLayoutManager);
+
+        if (index == -1 || messageSent) {
+
+            // Scroll to bottom of recyclerviewlayout after first initialization and after sending a recyclerviewlayout.
+            chatRecyclerView.scrollToPosition(mTime.size() - 1);
+            messageSent = false;
+        } else {
+
+            // Set RecyclerView scroll position to prevent position change when Firebase gets updated and after screen orientation change.
+            chatRecyclerViewLinearLayoutManager.scrollToPositionWithOffset(index, top);
+        }
+
+        // After the initial load, make the loadingIcon invisible.
+        if (loadingIcon != null && !needLoadingIcon) {
+
+            loadingIcon.setVisibility(View.INVISIBLE);
+        }
+    }
+
+    // Brings up suggestions when a users inputs "@".
     @Override
-    protected void onRestart() {
+    public List<String> onQueryReceived(@NonNull QueryToken queryToken) {
 
-        super.onRestart();
-        Log.i(TAG, "onRestart()");
+        Log.i(TAG, "onQueryReceived()");
 
-        // If the user logged out in settings and returns to this screen, send them back to Map.java.
-        if (FirebaseAuth.getInstance().getCurrentUser() == null && !(GoogleSignIn.getLastSignedInAccount(this) instanceof GoogleSignInAccount)) {
+        List<String> buckets = Collections.singletonList(BUCKET);
+        List<String> suggestions = getSuggestions(queryToken);
+        if (suggestions != null) {
 
-            Intent Activity = new Intent(Chat.this, Map.class);
-            startActivity(Activity);
+            initMentionsAdapter(suggestions);
         }
 
-        // Prevent keyboard from opening.
-        if (mInput != null) {
+        return buckets;
+    }
 
-            mInput.clearFocus();
+    public List<String> getSuggestions(QueryToken queryToken) {
+
+        Log.i(TAG, "getSuggestions()");
+
+        if (queryToken.isExplicit()) {
+
+            String prefix = queryToken.getKeywords().toLowerCase();
+            List<String> suggestions = new ArrayList<>();
+
+            for (String suggestion : mSuggestions) {
+
+                String name = suggestion.toLowerCase();
+
+                if (name.startsWith(prefix)) {
+
+                    suggestions.add(suggestion);
+                }
+            }
+
+            return suggestions;
+        } else {
+
+            return null;
         }
 
-        needLoadingIcon = false;
-        sendButtonClicked = false;
+    }
+
+    public void initMentionsAdapter(@NonNull List<String> suggestions) {
+
+        Log.i(TAG, "initMentionsAdapter()");
+
+        // Clear the RecyclerView before adding new entries to prevent duplicates.
+        if (mentionsRecyclerView != null) {
+
+            mSuggestions.clear();
+        }
+
+        MentionsAdapter adapter = new MentionsAdapter(this, suggestions);
+        mentionsRecyclerView.swapAdapter(adapter, true);
+        mentionsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+        boolean display = suggestions.size() > 0;
+        displaySuggestions(display);
+    }
+
+    @Override
+    public void displaySuggestions(boolean display) {
+
+        Log.i(TAG, "displaySuggestions()");
+
+        if (display) {
+
+            mentionsRecyclerView.setVisibility(View.VISIBLE);
+        } else {
+
+            mentionsRecyclerView.setVisibility(View.GONE);
+        }
+    }
+
+    @Override
+    public boolean isDisplayingSuggestions() {
+
+        Log.i(TAG, "isDisplayingSuggestions()");
+
+        return mentionsRecyclerView.getVisibility() == View.VISIBLE;
     }
 
     @Override
@@ -784,52 +972,6 @@ public class Chat extends AppCompatActivity implements
         return super.onContextItemSelected(item);
     }
 
-    @Override
-    protected void onStop() {
-
-        Log.i(TAG, "onStop()");
-
-        if (databaseReference != null) {
-
-            databaseReference.removeEventListener(eventListener);
-        }
-
-        if (recyclerView != null) {
-
-            recyclerView.clearOnScrollListeners();
-            recyclerView.removeOnLayoutChangeListener(onLayoutChangeListener);
-        }
-
-        if (eventListener != null) {
-
-            eventListener = null;
-        }
-
-        if (imageView != null) {
-
-            imageView.setOnClickListener(null);
-        }
-
-        if (videoImageView != null) {
-
-            videoImageView.setOnClickListener(null);
-        }
-
-        if (sendButton != null) {
-
-            sendButton.setOnClickListener(null);
-        }
-
-        if (mInput != null) {
-
-            mInput.setOnKeyListener(null);
-        }
-
-        cancelToasts();
-
-        super.onStop();
-    }
-
     private void cancelToasts() {
 
         if (shortToast != null) {
@@ -840,33 +982,6 @@ public class Chat extends AppCompatActivity implements
         if (longToast != null) {
 
             longToast.cancel();
-        }
-    }
-
-    private void initRecyclerView() {
-
-        // Initialize the RecyclerView.
-        Log.i(TAG, "initRecyclerView()");
-
-        RecyclerViewAdapter adapter = new RecyclerViewAdapter(this, mTime, mUser, mImage, mVideo, mText, mUserIsWithinShape);
-        recyclerView.setAdapter(adapter);
-        recyclerView.setLayoutManager(recyclerViewLinearLayoutManager);
-
-        if (index == -1 || messageSent) {
-
-            // Scroll to bottom of recyclerviewlayout after first initialization and after sending a recyclerviewlayout.
-            recyclerView.scrollToPosition(mTime.size() - 1);
-            messageSent = false;
-        } else {
-
-            // Set RecyclerView scroll position to prevent position change when Firebase gets updated and after screen orientation change.
-            recyclerViewLinearLayoutManager.scrollToPositionWithOffset(index, top);
-        }
-
-        // After the initial load, make the loadingIcon invisible.
-        if (loadingIcon != null && !needLoadingIcon) {
-
-            loadingIcon.setVisibility(View.INVISIBLE);
         }
     }
 

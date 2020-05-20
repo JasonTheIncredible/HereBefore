@@ -107,8 +107,13 @@ public class Map extends FragmentActivity implements
     private View loadingIcon;
     private LocationProvider locationProvider;
 
-    // Make sure the secret stuff is secret.
+    // Make sure imageView onClickListener for chatRecyclerView doesn't expand across whole view.
+    // Set onClickListener for suggestions.
+    // Fix icon.
     // Allow users to message and reply to one another anonymously and add notifications to settings.
+    // Make sure aboutLibraries is up to date.
+    // Use network for more precise GPS?
+    // Make sure the secret stuff is secret.
     // Add preference for shape color.
     // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.
     // Leave messages in locations that users get notified of when they enter the area.
