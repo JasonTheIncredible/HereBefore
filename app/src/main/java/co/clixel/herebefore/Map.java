@@ -107,9 +107,7 @@ public class Map extends FragmentActivity implements
     private View loadingIcon;
     private LocationProvider locationProvider;
 
-    // Make sure imageView onClickListener for chatRecyclerView doesn't expand across whole view.
     // Set onClickListener for suggestions.
-    // Fix icon.
     // Allow users to message and reply to one another anonymously and add notifications to settings.
     // Make sure aboutLibraries is up to date.
     // Use network for more precise GPS?
@@ -139,6 +137,7 @@ public class Map extends FragmentActivity implements
 
             Log.e(TAG, "onCreate() -> mapFragment == null");
             Crashlytics.logException(new Exception("onCreate() -> mapFragment == null"));
+            toastMessageLong("An error occurred while loading the map");
         }
 
         mapTypeButton = findViewById(R.id.mapTypeButton);
@@ -350,6 +349,7 @@ public class Map extends FragmentActivity implements
 
                                         Log.e(TAG, "onStart() -> chatSizeSeekBar -> location == null");
                                         Crashlytics.logException(new Exception("onStart() -> chatSizeSeekBar -> location == null"));
+                                        toastMessageLong("An error occurred: your location is null");
                                     }
                                 }
                             });
@@ -1853,6 +1853,7 @@ public class Map extends FragmentActivity implements
 
                             Log.e(TAG, "onStart() -> chatSizeSeekBar -> onProgressChanged -> polygon -> mLocation == null");
                             Crashlytics.logException(new Exception("onStart() -> chatSizeSeekBar -> onProgressChanged -> polygon -> mLocation == null"));
+                            toastMessageLong("An error occurred: your location is null");
                         }
                     }
                 }
@@ -1999,6 +2000,7 @@ public class Map extends FragmentActivity implements
 
                         Log.e(TAG, "onStart() -> chatSelectorSeekBar -> onProgressChanged -> selectedOverlappingShapeUUID == null");
                         Crashlytics.logException(new Exception("onStart() -> chatSelectorSeekBar -> onProgressChanged -> selectedOverlappingShapeUUID == null"));
+                        toastMessageLong("An error occurred");
                     }
 
                     selectingShape = true;
@@ -2167,6 +2169,7 @@ public class Map extends FragmentActivity implements
 
             Log.e(TAG, "onResume() -> manager == null");
             Crashlytics.logException(new Exception("onResume() -> manager == null"));
+            toastMessageLong("An error occurred while checking if GPS is enabled");
         }
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
@@ -2506,7 +2509,7 @@ public class Map extends FragmentActivity implements
 
                         if (!stillLoadingCircles && !stillLoadingPolygons) {
 
-                            loadingIcon.setVisibility(View.INVISIBLE);
+                            loadingIcon.setVisibility(View.GONE);
                         }
                     } else if (firstLoad && !badAccuracy && location.getAccuracy() >= 60) {
 
@@ -2531,7 +2534,7 @@ public class Map extends FragmentActivity implements
 
                         if (!stillLoadingCircles && !stillLoadingPolygons) {
 
-                            loadingIcon.setVisibility(View.INVISIBLE);
+                            loadingIcon.setVisibility(View.GONE);
                         }
                     }
                 }
@@ -2542,7 +2545,9 @@ public class Map extends FragmentActivity implements
 
                 // Failed finding a location.
                 loadingIcon.setVisibility(View.GONE);
-                toastMessageLong("Failed to find your location.");
+                Log.e(TAG, "updateLocation() -> locationServicesNotEnabled()");
+                Crashlytics.logException(new Exception("updateLocation() -> locationServicesNotEnabled()"));
+                toastMessageLong("Failed to find your location. Please try again later.");
             }
 
             @Override
@@ -2746,6 +2751,9 @@ public class Map extends FragmentActivity implements
 
                                             Log.e(TAG, "onMapReadyAndRestart() -> onMarkerClick -> location == null");
                                             Crashlytics.logException(new Exception("onMapReadyAndRestart() -> onMarkerClick -> location == null"));
+                                            mMap.getUiSettings().setScrollGesturesEnabled(true);
+                                            loadingIcon.setVisibility(View.GONE);
+                                            toastMessageLong("An error occurred: your location is null");
                                         }
                                     }
                                 });
@@ -2789,6 +2797,10 @@ public class Map extends FragmentActivity implements
                                 @Override
                                 public void onCancelled(@NonNull DatabaseError databaseError) {
 
+                                    Log.e(TAG, "DatabaseError");
+                                    Crashlytics.logException(new Exception("DatabaseError"));
+                                    mMap.getUiSettings().setScrollGesturesEnabled(true);
+                                    loadingIcon.setVisibility(View.GONE);
                                     toastMessageLong(databaseError.getMessage());
                                 }
                             });
@@ -2830,6 +2842,10 @@ public class Map extends FragmentActivity implements
                                 @Override
                                 public void onCancelled(@NonNull DatabaseError databaseError) {
 
+                                    Log.e(TAG, "DatabaseError");
+                                    Crashlytics.logException(new Exception("DatabaseError"));
+                                    mMap.getUiSettings().setScrollGesturesEnabled(true);
+                                    loadingIcon.setVisibility(View.GONE);
                                     toastMessageLong(databaseError.getMessage());
                                 }
                             });
@@ -2938,6 +2954,10 @@ public class Map extends FragmentActivity implements
                                                 @Override
                                                 public void onCancelled(@NonNull DatabaseError databaseError) {
 
+                                                    Log.e(TAG, "DatabaseError");
+                                                    Crashlytics.logException(new Exception("DatabaseError"));
+                                                    mMap.getUiSettings().setScrollGesturesEnabled(true);
+                                                    loadingIcon.setVisibility(View.GONE);
                                                     toastMessageLong(databaseError.getMessage());
                                                 }
                                             });
@@ -2982,6 +3002,10 @@ public class Map extends FragmentActivity implements
                                                 @Override
                                                 public void onCancelled(@NonNull DatabaseError databaseError) {
 
+                                                    Log.e(TAG, "DatabaseError");
+                                                    Crashlytics.logException(new Exception("DatabaseError"));
+                                                    mMap.getUiSettings().setScrollGesturesEnabled(true);
+                                                    loadingIcon.setVisibility(View.GONE);
                                                     toastMessageLong(databaseError.getMessage());
                                                 }
                                             });
@@ -2990,6 +3014,9 @@ public class Map extends FragmentActivity implements
 
                                         Log.e(TAG, "onMapReadyAndRestart() -> onPolygonClick -> polygon.getTag() == null -> location == null");
                                         Crashlytics.logException(new Exception("onMapReadyAndRestart() -> onPolygonClick -> polygon.getTag() == null -> location == null"));
+                                        mMap.getUiSettings().setScrollGesturesEnabled(true);
+                                        loadingIcon.setVisibility(View.GONE);
+                                        toastMessageLong("An error occurred: your location is null");
                                     }
                                 }
                             });
@@ -2998,7 +3025,7 @@ public class Map extends FragmentActivity implements
                     return;
                 }
 
-                // Click all through all circles, using the z-index to figure out which ones have not been cycled through. All the information to the arrayLists to be used by chatSelectorSeekBar.
+                // Click through all shapes, using the z-index to figure out which ones have not been cycled through. All the information to the arrayLists to be used by chatSelectorSeekBar.
                 if (polygon.getZIndex() == 0 && polygon.getTag() != null) {
 
                     Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> Lowering z-index of a polygon");
@@ -3182,6 +3209,9 @@ public class Map extends FragmentActivity implements
 
                                         Log.e(TAG, "onMapReadyAndRestart() -> onPolygonClick -> User selected a polygon -> location == null");
                                         Crashlytics.logException(new Exception("onMapReadyAndRestart() -> onPolygonClick -> User selected a polygon -> location == null"));
+                                        mMap.getUiSettings().setScrollGesturesEnabled(true);
+                                        loadingIcon.setVisibility(View.GONE);
+                                        toastMessageLong("An error occurred: your location is null");
                                     }
                                 }
                             });
@@ -3276,6 +3306,9 @@ public class Map extends FragmentActivity implements
 
                     Log.e(TAG, "onMapReadyAndRestart() -> onPolygonClick -> selectedOverlappingShapeUUID == null");
                     Crashlytics.logException(new Exception("onMapReadyAndRestart() -> onPolygonClick -> selectedOverlappingShapeUUID == null"));
+                    mMap.getUiSettings().setScrollGesturesEnabled(true);
+                    loadingIcon.setVisibility(View.GONE);
+                    toastMessageLong("An error occurred");
                 }
 
                 // At this point, chatsSize > 1 so set the chatSelectorSeekBar to VISIBLE.
@@ -3571,6 +3604,10 @@ public class Map extends FragmentActivity implements
                                                 @Override
                                                 public void onCancelled(@NonNull DatabaseError databaseError) {
 
+                                                    Log.e(TAG, "DatabaseError");
+                                                    Crashlytics.logException(new Exception("DatabaseError"));
+                                                    mMap.getUiSettings().setScrollGesturesEnabled(true);
+                                                    loadingIcon.setVisibility(View.GONE);
                                                     toastMessageLong(databaseError.getMessage());
                                                 }
                                             });
@@ -3616,6 +3653,10 @@ public class Map extends FragmentActivity implements
                                                 @Override
                                                 public void onCancelled(@NonNull DatabaseError databaseError) {
 
+                                                    Log.e(TAG, "DatabaseError");
+                                                    Crashlytics.logException(new Exception("DatabaseError"));
+                                                    mMap.getUiSettings().setScrollGesturesEnabled(true);
+                                                    loadingIcon.setVisibility(View.GONE);
                                                     toastMessageLong(databaseError.getMessage());
                                                 }
                                             });
@@ -3624,6 +3665,9 @@ public class Map extends FragmentActivity implements
 
                                         Log.e(TAG, "onMapReadyAndRestart() -> onCircleClick -> circle.getTag() == null -> location == null");
                                         Crashlytics.logException(new Exception("onMapReadyAndRestart() -> onCircleClick -> circle.getTag() == null -> location == null"));
+                                        mMap.getUiSettings().setScrollGesturesEnabled(true);
+                                        loadingIcon.setVisibility(View.GONE);
+                                        toastMessageLong("An error occurred: your location is null");
                                     }
                                 }
                             });
@@ -3632,7 +3676,7 @@ public class Map extends FragmentActivity implements
                     return;
                 }
 
-                // Click all through all circles, using the z-index to figure out which ones have not been cycled through. All the information to the arrayLists to be used by chatSelectorSeekBar.
+                // Click through all shapes, using the z-index to figure out which ones have not been cycled through. All the information to the arrayLists to be used by chatSelectorSeekBar.
                 if (circle.getZIndex() == 0 && circle.getTag() != null) {
 
                     Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> Lowering z-index of a circle");
@@ -3821,6 +3865,9 @@ public class Map extends FragmentActivity implements
 
                                         Log.e(TAG, "onMapReadyAndRestart() -> onCircleClick -> User selected a circle -> location == null");
                                         Crashlytics.logException(new Exception("onMapReadyAndRestart() -> onCircleClick -> User selected a circle -> location == null"));
+                                        mMap.getUiSettings().setScrollGesturesEnabled(true);
+                                        loadingIcon.setVisibility(View.GONE);
+                                        toastMessageLong("An error occurred: your location is null");
                                     }
                                 }
                             });
@@ -3915,6 +3962,9 @@ public class Map extends FragmentActivity implements
 
                     Log.e(TAG, "onMapReadyAndRestart() -> onCircleClick -> selectedOverlappingShapeUUID == null");
                     Crashlytics.logException(new Exception("onMapReadyAndRestart() -> onCircleClick -> selectedOverlappingShapeUUID == null"));
+                    mMap.getUiSettings().setScrollGesturesEnabled(true);
+                    loadingIcon.setVisibility(View.GONE);
+                    toastMessageLong("An error occurred");
                 }
 
                 // At this point, chatsSize > 1 so set the chatSelectorSeekBar to VISIBLE.
@@ -4088,6 +4138,9 @@ public class Map extends FragmentActivity implements
 
                                         Log.e(TAG, "onMapReadyAndRestart() -> onMapClick -> User selected a circle -> location == null");
                                         Crashlytics.logException(new Exception("onMapReadyAndRestart() -> onMapClick -> User selected a circle -> location == null"));
+                                        mMap.getUiSettings().setScrollGesturesEnabled(true);
+                                        loadingIcon.setVisibility(View.GONE);
+                                        toastMessageLong("An error occurred: your location is null");
                                     }
                                 }
                             });
@@ -4148,6 +4201,9 @@ public class Map extends FragmentActivity implements
 
                                         Log.e(TAG, "onMapReadyAndRestart() -> onMapClick -> User selected a polygon -> location == null");
                                         Crashlytics.logException(new Exception("onMapReadyAndRestart() -> onMapClick -> User selected a polygon -> location == null"));
+                                        mMap.getUiSettings().setScrollGesturesEnabled(true);
+                                        loadingIcon.setVisibility(View.GONE);
+                                        toastMessageLong("An error occurred: your location is null");
                                     }
                                 }
                             });
@@ -4301,6 +4357,7 @@ public class Map extends FragmentActivity implements
 
                     Log.e(TAG, "updatePreferences() -> Road Map -> mMap == null");
                     Crashlytics.logException(new Exception("onMenuItemClick -> Road Map -> mMap == null"));
+                    toastMessageLong("An error occurred while loading the map");
                 }
 
                 break;
@@ -4321,6 +4378,7 @@ public class Map extends FragmentActivity implements
 
                     Log.e(TAG, "updatePreferences() -> Satellite Map -> mMap == null");
                     Crashlytics.logException(new Exception("onMenuItemClick -> Satellite Map -> mMap == null"));
+                    toastMessageLong("An error occurred while loading the map");
                 }
 
                 break;
@@ -4341,6 +4399,7 @@ public class Map extends FragmentActivity implements
 
                     Log.e(TAG, "updatePreferences() -> Hybrid Map -> mMap == null");
                     Crashlytics.logException(new Exception("onMenuItemClick -> Hybrid Map -> mMap == null"));
+                    toastMessageLong("An error occurred while loading the map");
                 }
 
                 break;
@@ -4361,6 +4420,7 @@ public class Map extends FragmentActivity implements
 
                     Log.e(TAG, "updatePreferences() -> Terrain Map -> mMap == null");
                     Crashlytics.logException(new Exception("onMenuItemClick -> Terrain Map -> mMap == null"));
+                    toastMessageLong("An error occurred while loading the map");
                 }
 
                 break;
@@ -4426,6 +4486,9 @@ public class Map extends FragmentActivity implements
                             @Override
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
+                                Log.e(TAG, "DatabaseError");
+                                Crashlytics.logException(new Exception("DatabaseError"));
+                                loadingIcon.setVisibility(View.GONE);
                                 toastMessageLong(databaseError.getMessage());
                             }
                         });
@@ -4549,6 +4612,9 @@ public class Map extends FragmentActivity implements
                             @Override
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
+                                Log.e(TAG, "DatabaseError");
+                                Crashlytics.logException(new Exception("DatabaseError"));
+                                loadingIcon.setVisibility(View.GONE);
                                 toastMessageLong(databaseError.getMessage());
                             }
                         });
@@ -4595,6 +4661,9 @@ public class Map extends FragmentActivity implements
                             @Override
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
+                                Log.e(TAG, "DatabaseError");
+                                Crashlytics.logException(new Exception("DatabaseError"));
+                                loadingIcon.setVisibility(View.GONE);
                                 toastMessageLong(databaseError.getMessage());
                             }
                         });
@@ -4718,6 +4787,9 @@ public class Map extends FragmentActivity implements
                             @Override
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
+                                Log.e(TAG, "DatabaseError");
+                                Crashlytics.logException(new Exception("DatabaseError"));
+                                loadingIcon.setVisibility(View.GONE);
                                 toastMessageLong(databaseError.getMessage());
                             }
                         });
@@ -4752,17 +4824,20 @@ public class Map extends FragmentActivity implements
 
                         Log.e(TAG, "changeMapTypeDependingOnConnection() -> NetworkCapabilities nc = null");
                         Crashlytics.logException(new Exception("changeMapTypeDependingOnConnection() -> NetworkCapabilities nc = null"));
+                        toastMessageLong("An error occurred");
                     }
                 } else {
 
                     Log.e(TAG, "changeMapTypeDependingOnConnection() -> Network n == null");
                     Crashlytics.logException(new Exception("changeMapTypeDependingOnConnection() -> Network n == null"));
+                    toastMessageLong("An error occurred");
                 }
             }
         } else {
 
             Log.e(TAG, "changeMapTypeDependingOnConnection() -> ConnectivityManager cm == null");
             Crashlytics.logException(new Exception("changeMapTypeDependingOnConnection() -> ConnectivityManager cm == null"));
+            toastMessageLong("An error occurred");
         }
     }
 
@@ -5531,6 +5606,7 @@ public class Map extends FragmentActivity implements
 
                     Log.e(TAG, "onMenuItemClick -> Road Map -> mMap == null");
                     Crashlytics.logException(new Exception("onMenuItemClick -> Road Map -> mMap == null"));
+                    toastMessageLong("An error occurred while loading the map");
                 }
 
                 break;
@@ -5558,6 +5634,7 @@ public class Map extends FragmentActivity implements
 
                     Log.e(TAG, "onMenuItemClick -> Satellite Map -> mMap == null");
                     Crashlytics.logException(new Exception("onMenuItemClick -> Satellite Map -> mMap == null"));
+                    toastMessageLong("An error occurred while loading the map");
                 }
 
                 break;
@@ -5585,6 +5662,7 @@ public class Map extends FragmentActivity implements
 
                     Log.e(TAG, "onMenuItemClick -> Hybrid Map -> mMap == null");
                     Crashlytics.logException(new Exception("onMenuItemClick -> Hybrid Map -> mMap == null"));
+                    toastMessageLong("An error occurred while loading the map");
                 }
 
                 break;
@@ -5612,6 +5690,7 @@ public class Map extends FragmentActivity implements
 
                     Log.e(TAG, "onMenuItemClick -> Terrain Map -> mMap == null");
                     Crashlytics.logException(new Exception("onMenuItemClick -> Terrain Map -> mMap == null"));
+                    toastMessageLong("An error occurred while loading the map");
                 }
 
                 break;
@@ -5865,15 +5944,16 @@ public class Map extends FragmentActivity implements
 
                                 if (!stillLoadingPolygons) {
 
-                                    loadingIcon.setVisibility(View.INVISIBLE);
+                                    loadingIcon.setVisibility(View.GONE);
                                 }
                             }
 
                             @Override
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                                loadingIcon.setVisibility(View.INVISIBLE);
-
+                                Log.e(TAG, "DatabaseError");
+                                Crashlytics.logException(new Exception("DatabaseError"));
+                                loadingIcon.setVisibility(View.GONE);
                                 toastMessageLong(databaseError.getMessage());
                             }
                         });
@@ -6000,15 +6080,16 @@ public class Map extends FragmentActivity implements
 
                                 if (!stillLoadingCircles) {
 
-                                    loadingIcon.setVisibility(View.INVISIBLE);
+                                    loadingIcon.setVisibility(View.GONE);
                                 }
                             }
 
                             @Override
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                                loadingIcon.setVisibility(View.INVISIBLE);
-
+                                Log.e(TAG, "DatabaseError");
+                                Crashlytics.logException(new Exception("DatabaseError"));
+                                loadingIcon.setVisibility(View.GONE);
                                 toastMessageLong(databaseError.getMessage());
                             }
                         });
@@ -6052,15 +6133,16 @@ public class Map extends FragmentActivity implements
 
                                 if (!stillLoadingPolygons) {
 
-                                    loadingIcon.setVisibility(View.INVISIBLE);
+                                    loadingIcon.setVisibility(View.GONE);
                                 }
                             }
 
                             @Override
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                                loadingIcon.setVisibility(View.INVISIBLE);
-
+                                Log.e(TAG, "DatabaseError");
+                                Crashlytics.logException(new Exception("DatabaseError"));
+                                loadingIcon.setVisibility(View.GONE);
                                 toastMessageLong(databaseError.getMessage());
                             }
                         });
@@ -6187,15 +6269,16 @@ public class Map extends FragmentActivity implements
 
                                 if (!stillLoadingCircles) {
 
-                                    loadingIcon.setVisibility(View.INVISIBLE);
+                                    loadingIcon.setVisibility(View.GONE);
                                 }
                             }
 
                             @Override
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                                loadingIcon.setVisibility(View.INVISIBLE);
-
+                                Log.e(TAG, "DatabaseError");
+                                Crashlytics.logException(new Exception("DatabaseError"));
+                                loadingIcon.setVisibility(View.GONE);
                                 toastMessageLong(databaseError.getMessage());
                             }
                         });
@@ -6346,15 +6429,16 @@ public class Map extends FragmentActivity implements
 
                                 if (!stillLoadingPolygons) {
 
-                                    loadingIcon.setVisibility(View.INVISIBLE);
+                                    loadingIcon.setVisibility(View.GONE);
                                 }
                             }
 
                             @Override
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                                loadingIcon.setVisibility(View.INVISIBLE);
-
+                                Log.e(TAG, "DatabaseError");
+                                Crashlytics.logException(new Exception("DatabaseError"));
+                                loadingIcon.setVisibility(View.GONE);
                                 toastMessageLong(databaseError.getMessage());
                             }
                         });
@@ -6482,15 +6566,16 @@ public class Map extends FragmentActivity implements
 
                                 if (!stillLoadingCircles) {
 
-                                    loadingIcon.setVisibility(View.INVISIBLE);
+                                    loadingIcon.setVisibility(View.GONE);
                                 }
                             }
 
                             @Override
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                                loadingIcon.setVisibility(View.INVISIBLE);
-
+                                Log.e(TAG, "DatabaseError");
+                                Crashlytics.logException(new Exception("DatabaseError"));
+                                loadingIcon.setVisibility(View.GONE);
                                 toastMessageLong(databaseError.getMessage());
                             }
                         });
@@ -6534,15 +6619,16 @@ public class Map extends FragmentActivity implements
 
                                 if (!stillLoadingPolygons) {
 
-                                    loadingIcon.setVisibility(View.INVISIBLE);
+                                    loadingIcon.setVisibility(View.GONE);
                                 }
                             }
 
                             @Override
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                                loadingIcon.setVisibility(View.INVISIBLE);
-
+                                Log.e(TAG, "DatabaseError");
+                                Crashlytics.logException(new Exception("DatabaseError"));
+                                loadingIcon.setVisibility(View.GONE);
                                 toastMessageLong(databaseError.getMessage());
                             }
                         });
@@ -6670,15 +6756,16 @@ public class Map extends FragmentActivity implements
 
                                 if (!stillLoadingCircles) {
 
-                                    loadingIcon.setVisibility(View.INVISIBLE);
+                                    loadingIcon.setVisibility(View.GONE);
                                 }
                             }
 
                             @Override
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                                loadingIcon.setVisibility(View.INVISIBLE);
-
+                                Log.e(TAG, "DatabaseError");
+                                Crashlytics.logException(new Exception("DatabaseError"));
+                                loadingIcon.setVisibility(View.GONE);
                                 toastMessageLong(databaseError.getMessage());
                             }
                         });
@@ -6829,15 +6916,16 @@ public class Map extends FragmentActivity implements
 
                                 if (!stillLoadingPolygons) {
 
-                                    loadingIcon.setVisibility(View.INVISIBLE);
+                                    loadingIcon.setVisibility(View.GONE);
                                 }
                             }
 
                             @Override
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                                loadingIcon.setVisibility(View.INVISIBLE);
-
+                                Log.e(TAG, "DatabaseError");
+                                Crashlytics.logException(new Exception("DatabaseError"));
+                                loadingIcon.setVisibility(View.GONE);
                                 toastMessageLong(databaseError.getMessage());
                             }
                         });
@@ -6965,15 +7053,16 @@ public class Map extends FragmentActivity implements
 
                                 if (!stillLoadingCircles) {
 
-                                    loadingIcon.setVisibility(View.INVISIBLE);
+                                    loadingIcon.setVisibility(View.GONE);
                                 }
                             }
 
                             @Override
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                                loadingIcon.setVisibility(View.INVISIBLE);
-
+                                Log.e(TAG, "DatabaseError");
+                                Crashlytics.logException(new Exception("DatabaseError"));
+                                loadingIcon.setVisibility(View.GONE);
                                 toastMessageLong(databaseError.getMessage());
                             }
                         });
@@ -7017,15 +7106,16 @@ public class Map extends FragmentActivity implements
 
                                 if (!stillLoadingPolygons) {
 
-                                    loadingIcon.setVisibility(View.INVISIBLE);
+                                    loadingIcon.setVisibility(View.GONE);
                                 }
                             }
 
                             @Override
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                                loadingIcon.setVisibility(View.INVISIBLE);
-
+                                Log.e(TAG, "DatabaseError");
+                                Crashlytics.logException(new Exception("DatabaseError"));
+                                loadingIcon.setVisibility(View.GONE);
                                 toastMessageLong(databaseError.getMessage());
                             }
                         });
@@ -7153,15 +7243,16 @@ public class Map extends FragmentActivity implements
 
                                 if (!stillLoadingCircles) {
 
-                                    loadingIcon.setVisibility(View.INVISIBLE);
+                                    loadingIcon.setVisibility(View.GONE);
                                 }
                             }
 
                             @Override
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                                loadingIcon.setVisibility(View.INVISIBLE);
-
+                                Log.e(TAG, "DatabaseError");
+                                Crashlytics.logException(new Exception("DatabaseError"));
+                                loadingIcon.setVisibility(View.GONE);
                                 toastMessageLong(databaseError.getMessage());
                             }
                         });
@@ -7308,14 +7399,15 @@ public class Map extends FragmentActivity implements
                                     }
                                 }
 
-                                loadingIcon.setVisibility(View.INVISIBLE);
+                                loadingIcon.setVisibility(View.GONE);
                             }
 
                             @Override
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                                loadingIcon.setVisibility(View.INVISIBLE);
-
+                                Log.e(TAG, "DatabaseError");
+                                Crashlytics.logException(new Exception("DatabaseError"));
+                                loadingIcon.setVisibility(View.GONE);
                                 toastMessageLong(databaseError.getMessage());
                             }
                         });
@@ -7354,14 +7446,15 @@ public class Map extends FragmentActivity implements
                                     }
                                 }
 
-                                loadingIcon.setVisibility(View.INVISIBLE);
+                                loadingIcon.setVisibility(View.GONE);
                             }
 
                             @Override
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                                loadingIcon.setVisibility(View.INVISIBLE);
-
+                                Log.e(TAG, "DatabaseError");
+                                Crashlytics.logException(new Exception("DatabaseError"));
+                                loadingIcon.setVisibility(View.GONE);
                                 toastMessageLong(databaseError.getMessage());
                             }
                         });
@@ -7678,6 +7771,7 @@ public class Map extends FragmentActivity implements
 
                                     Log.e(TAG, "createPolygon -> location == null");
                                     Crashlytics.logException(new Exception("createPolygon -> location == null"));
+                                    toastMessageLong("An error occurred: your location is null");
                                 }
                             }
                         });
@@ -7942,6 +8036,7 @@ public class Map extends FragmentActivity implements
 
                                     Log.e(TAG, "createCircle -> location == null");
                                     Crashlytics.logException(new Exception("createCircle -> location == null"));
+                                    toastMessageLong("An error occurred: your location is null");
                                 }
                             }
                         });
@@ -8120,6 +8215,9 @@ public class Map extends FragmentActivity implements
                                                 @Override
                                                 public void onCancelled(@NonNull DatabaseError databaseError) {
 
+                                                    Log.e(TAG, "DatabaseError");
+                                                    Crashlytics.logException(new Exception("DatabaseError"));
+                                                    loadingIcon.setVisibility(View.GONE);
                                                     toastMessageLong(databaseError.getMessage());
                                                 }
                                             });
@@ -8173,6 +8271,9 @@ public class Map extends FragmentActivity implements
                                                 @Override
                                                 public void onCancelled(@NonNull DatabaseError databaseError) {
 
+                                                    Log.e(TAG, "DatabaseError");
+                                                    Crashlytics.logException(new Exception("DatabaseError"));
+                                                    loadingIcon.setVisibility(View.GONE);
                                                     toastMessageLong(databaseError.getMessage());
                                                 }
                                             });
@@ -8400,15 +8501,16 @@ public class Map extends FragmentActivity implements
 
                 if (!stillLoadingPolygons && !stillUpdatingCamera) {
 
-                    loadingIcon.setVisibility(View.INVISIBLE);
+                    loadingIcon.setVisibility(View.GONE);
                 }
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                loadingIcon.setVisibility(View.INVISIBLE);
-
+                Log.e(TAG, "DatabaseError");
+                Crashlytics.logException(new Exception("DatabaseError"));
+                loadingIcon.setVisibility(View.GONE);
                 toastMessageLong(databaseError.getMessage());
             }
         });
@@ -8533,15 +8635,16 @@ public class Map extends FragmentActivity implements
 
                 if (!stillLoadingCircles && !stillUpdatingCamera) {
 
-                    loadingIcon.setVisibility(View.INVISIBLE);
+                    loadingIcon.setVisibility(View.GONE);
                 }
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                loadingIcon.setVisibility(View.INVISIBLE);
-
+                Log.e(TAG, "DatabaseError");
+                Crashlytics.logException(new Exception("DatabaseError"));
+                loadingIcon.setVisibility(View.GONE);
                 toastMessageLong(databaseError.getMessage());
             }
         });
@@ -8755,15 +8858,16 @@ public class Map extends FragmentActivity implements
 
                 if (!stillLoadingPolygons && !stillUpdatingCamera) {
 
-                    loadingIcon.setVisibility(View.INVISIBLE);
+                    loadingIcon.setVisibility(View.GONE);
                 }
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                loadingIcon.setVisibility(View.INVISIBLE);
-
+                Log.e(TAG, "DatabaseError");
+                Crashlytics.logException(new Exception("DatabaseError"));
+                loadingIcon.setVisibility(View.GONE);
                 toastMessageLong(databaseError.getMessage());
             }
         });
@@ -8888,15 +8992,16 @@ public class Map extends FragmentActivity implements
 
                 if (!stillLoadingCircles && !stillUpdatingCamera) {
 
-                    loadingIcon.setVisibility(View.INVISIBLE);
+                    loadingIcon.setVisibility(View.GONE);
                 }
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                loadingIcon.setVisibility(View.INVISIBLE);
-
+                Log.e(TAG, "DatabaseError");
+                Crashlytics.logException(new Exception("DatabaseError"));
+                loadingIcon.setVisibility(View.GONE);
                 toastMessageLong(databaseError.getMessage());
             }
         });
