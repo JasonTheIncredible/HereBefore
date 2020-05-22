@@ -74,7 +74,8 @@ public class MentionsAdapter extends RecyclerView.Adapter<MentionsAdapter.ViewHo
     @Override
     public int getItemCount() {
 
-        return mSuggestions.size();
+        // If the size is greater than 3, just return 3 results.
+        return Math.min(mSuggestions.size(), 3);
     }
 
     protected void loadPreferences() {
@@ -84,7 +85,7 @@ public class MentionsAdapter extends RecyclerView.Adapter<MentionsAdapter.ViewHo
         theme = sharedPreferences.getBoolean(co.clixel.herebefore.Settings.KEY_THEME_SWITCH, false);
     }
 
-    class ViewHolder extends RecyclerView.ViewHolder {
+    static class ViewHolder extends RecyclerView.ViewHolder {
 
         TextView suggestion;
 

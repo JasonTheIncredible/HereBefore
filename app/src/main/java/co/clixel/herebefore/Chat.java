@@ -882,12 +882,6 @@ public class Chat extends AppCompatActivity implements
 
         Log.i(TAG, "initMentionsAdapter()");
 
-        // Clear the RecyclerView before adding new entries to prevent duplicates.
-        if (mentionsRecyclerView != null) {
-
-            mSuggestions.clear();
-        }
-
         MentionsAdapter adapter = new MentionsAdapter(this, suggestions);
         mentionsRecyclerView.swapAdapter(adapter, true);
         mentionsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
