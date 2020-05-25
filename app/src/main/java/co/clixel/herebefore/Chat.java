@@ -12,6 +12,7 @@ import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.graphics.Matrix;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
@@ -31,11 +32,13 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.os.Environment;
+import android.os.Parcel;
 import android.provider.MediaStore;
 import android.util.Base64;
 import android.util.Base64OutputStream;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -56,11 +59,13 @@ import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
+import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.webkit.MimeTypeMap;
 import android.widget.ImageView;
 import android.widget.PopupMenu;
 import android.widget.RelativeLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.firebase.auth.FirebaseAuth;
@@ -75,6 +80,7 @@ import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.StorageTask;
 import com.google.firebase.storage.UploadTask;
 import com.iceteck.silicompressorr.SiliCompressor;
+import com.linkedin.android.spyglass.mentions.Mentionable;
 import com.linkedin.android.spyglass.suggestions.interfaces.SuggestionsVisibilityManager;
 import com.linkedin.android.spyglass.tokenization.QueryToken;
 import com.linkedin.android.spyglass.tokenization.impl.WordTokenizer;
@@ -843,6 +849,7 @@ public class Chat extends AppCompatActivity implements
 
         List<String> buckets = Collections.singletonList(BUCKET);
         List<String> suggestions = getSuggestions(queryToken);
+
         if (suggestions != null) {
 
             initMentionsAdapter(suggestions);
@@ -875,7 +882,6 @@ public class Chat extends AppCompatActivity implements
 
             return null;
         }
-
     }
 
     public void initMentionsAdapter(@NonNull List<String> suggestions) {
@@ -909,6 +915,148 @@ public class Chat extends AppCompatActivity implements
         Log.i(TAG, "isDisplayingSuggestions()");
 
         return mentionsRecyclerView.getVisibility() == View.VISIBLE;
+    }
+
+    // The mentionsAdapter for the mentions recyclerView. I'm not sure how to make "mInput" work when it's in another activity so I added it here.
+    private class MentionsAdapter extends RecyclerView.Adapter<MentionsAdapter.ViewHolder> {
+
+        private Context mContext;
+        private List<String> mSuggestions;
+        private boolean theme;
+
+        class ViewHolder extends RecyclerView.ViewHolder {
+
+            TextView suggestion;
+
+            ViewHolder(@NonNull View itemView) {
+
+                super(itemView);
+                suggestion = itemView.findViewById(R.id.suggestion);
+            }
+        }
+
+        MentionsAdapter(Context mContext, List<String> mSuggestions) {
+
+            this.mContext = mContext;
+            this.mSuggestions = mSuggestions;
+        }
+
+        @NonNull
+        @Override
+        public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+
+            View view = LayoutInflater.from(mContext).inflate(R.layout.mentionsadapterlayout, parent, false);
+
+            loadPreferences();
+
+            final ViewHolder holder = new ViewHolder(view);
+
+            view.setOnClickListener(new View.OnClickListener() {
+
+                @Override
+                public void onClick(View v) {
+
+                    // Convert the string into a mentionable to be inserted into the MentionsEditText.
+                    Mentionable mentionable = new Mentionable() {
+
+                        @NonNull
+                        @Override
+                        public String getTextForDisplayMode(MentionDisplayMode mode) {
+
+                            if (mSuggestions.get(holder.getAdapterPosition()) != null) {
+
+                                return "@" + mSuggestions.get(holder.getAdapterPosition()).substring(0, 10) + "...";
+                            } else {
+
+                                return "ERROR";
+                            }
+                        }
+
+                        @NonNull
+                        @Override
+                        public MentionDeleteStyle getDeleteStyle() {
+
+                            return MentionDeleteStyle.FULL_DELETE;
+                        }
+
+                        @Override
+                        public int getSuggestibleId() {
+
+                            return 0;
+                        }
+
+                        @Override
+                        public String getSuggestiblePrimaryText() {
+
+                            if (mSuggestions.get(holder.getAdapterPosition()) != null) {
+
+                                return mSuggestions.get(holder.getAdapterPosition());
+                            } else {
+
+                                return "ERROR";
+                            }
+                        }
+
+                        @Override
+                        public int describeContents() {
+
+                            return 0;
+                        }
+
+                        @Override
+                        public void writeToParcel(Parcel dest, int flags) {
+                        }
+                    };
+
+                    mInput.insertMention(mentionable);
+                    // Add a space after inserting mention.
+                    mInput.append(" ");
+                }
+            });
+
+            return holder;
+        }
+
+        @Override
+        public void onBindViewHolder(@NonNull final ViewHolder holder, final int position) {
+
+            holder.suggestion.setText(mSuggestions.get(position));
+
+            // Change the color of every other row for visual purposes.
+            if (!theme) {
+
+                if (position % 2 == 0) {
+
+                    holder.itemView.setBackgroundColor(Color.parseColor("#222222"));
+                } else {
+
+                    holder.itemView.setBackgroundColor(Color.parseColor("#292929"));
+                }
+            } else {
+
+                if (position % 2 == 0) {
+
+                    holder.itemView.setBackgroundColor(Color.parseColor("#D9D9D9"));
+                } else {
+
+                    holder.itemView.setBackgroundColor(Color.parseColor("#F2F2F2"));
+                }
+            }
+        }
+
+        @Override
+        public int getItemCount() {
+
+            // If the size is greater than 3, just return 3 results.
+            return Math.min(mSuggestions.size(), 3);
+        }
+
+        protected void loadPreferences() {
+
+            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+
+            theme = sharedPreferences.getBoolean(co.clixel.herebefore.Settings.KEY_THEME_SWITCH, false);
+        }
     }
 
     @Override

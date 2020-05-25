@@ -26,11 +26,39 @@ import java.util.ArrayList;
 
 public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ViewHolder> {
 
+    private Context mContext;
     private ArrayList<String> mMessageTime, mMessageUser, mMessageImage, mMessageImageVideo, mMessageText;
     private ArrayList<Boolean> mUserIsWithinShape;
-    private Context mContext;
     private ImageButton playButtonInside, playButtonOutside;
     private boolean theme;
+
+    class ViewHolder extends RecyclerView.ViewHolder {
+
+        TextView messageTimeInside, messageTimeOutside, messageUserInside, messageUserOutside, messageTextInside, messageTextOutside;
+        ImageView messageImageInside, messageImageOutside, messageImageVideoInside, messageImageVideoOutside;
+        FrameLayout videoFrameInside, videoFrameOutside;
+        RelativeLayout messageItem;
+
+        ViewHolder(@NonNull View itemView) {
+
+            super(itemView);
+            messageTimeInside = itemView.findViewById(R.id.messageTimeInside);
+            messageTimeOutside = itemView.findViewById(R.id.messageTimeOutside);
+            messageUserInside = itemView.findViewById(R.id.messageUserInside);
+            messageUserOutside = itemView.findViewById(R.id.messageUserOutside);
+            messageImageInside = itemView.findViewById(R.id.messageImageInside);
+            messageImageOutside = itemView.findViewById(R.id.messageImageOutside);
+            videoFrameInside = itemView.findViewById(R.id.videoFrameInside);
+            videoFrameOutside = itemView.findViewById(R.id.videoFrameOutside);
+            messageImageVideoInside = itemView.findViewById(R.id.messageImageVideoInside);
+            messageImageVideoOutside = itemView.findViewById(R.id.messageImageVideoOutside);
+            playButtonInside = itemView.findViewById(R.id.playButtonInside);
+            playButtonOutside = itemView.findViewById(R.id.playButtonOutside);
+            messageTextInside = itemView.findViewById(R.id.messageTextInside);
+            messageTextOutside = itemView.findViewById(R.id.messageTextOutside);
+            messageItem = itemView.findViewById(R.id.message);
+        }
+    }
 
     ChatAdapter(Context context, ArrayList<String> mMessageTime, ArrayList<String> mMessageUser, ArrayList<String> mMessageImage, ArrayList<String> mMessageImageVideo, ArrayList<String> mMessageText, ArrayList<Boolean> mUserIsWithinShape) {
 
@@ -259,33 +287,5 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ViewHolder> {
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
 
         theme = sharedPreferences.getBoolean(co.clixel.herebefore.Settings.KEY_THEME_SWITCH, false);
-    }
-
-    class ViewHolder extends RecyclerView.ViewHolder {
-
-        TextView messageTimeInside, messageTimeOutside, messageUserInside, messageUserOutside, messageTextInside, messageTextOutside;
-        ImageView messageImageInside, messageImageOutside, messageImageVideoInside, messageImageVideoOutside;
-        FrameLayout videoFrameInside, videoFrameOutside;
-        RelativeLayout messageItem;
-
-        ViewHolder(@NonNull View itemView) {
-
-            super(itemView);
-            messageTimeInside = itemView.findViewById(R.id.messageTimeInside);
-            messageTimeOutside = itemView.findViewById(R.id.messageTimeOutside);
-            messageUserInside = itemView.findViewById(R.id.messageUserInside);
-            messageUserOutside = itemView.findViewById(R.id.messageUserOutside);
-            messageImageInside = itemView.findViewById(R.id.messageImageInside);
-            messageImageOutside = itemView.findViewById(R.id.messageImageOutside);
-            videoFrameInside = itemView.findViewById(R.id.videoFrameInside);
-            videoFrameOutside = itemView.findViewById(R.id.videoFrameOutside);
-            messageImageVideoInside = itemView.findViewById(R.id.messageImageVideoInside);
-            messageImageVideoOutside = itemView.findViewById(R.id.messageImageVideoOutside);
-            playButtonInside = itemView.findViewById(R.id.playButtonInside);
-            playButtonOutside = itemView.findViewById(R.id.playButtonOutside);
-            messageTextInside = itemView.findViewById(R.id.messageTextInside);
-            messageTextOutside = itemView.findViewById(R.id.messageTextOutside);
-            messageItem = itemView.findViewById(R.id.message);
-        }
     }
 }
