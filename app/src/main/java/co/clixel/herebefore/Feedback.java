@@ -23,6 +23,7 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ServerValue;
 import com.google.firebase.database.ValueEventListener;
 
 import java.util.Collections;
@@ -107,8 +108,11 @@ public class Feedback extends AppCompatActivity {
                     @Override
                     public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
 
-                        DatabaseReference newFirebaseFeedback = FirebaseDatabase.getInstance().getReference().child("Feedback").push();
-                        newFirebaseFeedback.setValue(feedback);
+                        FeedbackInformation feedbackInformation = new FeedbackInformation();
+                        feedbackInformation.setFeedback(feedback);
+                        feedbackInformation.setDate(ServerValue.TIMESTAMP);
+                        DatabaseReference newFeedback = FirebaseDatabase.getInstance().getReference().child("Feedback").push();
+                        newFeedback.setValue(feedbackInformation);
                         mFeedback.getText().clear();
                         RelativeLayout layout = findViewById(R.id.layout);
                         layout.requestFocus();

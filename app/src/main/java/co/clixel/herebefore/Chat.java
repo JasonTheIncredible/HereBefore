@@ -260,6 +260,7 @@ public class Chat extends AppCompatActivity implements
 
                     mTime.clear();
                     mUser.clear();
+                    mSuggestions.clear();
                     mImage.clear();
                     mVideo.clear();
                     mText.clear();
@@ -275,7 +276,7 @@ public class Chat extends AppCompatActivity implements
                         if (shapeUUID.equals(uuid)) {
 
                             Long serverDate = (Long) ds.child("date").getValue();
-                            String user = (String) ds.child("user").getValue();
+                            String user = (String) ds.child("userUUID").getValue();
                             // Used when a user mentions another user with "@".
                             mSuggestions.add(user);
                             String imageURL = (String) ds.child("imageURL").getValue();
@@ -487,13 +488,14 @@ public class Chat extends AppCompatActivity implements
                                         // This will cause onDataChange to fire twice; optimizations could be made in the future.
                                         Object date = ServerValue.TIMESTAMP;
                                         messageInformation.setDate(date);
-                                        messageInformation.setUser(UUID.randomUUID().toString());
+                                        messageInformation.setUserUUID(UUID.randomUUID().toString());
+                                        messageInformation.setUserUID(FirebaseAuth.getInstance().getUid());
                                         messageInformation.setUUID(uuid);
                                         messageInformation.setUserIsWithinShape(userIsWithinShape);
                                         DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                                         newMessage.setValue(messageInformation);
-                                        mInput.getText().clear();
 
+                                        mInput.getText().clear();
                                         newShape = false;
                                         sendButtonClicked = false;
                                     }
@@ -592,11 +594,13 @@ public class Chat extends AppCompatActivity implements
                                         // This will cause onDataChange to fire twice; optimizations could be made in the future.
                                         Object date = ServerValue.TIMESTAMP;
                                         messageInformation.setDate(date);
-                                        messageInformation.setUser(UUID.randomUUID().toString());
+                                        messageInformation.setUserUUID(UUID.randomUUID().toString());
+                                        messageInformation.setUserUID(FirebaseAuth.getInstance().getUid());
                                         messageInformation.setUUID(uuid);
                                         messageInformation.setUserIsWithinShape(userIsWithinShape);
                                         DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                                         newMessage.setValue(messageInformation);
+
                                         mInput.getText().clear();
                                         newShape = false;
                                         sendButtonClicked = false;
@@ -639,11 +643,13 @@ public class Chat extends AppCompatActivity implements
                             // This will cause onDataChange to fire twice; optimizations could be made in the future.
                             Object date = ServerValue.TIMESTAMP;
                             messageInformation.setDate(date);
-                            messageInformation.setUser(UUID.randomUUID().toString());
+                            messageInformation.setUserUUID(UUID.randomUUID().toString());
+                            messageInformation.setUserUID(FirebaseAuth.getInstance().getUid());
                             messageInformation.setUUID(uuid);
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                             newMessage.setValue(messageInformation);
+
                             mInput.getText().clear();
                             sendButtonClicked = false;
                         }
@@ -842,6 +848,7 @@ public class Chat extends AppCompatActivity implements
     }
 
     // Brings up suggestions when a users inputs "@".
+    @NonNull
     @Override
     public List<String> onQueryReceived(@NonNull QueryToken queryToken) {
 
@@ -961,7 +968,7 @@ public class Chat extends AppCompatActivity implements
 
                         @NonNull
                         @Override
-                        public String getTextForDisplayMode(MentionDisplayMode mode) {
+                        public String getTextForDisplayMode(@NonNull MentionDisplayMode mode) {
 
                             if (mSuggestions.get(holder.getAdapterPosition()) != null) {
 
@@ -985,6 +992,7 @@ public class Chat extends AppCompatActivity implements
                             return 0;
                         }
 
+                        @NonNull
                         @Override
                         public String getSuggestiblePrimaryText() {
 
@@ -2271,11 +2279,13 @@ public class Chat extends AppCompatActivity implements
                             // This will cause onDataChange to fire twice; optimizations could be made in the future.
                             Object date = ServerValue.TIMESTAMP;
                             messageInformation.setDate(date);
-                            messageInformation.setUser(UUID.randomUUID().toString());
+                            messageInformation.setUserUUID(UUID.randomUUID().toString());
+                            messageInformation.setUserUID(FirebaseAuth.getInstance().getUid());
                             messageInformation.setUUID(uuid);
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                             newMessage.setValue(messageInformation);
+
                             mInput.getText().clear();
                             imageView.setVisibility(View.GONE);
                             imageView.setImageDrawable(null);
@@ -2402,11 +2412,13 @@ public class Chat extends AppCompatActivity implements
                             // This will cause onDataChange to fire twice; optimizations could be made in the future.
                             Object date = ServerValue.TIMESTAMP;
                             messageInformation.setDate(date);
-                            messageInformation.setUser(UUID.randomUUID().toString());
+                            messageInformation.setUserUUID(UUID.randomUUID().toString());
+                            messageInformation.setUserUID(FirebaseAuth.getInstance().getUid());
                             messageInformation.setUUID(uuid);
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                             newMessage.setValue(messageInformation);
+
                             mInput.getText().clear();
                             videoImageView.setVisibility(View.GONE);
                             imageView.setImageDrawable(null);
@@ -2533,11 +2545,13 @@ public class Chat extends AppCompatActivity implements
                             // This will cause onDataChange to fire twice; optimizations could be made in the future.
                             Object date = ServerValue.TIMESTAMP;
                             messageInformation.setDate(date);
-                            messageInformation.setUser(UUID.randomUUID().toString());
+                            messageInformation.setUserUUID(UUID.randomUUID().toString());
+                            messageInformation.setUserUID(FirebaseAuth.getInstance().getUid());
                             messageInformation.setUUID(uuid);
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                             newMessage.setValue(messageInformation);
+
                             mInput.getText().clear();
                             imageView.setVisibility(View.GONE);
                             imageView.setImageDrawable(null);

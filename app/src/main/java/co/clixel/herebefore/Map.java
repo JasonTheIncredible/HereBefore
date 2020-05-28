@@ -111,6 +111,7 @@ public class Map extends FragmentActivity implements
     // Allow users to message and reply to one another anonymously and add notifications to settings.
     // Make user in recyclerView clickable and have it create a mentionable.
     // Make sure aboutLibraries is up to date.
+    // Test location services.
     // Use network for more precise GPS?
     // Make sure the secret stuff is secret.
     // Add preference for shape color.

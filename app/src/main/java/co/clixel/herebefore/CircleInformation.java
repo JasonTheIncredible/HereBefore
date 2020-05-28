@@ -5,7 +5,7 @@ import androidx.annotation.Keep;
 import com.google.android.gms.maps.model.CircleOptions;
 
 @Keep
-public class CircleInformation {
+class CircleInformation {
 
     public CircleOptions circleOptions;
     public String uuid;

@@ -5,7 +5,7 @@ import androidx.annotation.Keep;
 import com.google.android.gms.maps.model.PolygonOptions;
 
 @Keep
-public class PolygonInformation {
+class PolygonInformation {
 
     public PolygonOptions polygonOptions;
     public double polygonArea;

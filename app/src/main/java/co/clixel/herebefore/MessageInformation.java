@@ -3,9 +3,9 @@ package co.clixel.herebefore;
 import androidx.annotation.Keep;
 
 @Keep
-public class MessageInformation {
+class MessageInformation {
 
-    public String user, message, uuid, imageURL, videoURL;
+    public String userUUID, userUID, message, uuid, imageURL, videoURL;
     public Object date;
     public Boolean userIsWithinShape;
 
@@ -17,8 +17,12 @@ public class MessageInformation {
         this.date = date;
     }
 
-    public void setUser(String user) {
-        this.user = user;
+    public void setUserUUID(String userUUID) {
+        this.userUUID = userUUID;
+    }
+
+    public void setUserUID(String userUID) {
+        this.userUID = userUID;
     }
 
     public void setImageURL(String imageURL) {
