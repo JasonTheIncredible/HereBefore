@@ -489,11 +489,23 @@ public class Chat extends AppCompatActivity implements
                                         Object date = ServerValue.TIMESTAMP;
                                         messageInformation.setDate(date);
                                         messageInformation.setUserUUID(UUID.randomUUID().toString());
-                                        messageInformation.setUserUID(FirebaseAuth.getInstance().getUid());
                                         messageInformation.setUUID(uuid);
                                         messageInformation.setUserIsWithinShape(userIsWithinShape);
                                         DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                                         newMessage.setValue(messageInformation);
+
+                                        // Get user info for user-user messaging purposes.
+                                        if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+
+                                            UserInformation userInformation = new UserInformation();
+                                            userInformation.setEmail(FirebaseAuth.getInstance().getCurrentUser().getEmail());
+                                            userInformation.setUUID(uuid);
+                                            // Get the token assigned by Firebase when the user signed up / signed in.
+                                            String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
+                                            userInformation.setToken(token);
+                                            DatabaseReference userInfo = FirebaseDatabase.getInstance().getReference().child("Users").push();
+                                            userInfo.setValue(userInformation);
+                                        }
 
                                         mInput.getText().clear();
                                         newShape = false;
@@ -595,11 +607,23 @@ public class Chat extends AppCompatActivity implements
                                         Object date = ServerValue.TIMESTAMP;
                                         messageInformation.setDate(date);
                                         messageInformation.setUserUUID(UUID.randomUUID().toString());
-                                        messageInformation.setUserUID(FirebaseAuth.getInstance().getUid());
                                         messageInformation.setUUID(uuid);
                                         messageInformation.setUserIsWithinShape(userIsWithinShape);
                                         DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                                         newMessage.setValue(messageInformation);
+
+                                        // Get user info for user-user messaging purposes.
+                                        if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+
+                                            UserInformation userInformation = new UserInformation();
+                                            userInformation.setEmail(FirebaseAuth.getInstance().getCurrentUser().getEmail());
+                                            userInformation.setUUID(uuid);
+                                            // Get the token assigned by Firebase when the user signed up / signed in.
+                                            String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
+                                            userInformation.setToken(token);
+                                            DatabaseReference userInfo = FirebaseDatabase.getInstance().getReference().child("Users").push();
+                                            userInfo.setValue(userInformation);
+                                        }
 
                                         mInput.getText().clear();
                                         newShape = false;
@@ -644,11 +668,23 @@ public class Chat extends AppCompatActivity implements
                             Object date = ServerValue.TIMESTAMP;
                             messageInformation.setDate(date);
                             messageInformation.setUserUUID(UUID.randomUUID().toString());
-                            messageInformation.setUserUID(FirebaseAuth.getInstance().getUid());
                             messageInformation.setUUID(uuid);
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                             newMessage.setValue(messageInformation);
+
+                            // Get user info for user-user messaging purposes.
+                            if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+
+                                UserInformation userInformation = new UserInformation();
+                                userInformation.setEmail(FirebaseAuth.getInstance().getCurrentUser().getEmail());
+                                userInformation.setUUID(uuid);
+                                // Get the token assigned by Firebase when the user signed up / signed in.
+                                String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
+                                userInformation.setToken(token);
+                                DatabaseReference userInfo = FirebaseDatabase.getInstance().getReference().child("Users").push();
+                                userInfo.setValue(userInformation);
+                            }
 
                             mInput.getText().clear();
                             sendButtonClicked = false;
@@ -2280,11 +2316,23 @@ public class Chat extends AppCompatActivity implements
                             Object date = ServerValue.TIMESTAMP;
                             messageInformation.setDate(date);
                             messageInformation.setUserUUID(UUID.randomUUID().toString());
-                            messageInformation.setUserUID(FirebaseAuth.getInstance().getUid());
                             messageInformation.setUUID(uuid);
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                             newMessage.setValue(messageInformation);
+
+                            // Get user info for user-user messaging purposes.
+                            if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+
+                                UserInformation userInformation = new UserInformation();
+                                userInformation.setEmail(FirebaseAuth.getInstance().getCurrentUser().getEmail());
+                                userInformation.setUUID(uuid);
+                                // Get the token assigned by Firebase when the user signed up / signed in.
+                                String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
+                                userInformation.setToken(token);
+                                DatabaseReference userInfo = FirebaseDatabase.getInstance().getReference().child("Users").push();
+                                userInfo.setValue(userInformation);
+                            }
 
                             mInput.getText().clear();
                             imageView.setVisibility(View.GONE);
@@ -2413,11 +2461,23 @@ public class Chat extends AppCompatActivity implements
                             Object date = ServerValue.TIMESTAMP;
                             messageInformation.setDate(date);
                             messageInformation.setUserUUID(UUID.randomUUID().toString());
-                            messageInformation.setUserUID(FirebaseAuth.getInstance().getUid());
                             messageInformation.setUUID(uuid);
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                             newMessage.setValue(messageInformation);
+
+                            // Get user info for user-user messaging purposes.
+                            if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+
+                                UserInformation userInformation = new UserInformation();
+                                userInformation.setEmail(FirebaseAuth.getInstance().getCurrentUser().getEmail());
+                                userInformation.setUUID(uuid);
+                                // Get the token assigned by Firebase when the user signed up / signed in.
+                                String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
+                                userInformation.setToken(token);
+                                DatabaseReference userInfo = FirebaseDatabase.getInstance().getReference().child("Users").push();
+                                userInfo.setValue(userInformation);
+                            }
 
                             mInput.getText().clear();
                             videoImageView.setVisibility(View.GONE);
@@ -2546,11 +2606,23 @@ public class Chat extends AppCompatActivity implements
                             Object date = ServerValue.TIMESTAMP;
                             messageInformation.setDate(date);
                             messageInformation.setUserUUID(UUID.randomUUID().toString());
-                            messageInformation.setUserUID(FirebaseAuth.getInstance().getUid());
                             messageInformation.setUUID(uuid);
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                             newMessage.setValue(messageInformation);
+
+                            // Get user info for user-user messaging purposes.
+                            if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+
+                                UserInformation userInformation = new UserInformation();
+                                userInformation.setEmail(FirebaseAuth.getInstance().getCurrentUser().getEmail());
+                                userInformation.setUUID(uuid);
+                                // Get the token assigned by Firebase when the user signed up / signed in.
+                                String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
+                                userInformation.setToken(token);
+                                DatabaseReference userInfo = FirebaseDatabase.getInstance().getReference().child("Users").push();
+                                userInfo.setValue(userInformation);
+                            }
 
                             mInput.getText().clear();
                             imageView.setVisibility(View.GONE);

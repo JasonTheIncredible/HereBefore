@@ -5,7 +5,7 @@ import androidx.annotation.Keep;
 @Keep
 class MessageInformation {
 
-    public String userUUID, userUID, message, uuid, imageURL, videoURL;
+    public String userUUID, message, uuid, imageURL, videoURL;
     public Object date;
     public Boolean userIsWithinShape;
 
@@ -19,10 +19,6 @@ class MessageInformation {
 
     public void setUserUUID(String userUUID) {
         this.userUUID = userUUID;
-    }
-
-    public void setUserUID(String userUID) {
-        this.userUID = userUID;
     }
 
     public void setImageURL(String imageURL) {

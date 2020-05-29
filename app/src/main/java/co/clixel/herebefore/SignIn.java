@@ -26,12 +26,14 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.SignInButton;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
+import com.google.firebase.iid.FirebaseInstanceId;
+import com.google.firebase.iid.InstanceIdResult;
 
 public class SignIn extends AppCompatActivity {
 
@@ -69,7 +71,7 @@ public class SignIn extends AppCompatActivity {
         goToCreateAccountButton = findViewById(R.id.goToCreateAccountButton);
         loadingIcon = findViewById(R.id.loadingIcon);
 
-        // Configure Google Sign In
+        // Configure Google Sign In.
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestIdToken(getString(R.string.default_web_client_id))
                 .requestEmail()
@@ -78,7 +80,7 @@ public class SignIn extends AppCompatActivity {
         // Build a GoogleSignInClient with the options specified by gso.
         mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
 
-        // Initialize Firebase Auth
+        // Initialize Firebase Auth.
         mAuth = FirebaseAuth.getInstance();
 
         // Set to dark mode.
@@ -197,47 +199,59 @@ public class SignIn extends AppCompatActivity {
                             Toast signedInToast = Toast.makeText(SignIn.this, "Signed in", Toast.LENGTH_SHORT);
                             signedInToast.show();
 
-                            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(SignIn.this);
-                            SharedPreferences.Editor editor = sharedPreferences.edit()
-                                    .putString("userToken", email)
-                                    .putString("passToken", pass);
-                            editor.apply();
+                            // Get Firebase FCM token and save it to preferences.
+                            FirebaseInstanceId.getInstance().getInstanceId().addOnSuccessListener(SignIn.this, new OnSuccessListener<InstanceIdResult>() {
 
-                            Intent Activity = new Intent(SignIn.this, Chat.class);
-                            Activity.putExtra("newShape", newShape);
-                            Activity.putExtra("uuid", uuid);
-                            Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                            Activity.putExtra("circleLatitude", circleLatitude);
-                            Activity.putExtra("circleLongitude", circleLongitude);
-                            Activity.putExtra("fillColor", fillColor);
-                            Activity.putExtra("polygonArea", polygonArea);
-                            Activity.putExtra("radius", radius);
-                            Activity.putExtra("shapeIsCircle", shapeIsCircle);
-                            Activity.putExtra("threeMarkers", threeMarkers);
-                            Activity.putExtra("fourMarkers", fourMarkers);
-                            Activity.putExtra("fiveMarkers", fiveMarkers);
-                            Activity.putExtra("sixMarkers", sixMarkers);
-                            Activity.putExtra("sevenMarkers", sevenMarkers);
-                            Activity.putExtra("eightMarkers", eightMarkers);
-                            Activity.putExtra("marker0Latitude", marker0Latitude);
-                            Activity.putExtra("marker0Longitude", marker0Longitude);
-                            Activity.putExtra("marker1Latitude", marker1Latitude);
-                            Activity.putExtra("marker1Longitude", marker1Longitude);
-                            Activity.putExtra("marker2Latitude", marker2Latitude);
-                            Activity.putExtra("marker2Longitude", marker2Longitude);
-                            Activity.putExtra("marker3Latitude", marker3Latitude);
-                            Activity.putExtra("marker3Longitude", marker3Longitude);
-                            Activity.putExtra("marker4Latitude", marker4Latitude);
-                            Activity.putExtra("marker4Longitude", marker4Longitude);
-                            Activity.putExtra("marker5Latitude", marker5Latitude);
-                            Activity.putExtra("marker5Longitude", marker5Longitude);
-                            Activity.putExtra("marker6Latitude", marker6Latitude);
-                            Activity.putExtra("marker6Longitude", marker6Longitude);
-                            Activity.putExtra("marker7Latitude", marker7Latitude);
-                            Activity.putExtra("marker7Longitude", marker7Longitude);
-                            loadingIcon.setVisibility(View.GONE);
-                            startActivity(Activity);
-                            finish();
+                                @Override
+                                public void onSuccess(InstanceIdResult instanceIdResult) {
+
+                                    SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(SignIn.this);
+
+                                    String token = instanceIdResult.getToken();
+
+                                    SharedPreferences.Editor editor = sharedPreferences.edit()
+                                            .putString("userToken", email)
+                                            .putString("passToken", pass)
+                                            .putString("FIREBASE_TOKEN", token);
+                                    editor.apply();
+
+                                    Intent Activity = new Intent(SignIn.this, Chat.class);
+                                    Activity.putExtra("newShape", newShape);
+                                    Activity.putExtra("uuid", uuid);
+                                    Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                    Activity.putExtra("circleLatitude", circleLatitude);
+                                    Activity.putExtra("circleLongitude", circleLongitude);
+                                    Activity.putExtra("fillColor", fillColor);
+                                    Activity.putExtra("polygonArea", polygonArea);
+                                    Activity.putExtra("radius", radius);
+                                    Activity.putExtra("shapeIsCircle", shapeIsCircle);
+                                    Activity.putExtra("threeMarkers", threeMarkers);
+                                    Activity.putExtra("fourMarkers", fourMarkers);
+                                    Activity.putExtra("fiveMarkers", fiveMarkers);
+                                    Activity.putExtra("sixMarkers", sixMarkers);
+                                    Activity.putExtra("sevenMarkers", sevenMarkers);
+                                    Activity.putExtra("eightMarkers", eightMarkers);
+                                    Activity.putExtra("marker0Latitude", marker0Latitude);
+                                    Activity.putExtra("marker0Longitude", marker0Longitude);
+                                    Activity.putExtra("marker1Latitude", marker1Latitude);
+                                    Activity.putExtra("marker1Longitude", marker1Longitude);
+                                    Activity.putExtra("marker2Latitude", marker2Latitude);
+                                    Activity.putExtra("marker2Longitude", marker2Longitude);
+                                    Activity.putExtra("marker3Latitude", marker3Latitude);
+                                    Activity.putExtra("marker3Longitude", marker3Longitude);
+                                    Activity.putExtra("marker4Latitude", marker4Latitude);
+                                    Activity.putExtra("marker4Longitude", marker4Longitude);
+                                    Activity.putExtra("marker5Latitude", marker5Latitude);
+                                    Activity.putExtra("marker5Longitude", marker5Longitude);
+                                    Activity.putExtra("marker6Latitude", marker6Latitude);
+                                    Activity.putExtra("marker6Longitude", marker6Longitude);
+                                    Activity.putExtra("marker7Latitude", marker7Latitude);
+                                    Activity.putExtra("marker7Longitude", marker7Longitude);
+                                    loadingIcon.setVisibility(View.GONE);
+                                    startActivity(Activity);
+                                    finish();
+                                }
+                            });
                         }
 
                         if (!task.isSuccessful() && task.getException() != null) {
@@ -447,53 +461,64 @@ public class SignIn extends AppCompatActivity {
 
                         if (task.isSuccessful()) {
 
-                            // Sign-in success, update UI with the signed-in user's information
-                            Log.d(TAG, "signInWithCredential:success");
+                            // Get Firebase FCM token and save it to preferences.
+                            FirebaseInstanceId.getInstance().getInstanceId().addOnSuccessListener(SignIn.this, new OnSuccessListener<InstanceIdResult>() {
 
-                            // Save token to sharedPreferences.
-                            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(SignIn.this);
-                            SharedPreferences.Editor editor = sharedPreferences.edit()
-                                    .putString("googleIdToken", googleAccount.getIdToken());
-                            editor.apply();
+                                @Override
+                                public void onSuccess(InstanceIdResult instanceIdResult) {
 
-                            FirebaseUser user = mAuth.getCurrentUser();
-                            // Go to Chat.java with the extras.
-                            toastMessageShort("Signed in");
-                            Intent Activity = new Intent(SignIn.this, Chat.class);
-                            Activity.putExtra("newShape", newShape);
-                            Activity.putExtra("uuid", uuid);
-                            Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                            Activity.putExtra("circleLatitude", circleLatitude);
-                            Activity.putExtra("circleLongitude", circleLongitude);
-                            Activity.putExtra("fillColor", fillColor);
-                            Activity.putExtra("polygonArea", polygonArea);
-                            Activity.putExtra("radius", radius);
-                            Activity.putExtra("shapeIsCircle", shapeIsCircle);
-                            Activity.putExtra("threeMarkers", threeMarkers);
-                            Activity.putExtra("fourMarkers", fourMarkers);
-                            Activity.putExtra("fiveMarkers", fiveMarkers);
-                            Activity.putExtra("sixMarkers", sixMarkers);
-                            Activity.putExtra("sevenMarkers", sevenMarkers);
-                            Activity.putExtra("eightMarkers", eightMarkers);
-                            Activity.putExtra("marker0Latitude", marker0Latitude);
-                            Activity.putExtra("marker0Longitude", marker0Longitude);
-                            Activity.putExtra("marker1Latitude", marker1Latitude);
-                            Activity.putExtra("marker1Longitude", marker1Longitude);
-                            Activity.putExtra("marker2Latitude", marker2Latitude);
-                            Activity.putExtra("marker2Longitude", marker2Longitude);
-                            Activity.putExtra("marker3Latitude", marker3Latitude);
-                            Activity.putExtra("marker3Longitude", marker3Longitude);
-                            Activity.putExtra("marker4Latitude", marker4Latitude);
-                            Activity.putExtra("marker4Longitude", marker4Longitude);
-                            Activity.putExtra("marker5Latitude", marker5Latitude);
-                            Activity.putExtra("marker5Longitude", marker5Longitude);
-                            Activity.putExtra("marker6Latitude", marker6Latitude);
-                            Activity.putExtra("marker6Longitude", marker6Longitude);
-                            Activity.putExtra("marker7Latitude", marker7Latitude);
-                            Activity.putExtra("marker7Longitude", marker7Longitude);
-                            loadingIcon.setVisibility(View.GONE);
-                            startActivity(Activity);
-                            finish();
+                                    // Sign-in success, update UI with the signed-in user's information
+                                    Log.d(TAG, "signInWithCredential:success");
+
+                                    // Save token to sharedPreferences.
+                                    SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(SignIn.this);
+
+                                    String token = instanceIdResult.getToken();
+
+                                    SharedPreferences.Editor editor = sharedPreferences.edit()
+                                            .putString("googleIdToken", googleAccount.getIdToken())
+                                            .putString("FIREBASE_TOKEN", token);
+                                    editor.apply();
+
+                                    // Go to Chat.java with the extras.
+                                    toastMessageShort("Signed in");
+                                    Intent Activity = new Intent(SignIn.this, Chat.class);
+                                    Activity.putExtra("newShape", newShape);
+                                    Activity.putExtra("uuid", uuid);
+                                    Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                    Activity.putExtra("circleLatitude", circleLatitude);
+                                    Activity.putExtra("circleLongitude", circleLongitude);
+                                    Activity.putExtra("fillColor", fillColor);
+                                    Activity.putExtra("polygonArea", polygonArea);
+                                    Activity.putExtra("radius", radius);
+                                    Activity.putExtra("shapeIsCircle", shapeIsCircle);
+                                    Activity.putExtra("threeMarkers", threeMarkers);
+                                    Activity.putExtra("fourMarkers", fourMarkers);
+                                    Activity.putExtra("fiveMarkers", fiveMarkers);
+                                    Activity.putExtra("sixMarkers", sixMarkers);
+                                    Activity.putExtra("sevenMarkers", sevenMarkers);
+                                    Activity.putExtra("eightMarkers", eightMarkers);
+                                    Activity.putExtra("marker0Latitude", marker0Latitude);
+                                    Activity.putExtra("marker0Longitude", marker0Longitude);
+                                    Activity.putExtra("marker1Latitude", marker1Latitude);
+                                    Activity.putExtra("marker1Longitude", marker1Longitude);
+                                    Activity.putExtra("marker2Latitude", marker2Latitude);
+                                    Activity.putExtra("marker2Longitude", marker2Longitude);
+                                    Activity.putExtra("marker3Latitude", marker3Latitude);
+                                    Activity.putExtra("marker3Longitude", marker3Longitude);
+                                    Activity.putExtra("marker4Latitude", marker4Latitude);
+                                    Activity.putExtra("marker4Longitude", marker4Longitude);
+                                    Activity.putExtra("marker5Latitude", marker5Latitude);
+                                    Activity.putExtra("marker5Longitude", marker5Longitude);
+                                    Activity.putExtra("marker6Latitude", marker6Latitude);
+                                    Activity.putExtra("marker6Longitude", marker6Longitude);
+                                    Activity.putExtra("marker7Latitude", marker7Latitude);
+                                    Activity.putExtra("marker7Longitude", marker7Longitude);
+                                    loadingIcon.setVisibility(View.GONE);
+                                    startActivity(Activity);
+                                    finish();
+                                }
+                            });
                         } else {
 
                             // If sign in fails, display a recyclerviewlayout to the user.

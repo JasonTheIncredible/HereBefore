@@ -107,11 +107,12 @@ public class Map extends FragmentActivity implements
     private View loadingIcon;
     private LocationProvider locationProvider;
 
+    // When is token renewed / renew it.
     // Make sending an "@" go to a user.
     // Allow users to message and reply to one another anonymously and add notifications to settings.
     // Make user in recyclerView clickable and have it create a mentionable.
     // Make sure aboutLibraries is up to date.
-    // Test location services.
+    // Test location services / make sure it works on first install and in new places.
     // Use network for more precise GPS?
     // Make sure the secret stuff is secret.
     // Add preference for shape color.

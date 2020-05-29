@@ -19,20 +19,36 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import com.crashlytics.android.Crashlytics;
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.common.SignInButton;
+import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.GoogleAuthProvider;
+import com.google.firebase.iid.FirebaseInstanceId;
+import com.google.firebase.iid.InstanceIdResult;
 
 public class SignUp extends AppCompatActivity {
 
     private static final String TAG = "SignUp";
+    private static final int RC_SIGN_IN = 0;
     private EditText mEmail, mPassword;
     private Button createAccountButton;
+    private SignInButton googleSignInButton;
     private String uuid, email, pass;
     private Double polygonArea, circleLatitude, circleLongitude, radius, marker0Latitude, marker0Longitude, marker1Latitude, marker1Longitude, marker2Latitude, marker2Longitude, marker3Latitude, marker3Longitude, marker4Latitude, marker4Longitude, marker5Latitude, marker5Longitude, marker6Latitude, marker6Longitude, marker7Latitude, marker7Longitude;
     private boolean newShape, userIsWithinShape, threeMarkers, fourMarkers, fiveMarkers, sixMarkers, sevenMarkers, eightMarkers, shapeIsCircle;
     private int fillColor;
+    private GoogleSignInClient mGoogleSignInClient;
+    private FirebaseAuth mAuth;
+    private GoogleSignInAccount googleAccount;
     private View loadingIcon;
     private Toast shortToast, longToast;
 
@@ -46,7 +62,23 @@ public class SignUp extends AppCompatActivity {
         mEmail = findViewById(R.id.createEmailAddress);
         mPassword = findViewById(R.id.createPassword);
         createAccountButton = findViewById(R.id.createAccountButton);
+        googleSignInButton = findViewById(R.id.googleSignInButton);
+        // Set the color scheme for the Google sign-in button. Documentation found here:
+        // developers.google.com/android/reference/com/google/android/gms/common/SignInButton.html#COLOR_DARK
+        googleSignInButton.setColorScheme(0);
         loadingIcon = findViewById(R.id.loadingIcon);
+
+        // Configure Google Sign In.
+        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestIdToken(getString(R.string.default_web_client_id))
+                .requestEmail()
+                .build();
+
+        // Build a GoogleSignInClient with the options specified by gso.
+        mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
+
+        // Initialize Firebase Auth.
+        mAuth = FirebaseAuth.getInstance();
 
         // Set to dark mode.
         AppCompatDelegate.setDefaultNightMode(
@@ -160,50 +192,62 @@ public class SignUp extends AppCompatActivity {
 
                         if (task.isSuccessful()) {
 
-                            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(SignUp.this);
-                            SharedPreferences.Editor editor = sharedPreferences.edit()
-                                    .putString("userToken", email)
-                                    .putString("passToken", pass);
-                            editor.apply();
+                            // Get Firebase FCM token and save it to preferences.
+                            FirebaseInstanceId.getInstance().getInstanceId().addOnSuccessListener(SignUp.this, new OnSuccessListener<InstanceIdResult>() {
 
-                            // Go to Chat.java with the extras.
-                            Toast signedUpToast = Toast.makeText(SignUp.this, "Signed up", Toast.LENGTH_SHORT);
-                            signedUpToast.show();
-                            Intent Activity = new Intent(SignUp.this, Chat.class);
-                            Activity.putExtra("newShape", newShape);
-                            Activity.putExtra("uuid", uuid);
-                            Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                            Activity.putExtra("circleLatitude", circleLatitude);
-                            Activity.putExtra("circleLongitude", circleLongitude);
-                            Activity.putExtra("fillColor", fillColor);
-                            Activity.putExtra("polygonArea", polygonArea);
-                            Activity.putExtra("radius", radius);
-                            Activity.putExtra("shapeIsCircle", shapeIsCircle);
-                            Activity.putExtra("threeMarkers", threeMarkers);
-                            Activity.putExtra("fourMarkers", fourMarkers);
-                            Activity.putExtra("fiveMarkers", fiveMarkers);
-                            Activity.putExtra("sixMarkers", sixMarkers);
-                            Activity.putExtra("sevenMarkers", sevenMarkers);
-                            Activity.putExtra("eightMarkers", eightMarkers);
-                            Activity.putExtra("marker0Latitude", marker0Latitude);
-                            Activity.putExtra("marker0Longitude", marker0Longitude);
-                            Activity.putExtra("marker1Latitude", marker1Latitude);
-                            Activity.putExtra("marker1Longitude", marker1Longitude);
-                            Activity.putExtra("marker2Latitude", marker2Latitude);
-                            Activity.putExtra("marker2Longitude", marker2Longitude);
-                            Activity.putExtra("marker3Latitude", marker3Latitude);
-                            Activity.putExtra("marker3Longitude", marker3Longitude);
-                            Activity.putExtra("marker4Latitude", marker4Latitude);
-                            Activity.putExtra("marker4Longitude", marker4Longitude);
-                            Activity.putExtra("marker5Latitude", marker5Latitude);
-                            Activity.putExtra("marker5Longitude", marker5Longitude);
-                            Activity.putExtra("marker6Latitude", marker6Latitude);
-                            Activity.putExtra("marker6Longitude", marker6Longitude);
-                            Activity.putExtra("marker7Latitude", marker7Latitude);
-                            Activity.putExtra("marker7Longitude", marker7Longitude);
-                            loadingIcon.setVisibility(View.GONE);
-                            startActivity(Activity);
-                            finish();
+                                @Override
+                                public void onSuccess(InstanceIdResult instanceIdResult) {
+
+                                    SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(SignUp.this);
+
+                                    String token = instanceIdResult.getToken();
+
+                                    SharedPreferences.Editor editor = sharedPreferences.edit()
+                                            .putString("userToken", email)
+                                            .putString("passToken", pass)
+                                            .putString("FIREBASE_TOKEN", token);
+                                    editor.apply();
+
+                                    // Go to Chat.java with the extras.
+                                    Toast signedUpToast = Toast.makeText(SignUp.this, "Signed up", Toast.LENGTH_SHORT);
+                                    signedUpToast.show();
+                                    Intent Activity = new Intent(SignUp.this, Chat.class);
+                                    Activity.putExtra("newShape", newShape);
+                                    Activity.putExtra("uuid", uuid);
+                                    Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                    Activity.putExtra("circleLatitude", circleLatitude);
+                                    Activity.putExtra("circleLongitude", circleLongitude);
+                                    Activity.putExtra("fillColor", fillColor);
+                                    Activity.putExtra("polygonArea", polygonArea);
+                                    Activity.putExtra("radius", radius);
+                                    Activity.putExtra("shapeIsCircle", shapeIsCircle);
+                                    Activity.putExtra("threeMarkers", threeMarkers);
+                                    Activity.putExtra("fourMarkers", fourMarkers);
+                                    Activity.putExtra("fiveMarkers", fiveMarkers);
+                                    Activity.putExtra("sixMarkers", sixMarkers);
+                                    Activity.putExtra("sevenMarkers", sevenMarkers);
+                                    Activity.putExtra("eightMarkers", eightMarkers);
+                                    Activity.putExtra("marker0Latitude", marker0Latitude);
+                                    Activity.putExtra("marker0Longitude", marker0Longitude);
+                                    Activity.putExtra("marker1Latitude", marker1Latitude);
+                                    Activity.putExtra("marker1Longitude", marker1Longitude);
+                                    Activity.putExtra("marker2Latitude", marker2Latitude);
+                                    Activity.putExtra("marker2Longitude", marker2Longitude);
+                                    Activity.putExtra("marker3Latitude", marker3Latitude);
+                                    Activity.putExtra("marker3Longitude", marker3Longitude);
+                                    Activity.putExtra("marker4Latitude", marker4Latitude);
+                                    Activity.putExtra("marker4Longitude", marker4Longitude);
+                                    Activity.putExtra("marker5Latitude", marker5Latitude);
+                                    Activity.putExtra("marker5Longitude", marker5Longitude);
+                                    Activity.putExtra("marker6Latitude", marker6Latitude);
+                                    Activity.putExtra("marker6Longitude", marker6Longitude);
+                                    Activity.putExtra("marker7Latitude", marker7Latitude);
+                                    Activity.putExtra("marker7Longitude", marker7Longitude);
+                                    loadingIcon.setVisibility(View.GONE);
+                                    startActivity(Activity);
+                                    finish();
+                                }
+                            });
                         }
 
                         if (!task.isSuccessful() && task.getException() != null) {
@@ -223,6 +267,17 @@ public class SignUp extends AppCompatActivity {
                         }
                     }
                 });
+            }
+        });
+
+        // Sign in using Google.
+        googleSignInButton.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View view) {
+
+                Intent signInIntent = mGoogleSignInClient.getSignInIntent();
+                startActivityForResult(signInIntent, RC_SIGN_IN);
             }
         });
     }
@@ -247,9 +302,134 @@ public class SignUp extends AppCompatActivity {
             createAccountButton.setOnClickListener(null);
         }
 
+        // Remove the listener.
+        if (googleSignInButton != null) {
+
+            googleSignInButton.setOnClickListener(null);
+        }
+
         cancelToasts();
 
         super.onStop();
+    }
+
+    // Sign in using Google.
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+
+        super.onActivityResult(requestCode, resultCode, data);
+
+        // Result returned from launching the Intent from GoogleSignInApi.getSignInIntent(...);
+        if (requestCode == RC_SIGN_IN) {
+
+            Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
+            try {
+
+                // Google sign in was successful, authenticate with Firebase
+                googleAccount = task.getResult(ApiException.class);
+                if (googleAccount != null) {
+
+                    firebaseAuthWithGoogle(googleAccount);
+                    loadingIcon.bringToFront();
+                    loadingIcon.setVisibility(View.VISIBLE);
+                } else {
+
+                    Log.w(TAG, "onActivityResult() -> account == null");
+                    Crashlytics.logException(new Exception("onActivityResult() -> account == null"));
+                    toastMessageLong("Sign-in failed. Try again later.");
+                }
+            } catch (ApiException e) {
+
+                // Google sign in failed, update UI appropriately
+                Log.w(TAG, "Google sign in failed: " + e);
+                Crashlytics.logException(new Exception("Google sign in failed: " + e));
+                toastMessageLong("Google sign in failed: " + e);
+            }
+        }
+    }
+
+    // Used by onActivityResult().
+    private void firebaseAuthWithGoogle(GoogleSignInAccount acct) {
+
+        Log.d(TAG, "firebaseAuthWithGoogle: " + acct.getId());
+
+        AuthCredential credential = GoogleAuthProvider.getCredential(acct.getIdToken(), null);
+        mAuth.signInWithCredential(credential)
+                .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
+
+                    @Override
+                    public void onComplete(@NonNull Task<AuthResult> task) {
+
+                        if (task.isSuccessful()) {
+
+                            // Get Firebase FCM token and save it to preferences.
+                            FirebaseInstanceId.getInstance().getInstanceId().addOnSuccessListener(SignUp.this, new OnSuccessListener<InstanceIdResult>() {
+
+                                @Override
+                                public void onSuccess(InstanceIdResult instanceIdResult) {
+
+                                    // Sign-in success, update UI with the signed-in user's information
+                                    Log.d(TAG, "signInWithCredential:success");
+
+                                    // Save token to sharedPreferences.
+                                    SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(SignUp.this);
+
+                                    String token = instanceIdResult.getToken();
+
+                                    SharedPreferences.Editor editor = sharedPreferences.edit()
+                                            .putString("googleIdToken", googleAccount.getIdToken())
+                                            .putString("FIREBASE_TOKEN", token);
+                                    editor.apply();
+
+                                    // Go to Chat.java with the extras.
+                                    toastMessageShort("Signed in");
+                                    Intent Activity = new Intent(SignUp.this, Chat.class);
+                                    Activity.putExtra("newShape", newShape);
+                                    Activity.putExtra("uuid", uuid);
+                                    Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                    Activity.putExtra("circleLatitude", circleLatitude);
+                                    Activity.putExtra("circleLongitude", circleLongitude);
+                                    Activity.putExtra("fillColor", fillColor);
+                                    Activity.putExtra("polygonArea", polygonArea);
+                                    Activity.putExtra("radius", radius);
+                                    Activity.putExtra("shapeIsCircle", shapeIsCircle);
+                                    Activity.putExtra("threeMarkers", threeMarkers);
+                                    Activity.putExtra("fourMarkers", fourMarkers);
+                                    Activity.putExtra("fiveMarkers", fiveMarkers);
+                                    Activity.putExtra("sixMarkers", sixMarkers);
+                                    Activity.putExtra("sevenMarkers", sevenMarkers);
+                                    Activity.putExtra("eightMarkers", eightMarkers);
+                                    Activity.putExtra("marker0Latitude", marker0Latitude);
+                                    Activity.putExtra("marker0Longitude", marker0Longitude);
+                                    Activity.putExtra("marker1Latitude", marker1Latitude);
+                                    Activity.putExtra("marker1Longitude", marker1Longitude);
+                                    Activity.putExtra("marker2Latitude", marker2Latitude);
+                                    Activity.putExtra("marker2Longitude", marker2Longitude);
+                                    Activity.putExtra("marker3Latitude", marker3Latitude);
+                                    Activity.putExtra("marker3Longitude", marker3Longitude);
+                                    Activity.putExtra("marker4Latitude", marker4Latitude);
+                                    Activity.putExtra("marker4Longitude", marker4Longitude);
+                                    Activity.putExtra("marker5Latitude", marker5Latitude);
+                                    Activity.putExtra("marker5Longitude", marker5Longitude);
+                                    Activity.putExtra("marker6Latitude", marker6Latitude);
+                                    Activity.putExtra("marker6Longitude", marker6Longitude);
+                                    Activity.putExtra("marker7Latitude", marker7Latitude);
+                                    Activity.putExtra("marker7Longitude", marker7Longitude);
+                                    loadingIcon.setVisibility(View.GONE);
+                                    startActivity(Activity);
+                                    finish();
+                                }
+                            });
+                        } else {
+
+                            // If sign in fails, display a recyclerviewlayout to the user.
+                            loadingIcon.setVisibility(View.GONE);
+                            Log.w(TAG, "firebaseAuthWithGoogle() -> failed: " + task.getException());
+                            toastMessageLong("Authentication failed. Try again later.");
+                            Crashlytics.logException(new Exception("firebaseAuthWithGoogle() -> failed: " + task.getException()));
+                        }
+                    }
+                });
     }
 
     private void cancelToasts() {

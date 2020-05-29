@@ -15,6 +15,7 @@ public class Settings extends AppCompatActivity implements
     public static final String KEY_MAP_TYPE = "mapTypePreference";
     public static final String KEY_SIGN_OUT = "signOut";
     private boolean theme;
+    // "FIREBASE_TOKEN" to find Firebase token for messaging.
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
