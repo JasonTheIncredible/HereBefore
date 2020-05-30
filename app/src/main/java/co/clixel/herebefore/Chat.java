@@ -471,6 +471,7 @@ public class Chat extends AppCompatActivity implements
 
                                         // Change boolean to true - scrolls to the bottom of the recyclerView (in initRecyclerView()).
                                         messageSent = true;
+
                                         // Since the uuid doesn't already exist in Firebase, add the circle.
                                         CircleOptions circleOptions = new CircleOptions()
                                                 .center(new LatLng(circleLatitude, circleLongitude))
@@ -488,7 +489,8 @@ public class Chat extends AppCompatActivity implements
                                         // This will cause onDataChange to fire twice; optimizations could be made in the future.
                                         Object date = ServerValue.TIMESTAMP;
                                         messageInformation.setDate(date);
-                                        messageInformation.setUserUUID(UUID.randomUUID().toString());
+                                        String userUUID = UUID.randomUUID().toString();
+                                        messageInformation.setUserUUID(userUUID);
                                         messageInformation.setUUID(uuid);
                                         messageInformation.setUserIsWithinShape(userIsWithinShape);
                                         DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
@@ -499,7 +501,7 @@ public class Chat extends AppCompatActivity implements
 
                                             UserInformation userInformation = new UserInformation();
                                             userInformation.setEmail(FirebaseAuth.getInstance().getCurrentUser().getEmail());
-                                            userInformation.setUUID(uuid);
+                                            userInformation.setUserUUID(userUUID);
                                             // Get the token assigned by Firebase when the user signed up / signed in.
                                             String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
                                             userInformation.setToken(token);
@@ -510,6 +512,8 @@ public class Chat extends AppCompatActivity implements
                                         mInput.getText().clear();
                                         newShape = false;
                                         sendButtonClicked = false;
+
+                                        messageUserIfNeeded();
                                     }
                                 }
 
@@ -606,7 +610,8 @@ public class Chat extends AppCompatActivity implements
                                         // This will cause onDataChange to fire twice; optimizations could be made in the future.
                                         Object date = ServerValue.TIMESTAMP;
                                         messageInformation.setDate(date);
-                                        messageInformation.setUserUUID(UUID.randomUUID().toString());
+                                        String userUUID = UUID.randomUUID().toString();
+                                        messageInformation.setUserUUID(userUUID);
                                         messageInformation.setUUID(uuid);
                                         messageInformation.setUserIsWithinShape(userIsWithinShape);
                                         DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
@@ -617,7 +622,7 @@ public class Chat extends AppCompatActivity implements
 
                                             UserInformation userInformation = new UserInformation();
                                             userInformation.setEmail(FirebaseAuth.getInstance().getCurrentUser().getEmail());
-                                            userInformation.setUUID(uuid);
+                                            userInformation.setUserUUID(userUUID);
                                             // Get the token assigned by Firebase when the user signed up / signed in.
                                             String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
                                             userInformation.setToken(token);
@@ -628,6 +633,8 @@ public class Chat extends AppCompatActivity implements
                                         mInput.getText().clear();
                                         newShape = false;
                                         sendButtonClicked = false;
+
+                                        messageUserIfNeeded();
                                     }
                                 }
 
@@ -667,7 +674,8 @@ public class Chat extends AppCompatActivity implements
                             // This will cause onDataChange to fire twice; optimizations could be made in the future.
                             Object date = ServerValue.TIMESTAMP;
                             messageInformation.setDate(date);
-                            messageInformation.setUserUUID(UUID.randomUUID().toString());
+                            String userUUID = UUID.randomUUID().toString();
+                            messageInformation.setUserUUID(userUUID);
                             messageInformation.setUUID(uuid);
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
@@ -678,7 +686,7 @@ public class Chat extends AppCompatActivity implements
 
                                 UserInformation userInformation = new UserInformation();
                                 userInformation.setEmail(FirebaseAuth.getInstance().getCurrentUser().getEmail());
-                                userInformation.setUUID(uuid);
+                                userInformation.setUserUUID(userUUID);
                                 // Get the token assigned by Firebase when the user signed up / signed in.
                                 String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
                                 userInformation.setToken(token);
@@ -688,6 +696,8 @@ public class Chat extends AppCompatActivity implements
 
                             mInput.getText().clear();
                             sendButtonClicked = false;
+
+                            messageUserIfNeeded();
                         }
                     }
                 }
@@ -992,9 +1002,15 @@ public class Chat extends AppCompatActivity implements
 
             loadPreferences();
 
-            final ViewHolder holder = new ViewHolder(view);
+            return new ViewHolder(view);
+        }
 
-            view.setOnClickListener(new View.OnClickListener() {
+        @Override
+        public void onBindViewHolder(@NonNull final ViewHolder holder, final int position) {
+
+            holder.suggestion.setText(mSuggestions.get(position));
+
+            holder.itemView.setOnClickListener(new View.OnClickListener() {
 
                 @Override
                 public void onClick(View v) {
@@ -1006,9 +1022,9 @@ public class Chat extends AppCompatActivity implements
                         @Override
                         public String getTextForDisplayMode(@NonNull MentionDisplayMode mode) {
 
-                            if (mSuggestions.get(holder.getAdapterPosition()) != null) {
+                            if (mSuggestions.get(position) != null) {
 
-                                return "@" + mSuggestions.get(holder.getAdapterPosition()).substring(0, 10) + "...";
+                                return "@" + mSuggestions.get(position).substring(0, 10) + "...";
                             } else {
 
                                 return "ERROR";
@@ -1032,9 +1048,9 @@ public class Chat extends AppCompatActivity implements
                         @Override
                         public String getSuggestiblePrimaryText() {
 
-                            if (mSuggestions.get(holder.getAdapterPosition()) != null) {
+                            if (mSuggestions.get(position) != null) {
 
-                                return mSuggestions.get(holder.getAdapterPosition());
+                                return mSuggestions.get(position);
                             } else {
 
                                 return "ERROR";
@@ -1057,14 +1073,6 @@ public class Chat extends AppCompatActivity implements
                     mInput.append(" ");
                 }
             });
-
-            return holder;
-        }
-
-        @Override
-        public void onBindViewHolder(@NonNull final ViewHolder holder, final int position) {
-
-            holder.suggestion.setText(mSuggestions.get(position));
 
             // Change the color of every other row for visual purposes.
             if (!theme) {
@@ -2315,7 +2323,8 @@ public class Chat extends AppCompatActivity implements
                             // This will cause onDataChange to fire twice; optimizations could be made in the future.
                             Object date = ServerValue.TIMESTAMP;
                             messageInformation.setDate(date);
-                            messageInformation.setUserUUID(UUID.randomUUID().toString());
+                            String userUUID = UUID.randomUUID().toString();
+                            messageInformation.setUserUUID(userUUID);
                             messageInformation.setUUID(uuid);
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
@@ -2326,7 +2335,7 @@ public class Chat extends AppCompatActivity implements
 
                                 UserInformation userInformation = new UserInformation();
                                 userInformation.setEmail(FirebaseAuth.getInstance().getCurrentUser().getEmail());
-                                userInformation.setUUID(uuid);
+                                userInformation.setUserUUID(userUUID);
                                 // Get the token assigned by Firebase when the user signed up / signed in.
                                 String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
                                 userInformation.setToken(token);
@@ -2343,6 +2352,8 @@ public class Chat extends AppCompatActivity implements
                             }
                             sendButtonClicked = false;
                             loadingIcon.setVisibility(View.GONE);
+
+                            messageUserIfNeeded();
                         }
                     });
                 }
@@ -2460,7 +2471,8 @@ public class Chat extends AppCompatActivity implements
                             // This will cause onDataChange to fire twice; optimizations could be made in the future.
                             Object date = ServerValue.TIMESTAMP;
                             messageInformation.setDate(date);
-                            messageInformation.setUserUUID(UUID.randomUUID().toString());
+                            String userUUID = UUID.randomUUID().toString();
+                            messageInformation.setUserUUID(userUUID);
                             messageInformation.setUUID(uuid);
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
@@ -2471,7 +2483,7 @@ public class Chat extends AppCompatActivity implements
 
                                 UserInformation userInformation = new UserInformation();
                                 userInformation.setEmail(FirebaseAuth.getInstance().getCurrentUser().getEmail());
-                                userInformation.setUUID(uuid);
+                                userInformation.setUserUUID(userUUID);
                                 // Get the token assigned by Firebase when the user signed up / signed in.
                                 String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
                                 userInformation.setToken(token);
@@ -2488,6 +2500,8 @@ public class Chat extends AppCompatActivity implements
                             }
                             sendButtonClicked = false;
                             loadingIcon.setVisibility(View.GONE);
+
+                            messageUserIfNeeded();
                         }
                     });
                 }
@@ -2605,7 +2619,8 @@ public class Chat extends AppCompatActivity implements
                             // This will cause onDataChange to fire twice; optimizations could be made in the future.
                             Object date = ServerValue.TIMESTAMP;
                             messageInformation.setDate(date);
-                            messageInformation.setUserUUID(UUID.randomUUID().toString());
+                            String userUUID = UUID.randomUUID().toString();
+                            messageInformation.setUserUUID(userUUID);
                             messageInformation.setUUID(uuid);
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
@@ -2616,7 +2631,7 @@ public class Chat extends AppCompatActivity implements
 
                                 UserInformation userInformation = new UserInformation();
                                 userInformation.setEmail(FirebaseAuth.getInstance().getCurrentUser().getEmail());
-                                userInformation.setUUID(uuid);
+                                userInformation.setUserUUID(userUUID);
                                 // Get the token assigned by Firebase when the user signed up / signed in.
                                 String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
                                 userInformation.setToken(token);
@@ -2633,6 +2648,8 @@ public class Chat extends AppCompatActivity implements
                             }
                             sendButtonClicked = false;
                             loadingIcon.setVisibility(View.GONE);
+
+                            messageUserIfNeeded();
                         }
                     });
                 }
@@ -2649,6 +2666,11 @@ public class Chat extends AppCompatActivity implements
                         }
                     });
         }
+    }
+
+    private void messageUserIfNeeded() {
+
+        Log.i(TAG, "messageUserIfNeeded()");
     }
 
     private void deleteDirectory(File file) {
