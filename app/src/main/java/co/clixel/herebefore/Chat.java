@@ -80,7 +80,9 @@ import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.StorageTask;
 import com.google.firebase.storage.UploadTask;
 import com.iceteck.silicompressorr.SiliCompressor;
+import com.linkedin.android.spyglass.mentions.MentionSpan;
 import com.linkedin.android.spyglass.mentions.Mentionable;
+import com.linkedin.android.spyglass.mentions.MentionsEditable;
 import com.linkedin.android.spyglass.suggestions.interfaces.SuggestionsVisibilityManager;
 import com.linkedin.android.spyglass.tokenization.QueryToken;
 import com.linkedin.android.spyglass.tokenization.impl.WordTokenizer;
@@ -102,8 +104,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
 
 import id.zelory.compressor.Compressor;
@@ -118,8 +122,9 @@ public class Chat extends AppCompatActivity implements
     private static final String TAG = "Chat";
     private static final int Request_ID_Take_Photo = 1700, Request_ID_Record_Video = 1800;
     private MentionsEditText mInput;
-    private ArrayList<String> mTime = new ArrayList<>(), mUser = new ArrayList<>(), mImage = new ArrayList<>(), mVideo = new ArrayList<>(), mText = new ArrayList<>(), mSuggestions = new ArrayList<>();
+    private ArrayList<String> mTime = new ArrayList<>(), mUser = new ArrayList<>(), mImage = new ArrayList<>(), mVideo = new ArrayList<>(), mText = new ArrayList<>(), mSuggestions = new ArrayList<>(), allMentions = new ArrayList<>();
     private ArrayList<Boolean> mUserIsWithinShape = new ArrayList<>();
+    private ArrayList<String> removedMentionDuplicates;
     private RecyclerView chatRecyclerView, mentionsRecyclerView;
     private static int index = -1, top = -1;
     private DatabaseReference databaseReference;
@@ -509,6 +514,9 @@ public class Chat extends AppCompatActivity implements
                                             userInfo.setValue(userInformation);
                                         }
 
+                                        // Get the userUUIDs of the mentions.
+                                        Log.i(TAG, "mInput " + removedMentionDuplicates);
+
                                         mInput.getText().clear();
                                         newShape = false;
                                         sendButtonClicked = false;
@@ -630,6 +638,9 @@ public class Chat extends AppCompatActivity implements
                                             userInfo.setValue(userInformation);
                                         }
 
+                                        // Get the userUUIDs of the mentions.
+                                        Log.i(TAG, "mInput " + removedMentionDuplicates);
+
                                         mInput.getText().clear();
                                         newShape = false;
                                         sendButtonClicked = false;
@@ -693,6 +704,9 @@ public class Chat extends AppCompatActivity implements
                                 DatabaseReference userInfo = FirebaseDatabase.getInstance().getReference().child("Users").push();
                                 userInfo.setValue(userInformation);
                             }
+
+                            // Get the userUUIDs of the mentions.
+                            Log.i(TAG, "mInput " + removedMentionDuplicates);
 
                             mInput.getText().clear();
                             sendButtonClicked = false;
@@ -1010,6 +1024,9 @@ public class Chat extends AppCompatActivity implements
 
             holder.suggestion.setText(mSuggestions.get(position));
 
+            // Clear list so if user deletes a mention, it won't appear in this list.
+            allMentions.clear();
+
             holder.itemView.setOnClickListener(new View.OnClickListener() {
 
                 @Override
@@ -1023,6 +1040,9 @@ public class Chat extends AppCompatActivity implements
                         public String getTextForDisplayMode(@NonNull MentionDisplayMode mode) {
 
                             if (mSuggestions.get(position) != null) {
+
+                                // Add mentions to this list. Duplicates will be added and later cleared from this list.
+                                allMentions.add(mSuggestions.get(position));
 
                                 return "@" + mSuggestions.get(position).substring(0, 10) + "...";
                             } else {
@@ -1069,6 +1089,12 @@ public class Chat extends AppCompatActivity implements
                     };
 
                     mInput.insertMention(mentionable);
+
+                    // A set will not allow duplicates, so this will get rid of any duplicates before they are added to the final list.
+                    // The final list will be sent to Firebase to notify users of messages.
+                    Set<String> hashSet = new LinkedHashSet<>(allMentions);
+                    removedMentionDuplicates = new ArrayList<>(hashSet);
+
                     // Add a space after inserting mention.
                     mInput.append(" ");
                 }
@@ -2671,6 +2697,8 @@ public class Chat extends AppCompatActivity implements
     private void messageUserIfNeeded() {
 
         Log.i(TAG, "messageUserIfNeeded()");
+
+
     }
 
     private void deleteDirectory(File file) {
