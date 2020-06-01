@@ -80,9 +80,7 @@ import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.StorageTask;
 import com.google.firebase.storage.UploadTask;
 import com.iceteck.silicompressorr.SiliCompressor;
-import com.linkedin.android.spyglass.mentions.MentionSpan;
 import com.linkedin.android.spyglass.mentions.Mentionable;
-import com.linkedin.android.spyglass.mentions.MentionsEditable;
 import com.linkedin.android.spyglass.suggestions.interfaces.SuggestionsVisibilityManager;
 import com.linkedin.android.spyglass.tokenization.QueryToken;
 import com.linkedin.android.spyglass.tokenization.impl.WordTokenizer;
@@ -514,9 +512,6 @@ public class Chat extends AppCompatActivity implements
                                             userInfo.setValue(userInformation);
                                         }
 
-                                        // Get the userUUIDs of the mentions.
-                                        Log.i(TAG, "mInput " + removedMentionDuplicates);
-
                                         mInput.getText().clear();
                                         newShape = false;
                                         sendButtonClicked = false;
@@ -638,9 +633,6 @@ public class Chat extends AppCompatActivity implements
                                             userInfo.setValue(userInformation);
                                         }
 
-                                        // Get the userUUIDs of the mentions.
-                                        Log.i(TAG, "mInput " + removedMentionDuplicates);
-
                                         mInput.getText().clear();
                                         newShape = false;
                                         sendButtonClicked = false;
@@ -704,9 +696,6 @@ public class Chat extends AppCompatActivity implements
                                 DatabaseReference userInfo = FirebaseDatabase.getInstance().getReference().child("Users").push();
                                 userInfo.setValue(userInformation);
                             }
-
-                            // Get the userUUIDs of the mentions.
-                            Log.i(TAG, "mInput " + removedMentionDuplicates);
 
                             mInput.getText().clear();
                             sendButtonClicked = false;
@@ -2696,9 +2685,49 @@ public class Chat extends AppCompatActivity implements
 
     private void messageUserIfNeeded() {
 
-        Log.i(TAG, "messageUserIfNeeded()");
+        if (removedMentionDuplicates != null) {
 
+            Log.i(TAG, "messageUserIfNeeded()");
 
+            // Connect to Firebase.
+            DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
+            DatabaseReference firebaseUsers = rootRef.child("Users");
+
+            // Load Firebase circles.
+            firebaseUsers.addListenerForSingleValueEvent(new ValueEventListener() {
+
+                @Override
+                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                    for (DataSnapshot ds : dataSnapshot.getChildren()) {
+
+                        if (dataSnapshot.getValue() != null) {
+
+                            String userUUID = (String) ds.child("userUUID").getValue();
+
+                            if (userUUID != null) {
+
+                                for (String removedMentionDuplicate : removedMentionDuplicates) {
+
+                                    if (userUUID.equals(removedMentionDuplicate)) {
+
+                                        toastMessageShort("hello");
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                    Log.e(TAG, "DatabaseError");
+                    Crashlytics.logException(new Exception("DatabaseError"));
+                    toastMessageLong(databaseError.getMessage());
+                }
+            });
+        }
     }
 
     private void deleteDirectory(File file) {
