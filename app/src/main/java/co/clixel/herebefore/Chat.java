@@ -2711,7 +2711,7 @@ public class Chat extends AppCompatActivity implements
 
                                     if (userUUID.equals(removedMentionDuplicate)) {
 
-                                        toastMessageShort("hello");
+                                        String registrationToken = (String) ds.child("token").getValue();
                                     }
                                 }
                             }
