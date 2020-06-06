@@ -495,6 +495,9 @@ public class Chat extends AppCompatActivity implements
                                         String userUUID = UUID.randomUUID().toString();
                                         messageInformation.setUserUUID(userUUID);
                                         messageInformation.setUUID(uuid);
+                                        if (removedMentionDuplicates != null) {
+                                            messageInformation.setRemovedMentionDuplicates(removedMentionDuplicates);
+                                        }
                                         messageInformation.setUserIsWithinShape(userIsWithinShape);
                                         DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                                         newMessage.setValue(messageInformation);
@@ -513,6 +516,7 @@ public class Chat extends AppCompatActivity implements
                                         }
 
                                         mInput.getText().clear();
+                                        removedMentionDuplicates.clear();
                                         newShape = false;
                                         sendButtonClicked = false;
 
@@ -616,6 +620,9 @@ public class Chat extends AppCompatActivity implements
                                         String userUUID = UUID.randomUUID().toString();
                                         messageInformation.setUserUUID(userUUID);
                                         messageInformation.setUUID(uuid);
+                                        if (removedMentionDuplicates != null) {
+                                            messageInformation.setRemovedMentionDuplicates(removedMentionDuplicates);
+                                        }
                                         messageInformation.setUserIsWithinShape(userIsWithinShape);
                                         DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                                         newMessage.setValue(messageInformation);
@@ -634,6 +641,7 @@ public class Chat extends AppCompatActivity implements
                                         }
 
                                         mInput.getText().clear();
+                                        removedMentionDuplicates.clear();
                                         newShape = false;
                                         sendButtonClicked = false;
 
@@ -680,6 +688,9 @@ public class Chat extends AppCompatActivity implements
                             String userUUID = UUID.randomUUID().toString();
                             messageInformation.setUserUUID(userUUID);
                             messageInformation.setUUID(uuid);
+                            if (removedMentionDuplicates != null) {
+                                messageInformation.setRemovedMentionDuplicates(removedMentionDuplicates);
+                            }
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                             newMessage.setValue(messageInformation);
@@ -698,6 +709,7 @@ public class Chat extends AppCompatActivity implements
                             }
 
                             mInput.getText().clear();
+                            removedMentionDuplicates.clear();
                             sendButtonClicked = false;
 
                             messageUserIfNeeded();
@@ -2341,6 +2353,9 @@ public class Chat extends AppCompatActivity implements
                             String userUUID = UUID.randomUUID().toString();
                             messageInformation.setUserUUID(userUUID);
                             messageInformation.setUUID(uuid);
+                            if (removedMentionDuplicates != null) {
+                                messageInformation.setRemovedMentionDuplicates(removedMentionDuplicates);
+                            }
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                             newMessage.setValue(messageInformation);
@@ -2359,6 +2374,7 @@ public class Chat extends AppCompatActivity implements
                             }
 
                             mInput.getText().clear();
+                            removedMentionDuplicates.clear();
                             imageView.setVisibility(View.GONE);
                             imageView.setImageDrawable(null);
                             if (image != null) {
@@ -2489,6 +2505,9 @@ public class Chat extends AppCompatActivity implements
                             String userUUID = UUID.randomUUID().toString();
                             messageInformation.setUserUUID(userUUID);
                             messageInformation.setUUID(uuid);
+                            if (removedMentionDuplicates != null) {
+                                messageInformation.setRemovedMentionDuplicates(removedMentionDuplicates);
+                            }
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                             newMessage.setValue(messageInformation);
@@ -2507,6 +2526,7 @@ public class Chat extends AppCompatActivity implements
                             }
 
                             mInput.getText().clear();
+                            removedMentionDuplicates.clear();
                             videoImageView.setVisibility(View.GONE);
                             imageView.setImageDrawable(null);
                             if (video != null) {
@@ -2637,6 +2657,9 @@ public class Chat extends AppCompatActivity implements
                             String userUUID = UUID.randomUUID().toString();
                             messageInformation.setUserUUID(userUUID);
                             messageInformation.setUUID(uuid);
+                            if (removedMentionDuplicates != null) {
+                                messageInformation.setRemovedMentionDuplicates(removedMentionDuplicates);
+                            }
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                             newMessage.setValue(messageInformation);
@@ -2655,6 +2678,7 @@ public class Chat extends AppCompatActivity implements
                             }
 
                             mInput.getText().clear();
+                            removedMentionDuplicates.clear();
                             imageView.setVisibility(View.GONE);
                             imageView.setImageDrawable(null);
                             if (image != null) {

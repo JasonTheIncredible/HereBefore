@@ -115,6 +115,7 @@ public class Map extends FragmentActivity implements
     // Test location services / make sure it works on first install and in new places.
     // Use network for more precise GPS?
     // Make sure the secret stuff is secret.
+    // Put the snapshots in reverse order before search for faster results.
     // Add preference for shape color.
     // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.
     // Leave messages in locations that users get notified of when they enter the area.
