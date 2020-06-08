@@ -11,7 +11,7 @@
         app:title="Toggle between dark and light mode" />
 
     <ListPreference
-        app:defaultValue="@string/depends_on_connection_type"
+        app:defaultValue="@string/hybrid_view"
         app:entries="@array/pref_map_types_entries"
         app:entryValues="@array/pref_map_types_entries"
         app:key="mapTypePreference"
