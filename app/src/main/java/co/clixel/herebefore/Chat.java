@@ -516,7 +516,9 @@ public class Chat extends AppCompatActivity implements
                                         }
 
                                         mInput.getText().clear();
-                                        removedMentionDuplicates.clear();
+                                        if (removedMentionDuplicates != null) {
+                                            removedMentionDuplicates.clear();
+                                        }
                                         newShape = false;
                                         sendButtonClicked = false;
 
@@ -641,7 +643,9 @@ public class Chat extends AppCompatActivity implements
                                         }
 
                                         mInput.getText().clear();
-                                        removedMentionDuplicates.clear();
+                                        if (removedMentionDuplicates != null) {
+                                            removedMentionDuplicates.clear();
+                                        }
                                         newShape = false;
                                         sendButtonClicked = false;
 
@@ -709,7 +713,9 @@ public class Chat extends AppCompatActivity implements
                             }
 
                             mInput.getText().clear();
-                            removedMentionDuplicates.clear();
+                            if (removedMentionDuplicates != null) {
+                                removedMentionDuplicates.clear();
+                            }
                             sendButtonClicked = false;
 
                             messageUserIfNeeded();
@@ -2374,7 +2380,9 @@ public class Chat extends AppCompatActivity implements
                             }
 
                             mInput.getText().clear();
-                            removedMentionDuplicates.clear();
+                            if (removedMentionDuplicates != null) {
+                                removedMentionDuplicates.clear();
+                            }
                             imageView.setVisibility(View.GONE);
                             imageView.setImageDrawable(null);
                             if (image != null) {
@@ -2526,7 +2534,9 @@ public class Chat extends AppCompatActivity implements
                             }
 
                             mInput.getText().clear();
-                            removedMentionDuplicates.clear();
+                            if (removedMentionDuplicates != null) {
+                                removedMentionDuplicates.clear();
+                            }
                             videoImageView.setVisibility(View.GONE);
                             imageView.setImageDrawable(null);
                             if (video != null) {
@@ -2678,7 +2688,9 @@ public class Chat extends AppCompatActivity implements
                             }
 
                             mInput.getText().clear();
-                            removedMentionDuplicates.clear();
+                            if (removedMentionDuplicates != null) {
+                                removedMentionDuplicates.clear();
+                            }
                             imageView.setVisibility(View.GONE);
                             imageView.setImageDrawable(null);
                             if (image != null) {
