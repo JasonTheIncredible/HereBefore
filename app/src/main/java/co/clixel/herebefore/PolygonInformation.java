@@ -9,7 +9,7 @@ class PolygonInformation {
 
     public PolygonOptions polygonOptions;
     public double polygonArea;
-    public String uuid;
+    public String shapeUUID;
 
     @Keep
     PolygonInformation() {
@@ -23,7 +23,7 @@ class PolygonInformation {
         this.polygonArea = polygonArea;
     }
 
-    void setUUID(String uuid) {
-        this.uuid = uuid;
+    void setShapeUUID(String shapeUUID) {
+        this.shapeUUID = shapeUUID;
     }
 }

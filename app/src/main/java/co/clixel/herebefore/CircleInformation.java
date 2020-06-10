@@ -8,7 +8,7 @@ import com.google.android.gms.maps.model.CircleOptions;
 class CircleInformation {
 
     public CircleOptions circleOptions;
-    public String uuid;
+    public String shapeUUID;
 
     @Keep
     CircleInformation() {
@@ -18,7 +18,7 @@ class CircleInformation {
         this.circleOptions = circleOptions;
     }
 
-    void setUUID(String uuid) {
-        this.uuid = uuid;
+    void setShapeUUID(String shapeUUID) {
+        this.shapeUUID = shapeUUID;
     }
 }

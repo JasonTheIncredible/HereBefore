@@ -82,7 +82,7 @@ public class Map extends FragmentActivity implements
     private Polygon newPolygon, polygonTemp, mPolygon = null;
     private DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference(), firebaseCircles = rootRef.child("Circles"), firebasePolygons = rootRef.child("Polygons");
     private SeekBar chatSizeSeekBar, chatSelectorSeekBar;
-    private String preferredMapType, uuid, marker0ID, marker1ID, marker2ID, marker3ID, marker4ID, marker5ID, marker6ID, marker7ID, selectedOverlappingShapeUUID;
+    private String preferredMapType, shapeUUID, marker0ID, marker1ID, marker2ID, marker3ID, marker4ID, marker5ID, marker6ID, marker7ID, selectedOverlappingShapeUUID;
     private Button createChatButton, chatViewsButton, mapTypeButton, settingsButton;
     private PopupMenu popupMapType, popupChatViews, popupCreateChat;
     private boolean stillLoadingCircles = true, stillLoadingPolygons = true, stillUpdatingCamera = true;
@@ -110,6 +110,7 @@ public class Map extends FragmentActivity implements
     // Make sure aboutLibraries is up to date.
     // Test location services / make sure it works on first install and in new places.
     // Use network for more precise GPS?
+    // More ads.
     // Make sure the secret stuff is secret.
     // Put the snapshots in reverse order before search for faster results.
     // Add preference for shape color.
@@ -2728,7 +2729,7 @@ public class Map extends FragmentActivity implements
                         }
 
                         // Generate a uuid, as the shape is new.
-                        uuid = UUID.randomUUID().toString();
+                        shapeUUID = UUID.randomUUID().toString();
 
                         // Check if user is within the circle before going to the recyclerviewlayout.
                         FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
@@ -2764,7 +2765,7 @@ public class Map extends FragmentActivity implements
                             // User is signed in.
 
                             // Compare the uuid to the uuids in Firebase to prevent uuid overlap before adding it to Firebase.
-                            firebaseCircles.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
+                            firebaseCircles.orderByChild("shapeUUID").equalTo(shapeUUID).addListenerForSingleValueEvent(new ValueEventListener() {
 
                                 @Override
                                 public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
@@ -2772,19 +2773,19 @@ public class Map extends FragmentActivity implements
                                     // If the uuid already exists in Firebase, generate another uuid and try again.
                                     if (dataSnapshot.exists()) {
 
-                                        Log.i(TAG, "onMapReadyAndRestart() -> onMarkerClick -> user signed in -> circle -> marker0 -> uuid exists");
+                                        Log.i(TAG, "onMapReadyAndRestart() -> onMarkerClick -> user signed in -> circle -> marker0 -> shapeUUID exists");
 
                                         // uuid exists in Firebase. Generate another and try again.
 
-                                        // Generate another UUID and try again.
-                                        uuid = UUID.randomUUID().toString();
+                                        // Generate another uuid and try again.
+                                        shapeUUID = UUID.randomUUID().toString();
 
                                         // Carry the extras all the way to Chat.java.
                                         Intent Activity = new Intent(Map.this, Chat.class);
                                         goToNextActivityCircle(Activity, newCircle, true);
                                     } else {
 
-                                        Log.i(TAG, "onMapReadyAndRestart() -> onMarkerClick -> user signed in -> circle -> marker0 -> uuid does not exist");
+                                        Log.i(TAG, "onMapReadyAndRestart() -> onMarkerClick -> user signed in -> circle -> marker0 -> shapeUUID does not exist");
 
                                         // uuid does not already exist in Firebase. Go to Chat.java with the uuid.
 
@@ -2809,7 +2810,7 @@ public class Map extends FragmentActivity implements
                             // No user is signed in.
 
                             // Compare the uuid to the uuids in Firebase to prevent uuid overlap before adding it to Firebase.
-                            firebaseCircles.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
+                            firebaseCircles.orderByChild("shapeUUID").equalTo(shapeUUID).addListenerForSingleValueEvent(new ValueEventListener() {
 
                                 @Override
                                 public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
@@ -2817,19 +2818,19 @@ public class Map extends FragmentActivity implements
                                     // If the uuid already exists in Firebase, generate another uuid and try again.
                                     if (dataSnapshot.exists()) {
 
-                                        Log.i(TAG, "onMapReadyAndRestart() -> onMarkerClick -> no user signed in -> circle -> marker0 -> uuid exist");
+                                        Log.i(TAG, "onMapReadyAndRestart() -> onMarkerClick -> no user signed in -> circle -> marker0 -> shapeUUID exist");
 
                                         // uuid exists in Firebase. Generate another and try again.
 
                                         // Generate another UUID and try again.
-                                        uuid = UUID.randomUUID().toString();
+                                        shapeUUID = UUID.randomUUID().toString();
 
                                         // Carry the extras all the way to Chat.java.
                                         Intent Activity = new Intent(Map.this, SignIn.class);
                                         goToNextActivityCircle(Activity, newCircle, true);
                                     } else {
 
-                                        Log.i(TAG, "onMapReadyAndRestart() -> onMarkerClick -> no user signed in -> circle -> marker0 -> uuid does not exist");
+                                        Log.i(TAG, "onMapReadyAndRestart() -> onMarkerClick -> no user signed in -> circle -> marker0 -> shapeUUID does not exist");
 
                                         // uuid does not already exist in Firebase. Go to Chat.java with the uuid.
 
@@ -2896,7 +2897,7 @@ public class Map extends FragmentActivity implements
                     }
 
                     // Generate a uuid, as the shape is new.
-                    uuid = UUID.randomUUID().toString();
+                    shapeUUID = UUID.randomUUID().toString();
 
                     // Check if user is within the circle before going to the recyclerviewlayout.
                     FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
@@ -2917,7 +2918,7 @@ public class Map extends FragmentActivity implements
 
                                             // User is signed in.
 
-                                            firebasePolygons.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
+                                            firebasePolygons.orderByChild("shapeUUID").equalTo(shapeUUID).addListenerForSingleValueEvent(new ValueEventListener() {
 
                                                 @Override
                                                 public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
@@ -2925,12 +2926,12 @@ public class Map extends FragmentActivity implements
                                                     // If the uuid already exists in Firebase, generate another uuid and try again.
                                                     if (dataSnapshot.exists()) {
 
-                                                        Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> New polygon -> User signed in -> uuid exists");
+                                                        Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> New polygon -> User signed in -> shapeUUID exists");
 
                                                         // uuid exists in Firebase. Generate another and try again.
 
-                                                        // Generate another UUID and try again.
-                                                        uuid = UUID.randomUUID().toString();
+                                                        // Generate another uuid and try again.
+                                                        shapeUUID = UUID.randomUUID().toString();
 
                                                         // Carry the extras all the way to Chat.java.
                                                         Intent Activity = new Intent(Map.this, Chat.class);
@@ -2939,7 +2940,7 @@ public class Map extends FragmentActivity implements
                                                         goToNextActivityPolygon(Activity, true);
                                                     } else {
 
-                                                        Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> New polygon -> User signed in -> uuid does not exist");
+                                                        Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> New polygon -> User signed in -> shapeUUID does not exist");
 
                                                         // uuid does not already exist in Firebase. Go to Chat.java with the uuid.
 
@@ -2965,7 +2966,7 @@ public class Map extends FragmentActivity implements
 
                                             // No user is signed in.
 
-                                            firebasePolygons.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
+                                            firebasePolygons.orderByChild("shapeUUID").equalTo(shapeUUID).addListenerForSingleValueEvent(new ValueEventListener() {
 
                                                 @Override
                                                 public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
@@ -2973,12 +2974,12 @@ public class Map extends FragmentActivity implements
                                                     // If the uuid already exists in Firebase, generate another uuid and try again.
                                                     if (dataSnapshot.exists()) {
 
-                                                        Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> New polygon -> No user signed in -> uuid exists");
+                                                        Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> New polygon -> No user signed in -> shapeUUID exists");
 
                                                         // uuid exists in Firebase. Generate another and try again.
 
-                                                        // Generate another UUID and try again.
-                                                        uuid = UUID.randomUUID().toString();
+                                                        // Generate another uuid and try again.
+                                                        shapeUUID = UUID.randomUUID().toString();
 
                                                         // Carry the extras to SignIn.java
                                                         Intent Activity = new Intent(Map.this, SignIn.class);
@@ -2987,7 +2988,7 @@ public class Map extends FragmentActivity implements
                                                         goToNextActivityPolygon(Activity, true);
                                                     } else {
 
-                                                        Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> New polygon -> No user signed in -> uuid does not exist");
+                                                        Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> New polygon -> No user signed in -> shapeUUID does not exist");
 
                                                         // uuid does not already exist in Firebase. Go to SignIn.java with the uuid.
 
@@ -3167,10 +3168,10 @@ public class Map extends FragmentActivity implements
                     // "New" shapes are automatically clicked. Therefore, get the ID set by Firebase to identify which circle the user clicked on.
                     if (chatsSize == 1) {
 
-                        uuid = (String) polygon.getTag();
+                        shapeUUID = (String) polygon.getTag();
                     } else {
 
-                        uuid = selectedOverlappingShapeUUID;
+                        shapeUUID = selectedOverlappingShapeUUID;
                     }
 
                     // Check if user is within the shape before going to the recyclerviewlayout.
@@ -3540,7 +3541,7 @@ public class Map extends FragmentActivity implements
                     }
 
                     // Generate a uuid, as the shape is new.
-                    uuid = UUID.randomUUID().toString();
+                    shapeUUID = UUID.randomUUID().toString();
 
                     // Check if user is within the circle before going to the recyclerviewlayout.
                     FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
@@ -3567,7 +3568,7 @@ public class Map extends FragmentActivity implements
                                             // User is signed in.
 
                                             // Compare the uuid to the uuids in Firebase to prevent uuid overlap before adding it to Firebase.
-                                            firebaseCircles.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
+                                            firebaseCircles.orderByChild("shapeUUID").equalTo(shapeUUID).addListenerForSingleValueEvent(new ValueEventListener() {
 
                                                 @Override
                                                 public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
@@ -3575,12 +3576,12 @@ public class Map extends FragmentActivity implements
                                                     // If the uuid already exists in Firebase, generate another uuid and try again.
                                                     if (dataSnapshot.exists()) {
 
-                                                        Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> New circle -> User signed in -> uuid exists");
+                                                        Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> New circle -> User signed in -> shapeUUID exists");
 
                                                         // uuid exists in Firebase. Generate another and try again.
 
-                                                        // Generate another UUID and try again.
-                                                        uuid = UUID.randomUUID().toString();
+                                                        // Generate another uuid and try again.
+                                                        shapeUUID = UUID.randomUUID().toString();
 
                                                         // Carry the extras all the way to Chat.java.
                                                         Intent Activity = new Intent(Map.this, Chat.class);
@@ -3589,7 +3590,7 @@ public class Map extends FragmentActivity implements
                                                         goToNextActivityCircle(Activity, circle, true);
                                                     } else {
 
-                                                        Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> New circle -> User signed in -> uuid does not exists");
+                                                        Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> New circle -> User signed in -> shapeUUID does not exists");
 
                                                         // uuid does not already exist in Firebase. Go to Chat.java with the uuid.
 
@@ -3616,7 +3617,7 @@ public class Map extends FragmentActivity implements
                                             // No user is signed in.
 
                                             // Compare the uuid to the uuids in Firebase to prevent uuid overlap before adding it to Firebase.
-                                            firebaseCircles.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
+                                            firebaseCircles.orderByChild("shapeUUID").equalTo(shapeUUID).addListenerForSingleValueEvent(new ValueEventListener() {
 
                                                 @Override
                                                 public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
@@ -3624,12 +3625,12 @@ public class Map extends FragmentActivity implements
                                                     // If the uuid already exists in Firebase, generate another uuid and try again.
                                                     if (dataSnapshot.exists()) {
 
-                                                        Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> New circle -> No user signed in -> uuid exists");
+                                                        Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> New circle -> No user signed in -> shapeUUID exists");
 
                                                         // uuid exists in Firebase. Generate another and try again.
 
-                                                        // Generate another UUID and try again.
-                                                        uuid = UUID.randomUUID().toString();
+                                                        // Generate another uuid and try again.
+                                                        shapeUUID = UUID.randomUUID().toString();
 
                                                         // Carry the extras to SignIn.java.
                                                         Intent Activity = new Intent(Map.this, SignIn.class);
@@ -3638,7 +3639,7 @@ public class Map extends FragmentActivity implements
                                                         goToNextActivityCircle(Activity, circle, true);
                                                     } else {
 
-                                                        Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> New circle -> No user signed in -> uuid does not exists");
+                                                        Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> New circle -> No user signed in -> shapeUUID does not exists");
 
                                                         // uuid does not already exist in Firebase. Go to Chat.java with the uuid.
 
@@ -3818,10 +3819,10 @@ public class Map extends FragmentActivity implements
                     // "New" shapes are automatically clicked. Therefore, get the ID set by Firebase to identify which circle the user clicked on.
                     if (chatsSize == 1) {
 
-                        uuid = (String) circle.getTag();
+                        shapeUUID = (String) circle.getTag();
                     } else {
 
-                        uuid = selectedOverlappingShapeUUID;
+                        shapeUUID = selectedOverlappingShapeUUID;
                     }
 
                     // Check if user is within the circle before going to the recyclerviewlayout.
@@ -4095,7 +4096,7 @@ public class Map extends FragmentActivity implements
                     // Update boolean to prevent double clicking a shape.
                     waitingForShapeInformationToProcess = true;
 
-                    uuid = (String) mCircle.getTag();
+                    shapeUUID = (String) mCircle.getTag();
 
                     // Check if user is within the circle before going to the recyclerviewlayout.
                     FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
@@ -4163,7 +4164,7 @@ public class Map extends FragmentActivity implements
                     // Update boolean to prevent double clicking a shape.
                     waitingForShapeInformationToProcess = true;
 
-                    uuid = (String) mPolygon.getTag();
+                    shapeUUID = (String) mPolygon.getTag();
 
                     // Check if user is within the shape before going to the recyclerviewlayout.
                     FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
@@ -5122,7 +5123,7 @@ public class Map extends FragmentActivity implements
         // Pass this boolean value Chat.java.
         Activity.putExtra("newShape", newShape);
         // Pass this value to Chat.java to identify the shape.
-        Activity.putExtra("uuid", uuid);
+        Activity.putExtra("shapeUUID", shapeUUID);
         // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
         Activity.putExtra("userIsWithinShape", userIsWithinShape);
 
@@ -5139,7 +5140,7 @@ public class Map extends FragmentActivity implements
         // Pass this boolean value to Chat.java.
         Activity.putExtra("newShape", newShape);
         // Pass this value to Chat.java to identify the shape.
-        Activity.putExtra("uuid", uuid);
+        Activity.putExtra("shapeUUID", shapeUUID);
         // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
         Activity.putExtra("userIsWithinShape", userIsWithinShape);
         // Pass this information to Chat.java to create a new circle in Firebase after someone writes a recyclerviewlayout.
@@ -5530,9 +5531,9 @@ public class Map extends FragmentActivity implements
                                             );
 
                                             // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                            uuid = (String) ds.child("uuid").getValue();
+                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            circle.setTag(uuid);
+                                            circle.setTag(shapeUUID);
                                         }
                                     }
                                 }
@@ -5600,9 +5601,9 @@ public class Map extends FragmentActivity implements
                                                 );
 
                                                 // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                                uuid = (String) ds.child("uuid").getValue();
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                                polygon.setTag(uuid);
+                                                polygon.setTag(shapeUUID);
                                             } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
                                                 polygon = mMap.addPolygon(
                                                         new PolygonOptions()
@@ -5613,9 +5614,9 @@ public class Map extends FragmentActivity implements
                                                 );
 
                                                 // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                                uuid = (String) ds.child("uuid").getValue();
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                                polygon.setTag(uuid);
+                                                polygon.setTag(shapeUUID);
                                             } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
                                                 polygon = mMap.addPolygon(
                                                         new PolygonOptions()
@@ -5626,9 +5627,9 @@ public class Map extends FragmentActivity implements
                                                 );
 
                                                 // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                                uuid = (String) ds.child("uuid").getValue();
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                                polygon.setTag(uuid);
+                                                polygon.setTag(shapeUUID);
                                             } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
                                                 polygon = mMap.addPolygon(
                                                         new PolygonOptions()
@@ -5639,9 +5640,9 @@ public class Map extends FragmentActivity implements
                                                 );
 
                                                 // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                                uuid = (String) ds.child("uuid").getValue();
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                                polygon.setTag(uuid);
+                                                polygon.setTag(shapeUUID);
                                             } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
                                                 polygon = mMap.addPolygon(
                                                         new PolygonOptions()
@@ -5652,9 +5653,9 @@ public class Map extends FragmentActivity implements
                                                 );
 
                                                 // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                                uuid = (String) ds.child("uuid").getValue();
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                                polygon.setTag(uuid);
+                                                polygon.setTag(shapeUUID);
                                             } else {
                                                 polygon = mMap.addPolygon(
                                                         new PolygonOptions()
@@ -5665,9 +5666,9 @@ public class Map extends FragmentActivity implements
                                                 );
 
                                                 // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                                uuid = (String) ds.child("uuid").getValue();
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                                polygon.setTag(uuid);
+                                                polygon.setTag(shapeUUID);
                                             }
                                         }
                                     }
@@ -5719,9 +5720,9 @@ public class Map extends FragmentActivity implements
                                             );
 
                                             // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                            uuid = (String) ds.child("uuid").getValue();
+                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            circle.setTag(uuid);
+                                            circle.setTag(shapeUUID);
                                         }
                                     }
                                 }
@@ -5789,9 +5790,9 @@ public class Map extends FragmentActivity implements
                                                 );
 
                                                 // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                                uuid = (String) ds.child("uuid").getValue();
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                                polygon.setTag(uuid);
+                                                polygon.setTag(shapeUUID);
                                             } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
                                                 polygon = mMap.addPolygon(
                                                         new PolygonOptions()
@@ -5802,9 +5803,9 @@ public class Map extends FragmentActivity implements
                                                 );
 
                                                 // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                                uuid = (String) ds.child("uuid").getValue();
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                                polygon.setTag(uuid);
+                                                polygon.setTag(shapeUUID);
                                             } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
                                                 polygon = mMap.addPolygon(
                                                         new PolygonOptions()
@@ -5815,9 +5816,9 @@ public class Map extends FragmentActivity implements
                                                 );
 
                                                 // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                                uuid = (String) ds.child("uuid").getValue();
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                                polygon.setTag(uuid);
+                                                polygon.setTag(shapeUUID);
                                             } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
                                                 polygon = mMap.addPolygon(
                                                         new PolygonOptions()
@@ -5828,9 +5829,9 @@ public class Map extends FragmentActivity implements
                                                 );
 
                                                 // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                                uuid = (String) ds.child("uuid").getValue();
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                                polygon.setTag(uuid);
+                                                polygon.setTag(shapeUUID);
                                             } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
                                                 polygon = mMap.addPolygon(
                                                         new PolygonOptions()
@@ -5841,9 +5842,9 @@ public class Map extends FragmentActivity implements
                                                 );
 
                                                 // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                                uuid = (String) ds.child("uuid").getValue();
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                                polygon.setTag(uuid);
+                                                polygon.setTag(shapeUUID);
                                             } else {
                                                 polygon = mMap.addPolygon(
                                                         new PolygonOptions()
@@ -5854,9 +5855,9 @@ public class Map extends FragmentActivity implements
                                                 );
 
                                                 // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                                uuid = (String) ds.child("uuid").getValue();
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                                polygon.setTag(uuid);
+                                                polygon.setTag(shapeUUID);
                                             }
                                         }
                                     }
@@ -6015,9 +6016,9 @@ public class Map extends FragmentActivity implements
                                             );
 
                                             // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                            uuid = (String) ds.child("uuid").getValue();
+                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            circle.setTag(uuid);
+                                            circle.setTag(shapeUUID);
                                         }
                                     }
                                 }
@@ -6086,9 +6087,9 @@ public class Map extends FragmentActivity implements
                                                 );
 
                                                 // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                                uuid = (String) ds.child("uuid").getValue();
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                                polygon.setTag(uuid);
+                                                polygon.setTag(shapeUUID);
                                             } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
                                                 polygon = mMap.addPolygon(
                                                         new PolygonOptions()
@@ -6099,9 +6100,9 @@ public class Map extends FragmentActivity implements
                                                 );
 
                                                 // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                                uuid = (String) ds.child("uuid").getValue();
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                                polygon.setTag(uuid);
+                                                polygon.setTag(shapeUUID);
                                             } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
                                                 polygon = mMap.addPolygon(
                                                         new PolygonOptions()
@@ -6112,9 +6113,9 @@ public class Map extends FragmentActivity implements
                                                 );
 
                                                 // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                                uuid = (String) ds.child("uuid").getValue();
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                                polygon.setTag(uuid);
+                                                polygon.setTag(shapeUUID);
                                             } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
                                                 polygon = mMap.addPolygon(
                                                         new PolygonOptions()
@@ -6125,9 +6126,9 @@ public class Map extends FragmentActivity implements
                                                 );
 
                                                 // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                                uuid = (String) ds.child("uuid").getValue();
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                                polygon.setTag(uuid);
+                                                polygon.setTag(shapeUUID);
                                             } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
                                                 polygon = mMap.addPolygon(
                                                         new PolygonOptions()
@@ -6138,9 +6139,9 @@ public class Map extends FragmentActivity implements
                                                 );
 
                                                 // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                                uuid = (String) ds.child("uuid").getValue();
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                                polygon.setTag(uuid);
+                                                polygon.setTag(shapeUUID);
                                             } else {
                                                 polygon = mMap.addPolygon(
                                                         new PolygonOptions()
@@ -6151,9 +6152,9 @@ public class Map extends FragmentActivity implements
                                                 );
 
                                                 // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                                uuid = (String) ds.child("uuid").getValue();
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                                polygon.setTag(uuid);
+                                                polygon.setTag(shapeUUID);
                                             }
                                         }
                                     }
@@ -6205,9 +6206,9 @@ public class Map extends FragmentActivity implements
                                             );
 
                                             // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                            uuid = (String) ds.child("uuid").getValue();
+                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            circle.setTag(uuid);
+                                            circle.setTag(shapeUUID);
                                         }
                                     }
                                 }
@@ -6276,9 +6277,9 @@ public class Map extends FragmentActivity implements
                                                 );
 
                                                 // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                                uuid = (String) ds.child("uuid").getValue();
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                                polygon.setTag(uuid);
+                                                polygon.setTag(shapeUUID);
                                             } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
                                                 polygon = mMap.addPolygon(
                                                         new PolygonOptions()
@@ -6289,9 +6290,9 @@ public class Map extends FragmentActivity implements
                                                 );
 
                                                 // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                                uuid = (String) ds.child("uuid").getValue();
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                                polygon.setTag(uuid);
+                                                polygon.setTag(shapeUUID);
                                             } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
                                                 polygon = mMap.addPolygon(
                                                         new PolygonOptions()
@@ -6302,9 +6303,9 @@ public class Map extends FragmentActivity implements
                                                 );
 
                                                 // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                                uuid = (String) ds.child("uuid").getValue();
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                                polygon.setTag(uuid);
+                                                polygon.setTag(shapeUUID);
                                             } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
                                                 polygon = mMap.addPolygon(
                                                         new PolygonOptions()
@@ -6315,9 +6316,9 @@ public class Map extends FragmentActivity implements
                                                 );
 
                                                 // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                                uuid = (String) ds.child("uuid").getValue();
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                                polygon.setTag(uuid);
+                                                polygon.setTag(shapeUUID);
                                             } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
                                                 polygon = mMap.addPolygon(
                                                         new PolygonOptions()
@@ -6328,9 +6329,9 @@ public class Map extends FragmentActivity implements
                                                 );
 
                                                 // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                                uuid = (String) ds.child("uuid").getValue();
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                                polygon.setTag(uuid);
+                                                polygon.setTag(shapeUUID);
                                             } else {
                                                 polygon = mMap.addPolygon(
                                                         new PolygonOptions()
@@ -6341,9 +6342,9 @@ public class Map extends FragmentActivity implements
                                                 );
 
                                                 // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                                uuid = (String) ds.child("uuid").getValue();
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                                polygon.setTag(uuid);
+                                                polygon.setTag(shapeUUID);
                                             }
                                         }
                                     }
@@ -6502,9 +6503,9 @@ public class Map extends FragmentActivity implements
                                             );
 
                                             // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                            uuid = (String) ds.child("uuid").getValue();
+                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            circle.setTag(uuid);
+                                            circle.setTag(shapeUUID);
                                         }
                                     }
                                 }
@@ -6573,9 +6574,9 @@ public class Map extends FragmentActivity implements
                                                 );
 
                                                 // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                                uuid = (String) ds.child("uuid").getValue();
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                                polygon.setTag(uuid);
+                                                polygon.setTag(shapeUUID);
                                             } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
                                                 polygon = mMap.addPolygon(
                                                         new PolygonOptions()
@@ -6586,9 +6587,9 @@ public class Map extends FragmentActivity implements
                                                 );
 
                                                 // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                                uuid = (String) ds.child("uuid").getValue();
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                                polygon.setTag(uuid);
+                                                polygon.setTag(shapeUUID);
                                             } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
                                                 polygon = mMap.addPolygon(
                                                         new PolygonOptions()
@@ -6599,9 +6600,9 @@ public class Map extends FragmentActivity implements
                                                 );
 
                                                 // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                                uuid = (String) ds.child("uuid").getValue();
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                                polygon.setTag(uuid);
+                                                polygon.setTag(shapeUUID);
                                             } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
                                                 polygon = mMap.addPolygon(
                                                         new PolygonOptions()
@@ -6612,9 +6613,9 @@ public class Map extends FragmentActivity implements
                                                 );
 
                                                 // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                                uuid = (String) ds.child("uuid").getValue();
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                                polygon.setTag(uuid);
+                                                polygon.setTag(shapeUUID);
                                             } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
                                                 polygon = mMap.addPolygon(
                                                         new PolygonOptions()
@@ -6625,9 +6626,9 @@ public class Map extends FragmentActivity implements
                                                 );
 
                                                 // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                                uuid = (String) ds.child("uuid").getValue();
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                                polygon.setTag(uuid);
+                                                polygon.setTag(shapeUUID);
                                             } else {
                                                 polygon = mMap.addPolygon(
                                                         new PolygonOptions()
@@ -6638,9 +6639,9 @@ public class Map extends FragmentActivity implements
                                                 );
 
                                                 // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                                uuid = (String) ds.child("uuid").getValue();
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                                polygon.setTag(uuid);
+                                                polygon.setTag(shapeUUID);
                                             }
                                         }
                                     }
@@ -6692,9 +6693,9 @@ public class Map extends FragmentActivity implements
                                             );
 
                                             // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                            uuid = (String) ds.child("uuid").getValue();
+                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            circle.setTag(uuid);
+                                            circle.setTag(shapeUUID);
                                         }
                                     }
                                 }
@@ -6763,9 +6764,9 @@ public class Map extends FragmentActivity implements
                                                 );
 
                                                 // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                                uuid = (String) ds.child("uuid").getValue();
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                                polygon.setTag(uuid);
+                                                polygon.setTag(shapeUUID);
                                             } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
                                                 polygon = mMap.addPolygon(
                                                         new PolygonOptions()
@@ -6776,9 +6777,9 @@ public class Map extends FragmentActivity implements
                                                 );
 
                                                 // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                                uuid = (String) ds.child("uuid").getValue();
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                                polygon.setTag(uuid);
+                                                polygon.setTag(shapeUUID);
                                             } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
                                                 polygon = mMap.addPolygon(
                                                         new PolygonOptions()
@@ -6789,9 +6790,9 @@ public class Map extends FragmentActivity implements
                                                 );
 
                                                 // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                                uuid = (String) ds.child("uuid").getValue();
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                                polygon.setTag(uuid);
+                                                polygon.setTag(shapeUUID);
                                             } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
                                                 polygon = mMap.addPolygon(
                                                         new PolygonOptions()
@@ -6802,9 +6803,9 @@ public class Map extends FragmentActivity implements
                                                 );
 
                                                 // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                                uuid = (String) ds.child("uuid").getValue();
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                                polygon.setTag(uuid);
+                                                polygon.setTag(shapeUUID);
                                             } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
                                                 polygon = mMap.addPolygon(
                                                         new PolygonOptions()
@@ -6815,9 +6816,9 @@ public class Map extends FragmentActivity implements
                                                 );
 
                                                 // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                                uuid = (String) ds.child("uuid").getValue();
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                                polygon.setTag(uuid);
+                                                polygon.setTag(shapeUUID);
                                             } else {
                                                 polygon = mMap.addPolygon(
                                                         new PolygonOptions()
@@ -6828,9 +6829,9 @@ public class Map extends FragmentActivity implements
                                                 );
 
                                                 // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                                uuid = (String) ds.child("uuid").getValue();
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                                polygon.setTag(uuid);
+                                                polygon.setTag(shapeUUID);
                                             }
                                         }
                                     }
@@ -6989,9 +6990,9 @@ public class Map extends FragmentActivity implements
                                             );
 
                                             // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                            uuid = (String) ds.child("uuid").getValue();
+                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            circle.setTag(uuid);
+                                            circle.setTag(shapeUUID);
                                         }
                                     }
                                 }
@@ -7036,9 +7037,9 @@ public class Map extends FragmentActivity implements
                                             );
 
                                             // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                            uuid = (String) ds.child("uuic").getValue();
+                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            circle.setTag(uuid);
+                                            circle.setTag(shapeUUID);
                                         }
                                     }
                                 }
@@ -7760,21 +7761,21 @@ public class Map extends FragmentActivity implements
                                     // Add circle to the map and go to recyclerviewlayout.
                                     if (mMap != null) {
 
-                                        uuid = UUID.randomUUID().toString();
+                                        shapeUUID = UUID.randomUUID().toString();
 
                                         // Check if the user is already signed in.
                                         if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) instanceof GoogleSignInAccount) {
 
                                             // User is signed in.
                                             // Connect to Firebase.
-                                            firebaseCircles.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
+                                            firebaseCircles.orderByChild("shapeUUID").equalTo(shapeUUID).addListenerForSingleValueEvent(new ValueEventListener() {
                                                 @Override
                                                 public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
 
                                                     // If the uuid already exists in Firebase, generate another uuid and try again.
                                                     if (dataSnapshot.exists()) {
 
-                                                        uuid = UUID.randomUUID().toString();
+                                                        shapeUUID = UUID.randomUUID().toString();
 
                                                         // Carry the extras all the way to Chat.java.
                                                         Intent Activity = new Intent(Map.this, Chat.class);
@@ -7782,7 +7783,7 @@ public class Map extends FragmentActivity implements
                                                         // Pass this boolean value to Chat.java.
                                                         Activity.putExtra("newShape", true);
                                                         // Pass this value to Chat.java to identify the shape.
-                                                        Activity.putExtra("uuid", uuid);
+                                                        Activity.putExtra("shapeUUID", shapeUUID);
                                                         // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
                                                         Activity.putExtra("userIsWithinShape", true);
                                                         // Pass this information to Chat.java to create a new circle in Firebase after someone writes a recyclerviewlayout.
@@ -7798,7 +7799,7 @@ public class Map extends FragmentActivity implements
                                                         // Pass this boolean value to Chat.java.
                                                         Activity.putExtra("newShape", true);
                                                         // Pass this value to Chat.java to identify the shape.
-                                                        Activity.putExtra("uuid", uuid);
+                                                        Activity.putExtra("shapeUUID", shapeUUID);
                                                         // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
                                                         Activity.putExtra("userIsWithinShape", true);
                                                         // Pass this information to Chat.java to create a new circle in Firebase after someone writes a recyclerviewlayout.
@@ -7822,7 +7823,7 @@ public class Map extends FragmentActivity implements
 
                                             // No user is signed in.
                                             // Connect to Firebase.
-                                            firebaseCircles.orderByChild("uuid").equalTo(uuid).addListenerForSingleValueEvent(new ValueEventListener() {
+                                            firebaseCircles.orderByChild("shapeUUID").equalTo(shapeUUID).addListenerForSingleValueEvent(new ValueEventListener() {
 
                                                 @Override
                                                 public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
@@ -7830,7 +7831,7 @@ public class Map extends FragmentActivity implements
                                                     // If the uuid already exists in Firebase, generate another uuid and try again.
                                                     if (dataSnapshot.exists()) {
 
-                                                        uuid = UUID.randomUUID().toString();
+                                                        shapeUUID = UUID.randomUUID().toString();
 
                                                         // Carry the extras all the way to Chat.java.
                                                         Intent Activity = new Intent(Map.this, SignIn.class);
@@ -7838,7 +7839,7 @@ public class Map extends FragmentActivity implements
                                                         // Pass this boolean value to Chat.java.
                                                         Activity.putExtra("newShape", true);
                                                         // Pass this value to Chat.java to identify the shape.
-                                                        Activity.putExtra("uuid", uuid);
+                                                        Activity.putExtra("shapeUUID", shapeUUID);
                                                         // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
                                                         Activity.putExtra("userIsWithinShape", true);
                                                         // Pass this information to Chat.java to create a new circle in Firebase after someone writes a recyclerviewlayout.
@@ -7854,7 +7855,7 @@ public class Map extends FragmentActivity implements
                                                         // Pass this boolean value to Chat.java.
                                                         Activity.putExtra("newShape", true);
                                                         // Pass this value to Chat.java to identify the shape.
-                                                        Activity.putExtra("uuid", uuid);
+                                                        Activity.putExtra("shapeUUID", shapeUUID);
                                                         // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
                                                         Activity.putExtra("userIsWithinShape", true);
                                                         // Pass this information to Chat.java to create a new circle in Firebase after someone writes a recyclerviewlayout.
@@ -8087,9 +8088,9 @@ public class Map extends FragmentActivity implements
                         );
 
                         // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                        uuid = (String) ds.child("uuid").getValue();
+                        shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                        circle.setTag(uuid);
+                        circle.setTag(shapeUUID);
                     }
                 }
 
@@ -8155,9 +8156,9 @@ public class Map extends FragmentActivity implements
                             );
 
                             // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                            uuid = (String) ds.child("uuid").getValue();
+                            shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                            polygon.setTag(uuid);
+                            polygon.setTag(shapeUUID);
                         } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
                             polygon = mMap.addPolygon(
                                     new PolygonOptions()
@@ -8168,9 +8169,9 @@ public class Map extends FragmentActivity implements
                             );
 
                             // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                            uuid = (String) ds.child("uuid").getValue();
+                            shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                            polygon.setTag(uuid);
+                            polygon.setTag(shapeUUID);
                         } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
                             polygon = mMap.addPolygon(
                                     new PolygonOptions()
@@ -8181,9 +8182,9 @@ public class Map extends FragmentActivity implements
                             );
 
                             // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                            uuid = (String) ds.child("uuid").getValue();
+                            shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                            polygon.setTag(uuid);
+                            polygon.setTag(shapeUUID);
                         } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
                             polygon = mMap.addPolygon(
                                     new PolygonOptions()
@@ -8194,9 +8195,9 @@ public class Map extends FragmentActivity implements
                             );
 
                             // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                            uuid = (String) ds.child("uuid").getValue();
+                            shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                            polygon.setTag(uuid);
+                            polygon.setTag(shapeUUID);
                         } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
                             polygon = mMap.addPolygon(
                                     new PolygonOptions()
@@ -8207,9 +8208,9 @@ public class Map extends FragmentActivity implements
                             );
 
                             // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                            uuid = (String) ds.child("uuid").getValue();
+                            shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                            polygon.setTag(uuid);
+                            polygon.setTag(shapeUUID);
                         } else {
                             polygon = mMap.addPolygon(
                                     new PolygonOptions()
@@ -8220,9 +8221,9 @@ public class Map extends FragmentActivity implements
                             );
 
                             // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                            uuid = (String) ds.child("uuid").getValue();
+                            shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                            polygon.setTag(uuid);
+                            polygon.setTag(shapeUUID);
                         }
                     }
                 }
@@ -8444,9 +8445,9 @@ public class Map extends FragmentActivity implements
                         );
 
                         // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                        uuid = (String) ds.child("uuid").getValue();
+                        shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                        circle.setTag(uuid);
+                        circle.setTag(shapeUUID);
                     }
                 }
 
@@ -8512,9 +8513,9 @@ public class Map extends FragmentActivity implements
                             );
 
                             // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                            uuid = (String) ds.child("uuid").getValue();
+                            shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                            polygon.setTag(uuid);
+                            polygon.setTag(shapeUUID);
                         } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
                             polygon = mMap.addPolygon(
                                     new PolygonOptions()
@@ -8525,9 +8526,9 @@ public class Map extends FragmentActivity implements
                             );
 
                             // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                            uuid = (String) ds.child("uuid").getValue();
+                            shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                            polygon.setTag(uuid);
+                            polygon.setTag(shapeUUID);
                         } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
                             polygon = mMap.addPolygon(
                                     new PolygonOptions()
@@ -8538,9 +8539,9 @@ public class Map extends FragmentActivity implements
                             );
 
                             // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                            uuid = (String) ds.child("uuid").getValue();
+                            shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                            polygon.setTag(uuid);
+                            polygon.setTag(shapeUUID);
                         } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
                             polygon = mMap.addPolygon(
                                     new PolygonOptions()
@@ -8551,9 +8552,9 @@ public class Map extends FragmentActivity implements
                             );
 
                             // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                            uuid = (String) ds.child("uuid").getValue();
+                            shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                            polygon.setTag(uuid);
+                            polygon.setTag(shapeUUID);
                         } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
                             polygon = mMap.addPolygon(
                                     new PolygonOptions()
@@ -8564,9 +8565,9 @@ public class Map extends FragmentActivity implements
                             );
 
                             // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                            uuid = (String) ds.child("uuid").getValue();
+                            shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                            polygon.setTag(uuid);
+                            polygon.setTag(shapeUUID);
                         } else {
                             polygon = mMap.addPolygon(
                                     new PolygonOptions()
@@ -8577,9 +8578,9 @@ public class Map extends FragmentActivity implements
                             );
 
                             // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                            uuid = (String) ds.child("uuid").getValue();
+                            shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                            polygon.setTag(uuid);
+                            polygon.setTag(shapeUUID);
                         }
                     }
                 }

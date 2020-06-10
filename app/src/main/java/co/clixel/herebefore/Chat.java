@@ -132,7 +132,7 @@ public class Chat extends AppCompatActivity implements
             newShape, threeMarkers, fourMarkers, fiveMarkers, sixMarkers, sevenMarkers, eightMarkers, shapeIsCircle;
     private Boolean userIsWithinShape;
     private View.OnLayoutChangeListener onLayoutChangeListener;
-    private String uuid;
+    private String shapeUUID;
     private Double polygonArea, circleLatitude, circleLongitude, radius,
             marker0Latitude, marker0Longitude, marker1Latitude, marker1Longitude, marker2Latitude, marker2Longitude, marker3Latitude, marker3Longitude, marker4Latitude, marker4Longitude, marker5Latitude, marker5Longitude, marker6Latitude, marker6Longitude, marker7Latitude, marker7Longitude;
     private PopupMenu mediaButtonMenu;
@@ -194,7 +194,7 @@ public class Chat extends AppCompatActivity implements
         if (extras != null) {
 
             newShape = extras.getBoolean("newShape");
-            uuid = extras.getString("uuid");
+            shapeUUID = extras.getString("shapeUUID");
             userIsWithinShape = extras.getBoolean("userIsWithinShape");
             // circleLatitude, circleLongitude, and radius will be null if the circle is not new (as a new circle is not being created).
             circleLatitude = extras.getDouble("circleLatitude");
@@ -273,10 +273,10 @@ public class Chat extends AppCompatActivity implements
                 for (DataSnapshot ds : dataSnapshot.getChildren()) {
 
                     // If the uuid brought from Map.java equals the uuid attached to the recyclerviewlayout in Firebase, load it into the RecyclerView.
-                    String shapeUUID = (String) ds.child("uuid").getValue();
-                    if (shapeUUID != null) {
+                    String mShapeUUID = (String) ds.child("shapeUUID").getValue();
+                    if (mShapeUUID != null) {
 
-                        if (shapeUUID.equals(uuid)) {
+                        if (mShapeUUID.equals(shapeUUID)) {
 
                             Long serverDate = (Long) ds.child("date").getValue();
                             String user = (String) ds.child("userUUID").getValue();
@@ -482,7 +482,7 @@ public class Chat extends AppCompatActivity implements
                                                 .radius(radius);
                                         CircleInformation circleInformation = new CircleInformation();
                                         circleInformation.setCircleOptions(circleOptions);
-                                        circleInformation.setUUID(uuid);
+                                        circleInformation.setShapeUUID(shapeUUID);
                                         DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("Circles").push();
                                         newFirebaseCircle.setValue(circleInformation);
 
@@ -494,26 +494,16 @@ public class Chat extends AppCompatActivity implements
                                         messageInformation.setDate(date);
                                         String userUUID = UUID.randomUUID().toString();
                                         messageInformation.setUserUUID(userUUID);
-                                        messageInformation.setUUID(uuid);
+                                        messageInformation.setShapeUUID(shapeUUID);
+                                        // Get the token assigned by Firebase when the user signed up / signed in.
+                                        String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
+                                        messageInformation.setToken(token);
                                         if (removedMentionDuplicates != null) {
                                             messageInformation.setRemovedMentionDuplicates(removedMentionDuplicates);
                                         }
                                         messageInformation.setUserIsWithinShape(userIsWithinShape);
                                         DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                                         newMessage.setValue(messageInformation);
-
-                                        // Get user info for user-user messaging purposes.
-                                        if (FirebaseAuth.getInstance().getCurrentUser() != null) {
-
-                                            UserInformation userInformation = new UserInformation();
-                                            userInformation.setEmail(FirebaseAuth.getInstance().getCurrentUser().getEmail());
-                                            userInformation.setUserUUID(userUUID);
-                                            // Get the token assigned by Firebase when the user signed up / signed in.
-                                            String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
-                                            userInformation.setToken(token);
-                                            DatabaseReference userInfo = FirebaseDatabase.getInstance().getReference().child("Users").push();
-                                            userInfo.setValue(userInformation);
-                                        }
 
                                         mInput.getText().clear();
                                         if (removedMentionDuplicates != null) {
@@ -609,7 +599,7 @@ public class Chat extends AppCompatActivity implements
                                         PolygonInformation polygonInformation = new PolygonInformation();
                                         polygonInformation.setPolygonOptions(polygonOptions);
                                         polygonInformation.setArea(polygonArea);
-                                        polygonInformation.setUUID(uuid);
+                                        polygonInformation.setShapeUUID(shapeUUID);
                                         DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("Polygons").push();
                                         newFirebasePolygon.setValue(polygonInformation);
 
@@ -621,26 +611,16 @@ public class Chat extends AppCompatActivity implements
                                         messageInformation.setDate(date);
                                         String userUUID = UUID.randomUUID().toString();
                                         messageInformation.setUserUUID(userUUID);
-                                        messageInformation.setUUID(uuid);
+                                        messageInformation.setShapeUUID(shapeUUID);
+                                        // Get the token assigned by Firebase when the user signed up / signed in.
+                                        String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
+                                        messageInformation.setToken(token);
                                         if (removedMentionDuplicates != null) {
                                             messageInformation.setRemovedMentionDuplicates(removedMentionDuplicates);
                                         }
                                         messageInformation.setUserIsWithinShape(userIsWithinShape);
                                         DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                                         newMessage.setValue(messageInformation);
-
-                                        // Get user info for user-user messaging purposes.
-                                        if (FirebaseAuth.getInstance().getCurrentUser() != null) {
-
-                                            UserInformation userInformation = new UserInformation();
-                                            userInformation.setEmail(FirebaseAuth.getInstance().getCurrentUser().getEmail());
-                                            userInformation.setUserUUID(userUUID);
-                                            // Get the token assigned by Firebase when the user signed up / signed in.
-                                            String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
-                                            userInformation.setToken(token);
-                                            DatabaseReference userInfo = FirebaseDatabase.getInstance().getReference().child("Users").push();
-                                            userInfo.setValue(userInformation);
-                                        }
 
                                         mInput.getText().clear();
                                         if (removedMentionDuplicates != null) {
@@ -691,26 +671,16 @@ public class Chat extends AppCompatActivity implements
                             messageInformation.setDate(date);
                             String userUUID = UUID.randomUUID().toString();
                             messageInformation.setUserUUID(userUUID);
-                            messageInformation.setUUID(uuid);
+                            messageInformation.setShapeUUID(shapeUUID);
+                            // Get the token assigned by Firebase when the user signed up / signed in.
+                            String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
+                            messageInformation.setToken(token);
                             if (removedMentionDuplicates != null) {
                                 messageInformation.setRemovedMentionDuplicates(removedMentionDuplicates);
                             }
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                             newMessage.setValue(messageInformation);
-
-                            // Get user info for user-user messaging purposes.
-                            if (FirebaseAuth.getInstance().getCurrentUser() != null) {
-
-                                UserInformation userInformation = new UserInformation();
-                                userInformation.setEmail(FirebaseAuth.getInstance().getCurrentUser().getEmail());
-                                userInformation.setUserUUID(userUUID);
-                                // Get the token assigned by Firebase when the user signed up / signed in.
-                                String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
-                                userInformation.setToken(token);
-                                DatabaseReference userInfo = FirebaseDatabase.getInstance().getReference().child("Users").push();
-                                userInfo.setValue(userInformation);
-                            }
 
                             mInput.getText().clear();
                             if (removedMentionDuplicates != null) {
@@ -1188,7 +1158,7 @@ public class Chat extends AppCompatActivity implements
             loadingIcon.setVisibility(View.VISIBLE);
 
             ReportPost reportPost = new ReportPost();
-            reportPost.setUUID(uuid);
+            reportPost.setUUID(shapeUUID);
             reportPost.setPosition(item.getGroupId());
             DatabaseReference newReportedPost = FirebaseDatabase.getInstance().getReference().child("Reported_Post").push();
             newReportedPost.setValue(reportPost);
@@ -2283,7 +2253,7 @@ public class Chat extends AppCompatActivity implements
                                             .radius(radius);
                                     CircleInformation circleInformation = new CircleInformation();
                                     circleInformation.setCircleOptions(circleOptions);
-                                    circleInformation.setUUID(uuid);
+                                    circleInformation.setShapeUUID(shapeUUID);
                                     DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("Circles").push();
                                     newFirebaseCircle.setValue(circleInformation);
                                 } else {
@@ -2335,7 +2305,7 @@ public class Chat extends AppCompatActivity implements
                                     PolygonInformation polygonInformation = new PolygonInformation();
                                     polygonInformation.setPolygonOptions(polygonOptions);
                                     polygonInformation.setArea(polygonArea);
-                                    polygonInformation.setUUID(uuid);
+                                    polygonInformation.setShapeUUID(shapeUUID);
                                     DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("Polygons").push();
                                     newFirebasePolygon.setValue(polygonInformation);
                                 }
@@ -2358,26 +2328,16 @@ public class Chat extends AppCompatActivity implements
                             messageInformation.setDate(date);
                             String userUUID = UUID.randomUUID().toString();
                             messageInformation.setUserUUID(userUUID);
-                            messageInformation.setUUID(uuid);
+                            messageInformation.setShapeUUID(shapeUUID);
+                            // Get the token assigned by Firebase when the user signed up / signed in.
+                            String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
+                            messageInformation.setToken(token);
                             if (removedMentionDuplicates != null) {
                                 messageInformation.setRemovedMentionDuplicates(removedMentionDuplicates);
                             }
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                             newMessage.setValue(messageInformation);
-
-                            // Get user info for user-user messaging purposes.
-                            if (FirebaseAuth.getInstance().getCurrentUser() != null) {
-
-                                UserInformation userInformation = new UserInformation();
-                                userInformation.setEmail(FirebaseAuth.getInstance().getCurrentUser().getEmail());
-                                userInformation.setUserUUID(userUUID);
-                                // Get the token assigned by Firebase when the user signed up / signed in.
-                                String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
-                                userInformation.setToken(token);
-                                DatabaseReference userInfo = FirebaseDatabase.getInstance().getReference().child("Users").push();
-                                userInfo.setValue(userInformation);
-                            }
 
                             mInput.getText().clear();
                             if (removedMentionDuplicates != null) {
@@ -2437,7 +2397,7 @@ public class Chat extends AppCompatActivity implements
                                             .radius(radius);
                                     CircleInformation circleInformation = new CircleInformation();
                                     circleInformation.setCircleOptions(circleOptions);
-                                    circleInformation.setUUID(uuid);
+                                    circleInformation.setShapeUUID(shapeUUID);
                                     DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("Circles").push();
                                     newFirebaseCircle.setValue(circleInformation);
                                 } else {
@@ -2489,7 +2449,7 @@ public class Chat extends AppCompatActivity implements
                                     PolygonInformation polygonInformation = new PolygonInformation();
                                     polygonInformation.setPolygonOptions(polygonOptions);
                                     polygonInformation.setArea(polygonArea);
-                                    polygonInformation.setUUID(uuid);
+                                    polygonInformation.setShapeUUID(shapeUUID);
                                     DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("Polygons").push();
                                     newFirebasePolygon.setValue(polygonInformation);
                                 }
@@ -2512,26 +2472,16 @@ public class Chat extends AppCompatActivity implements
                             messageInformation.setDate(date);
                             String userUUID = UUID.randomUUID().toString();
                             messageInformation.setUserUUID(userUUID);
-                            messageInformation.setUUID(uuid);
+                            messageInformation.setShapeUUID(shapeUUID);
+                            // Get the token assigned by Firebase when the user signed up / signed in.
+                            String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
+                            messageInformation.setToken(token);
                             if (removedMentionDuplicates != null) {
                                 messageInformation.setRemovedMentionDuplicates(removedMentionDuplicates);
                             }
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                             newMessage.setValue(messageInformation);
-
-                            // Get user info for user-user messaging purposes.
-                            if (FirebaseAuth.getInstance().getCurrentUser() != null) {
-
-                                UserInformation userInformation = new UserInformation();
-                                userInformation.setEmail(FirebaseAuth.getInstance().getCurrentUser().getEmail());
-                                userInformation.setUserUUID(userUUID);
-                                // Get the token assigned by Firebase when the user signed up / signed in.
-                                String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
-                                userInformation.setToken(token);
-                                DatabaseReference userInfo = FirebaseDatabase.getInstance().getReference().child("Users").push();
-                                userInfo.setValue(userInformation);
-                            }
 
                             mInput.getText().clear();
                             if (removedMentionDuplicates != null) {
@@ -2591,7 +2541,7 @@ public class Chat extends AppCompatActivity implements
                                             .radius(radius);
                                     CircleInformation circleInformation = new CircleInformation();
                                     circleInformation.setCircleOptions(circleOptions);
-                                    circleInformation.setUUID(uuid);
+                                    circleInformation.setShapeUUID(shapeUUID);
                                     DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("Circles").push();
                                     newFirebaseCircle.setValue(circleInformation);
                                 } else {
@@ -2643,7 +2593,7 @@ public class Chat extends AppCompatActivity implements
                                     PolygonInformation polygonInformation = new PolygonInformation();
                                     polygonInformation.setPolygonOptions(polygonOptions);
                                     polygonInformation.setArea(polygonArea);
-                                    polygonInformation.setUUID(uuid);
+                                    polygonInformation.setShapeUUID(shapeUUID);
                                     DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("Polygons").push();
                                     newFirebasePolygon.setValue(polygonInformation);
                                 }
@@ -2666,26 +2616,16 @@ public class Chat extends AppCompatActivity implements
                             messageInformation.setDate(date);
                             String userUUID = UUID.randomUUID().toString();
                             messageInformation.setUserUUID(userUUID);
-                            messageInformation.setUUID(uuid);
+                            messageInformation.setShapeUUID(shapeUUID);
+                            // Get the token assigned by Firebase when the user signed up / signed in.
+                            String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
+                            messageInformation.setToken(token);
                             if (removedMentionDuplicates != null) {
                                 messageInformation.setRemovedMentionDuplicates(removedMentionDuplicates);
                             }
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                             newMessage.setValue(messageInformation);
-
-                            // Get user info for user-user messaging purposes.
-                            if (FirebaseAuth.getInstance().getCurrentUser() != null) {
-
-                                UserInformation userInformation = new UserInformation();
-                                userInformation.setEmail(FirebaseAuth.getInstance().getCurrentUser().getEmail());
-                                userInformation.setUserUUID(userUUID);
-                                // Get the token assigned by Firebase when the user signed up / signed in.
-                                String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
-                                userInformation.setToken(token);
-                                DatabaseReference userInfo = FirebaseDatabase.getInstance().getReference().child("Users").push();
-                                userInfo.setValue(userInformation);
-                            }
 
                             mInput.getText().clear();
                             if (removedMentionDuplicates != null) {
