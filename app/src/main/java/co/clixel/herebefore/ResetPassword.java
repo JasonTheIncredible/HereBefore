@@ -15,7 +15,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.preference.PreferenceManager;
 
-import com.crashlytics.android.Crashlytics;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.ads.MobileAds;
@@ -23,9 +22,6 @@ import com.google.android.gms.ads.RequestConfiguration;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
-
-import java.util.Collections;
-import java.util.List;
 
 public class ResetPassword extends AppCompatActivity {
 
@@ -127,9 +123,6 @@ public class ResetPassword extends AppCompatActivity {
                             // Tell the user something happened.
                             loadingIcon.setVisibility(View.GONE);
                             toastMessageLong("An unknown error occurred. Please try again.");
-
-                            // Send the information to Crashlytics for future debugging.
-                            Crashlytics.logException(new RuntimeException("onStart() -> resetPassword -> OnClick -> task.getException == null"));
                         }
                     }
                 });

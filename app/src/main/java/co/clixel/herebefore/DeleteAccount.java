@@ -17,7 +17,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.preference.PreferenceManager;
 
-import com.crashlytics.android.Crashlytics;
 import com.firebase.ui.auth.AuthUI;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
@@ -30,9 +29,6 @@ import com.google.firebase.auth.EmailAuthProvider;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
-
-import java.util.Collections;
-import java.util.List;
 
 public class DeleteAccount extends AppCompatActivity {
 
@@ -210,9 +206,6 @@ public class DeleteAccount extends AppCompatActivity {
                                             // Tell the user something happened.
                                             loadingIcon.setVisibility(View.GONE);
                                             toastMessageLong("An unknown error occurred. Please try again.");
-
-                                            // Send the information to Crashlytics for future debugging.
-                                            Crashlytics.logException(new RuntimeException("onStart() -> deleteAccount -> OnClick -> task.getException == null"));
                                         }
                                     }
                                 });
@@ -264,9 +257,6 @@ public class DeleteAccount extends AppCompatActivity {
                                             // Tell the user something happened.
                                             loadingIcon.setVisibility(View.GONE);
                                             toastMessageLong("An unknown error occurred. Please try again.");
-
-                                            // Send the information to Crashlytics for future debugging.
-                                            Crashlytics.logException(new RuntimeException("onStart() -> deleteAccount -> OnClick -> task.getException == null"));
                                         }
                                     }
                                 });

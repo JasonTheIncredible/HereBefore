@@ -18,7 +18,6 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
-import com.crashlytics.android.Crashlytics;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
@@ -125,7 +124,6 @@ public class SignUp extends AppCompatActivity {
         } else {
 
             Log.e(TAG, "onStart() -> extras == null");
-            Crashlytics.logException(new RuntimeException("onStart() -> extras == null"));
         }
     }
 
@@ -260,10 +258,7 @@ public class SignUp extends AppCompatActivity {
                             // Tell the user something happened.
                             loadingIcon.setVisibility(View.GONE);
                             toastMessageLong("An unknown error occurred. Please try again.");
-
-                            // Send the information to Crashlytics for future debugging.
                             Log.e(TAG, "onStart() -> createAccountButton -> OnClick -> FirebaseAuth -> task.getException == null");
-                            Crashlytics.logException(new RuntimeException("onStart() -> createAccountButton -> OnClick -> FirebaseAuth -> task.getException == null"));
                         }
                     }
                 });
@@ -335,14 +330,12 @@ public class SignUp extends AppCompatActivity {
                 } else {
 
                     Log.w(TAG, "onActivityResult() -> account == null");
-                    Crashlytics.logException(new Exception("onActivityResult() -> account == null"));
                     toastMessageLong("Sign-in failed. Try again later.");
                 }
             } catch (ApiException e) {
 
                 // Google sign in failed, update UI appropriately
                 Log.w(TAG, "Google sign in failed: " + e);
-                Crashlytics.logException(new Exception("Google sign in failed: " + e));
                 toastMessageLong("Google sign in failed: " + e);
             }
         }
@@ -426,7 +419,6 @@ public class SignUp extends AppCompatActivity {
                             loadingIcon.setVisibility(View.GONE);
                             Log.w(TAG, "firebaseAuthWithGoogle() -> failed: " + task.getException());
                             toastMessageLong("Authentication failed. Try again later.");
-                            Crashlytics.logException(new Exception("firebaseAuthWithGoogle() -> failed: " + task.getException()));
                         }
                     }
                 });

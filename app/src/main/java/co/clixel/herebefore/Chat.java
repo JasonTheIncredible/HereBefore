@@ -45,7 +45,6 @@ import android.view.View;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
-import com.crashlytics.android.Crashlytics;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.ads.MobileAds;
@@ -228,7 +227,6 @@ public class Chat extends AppCompatActivity implements
         } else {
 
             Log.e(TAG, "onStart() -> extras == null");
-            Crashlytics.logException(new RuntimeException("onStart() -> extras == null"));
         }
 
         if (userIsWithinShape) {
@@ -297,7 +295,6 @@ public class Chat extends AppCompatActivity implements
                             } else {
 
                                 Log.e(TAG, "onStart() -> serverDate == null");
-                                Crashlytics.logException(new RuntimeException("onStart() -> serverDate == null"));
                             }
                             mUser.add(user);
                             mImage.add(imageURL);
@@ -703,7 +700,6 @@ public class Chat extends AppCompatActivity implements
                     } else {
 
                         Log.e(TAG, "onStart() -> sendButton -> imm == null");
-                        Crashlytics.logException(new RuntimeException("onStart() -> sendButton -> imm == null"));
                     }
                     if (mInput != null) {
 
@@ -1157,7 +1153,7 @@ public class Chat extends AppCompatActivity implements
 
             loadingIcon.setVisibility(View.VISIBLE);
 
-            ReportPost reportPost = new ReportPost();
+            ReportPostInformation reportPost = new ReportPostInformation();
             reportPost.setUUID(shapeUUID);
             reportPost.setPosition(item.getGroupId());
             DatabaseReference newReportedPost = FirebaseDatabase.getInstance().getReference().child("Reported_Post").push();
@@ -1445,7 +1441,6 @@ public class Chat extends AppCompatActivity implements
                 // Error occurred while creating the File
                 ex.printStackTrace();
                 toastMessageLong(ex.getMessage());
-                Crashlytics.logException(new RuntimeException("startActivityTakePhoto() -> photoFile error"));
             }
             // Continue only if the File was successfully created
             if (photoFile != null) {
@@ -1477,7 +1472,6 @@ public class Chat extends AppCompatActivity implements
                 // Error occurred while creating the File
                 ex.printStackTrace();
                 toastMessageLong(ex.getMessage());
-                Crashlytics.logException(new RuntimeException("startActivityRecordVideo() -> videoFile error"));
             }
             // Continue only if the File was successfully created
             if (videoFile != null) {
@@ -1899,7 +1893,6 @@ public class Chat extends AppCompatActivity implements
 
                 ex.printStackTrace();
                 activity.toastMessageLong(ex.getMessage());
-                Crashlytics.logException(new RuntimeException("onActivityResult() -> gallery imageStream error"));
             } catch (IOException e) {
 
                 e.printStackTrace();
@@ -1923,7 +1916,6 @@ public class Chat extends AppCompatActivity implements
 
                 ex.printStackTrace();
                 activity.toastMessageLong(ex.getMessage());
-                Crashlytics.logException(new RuntimeException("onActivityResult() -> gallery stream.close()"));
             }
 
             if (imageStream0 != null) {
@@ -2013,7 +2005,6 @@ public class Chat extends AppCompatActivity implements
 
                 ex.printStackTrace();
                 activity.toastMessageLong(ex.getMessage());
-                Crashlytics.logException(new RuntimeException("onActivityResult() -> Request_User_Camera_Code exception"));
             }
 
             return "2";
@@ -2160,7 +2151,6 @@ public class Chat extends AppCompatActivity implements
 
                     ex.printStackTrace();
                     activity.toastMessageLong(ex.getMessage());
-                    Crashlytics.logException(new RuntimeException("videoCompressAsyncTask -> onPostExecute -> inner"));
                 }
                 output64.close();
 
@@ -2178,7 +2168,6 @@ public class Chat extends AppCompatActivity implements
 
                 ex.printStackTrace();
                 activity.toastMessageLong(ex.getMessage());
-                Crashlytics.logException(new RuntimeException("videoCompressAsyncTask -> onPostExecute -> outer"));
             }
             return "2";
         }
@@ -2699,7 +2688,6 @@ public class Chat extends AppCompatActivity implements
                 public void onCancelled(@NonNull DatabaseError databaseError) {
 
                     Log.e(TAG, "DatabaseError");
-                    Crashlytics.logException(new Exception("DatabaseError"));
                     toastMessageLong(databaseError.getMessage());
                 }
             });

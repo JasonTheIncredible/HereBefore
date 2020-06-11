@@ -26,9 +26,6 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ServerValue;
 import com.google.firebase.database.ValueEventListener;
 
-import java.util.Collections;
-import java.util.List;
-
 public class Feedback extends AppCompatActivity {
 
     private EditText mFeedback;

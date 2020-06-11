@@ -30,7 +30,6 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
 import androidx.preference.PreferenceManager;
 
-import com.crashlytics.android.Crashlytics;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -137,7 +136,6 @@ public class Map extends FragmentActivity implements
         } else {
 
             Log.e(TAG, "onCreate() -> mapFragment == null");
-            Crashlytics.logException(new Exception("onCreate() -> mapFragment == null"));
             toastMessageLong("An error occurred while loading the map");
         }
 
@@ -349,7 +347,6 @@ public class Map extends FragmentActivity implements
                                     } else {
 
                                         Log.e(TAG, "onStart() -> chatSizeSeekBar -> location == null");
-                                        Crashlytics.logException(new Exception("onStart() -> chatSizeSeekBar -> location == null"));
                                         toastMessageLong("An error occurred: your location is null");
                                     }
                                 }
@@ -1853,7 +1850,6 @@ public class Map extends FragmentActivity implements
                         } else {
 
                             Log.e(TAG, "onStart() -> chatSizeSeekBar -> onProgressChanged -> polygon -> mLocation == null");
-                            Crashlytics.logException(new Exception("onStart() -> chatSizeSeekBar -> onProgressChanged -> polygon -> mLocation == null"));
                             toastMessageLong("An error occurred: your location is null");
                         }
                     }
@@ -2000,7 +1996,6 @@ public class Map extends FragmentActivity implements
                     } else {
 
                         Log.e(TAG, "onStart() -> chatSelectorSeekBar -> onProgressChanged -> selectedOverlappingShapeUUID == null");
-                        Crashlytics.logException(new Exception("onStart() -> chatSelectorSeekBar -> onProgressChanged -> selectedOverlappingShapeUUID == null"));
                         toastMessageLong("An error occurred");
                     }
 
@@ -2169,7 +2164,6 @@ public class Map extends FragmentActivity implements
         } else {
 
             Log.e(TAG, "onResume() -> manager == null");
-            Crashlytics.logException(new Exception("onResume() -> manager == null"));
             toastMessageLong("An error occurred while checking if GPS is enabled");
         }
 
@@ -2547,7 +2541,6 @@ public class Map extends FragmentActivity implements
                 // Failed finding a location.
                 loadingIcon.setVisibility(View.GONE);
                 Log.e(TAG, "updateLocation() -> locationServicesNotEnabled()");
-                Crashlytics.logException(new Exception("updateLocation() -> locationServicesNotEnabled()"));
                 toastMessageLong("Failed to find your location. Please try again later.");
             }
 
@@ -2751,7 +2744,6 @@ public class Map extends FragmentActivity implements
                                         } else {
 
                                             Log.e(TAG, "onMapReadyAndRestart() -> onMarkerClick -> location == null");
-                                            Crashlytics.logException(new Exception("onMapReadyAndRestart() -> onMarkerClick -> location == null"));
                                             mMap.getUiSettings().setScrollGesturesEnabled(true);
                                             loadingIcon.setVisibility(View.GONE);
                                             toastMessageLong("An error occurred: your location is null");
@@ -2799,7 +2791,6 @@ public class Map extends FragmentActivity implements
                                 public void onCancelled(@NonNull DatabaseError databaseError) {
 
                                     Log.e(TAG, "DatabaseError");
-                                    Crashlytics.logException(new Exception("DatabaseError"));
                                     mMap.getUiSettings().setScrollGesturesEnabled(true);
                                     loadingIcon.setVisibility(View.GONE);
                                     toastMessageLong(databaseError.getMessage());
@@ -2844,7 +2835,6 @@ public class Map extends FragmentActivity implements
                                 public void onCancelled(@NonNull DatabaseError databaseError) {
 
                                     Log.e(TAG, "DatabaseError");
-                                    Crashlytics.logException(new Exception("DatabaseError"));
                                     mMap.getUiSettings().setScrollGesturesEnabled(true);
                                     loadingIcon.setVisibility(View.GONE);
                                     toastMessageLong(databaseError.getMessage());
@@ -2956,7 +2946,6 @@ public class Map extends FragmentActivity implements
                                                 public void onCancelled(@NonNull DatabaseError databaseError) {
 
                                                     Log.e(TAG, "DatabaseError");
-                                                    Crashlytics.logException(new Exception("DatabaseError"));
                                                     mMap.getUiSettings().setScrollGesturesEnabled(true);
                                                     loadingIcon.setVisibility(View.GONE);
                                                     toastMessageLong(databaseError.getMessage());
@@ -3004,7 +2993,6 @@ public class Map extends FragmentActivity implements
                                                 public void onCancelled(@NonNull DatabaseError databaseError) {
 
                                                     Log.e(TAG, "DatabaseError");
-                                                    Crashlytics.logException(new Exception("DatabaseError"));
                                                     mMap.getUiSettings().setScrollGesturesEnabled(true);
                                                     loadingIcon.setVisibility(View.GONE);
                                                     toastMessageLong(databaseError.getMessage());
@@ -3014,7 +3002,6 @@ public class Map extends FragmentActivity implements
                                     } else {
 
                                         Log.e(TAG, "onMapReadyAndRestart() -> onPolygonClick -> polygon.getTag() == null -> location == null");
-                                        Crashlytics.logException(new Exception("onMapReadyAndRestart() -> onPolygonClick -> polygon.getTag() == null -> location == null"));
                                         mMap.getUiSettings().setScrollGesturesEnabled(true);
                                         loadingIcon.setVisibility(View.GONE);
                                         toastMessageLong("An error occurred: your location is null");
@@ -3209,7 +3196,6 @@ public class Map extends FragmentActivity implements
                                     } else {
 
                                         Log.e(TAG, "onMapReadyAndRestart() -> onPolygonClick -> User selected a polygon -> location == null");
-                                        Crashlytics.logException(new Exception("onMapReadyAndRestart() -> onPolygonClick -> User selected a polygon -> location == null"));
                                         mMap.getUiSettings().setScrollGesturesEnabled(true);
                                         loadingIcon.setVisibility(View.GONE);
                                         toastMessageLong("An error occurred: your location is null");
@@ -3306,7 +3292,6 @@ public class Map extends FragmentActivity implements
                 } else {
 
                     Log.e(TAG, "onMapReadyAndRestart() -> onPolygonClick -> selectedOverlappingShapeUUID == null");
-                    Crashlytics.logException(new Exception("onMapReadyAndRestart() -> onPolygonClick -> selectedOverlappingShapeUUID == null"));
                     mMap.getUiSettings().setScrollGesturesEnabled(true);
                     loadingIcon.setVisibility(View.GONE);
                     toastMessageLong("An error occurred");
@@ -3606,7 +3591,6 @@ public class Map extends FragmentActivity implements
                                                 public void onCancelled(@NonNull DatabaseError databaseError) {
 
                                                     Log.e(TAG, "DatabaseError");
-                                                    Crashlytics.logException(new Exception("DatabaseError"));
                                                     mMap.getUiSettings().setScrollGesturesEnabled(true);
                                                     loadingIcon.setVisibility(View.GONE);
                                                     toastMessageLong(databaseError.getMessage());
@@ -3655,7 +3639,6 @@ public class Map extends FragmentActivity implements
                                                 public void onCancelled(@NonNull DatabaseError databaseError) {
 
                                                     Log.e(TAG, "DatabaseError");
-                                                    Crashlytics.logException(new Exception("DatabaseError"));
                                                     mMap.getUiSettings().setScrollGesturesEnabled(true);
                                                     loadingIcon.setVisibility(View.GONE);
                                                     toastMessageLong(databaseError.getMessage());
@@ -3665,7 +3648,6 @@ public class Map extends FragmentActivity implements
                                     } else {
 
                                         Log.e(TAG, "onMapReadyAndRestart() -> onCircleClick -> circle.getTag() == null -> location == null");
-                                        Crashlytics.logException(new Exception("onMapReadyAndRestart() -> onCircleClick -> circle.getTag() == null -> location == null"));
                                         mMap.getUiSettings().setScrollGesturesEnabled(true);
                                         loadingIcon.setVisibility(View.GONE);
                                         toastMessageLong("An error occurred: your location is null");
@@ -3865,7 +3847,6 @@ public class Map extends FragmentActivity implements
                                     } else {
 
                                         Log.e(TAG, "onMapReadyAndRestart() -> onCircleClick -> User selected a circle -> location == null");
-                                        Crashlytics.logException(new Exception("onMapReadyAndRestart() -> onCircleClick -> User selected a circle -> location == null"));
                                         mMap.getUiSettings().setScrollGesturesEnabled(true);
                                         loadingIcon.setVisibility(View.GONE);
                                         toastMessageLong("An error occurred: your location is null");
@@ -3962,7 +3943,6 @@ public class Map extends FragmentActivity implements
                 } else {
 
                     Log.e(TAG, "onMapReadyAndRestart() -> onCircleClick -> selectedOverlappingShapeUUID == null");
-                    Crashlytics.logException(new Exception("onMapReadyAndRestart() -> onCircleClick -> selectedOverlappingShapeUUID == null"));
                     mMap.getUiSettings().setScrollGesturesEnabled(true);
                     loadingIcon.setVisibility(View.GONE);
                     toastMessageLong("An error occurred");
@@ -4138,7 +4118,6 @@ public class Map extends FragmentActivity implements
                                     } else {
 
                                         Log.e(TAG, "onMapReadyAndRestart() -> onMapClick -> User selected a circle -> location == null");
-                                        Crashlytics.logException(new Exception("onMapReadyAndRestart() -> onMapClick -> User selected a circle -> location == null"));
                                         mMap.getUiSettings().setScrollGesturesEnabled(true);
                                         loadingIcon.setVisibility(View.GONE);
                                         toastMessageLong("An error occurred: your location is null");
@@ -4201,7 +4180,6 @@ public class Map extends FragmentActivity implements
                                     } else {
 
                                         Log.e(TAG, "onMapReadyAndRestart() -> onMapClick -> User selected a polygon -> location == null");
-                                        Crashlytics.logException(new Exception("onMapReadyAndRestart() -> onMapClick -> User selected a polygon -> location == null"));
                                         mMap.getUiSettings().setScrollGesturesEnabled(true);
                                         loadingIcon.setVisibility(View.GONE);
                                         toastMessageLong("An error occurred: your location is null");
@@ -4348,7 +4326,6 @@ public class Map extends FragmentActivity implements
                 } else {
 
                     Log.e(TAG, "updatePreferences() -> Road Map -> mMap == null");
-                    Crashlytics.logException(new Exception("onMenuItemClick -> Road Map -> mMap == null"));
                     toastMessageLong("An error occurred while loading the map");
                 }
 
@@ -4369,7 +4346,6 @@ public class Map extends FragmentActivity implements
                 } else {
 
                     Log.e(TAG, "updatePreferences() -> Satellite Map -> mMap == null");
-                    Crashlytics.logException(new Exception("onMenuItemClick -> Satellite Map -> mMap == null"));
                     toastMessageLong("An error occurred while loading the map");
                 }
 
@@ -4390,7 +4366,6 @@ public class Map extends FragmentActivity implements
                 } else {
 
                     Log.e(TAG, "updatePreferences() -> Hybrid Map -> mMap == null");
-                    Crashlytics.logException(new Exception("onMenuItemClick -> Hybrid Map -> mMap == null"));
                     toastMessageLong("An error occurred while loading the map");
                 }
 
@@ -4411,7 +4386,6 @@ public class Map extends FragmentActivity implements
                 } else {
 
                     Log.e(TAG, "updatePreferences() -> Terrain Map -> mMap == null");
-                    Crashlytics.logException(new Exception("onMenuItemClick -> Terrain Map -> mMap == null"));
                     toastMessageLong("An error occurred while loading the map");
                 }
 
@@ -5188,7 +5162,6 @@ public class Map extends FragmentActivity implements
                 } else {
 
                     Log.e(TAG, "onMenuItemClick -> Road Map -> mMap == null");
-                    Crashlytics.logException(new Exception("onMenuItemClick -> Road Map -> mMap == null"));
                     toastMessageLong("An error occurred while loading the map");
                 }
 
@@ -5221,7 +5194,6 @@ public class Map extends FragmentActivity implements
                 } else {
 
                     Log.e(TAG, "onMenuItemClick -> Satellite Map -> mMap == null");
-                    Crashlytics.logException(new Exception("onMenuItemClick -> Satellite Map -> mMap == null"));
                     toastMessageLong("An error occurred while loading the map");
                 }
 
@@ -5254,7 +5226,6 @@ public class Map extends FragmentActivity implements
                 } else {
 
                     Log.e(TAG, "onMenuItemClick -> Hybrid Map -> mMap == null");
-                    Crashlytics.logException(new Exception("onMenuItemClick -> Hybrid Map -> mMap == null"));
                     toastMessageLong("An error occurred while loading the map");
                 }
 
@@ -5287,7 +5258,6 @@ public class Map extends FragmentActivity implements
                 } else {
 
                     Log.e(TAG, "onMenuItemClick -> Terrain Map -> mMap == null");
-                    Crashlytics.logException(new Exception("onMenuItemClick -> Terrain Map -> mMap == null"));
                     toastMessageLong("An error occurred while loading the map");
                 }
 
@@ -5550,7 +5520,6 @@ public class Map extends FragmentActivity implements
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
                                 Log.e(TAG, "DatabaseError");
-                                Crashlytics.logException(new Exception("DatabaseError"));
                                 loadingIcon.setVisibility(View.GONE);
                                 toastMessageLong(databaseError.getMessage());
                             }
@@ -5686,7 +5655,6 @@ public class Map extends FragmentActivity implements
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
                                 Log.e(TAG, "DatabaseError");
-                                Crashlytics.logException(new Exception("DatabaseError"));
                                 loadingIcon.setVisibility(View.GONE);
                                 toastMessageLong(databaseError.getMessage());
                             }
@@ -5739,7 +5707,6 @@ public class Map extends FragmentActivity implements
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
                                 Log.e(TAG, "DatabaseError");
-                                Crashlytics.logException(new Exception("DatabaseError"));
                                 loadingIcon.setVisibility(View.GONE);
                                 toastMessageLong(databaseError.getMessage());
                             }
@@ -5875,7 +5842,6 @@ public class Map extends FragmentActivity implements
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
                                 Log.e(TAG, "DatabaseError");
-                                Crashlytics.logException(new Exception("DatabaseError"));
                                 loadingIcon.setVisibility(View.GONE);
                                 toastMessageLong(databaseError.getMessage());
                             }
@@ -6035,7 +6001,6 @@ public class Map extends FragmentActivity implements
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
                                 Log.e(TAG, "DatabaseError");
-                                Crashlytics.logException(new Exception("DatabaseError"));
                                 loadingIcon.setVisibility(View.GONE);
                                 toastMessageLong(databaseError.getMessage());
                             }
@@ -6172,7 +6137,6 @@ public class Map extends FragmentActivity implements
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
                                 Log.e(TAG, "DatabaseError");
-                                Crashlytics.logException(new Exception("DatabaseError"));
                                 loadingIcon.setVisibility(View.GONE);
                                 toastMessageLong(databaseError.getMessage());
                             }
@@ -6225,7 +6189,6 @@ public class Map extends FragmentActivity implements
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
                                 Log.e(TAG, "DatabaseError");
-                                Crashlytics.logException(new Exception("DatabaseError"));
                                 loadingIcon.setVisibility(View.GONE);
                                 toastMessageLong(databaseError.getMessage());
                             }
@@ -6362,7 +6325,6 @@ public class Map extends FragmentActivity implements
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
                                 Log.e(TAG, "DatabaseError");
-                                Crashlytics.logException(new Exception("DatabaseError"));
                                 loadingIcon.setVisibility(View.GONE);
                                 toastMessageLong(databaseError.getMessage());
                             }
@@ -6522,7 +6484,6 @@ public class Map extends FragmentActivity implements
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
                                 Log.e(TAG, "DatabaseError");
-                                Crashlytics.logException(new Exception("DatabaseError"));
                                 loadingIcon.setVisibility(View.GONE);
                                 toastMessageLong(databaseError.getMessage());
                             }
@@ -6659,7 +6620,6 @@ public class Map extends FragmentActivity implements
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
                                 Log.e(TAG, "DatabaseError");
-                                Crashlytics.logException(new Exception("DatabaseError"));
                                 loadingIcon.setVisibility(View.GONE);
                                 toastMessageLong(databaseError.getMessage());
                             }
@@ -6712,7 +6672,6 @@ public class Map extends FragmentActivity implements
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
                                 Log.e(TAG, "DatabaseError");
-                                Crashlytics.logException(new Exception("DatabaseError"));
                                 loadingIcon.setVisibility(View.GONE);
                                 toastMessageLong(databaseError.getMessage());
                             }
@@ -6849,7 +6808,6 @@ public class Map extends FragmentActivity implements
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
                                 Log.e(TAG, "DatabaseError");
-                                Crashlytics.logException(new Exception("DatabaseError"));
                                 loadingIcon.setVisibility(View.GONE);
                                 toastMessageLong(databaseError.getMessage());
                             }
@@ -7004,7 +6962,6 @@ public class Map extends FragmentActivity implements
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
                                 Log.e(TAG, "DatabaseError");
-                                Crashlytics.logException(new Exception("DatabaseError"));
                                 loadingIcon.setVisibility(View.GONE);
                                 toastMessageLong(databaseError.getMessage());
                             }
@@ -7051,7 +7008,6 @@ public class Map extends FragmentActivity implements
                             public void onCancelled(@NonNull DatabaseError databaseError) {
 
                                 Log.e(TAG, "DatabaseError");
-                                Crashlytics.logException(new Exception("DatabaseError"));
                                 loadingIcon.setVisibility(View.GONE);
                                 toastMessageLong(databaseError.getMessage());
                             }
@@ -7368,7 +7324,6 @@ public class Map extends FragmentActivity implements
                                 } else {
 
                                     Log.e(TAG, "createPolygon -> location == null");
-                                    Crashlytics.logException(new Exception("createPolygon -> location == null"));
                                     toastMessageLong("An error occurred: your location is null");
                                 }
                             }
@@ -7633,7 +7588,6 @@ public class Map extends FragmentActivity implements
                                 } else {
 
                                     Log.e(TAG, "createCircle -> location == null");
-                                    Crashlytics.logException(new Exception("createCircle -> location == null"));
                                     toastMessageLong("An error occurred: your location is null");
                                 }
                             }
@@ -7814,7 +7768,6 @@ public class Map extends FragmentActivity implements
                                                 public void onCancelled(@NonNull DatabaseError databaseError) {
 
                                                     Log.e(TAG, "DatabaseError");
-                                                    Crashlytics.logException(new Exception("DatabaseError"));
                                                     loadingIcon.setVisibility(View.GONE);
                                                     toastMessageLong(databaseError.getMessage());
                                                 }
@@ -7870,7 +7823,6 @@ public class Map extends FragmentActivity implements
                                                 public void onCancelled(@NonNull DatabaseError databaseError) {
 
                                                     Log.e(TAG, "DatabaseError");
-                                                    Crashlytics.logException(new Exception("DatabaseError"));
                                                     loadingIcon.setVisibility(View.GONE);
                                                     toastMessageLong(databaseError.getMessage());
                                                 }
@@ -8107,7 +8059,6 @@ public class Map extends FragmentActivity implements
             public void onCancelled(@NonNull DatabaseError databaseError) {
 
                 Log.e(TAG, "DatabaseError");
-                Crashlytics.logException(new Exception("DatabaseError"));
                 loadingIcon.setVisibility(View.GONE);
                 toastMessageLong(databaseError.getMessage());
             }
@@ -8241,7 +8192,6 @@ public class Map extends FragmentActivity implements
             public void onCancelled(@NonNull DatabaseError databaseError) {
 
                 Log.e(TAG, "DatabaseError");
-                Crashlytics.logException(new Exception("DatabaseError"));
                 loadingIcon.setVisibility(View.GONE);
                 toastMessageLong(databaseError.getMessage());
             }
@@ -8464,7 +8414,6 @@ public class Map extends FragmentActivity implements
             public void onCancelled(@NonNull DatabaseError databaseError) {
 
                 Log.e(TAG, "DatabaseError");
-                Crashlytics.logException(new Exception("DatabaseError"));
                 loadingIcon.setVisibility(View.GONE);
                 toastMessageLong(databaseError.getMessage());
             }
@@ -8598,7 +8547,6 @@ public class Map extends FragmentActivity implements
             public void onCancelled(@NonNull DatabaseError databaseError) {
 
                 Log.e(TAG, "DatabaseError");
-                Crashlytics.logException(new Exception("DatabaseError"));
                 loadingIcon.setVisibility(View.GONE);
                 toastMessageLong(databaseError.getMessage());
             }
