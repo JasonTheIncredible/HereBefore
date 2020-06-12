@@ -102,14 +102,15 @@ public class Map extends FragmentActivity implements
     private View loadingIcon;
     private LocationProvider locationProvider;
 
+    // Set direct message activity and make notification onclick go to it.
     // When is token renewed / renew it.
-    // Make sending an "@" go to a user.
-    // Allow users to message and reply to one another anonymously and add notifications to settings.
+    // Add notifications adjustments to settings.
     // Make user in recyclerView clickable and have it create a mentionable.
     // Make sure aboutLibraries is up to date.
     // Test location services / make sure it works on first install and in new places.
     // Use network for more precise GPS?
     // More ads.
+    // Make sure Firebase has enough bandwidth.
     // Make sure the secret stuff is secret.
     // Put the snapshots in reverse order before search for faster results.
     // Add preference for shape color.
