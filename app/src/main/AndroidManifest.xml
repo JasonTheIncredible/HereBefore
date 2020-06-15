@@ -70,12 +70,7 @@
             android:name=".Chat"
             android:configChanges="orientation|screenSize"
             android:label="@string/title_activity_maps"
-            android:theme="@style/AppTheme">
-            <intent-filter>
-                <action android:name="com.clixel.herebefore.NOTIFICATION_ACTION"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-            </intent-filter>
-        </activity>
+            android:theme="@style/AppTheme" />
 
         <activity
             android:name=".Map"
@@ -105,12 +100,23 @@
             android:label="@string/title_activity_maps"
             android:theme="@style/AppTheme.NoActionBar" />
 
-        <service
-            android:name=".MyFirebaseMessagingService">
+        <service android:name=".MyFirebaseMessagingService"
+            android:exported="false">
             <intent-filter>
-                <action android:name="com.google.firebase.MESSAGING_EVENT"/>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
+
+        <activity
+            android:name=".DirectMentions"
+            android:configChanges="orientation|screenSize"
+            android:label="@string/title_activity_maps"
+            android:theme="@style/AppTheme">
+            <intent-filter>
+                <action android:name="com.clixel.herebefore.NOTIFICATION_ACTION" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
 
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"

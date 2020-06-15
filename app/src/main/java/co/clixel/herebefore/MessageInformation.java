@@ -8,7 +8,7 @@ import java.util.ArrayList;
 class MessageInformation {
 
     public ArrayList removedMentionDuplicates;
-    public String userUUID, message, shapeUUID, token, imageURL, videoURL;
+    public String userUUID, message, shapeUUID, token, imageURL, videoURL, email;
     public Object date;
     public Boolean userIsWithinShape;
 

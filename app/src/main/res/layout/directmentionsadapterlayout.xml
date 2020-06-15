@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/directMentions"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <TextView
+        android:id="@+id/messageTimeInside"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="10dp"
+        android:layout_marginTop="4dp"
+        tools:text="Time" />
+
+    <TextView
+        android:id="@+id/messageUserInside"
+        android:layout_width="80dp"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="10dp"
+        android:layout_marginTop="4dp"
+        android:layout_toEndOf="@id/messageTimeInside"
+        android:ellipsize="end"
+        android:singleLine="true"
+        tools:text="User" />
+
+    <ImageView
+        android:id="@+id/messageImageInside"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/messageTimeInside"
+        android:layout_alignParentStart="true"
+        android:layout_marginStart="10dp"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="2dp" />
+
+    <FrameLayout
+        android:id="@+id/videoFrameInside"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/messageTimeInside"
+        android:layout_alignParentStart="true"
+        android:layout_marginStart="10dp"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="2dp"
+        android:visibility="gone">
+
+        <ImageView
+            android:id="@+id/messageImageVideoInside"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <ImageButton
+            android:id="@+id/playButtonInside"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical|center_horizontal"
+            android:contentDescription="@string/play_icon"
+            android:src="@drawable/exo_icon_play" />
+
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/messageTextInside"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/videoFrameInside"
+        android:layout_alignParentStart="true"
+        android:layout_marginStart="10dp"
+        android:layout_marginBottom="4dp"
+        android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+        android:textSize="18sp"
+        tools:text="Text" />
+
+    <TextView
+        android:id="@+id/messageTimeOutside"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginTop="4dp"
+        android:layout_marginEnd="10dp"
+        tools:text="Time" />
+
+    <TextView
+        android:id="@+id/messageUserOutside"
+        android:layout_width="80dp"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="4dp"
+        android:layout_marginEnd="10dp"
+        android:layout_toStartOf="@id/messageTimeOutside"
+        android:ellipsize="end"
+        android:singleLine="true"
+        tools:text="User" />
+
+    <ImageView
+        android:id="@+id/messageImageOutside"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/messageTimeOutside"
+        android:layout_alignParentEnd="true"
+        android:layout_marginTop="4dp"
+        android:layout_marginEnd="10dp"
+        android:layout_marginBottom="2dp" />
+
+    <FrameLayout
+        android:id="@+id/videoFrameOutside"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/messageTimeOutside"
+        android:layout_alignParentEnd="true"
+        android:layout_marginTop="4dp"
+        android:layout_marginEnd="10dp"
+        android:layout_marginBottom="2dp"
+        android:visibility="gone">
+
+        <ImageView
+            android:id="@+id/messageImageVideoOutside"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <ImageButton
+            android:id="@+id/playButtonOutside"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical|center_horizontal"
+            android:contentDescription="@string/play_icon"
+            android:src="@drawable/exo_icon_play" />
+
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/messageTextOutside"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/videoFrameOutside"
+        android:layout_alignParentEnd="true"
+        android:layout_marginEnd="10dp"
+        android:layout_marginBottom="4dp"
+        android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+        android:textSize="18sp"
+        tools:text="Text" />
+
+</RelativeLayout>

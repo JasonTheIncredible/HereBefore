@@ -182,7 +182,7 @@ public class Chat extends AppCompatActivity implements
         mentionsRecyclerView = findViewById(R.id.suggestionsList);
         loadingIcon = findViewById(R.id.loadingIcon);
 
-        // Make the loadingIcon visible upon the first load, as it can sometimes take a while to show anything. It should be made invisible in initRecyclerView().
+        // Make the loadingIcon visible upon the first load, as it can sometimes take a while to show anything. It should be made invisible in initChatAdapter().
         if (loadingIcon != null) {
 
             loadingIcon.setVisibility(View.VISIBLE);
@@ -305,7 +305,7 @@ public class Chat extends AppCompatActivity implements
                     }
                 }
 
-                // Read RecyclerView scroll position (for use in initRecyclerView).
+                // Read RecyclerView scroll position (for use in initChatAdapter).
                 if (chatRecyclerViewLinearLayoutManager != null) {
 
                     index = chatRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
@@ -469,7 +469,7 @@ public class Chat extends AppCompatActivity implements
                                         }
                                     } else {
 
-                                        // Change boolean to true - scrolls to the bottom of the recyclerView (in initRecyclerView()).
+                                        // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter()).
                                         messageSent = true;
 
                                         // Since the uuid doesn't already exist in Firebase, add the circle.
@@ -501,6 +501,20 @@ public class Chat extends AppCompatActivity implements
                                         messageInformation.setUserIsWithinShape(userIsWithinShape);
                                         DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                                         newMessage.setValue(messageInformation);
+
+                                        UserInformation userInformation = new UserInformation();
+                                        // If user has a Google account, get email one way. Else, get email another way.
+                                        GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(getBaseContext());
+                                        if (acct != null) {
+                                            String email = acct.getEmail();
+                                            userInformation.setEmail(email);
+                                        } else {
+                                            String email = sharedPreferences.getString("userToken", "null");
+                                            userInformation.setEmail(email);
+                                        }
+                                        userInformation.setUserUUID(userUUID);
+                                        DatabaseReference newUser = FirebaseDatabase.getInstance().getReference().child("Users").push();
+                                        newUser.setValue(userInformation);
 
                                         mInput.getText().clear();
                                         if (removedMentionDuplicates != null) {
@@ -547,7 +561,7 @@ public class Chat extends AppCompatActivity implements
 
                                         PolygonOptions polygonOptions = null;
 
-                                        // Change boolean to true - scrolls to the bottom of the recyclerView (in initRecyclerView()).
+                                        // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter()).
                                         messageSent = true;
 
                                         // Since the uuid doesn't already exist in Firebase, add the circle.
@@ -619,6 +633,20 @@ public class Chat extends AppCompatActivity implements
                                         DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                                         newMessage.setValue(messageInformation);
 
+                                        UserInformation userInformation = new UserInformation();
+                                        // If user has a Google account, get email one way. Else, get email another way.
+                                        GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(getBaseContext());
+                                        if (acct != null) {
+                                            String email = acct.getEmail();
+                                            userInformation.setEmail(email);
+                                        } else {
+                                            String email = sharedPreferences.getString("userToken", "null");
+                                            userInformation.setEmail(email);
+                                        }
+                                        userInformation.setUserUUID(userUUID);
+                                        DatabaseReference newUser = FirebaseDatabase.getInstance().getReference().child("Users").push();
+                                        newUser.setValue(userInformation);
+
                                         mInput.getText().clear();
                                         if (removedMentionDuplicates != null) {
                                             removedMentionDuplicates.clear();
@@ -657,7 +685,7 @@ public class Chat extends AppCompatActivity implements
                             }
                         } else {
 
-                            // Change boolean to true - scrolls to the bottom of the recyclerView (in initRecyclerView()).
+                            // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter()).
                             messageSent = true;
 
                             MessageInformation messageInformation = new MessageInformation();
@@ -678,6 +706,20 @@ public class Chat extends AppCompatActivity implements
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                             newMessage.setValue(messageInformation);
+
+                            UserInformation userInformation = new UserInformation();
+                            // If user has a Google account, get email one way. Else, get email another way.
+                            GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(getBaseContext());
+                            if (acct != null) {
+                                String email = acct.getEmail();
+                                userInformation.setEmail(email);
+                            } else {
+                                String email = sharedPreferences.getString("userToken", "null");
+                                userInformation.setEmail(email);
+                            }
+                            userInformation.setUserUUID(userUUID);
+                            DatabaseReference newUser = FirebaseDatabase.getInstance().getReference().child("Users").push();
+                            newUser.setValue(userInformation);
 
                             mInput.getText().clear();
                             if (removedMentionDuplicates != null) {
@@ -1746,7 +1788,7 @@ public class Chat extends AppCompatActivity implements
                 imageView.setVisibility(View.VISIBLE);
             } else {
 
-                // Prevents the loadingIcon from being removed by initRecyclerView().
+                // Prevents the loadingIcon from being removed by initChatAdapter().
                 needLoadingIcon = true;
 
                 // For use in uploadImage().
@@ -1779,7 +1821,7 @@ public class Chat extends AppCompatActivity implements
                 imageView.setImageResource(0);
             }
 
-            // Prevents the loadingIcon from being removed by initRecyclerView().
+            // Prevents the loadingIcon from being removed by initChatAdapter().
             needLoadingIcon = true;
 
             fileIsImage = true;
@@ -1812,7 +1854,7 @@ public class Chat extends AppCompatActivity implements
                 imageView.setImageResource(0);
             }
 
-            // Prevents the loadingIcon from being removed by initRecyclerView().
+            // Prevents the loadingIcon from being removed by initChatAdapter().
             needLoadingIcon = true;
 
             fileIsImage = false;
@@ -1945,7 +1987,7 @@ public class Chat extends AppCompatActivity implements
 
             activity.imageView.setVisibility(View.VISIBLE);
             activity.loadingIcon.setVisibility(View.INVISIBLE);
-            // Allow initRecyclerView() to get rid of the loadingIcon with this boolean.
+            // Allow initChatAdapter() to get rid of the loadingIcon with this boolean.
             activity.needLoadingIcon = false;
         }
     }
@@ -2025,7 +2067,7 @@ public class Chat extends AppCompatActivity implements
 
             activity.imageView.setVisibility(View.VISIBLE);
             activity.loadingIcon.setVisibility(View.INVISIBLE);
-            // Allow initRecyclerView() to get rid of the loadingIcon with this boolean.
+            // Allow initChatAdapter() to get rid of the loadingIcon with this boolean.
             activity.needLoadingIcon = false;
         }
     }
@@ -2201,7 +2243,7 @@ public class Chat extends AppCompatActivity implements
             }
 
             activity.loadingIcon.setVisibility(View.INVISIBLE);
-            // Allow initRecyclerView() to get rid of the loadingIcon with this boolean.
+            // Allow initChatAdapter() to get rid of the loadingIcon with this boolean.
             activity.needLoadingIcon = false;
         }
     }
@@ -2302,7 +2344,7 @@ public class Chat extends AppCompatActivity implements
                                 newShape = false;
                             }
 
-                            // Change boolean to true - scrolls to the bottom of the recyclerView (in initRecyclerView()).
+                            // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter()).
                             messageSent = true;
 
                             MessageInformation messageInformation = new MessageInformation();
@@ -2327,6 +2369,20 @@ public class Chat extends AppCompatActivity implements
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                             newMessage.setValue(messageInformation);
+
+                            UserInformation userInformation = new UserInformation();
+                            // If user has a Google account, get email one way. Else, get email another way.
+                            GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(getBaseContext());
+                            if (acct != null) {
+                                String email = acct.getEmail();
+                                userInformation.setEmail(email);
+                            } else {
+                                String email = sharedPreferences.getString("userToken", "null");
+                                userInformation.setEmail(email);
+                            }
+                            userInformation.setUserUUID(userUUID);
+                            DatabaseReference newUser = FirebaseDatabase.getInstance().getReference().child("Users").push();
+                            newUser.setValue(userInformation);
 
                             mInput.getText().clear();
                             if (removedMentionDuplicates != null) {
@@ -2446,7 +2502,7 @@ public class Chat extends AppCompatActivity implements
                                 newShape = false;
                             }
 
-                            // Change boolean to true - scrolls to the bottom of the recyclerView (in initRecyclerView()).
+                            // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter()).
                             messageSent = true;
 
                             MessageInformation messageInformation = new MessageInformation();
@@ -2471,6 +2527,20 @@ public class Chat extends AppCompatActivity implements
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                             newMessage.setValue(messageInformation);
+
+                            UserInformation userInformation = new UserInformation();
+                            // If user has a Google account, get email one way. Else, get email another way.
+                            GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(getBaseContext());
+                            if (acct != null) {
+                                String email = acct.getEmail();
+                                userInformation.setEmail(email);
+                            } else {
+                                String email = sharedPreferences.getString("userToken", "null");
+                                userInformation.setEmail(email);
+                            }
+                            userInformation.setUserUUID(userUUID);
+                            DatabaseReference newUser = FirebaseDatabase.getInstance().getReference().child("Users").push();
+                            newUser.setValue(userInformation);
 
                             mInput.getText().clear();
                             if (removedMentionDuplicates != null) {
@@ -2590,7 +2660,7 @@ public class Chat extends AppCompatActivity implements
                                 newShape = false;
                             }
 
-                            // Change boolean to true - scrolls to the bottom of the recyclerView (in initRecyclerView()).
+                            // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter()).
                             messageSent = true;
 
                             MessageInformation messageInformation = new MessageInformation();
@@ -2615,6 +2685,20 @@ public class Chat extends AppCompatActivity implements
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                             newMessage.setValue(messageInformation);
+
+                            UserInformation userInformation = new UserInformation();
+                            // If user has a Google account, get email one way. Else, get email another way.
+                            GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(getBaseContext());
+                            if (acct != null) {
+                                String email = acct.getEmail();
+                                userInformation.setEmail(email);
+                            } else {
+                                String email = sharedPreferences.getString("userToken", "null");
+                                userInformation.setEmail(email);
+                            }
+                            userInformation.setUserUUID(userUUID);
+                            DatabaseReference newUser = FirebaseDatabase.getInstance().getReference().child("Users").push();
+                            newUser.setValue(userInformation);
 
                             mInput.getText().clear();
                             if (removedMentionDuplicates != null) {

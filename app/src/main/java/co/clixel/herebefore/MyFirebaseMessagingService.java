@@ -17,7 +17,7 @@ import com.google.firebase.messaging.RemoteMessage;
 public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
     private static final String TAG = "MyFirebaseMsgService";
-    private static final int DEFAULT_NOTIFICATION_CHANNEL_ID = 420;
+    private static final String DEFAULT_NOTIFICATION_CHANNEL_ID = "DEFAULT_NOTIFICATION_CHANNEL_ID";
     private static final int PENDING_INTENT_REQ_CODE = 69;
 
     @Override
@@ -67,12 +67,13 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
         // Instantiate a Builder object.
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this,
-                getString(DEFAULT_NOTIFICATION_CHANNEL_ID));
+                DEFAULT_NOTIFICATION_CHANNEL_ID);
 
         // Add properties to the builder
         builder.setContentTitle(title)
                 .setAutoCancel(true)
                 .setSubText(message)
+                .setSmallIcon(R.mipmap.ic_logo)
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(message))
                 .setOnlyAlertOnce(true)
                 .setContentIntent(pendingIntent);

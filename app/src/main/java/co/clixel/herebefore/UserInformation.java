@@ -5,21 +5,17 @@ import androidx.annotation.Keep;
 @Keep
 class UserInformation {
 
-    public String userUUID, email, token;
+    public String email, userUUID;
 
     @Keep
     UserInformation() {
-    }
-
-    public void setUserUUID(String userUUID) {
-        this.userUUID = userUUID;
     }
 
     public void setEmail(String email) {
         this.email = email;
     }
 
-    public void setToken(String token) {
-        this.token = token;
+    public void setUserUUID(String userUUID) {
+        this.userUUID = userUUID;
     }
 }

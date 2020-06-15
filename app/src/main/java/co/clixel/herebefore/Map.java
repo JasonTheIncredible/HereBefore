@@ -102,8 +102,12 @@ public class Map extends FragmentActivity implements
     private View loadingIcon;
     private LocationProvider locationProvider;
 
+    // Order DM by timestamp, as the eventListeners are async and returning out of order base on number of mentions.
+    // Prevent flickering in DirectMentions / keep the position when updated.
     // Set direct message activity and make notification onclick go to it.
-    // When is token renewed / renew it.
+    // Go to chat in directMentionsAdapter onclick.
+    // Make chat recyclerview scroll to the bottom if user is at bottom.
+    // When is token renewed / renew it (this means going through all Firebase email and checking token).
     // Add notifications adjustments to settings.
     // Make user in recyclerView clickable and have it create a mentionable.
     // Make sure aboutLibraries is up to date.
@@ -112,6 +116,7 @@ public class Map extends FragmentActivity implements
     // More ads.
     // Make sure Firebase has enough bandwidth.
     // Make sure the secret stuff is secret.
+    // Check on feedback.
     // Put the snapshots in reverse order before search for faster results.
     // Add preference for shape color.
     // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.
