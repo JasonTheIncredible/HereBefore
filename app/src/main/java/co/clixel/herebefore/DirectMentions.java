@@ -84,7 +84,7 @@ public class DirectMentions extends AppCompatActivity {
 
         // Connect to Firebase.
         final DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-        databaseReferenceOne = rootRef.child("Users");
+        databaseReferenceOne = rootRef.child("MessageThreads");
         eventListenerOne = new ValueEventListener() {
 
             @Override
@@ -101,57 +101,53 @@ public class DirectMentions extends AppCompatActivity {
                     mUserIsWithinShape.clear();
                 }
 
-                for (DataSnapshot ds : dataSnapshot.getChildren()) {
+                for (final DataSnapshot ds : dataSnapshot.getChildren()) {
 
-                    String userEmail = (String) ds.child("email").getValue();
-                    if (userEmail != null) {
+                    if (ds.child("removedMentionDuplicates").getValue() != null) {
 
-                        if (userEmail.equals(email)) {
+                        for (final DataSnapshot mention : ds.child("removedMentionDuplicates").getChildren()) {
 
-                            // If the uuid brought from Map.java equals the uuid attached to the recyclerviewlayout in Firebase, load it into the RecyclerView.
-                            final String userUUID = (String) ds.child("userUUID").getValue();
-                            if (userUUID != null) {
+                            if (mention.getValue() != null) {
 
-                                databaseReferenceTwo = rootRef.child("MessageThreads");
+                                databaseReferenceTwo = rootRef.child("Users");
                                 eventListenerTwo = new ValueEventListener() {
 
                                     @Override
                                     public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
 
-                                        for (DataSnapshot ds : dataSnapshot.getChildren()) {
+                                        for (DataSnapshot dss : dataSnapshot.getChildren()) {
 
-                                            if (ds.child("removedMentionDuplicates").getValue() != null) {
+                                            String userUUID = (String) dss.child("userUUID").getValue();
+                                            if (mention.getValue().toString().equals(userUUID)) {
 
-                                                for (DataSnapshot mention : ds.child("removedMentionDuplicates").getChildren()) {
+                                                String userEmail = (String) dss.child("email").getValue();
+                                                if (userEmail != null) {
 
-                                                    if (mention.getValue() != null) {
+                                                    if (userEmail.equals(email)) {
 
-                                                        if (mention.getValue().equals(userUUID)) {
+                                                        Long serverDate = (Long) ds.child("date").getValue();
+                                                        String user = (String) ds.child("userUUID").getValue();
+                                                        String imageURL = (String) ds.child("imageURL").getValue();
+                                                        String videoURL = (String) ds.child("videoURL").getValue();
+                                                        String messageText = (String) ds.child("message").getValue();
+                                                        Boolean userIsWithinShape = (Boolean) ds.child("userIsWithinShape").getValue();
+                                                        DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
+                                                        // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+                                                        // This will cause onDataChange to fire twice; optimizations could be made in the future.
+                                                        if (serverDate != null) {
 
-                                                            Long serverDate = (Long) ds.child("date").getValue();
-                                                            String user = (String) ds.child("userUUID").getValue();
-                                                            String imageURL = (String) ds.child("imageURL").getValue();
-                                                            String videoURL = (String) ds.child("videoURL").getValue();
-                                                            String messageText = (String) ds.child("message").getValue();
-                                                            Boolean userIsWithinShape = (Boolean) ds.child("userIsWithinShape").getValue();
-                                                            DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
-                                                            // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                                                            // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                                                            if (serverDate != null) {
+                                                            Date netDate = (new Date(serverDate));
+                                                            String messageTime = dateFormat.format(netDate);
+                                                            mTime.add(messageTime);
+                                                        } else {
 
-                                                                Date netDate = (new Date(serverDate));
-                                                                String messageTime = dateFormat.format(netDate);
-                                                                mTime.add(messageTime);
-                                                            } else {
-
-                                                                Log.e(TAG, "onStart() -> serverDate == null");
-                                                            }
-                                                            mUser.add(user);
-                                                            mImage.add(imageURL);
-                                                            mVideo.add(videoURL);
-                                                            mText.add(messageText);
-                                                            mUserIsWithinShape.add(userIsWithinShape);
+                                                            Log.e(TAG, "onStart() -> serverDate == null");
                                                         }
+                                                        mUser.add(user);
+                                                        mImage.add(imageURL);
+                                                        mVideo.add(videoURL);
+                                                        mText.add(messageText);
+                                                        mUserIsWithinShape.add(userIsWithinShape);
                                                     }
                                                 }
                                             }
@@ -276,6 +272,7 @@ public class DirectMentions extends AppCompatActivity {
         directMentionsRecyclerView.swapAdapter(adapter, true);
         // Make the newer mentions appear at the top.
         directMentionsRecyclerViewLinearLayoutManager.setReverseLayout(true);
+        directMentionsRecyclerViewLinearLayoutManager.setStackFromEnd(true);
         directMentionsRecyclerView.setLayoutManager(directMentionsRecyclerViewLinearLayoutManager);
 
         // Set RecyclerView scroll position to prevent position change when Firebase gets updated and after screen orientation change.
