@@ -153,6 +153,14 @@ public class DirectMentions extends AppCompatActivity {
                                             }
                                         }
 
+                                        // Read RecyclerView scroll position (for use in initDirectMentionsAdapter()).
+                                        if (directMentionsRecyclerViewLinearLayoutManager != null) {
+
+                                            index = directMentionsRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
+                                            View v = directMentionsRecyclerView.getChildAt(0);
+                                            top = (v == null) ? 0 : (v.getTop() - directMentionsRecyclerView.getPaddingTop());
+                                        }
+
                                         initDirectMentionsAdapter();
                                     }
 
@@ -165,18 +173,10 @@ public class DirectMentions extends AppCompatActivity {
                                 };
 
                                 // Add the second Firebase listener.
-                                databaseReferenceTwo.addValueEventListener(eventListenerTwo);
+                                databaseReferenceTwo.addListenerForSingleValueEvent(eventListenerTwo);
                             }
                         }
                     }
-                }
-
-                // Read RecyclerView scroll position (for use in initDirectMentionsAdapter()).
-                if (directMentionsRecyclerViewLinearLayoutManager != null) {
-
-                    index = directMentionsRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
-                    View v = directMentionsRecyclerView.getChildAt(0);
-                    top = (v == null) ? 0 : (v.getTop() - directMentionsRecyclerView.getPaddingTop());
                 }
             }
 

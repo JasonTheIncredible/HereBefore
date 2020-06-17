@@ -102,7 +102,6 @@ public class Map extends FragmentActivity implements
     private View loadingIcon;
     private LocationProvider locationProvider;
 
-    // Don't get new datasnapshot every time in DirectMentions.
     // Keep the scroll position when DirectMentions / Chat is updated, also, start DirectMentions recyclerView from "bottom" (although this will be top since it's in reverse order).
     // Set direct message activity and make notification onclick go to it.
     // Go to chat in directMentionsAdapter onclick.
@@ -114,6 +113,7 @@ public class Map extends FragmentActivity implements
     // Test location services / make sure it works on first install and in new places.
     // Use network for more precise GPS?
     // More ads.
+    // Use onChildAdded() in chat to limit data usage / Don't get new dataSnapshot every time in DirectMentions.
     // Make sure Firebase has enough bandwidth.
     // Make sure the secret stuff is secret.
     // Check on feedback.
