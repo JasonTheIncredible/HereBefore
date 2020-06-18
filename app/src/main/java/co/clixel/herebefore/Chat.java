@@ -123,7 +123,7 @@ public class Chat extends AppCompatActivity implements
     private ArrayList<Boolean> mUserIsWithinShape = new ArrayList<>();
     private ArrayList<String> removedMentionDuplicates;
     private RecyclerView chatRecyclerView, mentionsRecyclerView;
-    private static int index = -1, top = -1;
+    private static int index = -1, top = -1, last;
     private DatabaseReference databaseReference;
     private ValueEventListener eventListener;
     private FloatingActionButton sendButton, mediaButton;
@@ -309,6 +309,7 @@ public class Chat extends AppCompatActivity implements
                 if (chatRecyclerViewLinearLayoutManager != null) {
 
                     index = chatRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
+                    last = chatRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
                     View v = chatRecyclerView.getChildAt(0);
                     top = (v == null) ? 0 : (v.getTop() - chatRecyclerView.getPaddingTop());
                 }
@@ -904,7 +905,7 @@ public class Chat extends AppCompatActivity implements
         chatRecyclerView.swapAdapter(adapter, true);
         chatRecyclerView.setLayoutManager(chatRecyclerViewLinearLayoutManager);
 
-        if (index == -1 || messageSent) {
+        if (last == (mTime.size() - 2) || messageSent) {
 
             // Scroll to bottom of recyclerviewlayout after first initialization and after sending a recyclerviewlayout.
             chatRecyclerView.scrollToPosition(mTime.size() - 1);

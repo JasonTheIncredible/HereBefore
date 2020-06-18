@@ -35,7 +35,7 @@ public class DirectMentions extends AppCompatActivity {
     private ArrayList<String> mTime = new ArrayList<>(), mUser = new ArrayList<>(), mImage = new ArrayList<>(), mVideo = new ArrayList<>(), mText = new ArrayList<>();
     private ArrayList<Boolean> mUserIsWithinShape = new ArrayList<>();
     private RecyclerView directMentionsRecyclerView;
-    private static int index = -1, top = -1;
+    private static int index = -1, top = -1, last;
     private DatabaseReference databaseReferenceOne, databaseReferenceTwo;
     private ValueEventListener eventListenerOne, eventListenerTwo;
     private LinearLayoutManager directMentionsRecyclerViewLinearLayoutManager = new LinearLayoutManager(this);
@@ -101,6 +101,15 @@ public class DirectMentions extends AppCompatActivity {
                     mUserIsWithinShape.clear();
                 }
 
+                // Read RecyclerView scroll position (for use in initDirectMentionsAdapter()).
+                if (directMentionsRecyclerViewLinearLayoutManager != null) {
+
+                    index = directMentionsRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
+                    last = directMentionsRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
+                    View v = directMentionsRecyclerView.getChildAt(0);
+                    top = (v == null) ? 0 : (v.getTop() - directMentionsRecyclerView.getPaddingTop());
+                }
+
                 for (final DataSnapshot ds : dataSnapshot.getChildren()) {
 
                     if (ds.child("removedMentionDuplicates").getValue() != null) {
@@ -151,14 +160,6 @@ public class DirectMentions extends AppCompatActivity {
                                                     }
                                                 }
                                             }
-                                        }
-
-                                        // Read RecyclerView scroll position (for use in initDirectMentionsAdapter()).
-                                        if (directMentionsRecyclerViewLinearLayoutManager != null) {
-
-                                            index = directMentionsRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
-                                            View v = directMentionsRecyclerView.getChildAt(0);
-                                            top = (v == null) ? 0 : (v.getTop() - directMentionsRecyclerView.getPaddingTop());
                                         }
 
                                         initDirectMentionsAdapter();
@@ -275,8 +276,15 @@ public class DirectMentions extends AppCompatActivity {
         directMentionsRecyclerViewLinearLayoutManager.setStackFromEnd(true);
         directMentionsRecyclerView.setLayoutManager(directMentionsRecyclerViewLinearLayoutManager);
 
-        // Set RecyclerView scroll position to prevent position change when Firebase gets updated and after screen orientation change.
-        directMentionsRecyclerViewLinearLayoutManager.scrollToPositionWithOffset(index, top);
+        if (last == (mTime.size() - 2)) {
+
+            // Scroll to bottom of recyclerviewlayout after first initialization and after sending a recyclerviewlayout.
+            directMentionsRecyclerView.scrollToPosition(mTime.size() - 1);
+        } else {
+
+            // Set RecyclerView scroll position to prevent position change when Firebase gets updated and after screen orientation change.
+            directMentionsRecyclerViewLinearLayoutManager.scrollToPositionWithOffset(index, top);
+        }
 
         // After the initial load, make the loadingIcon invisible.
         if (loadingIcon != null) {
