@@ -267,13 +267,10 @@ public class DirectMentions extends AppCompatActivity {
     private void initDirectMentionsAdapter() {
 
         // Initialize the RecyclerView.
-        Log.i(TAG, "initDirectMentionsAdapter");
+        Log.i(TAG, "initDirectMentionsAdapter()");
 
         DirectMentionsAdapter adapter = new DirectMentionsAdapter(this, mTime, mUser, mImage, mVideo, mText, mUserIsWithinShape);
         directMentionsRecyclerView.swapAdapter(adapter, true);
-        // Make the newer mentions appear at the top.
-        directMentionsRecyclerViewLinearLayoutManager.setReverseLayout(true);
-        directMentionsRecyclerViewLinearLayoutManager.setStackFromEnd(true);
         directMentionsRecyclerView.setLayoutManager(directMentionsRecyclerViewLinearLayoutManager);
 
         if (last == (mTime.size() - 2)) {

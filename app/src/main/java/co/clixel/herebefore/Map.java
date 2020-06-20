@@ -102,9 +102,10 @@ public class Map extends FragmentActivity implements
     private View loadingIcon;
     private LocationProvider locationProvider;
 
-    // Keep the scroll position when DirectMentions is updated, also, start DirectMentions recyclerView from "bottom" (although this will be top since it's in reverse order).
+    // Scroll to bottom of Chat / DirectMentions on first load.
+    // Prevent directMentions from updating if it's not necessary.
     // Set direct message activity and make notification onclick go to it.
-    // Check orientation change with DirectMentions.
+    // Check orientation change with directMentions.
     // Go to chat in directMentionsAdapter onclick.
     // Make chat recyclerview scroll to the bottom if user is at bottom.
     // When is token renewed / renew it (this means going through all Firebase email and checking token).
