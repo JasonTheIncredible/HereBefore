@@ -102,7 +102,6 @@ public class Map extends FragmentActivity implements
     private View loadingIcon;
     private LocationProvider locationProvider;
 
-    // Scroll to bottom of Chat / DirectMentions on first load.
     // Prevent directMentions from updating if it's not necessary.
     // Set direct message activity and make notification onclick go to it.
     // Check orientation change with directMentions.

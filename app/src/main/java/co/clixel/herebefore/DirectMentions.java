@@ -39,7 +39,7 @@ public class DirectMentions extends AppCompatActivity {
     private DatabaseReference databaseReferenceOne, databaseReferenceTwo;
     private ValueEventListener eventListenerOne, eventListenerTwo;
     private LinearLayoutManager directMentionsRecyclerViewLinearLayoutManager = new LinearLayoutManager(this);
-    private boolean theme;
+    private boolean theme, firstLoad;
     private View loadingIcon;
     private SharedPreferences sharedPreferences;
     private Toast longToast;
@@ -54,6 +54,9 @@ public class DirectMentions extends AppCompatActivity {
 
         directMentionsRecyclerView = findViewById(R.id.mentionsList);
         loadingIcon = findViewById(R.id.loadingIcon);
+
+        // Set to true to scroll to the bottom of directMentionsRecyclerView.
+        firstLoad = true;
 
         // Make the loadingIcon visible upon the first load, as it can sometimes take a while to show anything. It should be made invisible in initDirectMentionsAdapter().
         if (loadingIcon != null) {
@@ -273,10 +276,11 @@ public class DirectMentions extends AppCompatActivity {
         directMentionsRecyclerView.swapAdapter(adapter, true);
         directMentionsRecyclerView.setLayoutManager(directMentionsRecyclerViewLinearLayoutManager);
 
-        if (last == (mTime.size() - 2)) {
+        if (last == (mTime.size() - 2) || firstLoad) {
 
             // Scroll to bottom of recyclerviewlayout after first initialization and after sending a recyclerviewlayout.
             directMentionsRecyclerView.scrollToPosition(mTime.size() - 1);
+            firstLoad = false;
         } else {
 
             // Set RecyclerView scroll position to prevent position change when Firebase gets updated and after screen orientation change.

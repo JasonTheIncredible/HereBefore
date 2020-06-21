@@ -127,7 +127,7 @@ public class Chat extends AppCompatActivity implements
     private DatabaseReference databaseReference;
     private ValueEventListener eventListener;
     private FloatingActionButton sendButton, mediaButton;
-    private boolean theme, needLoadingIcon = false, reachedEndOfRecyclerView = false, recyclerViewHasScrolled = false, messageSent = false, sendButtonClicked = false, mediaButtonMenuIsOpen, fileIsImage, checkPermissionsPicture, URIisFile,
+    private boolean theme, firstLoad, needLoadingIcon = false, reachedEndOfRecyclerView = false, recyclerViewHasScrolled = false, messageSent = false, sendButtonClicked = false, mediaButtonMenuIsOpen, fileIsImage, checkPermissionsPicture, URIisFile,
             newShape, threeMarkers, fourMarkers, fiveMarkers, sixMarkers, sevenMarkers, eightMarkers, shapeIsCircle;
     private Boolean userIsWithinShape;
     private View.OnLayoutChangeListener onLayoutChangeListener;
@@ -181,6 +181,9 @@ public class Chat extends AppCompatActivity implements
         chatRecyclerView = findViewById(R.id.messageList);
         mentionsRecyclerView = findViewById(R.id.suggestionsList);
         loadingIcon = findViewById(R.id.loadingIcon);
+
+        // Set to true to scroll to the bottom of chatRecyclerView.
+        firstLoad = true;
 
         // Make the loadingIcon visible upon the first load, as it can sometimes take a while to show anything. It should be made invisible in initChatAdapter().
         if (loadingIcon != null) {
@@ -905,11 +908,12 @@ public class Chat extends AppCompatActivity implements
         chatRecyclerView.swapAdapter(adapter, true);
         chatRecyclerView.setLayoutManager(chatRecyclerViewLinearLayoutManager);
 
-        if (last == (mTime.size() - 2) || messageSent) {
+        if (last == (mTime.size() - 2) || firstLoad || messageSent) {
 
             // Scroll to bottom of recyclerviewlayout after first initialization and after sending a recyclerviewlayout.
             chatRecyclerView.scrollToPosition(mTime.size() - 1);
             messageSent = false;
+            firstLoad = false;
         } else {
 
             // Set RecyclerView scroll position to prevent position change when Firebase gets updated and after screen orientation change.
