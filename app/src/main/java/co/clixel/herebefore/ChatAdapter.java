@@ -282,6 +282,12 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ViewHolder> {
         return mMessageTime.size();
     }
 
+    @Override
+    public int getItemViewType(int position) {
+
+        return position;
+    }
+
     protected void loadPreferences() {
 
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);

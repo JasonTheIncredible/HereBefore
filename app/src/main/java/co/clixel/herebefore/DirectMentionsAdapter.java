@@ -255,6 +255,12 @@ public class DirectMentionsAdapter extends RecyclerView.Adapter<DirectMentionsAd
         return mMessageTime.size();
     }
 
+    @Override
+    public int getItemViewType(int position) {
+
+        return position;
+    }
+
     protected void loadPreferences() {
 
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);

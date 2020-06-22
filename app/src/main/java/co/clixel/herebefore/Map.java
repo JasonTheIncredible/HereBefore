@@ -102,11 +102,9 @@ public class Map extends FragmentActivity implements
     private View loadingIcon;
     private LocationProvider locationProvider;
 
-    // Prevent directMentions from updating if it's not necessary.
-    // Set direct message activity and make notification onclick go to it.
+    // Set direct message activity and make notification go to it.
     // Check orientation change with directMentions.
     // Go to chat in directMentionsAdapter onclick.
-    // Make chat recyclerview scroll to the bottom if user is at bottom.
     // When is token renewed / renew it (this means going through all Firebase email and checking token).
     // Add notifications adjustments to settings.
     // Make user in recyclerView clickable and have it create a mentionable.
@@ -114,11 +112,11 @@ public class Map extends FragmentActivity implements
     // Test location services / make sure it works on first install and in new places.
     // Use network for more precise GPS?
     // More ads.
-    // Use onChildAdded() in chat to limit data usage / Don't get new dataSnapshot every time in DirectMentions.
+    // Use onChildAdded() or childEventListener in chat to limit data usage / Don't get new dataSnapshot every time in DirectMentions / Prevent directMentions from updating if it's not necessary.
+    // Put the snapshots in reverse order before search for faster results.
     // Make sure Firebase has enough bandwidth.
     // Make sure the secret stuff is secret.
     // Check on feedback.
-    // Put the snapshots in reverse order before search for faster results.
     // Add preference for shape color.
     // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.
     // Leave messages in locations that users get notified of when they enter the area.

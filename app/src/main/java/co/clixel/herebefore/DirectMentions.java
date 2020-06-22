@@ -273,7 +273,7 @@ public class DirectMentions extends AppCompatActivity {
         Log.i(TAG, "initDirectMentionsAdapter()");
 
         DirectMentionsAdapter adapter = new DirectMentionsAdapter(this, mTime, mUser, mImage, mVideo, mText, mUserIsWithinShape);
-        directMentionsRecyclerView.swapAdapter(adapter, true);
+        directMentionsRecyclerView.setAdapter(adapter);
         directMentionsRecyclerView.setLayoutManager(directMentionsRecyclerViewLinearLayoutManager);
 
         if (last == (mTime.size() - 2) || firstLoad) {

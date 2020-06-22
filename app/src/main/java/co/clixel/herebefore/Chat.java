@@ -905,7 +905,7 @@ public class Chat extends AppCompatActivity implements
         Log.i(TAG, "initChatAdapter");
 
         ChatAdapter adapter = new ChatAdapter(this, mTime, mUser, mImage, mVideo, mText, mUserIsWithinShape);
-        chatRecyclerView.swapAdapter(adapter, true);
+        chatRecyclerView.setAdapter(adapter);
         chatRecyclerView.setLayoutManager(chatRecyclerViewLinearLayoutManager);
 
         if (last == (mTime.size() - 2) || firstLoad || messageSent) {
