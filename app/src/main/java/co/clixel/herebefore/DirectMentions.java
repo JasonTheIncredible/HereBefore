@@ -1,8 +1,12 @@
 package co.clixel.herebefore;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Gravity;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
@@ -42,7 +46,7 @@ public class DirectMentions extends AppCompatActivity {
     private boolean theme, firstLoad;
     private View loadingIcon;
     private SharedPreferences sharedPreferences;
-    private Toast longToast;
+    private Toast longToast, noDMsToast;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -178,8 +182,14 @@ public class DirectMentions extends AppCompatActivity {
 
                                 // Add the second Firebase listener.
                                 databaseReferenceTwo.addListenerForSingleValueEvent(eventListenerTwo);
+                            } else {
+
+                                initDirectMentionsAdapter();
                             }
                         }
+                    } else {
+
+                        initDirectMentionsAdapter();
                     }
                 }
             }
@@ -193,6 +203,42 @@ public class DirectMentions extends AppCompatActivity {
 
         // Add the first Firebase listener.
         databaseReferenceOne.addValueEventListener(eventListenerOne);
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+
+        Log.i(TAG, "onCreateOptionsMenu()");
+
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.chatsettings_menu, menu);
+
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        int id = item.getItemId();
+
+        // noinspection SimplifiableIfStatement
+        if (id == R.id.settingsButton) {
+
+            Log.i(TAG, "onOptionsItemSelected() -> settingsButton");
+
+            cancelToasts();
+
+            Intent Activity = new Intent(getBaseContext(), co.clixel.herebefore.Settings.class);
+
+            startActivity(Activity);
+
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
     }
 
     @Override
@@ -235,6 +281,11 @@ public class DirectMentions extends AppCompatActivity {
         if (longToast != null) {
 
             longToast.cancel();
+        }
+
+        if (noDMsToast != null) {
+
+            noDMsToast.cancel();
         }
     }
 
@@ -292,11 +343,20 @@ public class DirectMentions extends AppCompatActivity {
 
             loadingIcon.setVisibility(View.INVISIBLE);
         }
+
+        // Show this toast if it doesn't already exist.
+        if (mTime.size() == 0 && noDMsToast == null) {
+
+            noDMsToast = Toast.makeText(getBaseContext(), "You have no direct mentions", Toast.LENGTH_LONG);
+            noDMsToast.setGravity(Gravity.CENTER, 0, 0);
+            noDMsToast.show();
+        }
     }
 
     private void toastMessageLong(String message) {
 
-        longToast = Toast.makeText(this, message, Toast.LENGTH_LONG);
+        longToast = Toast.makeText(getBaseContext(), message, Toast.LENGTH_LONG);
+        longToast.setGravity(Gravity.CENTER, 0, 0);
         longToast.show();
     }
 }

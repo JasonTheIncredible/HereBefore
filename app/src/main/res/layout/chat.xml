@@ -40,7 +40,6 @@
         android:clickable="true"
         android:focusable="true"
         android:src="@drawable/ic_add"
-        android:tint="@android:color/white"
         app:backgroundTint="#505050"
         app:fabSize="mini" />
 
@@ -101,7 +100,6 @@
         android:clickable="true"
         android:focusable="true"
         android:src="@drawable/ic_send"
-        android:tint="@android:color/white"
         app:backgroundTint="#0040AF" />
 
     <RelativeLayout

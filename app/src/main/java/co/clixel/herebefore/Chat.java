@@ -37,6 +37,7 @@ import android.provider.MediaStore;
 import android.util.Base64;
 import android.util.Base64OutputStream;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -787,6 +788,42 @@ public class Chat extends AppCompatActivity implements
     }
 
     @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+
+        Log.i(TAG, "onCreateOptionsMenu()");
+
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.chatsettings_menu, menu);
+
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        int id = item.getItemId();
+
+        // noinspection SimplifiableIfStatement
+        if (id == R.id.settingsButton) {
+
+            Log.i(TAG, "onOptionsItemSelected() -> settingsButton");
+
+            cancelToasts();
+
+            Intent Activity = new Intent(Chat.this, co.clixel.herebefore.Settings.class);
+
+            startActivity(Activity);
+
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
     protected void onRestart() {
 
         super.onRestart();
@@ -1155,42 +1192,6 @@ public class Chat extends AppCompatActivity implements
 
             theme = sharedPreferences.getBoolean(co.clixel.herebefore.Settings.KEY_THEME_SWITCH, false);
         }
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-
-        Log.i(TAG, "onCreateOptionsMenu()");
-
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.chatsettings_menu, menu);
-
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        // noinspection SimplifiableIfStatement
-        if (id == R.id.settingsButton) {
-
-            Log.i(TAG, "onOptionsItemSelected() -> settingsButton");
-
-            cancelToasts();
-
-            Intent Activity = new Intent(Chat.this, co.clixel.herebefore.Settings.class);
-
-            startActivity(Activity);
-
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
     }
 
     @Override
@@ -2837,13 +2838,15 @@ public class Chat extends AppCompatActivity implements
 
     private void toastMessageShort(String message) {
 
-        shortToast = Toast.makeText(this, message, Toast.LENGTH_SHORT);
+        shortToast = Toast.makeText(getBaseContext(), message, Toast.LENGTH_SHORT);
+        shortToast.setGravity(Gravity.CENTER, 0, 0);
         shortToast.show();
     }
 
     private void toastMessageLong(String message) {
 
-        longToast = Toast.makeText(this, message, Toast.LENGTH_LONG);
+        longToast = Toast.makeText(getBaseContext(), message, Toast.LENGTH_LONG);
+        longToast.setGravity(Gravity.CENTER, 0, 0);
         longToast.show();
     }
 }

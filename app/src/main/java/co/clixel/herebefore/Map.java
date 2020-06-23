@@ -46,6 +46,7 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polygon;
 import com.google.android.gms.maps.model.PolygonOptions;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -101,10 +102,12 @@ public class Map extends FragmentActivity implements
     private Toast longToast;
     private View loadingIcon;
     private LocationProvider locationProvider;
+    private FloatingActionButton dmButton;
 
-    // Set direct message activity and make notification go to it.
-    // Check orientation change with directMentions.
+    // Create directMentions button in Chat.
     // Go to chat in directMentionsAdapter onclick.
+    // Get rid of Users node in Firebase if possible.
+    // Check orientation change with directMentions.
     // When is token renewed / renew it (this means going through all Firebase email and checking token).
     // Add notifications adjustments to settings.
     // Make user in recyclerView clickable and have it create a mentionable.
@@ -146,9 +149,10 @@ public class Map extends FragmentActivity implements
 
         mapTypeButton = findViewById(R.id.mapTypeButton);
         settingsButton = findViewById(R.id.settingsButton);
+        chatViewsButton = findViewById(R.id.chatViewsButton);
+        dmButton = findViewById(R.id.dmButton);
         createChatButton = findViewById(R.id.createChatButton);
         chatSizeSeekBar = findViewById(R.id.chatSizeSeekBar);
-        chatViewsButton = findViewById(R.id.chatViewsButton);
         chatSelectorSeekBar = findViewById(R.id.chatSelectorSeekBar);
         loadingIcon = findViewById(R.id.loadingIcon);
     }
@@ -202,6 +206,22 @@ public class Map extends FragmentActivity implements
                 Log.i(TAG, "onStart() -> settingsButton -> onClick");
 
                 Intent Activity = new Intent(Map.this, co.clixel.herebefore.Settings.class);
+
+                cancelToasts();
+
+                startActivity(Activity);
+            }
+        });
+
+        // Go to DMs.
+        dmButton.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+
+                Log.i(TAG, "onStart() -> dmButton -> onClick");
+
+                Intent Activity = new Intent(Map.this, DirectMentions.class);
 
                 cancelToasts();
 
@@ -2254,61 +2274,56 @@ public class Map extends FragmentActivity implements
             locationProvider = null;
         }
 
-        // Remove the listener.
         if (mapTypeButton != null) {
 
             mapTypeButton.setOnClickListener(null);
         }
 
-        // Remove the listener.
         if (settingsButton != null) {
 
             settingsButton.setOnClickListener(null);
         }
 
-        // Remove the listener.
         if (popupMapType != null) {
 
             popupMapType.setOnDismissListener(null);
         }
 
-        // Remove the listener.
         if (chatViewsButton != null) {
 
             chatViewsButton.setOnClickListener(null);
         }
 
-        // Remove the listener.
         if (popupChatViews != null) {
 
             popupChatViews.setOnDismissListener(null);
         }
 
-        // Remove the listener.
+        if (dmButton != null) {
+
+            dmButton.setOnClickListener(null);
+        }
+
         if (createChatButton != null) {
 
             createChatButton.setOnClickListener(null);
         }
 
-        // Remove the listener.
         if (popupCreateChat != null) {
 
             popupCreateChat.setOnDismissListener(null);
         }
 
-        // Remove the seekBar listener.
         if (chatSizeSeekBar != null) {
 
             chatSizeSeekBar.setOnSeekBarChangeListener(null);
         }
 
-        // Remove the seekBar listener.
         if (chatSelectorSeekBar != null) {
 
             chatSelectorSeekBar.setOnSeekBarChangeListener(null);
         }
 
-        // Remove the listener.
         if (mMap != null) {
 
             mMap.setOnCircleClickListener(null);
@@ -2385,9 +2400,7 @@ public class Map extends FragmentActivity implements
                     && grantResults[0] != PackageManager.PERMISSION_GRANTED) {
 
                 // User denied permission and checked "Don't ask again!"
-                Toast locationPermissionToast = Toast.makeText(Map.this, "Location permission is required. Please enable it manually through the Android settings menu.", Toast.LENGTH_LONG);
-                locationPermissionToast.setGravity(Gravity.CENTER, 0, 0);
-                locationPermissionToast.show();
+                toastMessageLong("Location permission is required. Please enable it manually through the Android settings menu.");
             }
         }
     }
@@ -7862,6 +7875,8 @@ public class Map extends FragmentActivity implements
 
         settingsButton.setBackgroundResource(R.drawable.ic_more_vert_purple_24dp);
 
+        dmButton.setBackgroundTintList(ContextCompat.getColorStateList(this, R.color.purple));
+
         // Remove the polygon and markers.
         if (newPolygon != null) {
 
@@ -8216,6 +8231,8 @@ public class Map extends FragmentActivity implements
         createChatButton.setBackgroundResource(R.drawable.createchat_button);
 
         settingsButton.setBackgroundResource(R.drawable.ic_more_vert_yellow_24dp);
+
+        dmButton.setBackgroundTintList(ContextCompat.getColorStateList(this, R.color.yellow));
 
         // Remove the polygon and markers.
         if (newPolygon != null) {
@@ -8709,7 +8726,8 @@ public class Map extends FragmentActivity implements
 
     private void toastMessageLong(String message) {
 
-        longToast = Toast.makeText(this, message, Toast.LENGTH_LONG);
+        longToast = Toast.makeText(getBaseContext(), message, Toast.LENGTH_LONG);
+        longToast.setGravity(Gravity.CENTER, 0, 0);
         longToast.show();
     }
 }
