@@ -793,6 +793,8 @@ public class Chat extends AppCompatActivity implements
         Log.i(TAG, "onCreateOptionsMenu()");
 
         // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.chatdm_menu, menu);
+
         getMenuInflater().inflate(R.menu.chatsettings_menu, menu);
 
         return true;
@@ -814,6 +816,19 @@ public class Chat extends AppCompatActivity implements
             cancelToasts();
 
             Intent Activity = new Intent(Chat.this, co.clixel.herebefore.Settings.class);
+
+            startActivity(Activity);
+
+            return true;
+        }
+
+        if (id == R.id.dmButton) {
+
+            Log.i(TAG, "onOptionsItemSelected() -> dmButton");
+
+            cancelToasts();
+
+            Intent Activity = new Intent(getBaseContext(), DirectMentions.class);
 
             startActivity(Activity);
 

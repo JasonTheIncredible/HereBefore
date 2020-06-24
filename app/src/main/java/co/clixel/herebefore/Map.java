@@ -104,7 +104,6 @@ public class Map extends FragmentActivity implements
     private LocationProvider locationProvider;
     private FloatingActionButton dmButton;
 
-    // Create directMentions button in Chat.
     // Go to chat in directMentionsAdapter onclick.
     // Get rid of Users node in Firebase if possible.
     // Check orientation change with directMentions.
