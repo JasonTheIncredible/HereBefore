@@ -104,7 +104,7 @@ public class Map extends FragmentActivity implements
     private LocationProvider locationProvider;
     private FloatingActionButton dmButton;
 
-    // Go to chat in directMentionsAdapter onclick.
+    // Fix bug where toast is appearing in DirectMentions even if recyclerView is not empty.
     // Get rid of Users node in Firebase if possible.
     // Check orientation change with directMentions.
     // When is token renewed / renew it (this means going through all Firebase email and checking token).

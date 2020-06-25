@@ -27,7 +27,7 @@ import java.util.ArrayList;
 public class DirectMentionsAdapter extends RecyclerView.Adapter<DirectMentionsAdapter.ViewHolder> {
 
     private Context mContext;
-    private ArrayList<String> mMessageTime, mMessageUser, mMessageImage, mMessageImageVideo, mMessageText;
+    private ArrayList<String> mMessageTime, mMessageUser, mMessageImage, mMessageImageVideo, mMessageText, mShapeUUID;
     private ArrayList<Boolean> mUserIsWithinShape;
     private ImageButton playButtonInside, playButtonOutside;
     private boolean theme;
@@ -60,7 +60,7 @@ public class DirectMentionsAdapter extends RecyclerView.Adapter<DirectMentionsAd
         }
     }
 
-    DirectMentionsAdapter(Context context, ArrayList<String> mMessageTime, ArrayList<String> mMessageUser, ArrayList<String> mMessageImage, ArrayList<String> mMessageImageVideo, ArrayList<String> mMessageText, ArrayList<Boolean> mUserIsWithinShape) {
+    DirectMentionsAdapter(Context context, ArrayList<String> mMessageTime, ArrayList<String> mMessageUser, ArrayList<String> mMessageImage, ArrayList<String> mMessageImageVideo, ArrayList<String> mMessageText, ArrayList<String> mShapeUUID, ArrayList<Boolean> mUserIsWithinShape) {
 
         this.mContext = context;
         this.mMessageTime = mMessageTime;
@@ -68,6 +68,7 @@ public class DirectMentionsAdapter extends RecyclerView.Adapter<DirectMentionsAd
         this.mMessageImage = mMessageImage;
         this.mMessageImageVideo = mMessageImageVideo;
         this.mMessageText = mMessageText;
+        this.mShapeUUID = mShapeUUID;
         this.mUserIsWithinShape = mUserIsWithinShape;
     }
 
@@ -81,28 +82,6 @@ public class DirectMentionsAdapter extends RecyclerView.Adapter<DirectMentionsAd
 
         final ViewHolder holder = new ViewHolder(view);
 
-        holder.itemView.setOnClickListener(new View.OnClickListener() {
-
-            // GO TO CHAT.
-            @Override
-            public void onClick(View v) {
-
-                if (mMessageImage.get(holder.getAdapterPosition()) != null) {
-
-                    Intent Activity = new Intent(mContext, PhotoView.class);
-                    Activity.putExtra("imgURL", mMessageImage.get(holder.getAdapterPosition()));
-                    mContext.startActivity(Activity);
-                }
-
-                if (mMessageImageVideo.get(holder.getAdapterPosition()) != null) {
-
-                    Intent Activity = new Intent(mContext, co.clixel.herebefore.VideoView.class);
-                    Activity.putExtra("videoURL", mMessageImageVideo.get(holder.getAdapterPosition()));
-                    mContext.startActivity(Activity);
-                }
-            }
-        });
-
         return holder;
     }
 
@@ -115,6 +94,18 @@ public class DirectMentionsAdapter extends RecyclerView.Adapter<DirectMentionsAd
             public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
 
                 menu.add(position, R.string.report_post, 0, R.string.report_post);
+            }
+        });
+
+        holder.itemView.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+
+                Intent Activity = new Intent(mContext, Chat.class);
+                Activity.putExtra("shapeUUID", mShapeUUID.get(position));
+                mContext.startActivity(Activity);
+                ((DirectMentions) mContext).finish();
             }
         });
 
