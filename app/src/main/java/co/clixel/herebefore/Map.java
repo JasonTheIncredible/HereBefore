@@ -106,7 +106,6 @@ public class Map extends FragmentActivity implements
 
     // Fix bug where toast is appearing in DirectMentions even if recyclerView is not empty.
     // Get rid of Users node in Firebase if possible.
-    // Check orientation change with directMentions.
     // When is token renewed / renew it (this means going through all Firebase email and checking token).
     // Add notifications adjustments to settings.
     // Make user in recyclerView clickable and have it create a mentionable.
