@@ -41,7 +41,7 @@ public class SignUp extends AppCompatActivity {
     private EditText mEmail, mPassword;
     private Button createAccountButton;
     private SignInButton googleSignInButton;
-    private String uuid, email, pass;
+    private String shapeUUID, email, pass;
     private Double polygonArea, circleLatitude, circleLongitude, radius, marker0Latitude, marker0Longitude, marker1Latitude, marker1Longitude, marker2Latitude, marker2Longitude, marker3Latitude, marker3Longitude, marker4Latitude, marker4Longitude, marker5Latitude, marker5Longitude, marker6Latitude, marker6Longitude, marker7Latitude, marker7Longitude;
     private boolean newShape, userIsWithinShape, threeMarkers, fourMarkers, fiveMarkers, sixMarkers, sevenMarkers, eightMarkers, shapeIsCircle;
     private int fillColor;
@@ -88,7 +88,7 @@ public class SignUp extends AppCompatActivity {
         if (extras != null) {
 
             newShape = extras.getBoolean("newShape");
-            uuid = extras.getString("uuid");
+            shapeUUID = extras.getString("shapeUUID");
             userIsWithinShape = extras.getBoolean("userIsWithinShape");
             // fillColor will be null if the shape is not a point.
             fillColor = extras.getInt("fillColor");
@@ -211,7 +211,7 @@ public class SignUp extends AppCompatActivity {
                                     signedUpToast.show();
                                     Intent Activity = new Intent(SignUp.this, Chat.class);
                                     Activity.putExtra("newShape", newShape);
-                                    Activity.putExtra("uuid", uuid);
+                                    Activity.putExtra("shapeUUID", shapeUUID);
                                     Activity.putExtra("userIsWithinShape", userIsWithinShape);
                                     Activity.putExtra("circleLatitude", circleLatitude);
                                     Activity.putExtra("circleLongitude", circleLongitude);
@@ -378,7 +378,7 @@ public class SignUp extends AppCompatActivity {
                                     toastMessageShort("Signed in");
                                     Intent Activity = new Intent(SignUp.this, Chat.class);
                                     Activity.putExtra("newShape", newShape);
-                                    Activity.putExtra("uuid", uuid);
+                                    Activity.putExtra("shapeUUID", shapeUUID);
                                     Activity.putExtra("userIsWithinShape", userIsWithinShape);
                                     Activity.putExtra("circleLatitude", circleLatitude);
                                     Activity.putExtra("circleLongitude", circleLongitude);

@@ -104,14 +104,19 @@ public class Map extends FragmentActivity implements
     private LocationProvider locationProvider;
     private FloatingActionButton dmButton;
 
-    // Fix bug where toast is appearing in DirectMentions even if recyclerView is not empty.
+    // Add bottom bar with a menu to differentiate screens. Or add text to the top of Chat and DirectMentions to differentiate them.
     // Get rid of Users node in Firebase if possible.
+    // Go to specific area of chat after onClick in DirectMentions.
+    // Delete some Firebase data after deleting account?
+    // The nested dataSnapshot.getChildren() in DirectMentions is newly getting called for every mention. Fix this to cut down on processing / data usage?
+    // Make notification icon for being in-app when notification appears.
     // When is token renewed / renew it (this means going through all Firebase email and checking token).
     // Add notifications adjustments to settings.
     // Make user in recyclerView clickable and have it create a mentionable.
     // Make sure aboutLibraries is up to date.
     // Test location services / make sure it works on first install and in new places.
     // Use network for more precise GPS?
+    // Check for warning messages.
     // More ads.
     // Use onChildAdded() or childEventListener in chat to limit data usage / Don't get new dataSnapshot every time in DirectMentions / Prevent directMentions from updating if it's not necessary.
     // Put the snapshots in reverse order before search for faster results.
@@ -123,6 +128,7 @@ public class Map extends FragmentActivity implements
     // Leave messages in locations that users get notified of when they enter the area.
     // Add ability to filter recyclerView by type of content (recorded at the scene...).
     // Work on deprecated methods.
+    // Fix the loading icon in DirectMentions to only go away after it is completely done loading - this will be difficult with the nested async calls. Also add a toast.
     // Load preferences after logging out and back in - looks like it will require saving info to database; is this worth it?
     // Add ability to add both picture and video to firebase at the same time.
 
@@ -175,8 +181,10 @@ public class Map extends FragmentActivity implements
         if (loggedIn) {
 
             settingsButton.setVisibility(View.VISIBLE);
+            dmButton.setVisibility(View.VISIBLE);
         } else {
 
+            settingsButton.setVisibility(View.GONE);
             settingsButton.setVisibility(View.GONE);
         }
 

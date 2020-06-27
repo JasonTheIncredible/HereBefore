@@ -105,7 +105,6 @@ public class DirectMentionsAdapter extends RecyclerView.Adapter<DirectMentionsAd
                 Intent Activity = new Intent(mContext, Chat.class);
                 Activity.putExtra("shapeUUID", mShapeUUID.get(position));
                 mContext.startActivity(Activity);
-                ((DirectMentions) mContext).finish();
             }
         });
 

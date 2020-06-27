@@ -39,7 +39,7 @@ public class DirectMentions extends AppCompatActivity {
     private ArrayList<String> mTime = new ArrayList<>(), mUser = new ArrayList<>(), mImage = new ArrayList<>(), mVideo = new ArrayList<>(), mText = new ArrayList<>(), mShapeUUID = new ArrayList<>();
     private ArrayList<Boolean> mUserIsWithinShape = new ArrayList<>();
     private RecyclerView directMentionsRecyclerView;
-    private static int index = -1, top = -1, last;
+    private static int index = -1, top = -1, last, mentionCount = 0, mentionCount1 = 0;
     private DatabaseReference databaseReferenceOne, databaseReferenceTwo;
     private ValueEventListener eventListenerOne, eventListenerTwo;
     private LinearLayoutManager directMentionsRecyclerViewLinearLayoutManager = new LinearLayoutManager(this);
@@ -78,6 +78,9 @@ public class DirectMentions extends AppCompatActivity {
         // Update to the user's preferences.
         loadPreferences();
         updatePreferences();
+
+        mentionCount = 0;
+        mentionCount1 = 0;
 
         // If user has a Google account, get email one way. Else, get email another way.
         GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(getBaseContext());
@@ -126,6 +129,8 @@ public class DirectMentions extends AppCompatActivity {
 
                             if (mention.getValue() != null) {
 
+                                // If mentionCount == mentionCount1, initialize the adapter.
+                                mentionCount++;
                                 databaseReferenceTwo = rootRef.child("Users");
                                 eventListenerTwo = new ValueEventListener() {
 
@@ -137,6 +142,8 @@ public class DirectMentions extends AppCompatActivity {
                                             String userUUID = (String) dss.child("userUUID").getValue();
                                             if (mention.getValue().toString().equals(userUUID)) {
 
+                                                // If mentionCount == mentionCount1, initialize the adapter.
+                                                mentionCount1++;
                                                 String userEmail = (String) dss.child("email").getValue();
                                                 if (userEmail != null) {
 
@@ -172,7 +179,12 @@ public class DirectMentions extends AppCompatActivity {
                                             }
                                         }
 
-                                        initDirectMentionsAdapter();
+                                        // Prevent recyclerView from getting initialized more than once,
+                                        // as the loading icon / toast is dependant on this happening only once.
+                                        if (mentionCount == mentionCount1) {
+
+                                            initDirectMentionsAdapter();
+                                        }
                                     }
 
                                     @Override
@@ -185,14 +197,8 @@ public class DirectMentions extends AppCompatActivity {
 
                                 // Add the second Firebase listener.
                                 databaseReferenceTwo.addListenerForSingleValueEvent(eventListenerTwo);
-                            } else {
-
-                                initDirectMentionsAdapter();
                             }
                         }
-                    } else {
-
-                        initDirectMentionsAdapter();
                     }
                 }
             }
@@ -206,6 +212,16 @@ public class DirectMentions extends AppCompatActivity {
 
         // Add the first Firebase listener.
         databaseReferenceOne.addValueEventListener(eventListenerOne);
+    }
+
+    @Override
+    public void onRestart() {
+
+        super.onRestart();
+        Log.i(TAG, "onRestart()");
+
+        mentionCount = 0;
+        mentionCount1 = 0;
     }
 
     @Override
@@ -347,13 +363,15 @@ public class DirectMentions extends AppCompatActivity {
             loadingIcon.setVisibility(View.INVISIBLE);
         }
 
-        // Show this toast if recyclerView is empty and the toast doesn't already exist.
-        if (mUser.size() == 0 && noDMsToast == null) {
+        if (mUser.size() == 0) {
 
             noDMsToast = Toast.makeText(getBaseContext(), "You have no direct mentions", Toast.LENGTH_LONG);
             noDMsToast.setGravity(Gravity.CENTER, 0, 0);
             noDMsToast.show();
         }
+
+        mentionCount = 0;
+        mentionCount1 = 0;
     }
 
     private void toastMessageLong(String message) {

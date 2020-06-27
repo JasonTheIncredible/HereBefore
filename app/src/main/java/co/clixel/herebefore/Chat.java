@@ -954,7 +954,7 @@ public class Chat extends AppCompatActivity implements
     private void initChatAdapter() {
 
         // Initialize the RecyclerView.
-        Log.i(TAG, "initChatAdapter");
+        Log.i(TAG, "initChatAdapter()");
 
         ChatAdapter adapter = new ChatAdapter(this, mTime, mUser, mImage, mVideo, mText, mUserIsWithinShape);
         chatRecyclerView.setAdapter(adapter);
