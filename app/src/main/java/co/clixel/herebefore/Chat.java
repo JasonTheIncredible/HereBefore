@@ -496,6 +496,15 @@ public class Chat extends AppCompatActivity implements
                                         messageInformation.setDate(date);
                                         String userUUID = UUID.randomUUID().toString();
                                         messageInformation.setUserUUID(userUUID);
+                                        // If user has a Google account, get email one way. Else, get email another way.
+                                        GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(getBaseContext());
+                                        String email;
+                                        if (acct != null) {
+                                            email = acct.getEmail();
+                                        } else {
+                                            email = sharedPreferences.getString("userToken", "null");
+                                        }
+                                        messageInformation.setEmail(email);
                                         messageInformation.setShapeUUID(shapeUUID);
                                         // Get the token assigned by Firebase when the user signed up / signed in.
                                         String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
@@ -507,28 +516,12 @@ public class Chat extends AppCompatActivity implements
                                         DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                                         newMessage.setValue(messageInformation);
 
-                                        UserInformation userInformation = new UserInformation();
-                                        // If user has a Google account, get email one way. Else, get email another way.
-                                        GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(getBaseContext());
-                                        if (acct != null) {
-                                            String email = acct.getEmail();
-                                            userInformation.setEmail(email);
-                                        } else {
-                                            String email = sharedPreferences.getString("userToken", "null");
-                                            userInformation.setEmail(email);
-                                        }
-                                        userInformation.setUserUUID(userUUID);
-                                        DatabaseReference newUser = FirebaseDatabase.getInstance().getReference().child("Users").push();
-                                        newUser.setValue(userInformation);
-
                                         mInput.getText().clear();
                                         if (removedMentionDuplicates != null) {
                                             removedMentionDuplicates.clear();
                                         }
                                         newShape = false;
                                         sendButtonClicked = false;
-
-                                        messageUserIfNeeded();
                                     }
                                 }
 
@@ -627,6 +620,15 @@ public class Chat extends AppCompatActivity implements
                                         messageInformation.setDate(date);
                                         String userUUID = UUID.randomUUID().toString();
                                         messageInformation.setUserUUID(userUUID);
+                                        // If user has a Google account, get email one way. Else, get email another way.
+                                        GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(getBaseContext());
+                                        String email;
+                                        if (acct != null) {
+                                            email = acct.getEmail();
+                                        } else {
+                                            email = sharedPreferences.getString("userToken", "null");
+                                        }
+                                        messageInformation.setEmail(email);
                                         messageInformation.setShapeUUID(shapeUUID);
                                         // Get the token assigned by Firebase when the user signed up / signed in.
                                         String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
@@ -638,28 +640,12 @@ public class Chat extends AppCompatActivity implements
                                         DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                                         newMessage.setValue(messageInformation);
 
-                                        UserInformation userInformation = new UserInformation();
-                                        // If user has a Google account, get email one way. Else, get email another way.
-                                        GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(getBaseContext());
-                                        if (acct != null) {
-                                            String email = acct.getEmail();
-                                            userInformation.setEmail(email);
-                                        } else {
-                                            String email = sharedPreferences.getString("userToken", "null");
-                                            userInformation.setEmail(email);
-                                        }
-                                        userInformation.setUserUUID(userUUID);
-                                        DatabaseReference newUser = FirebaseDatabase.getInstance().getReference().child("Users").push();
-                                        newUser.setValue(userInformation);
-
                                         mInput.getText().clear();
                                         if (removedMentionDuplicates != null) {
                                             removedMentionDuplicates.clear();
                                         }
                                         newShape = false;
                                         sendButtonClicked = false;
-
-                                        messageUserIfNeeded();
                                     }
                                 }
 
@@ -702,6 +688,15 @@ public class Chat extends AppCompatActivity implements
                             String userUUID = UUID.randomUUID().toString();
                             messageInformation.setUserUUID(userUUID);
                             messageInformation.setShapeUUID(shapeUUID);
+                            // If user has a Google account, get email one way. Else, get email another way.
+                            GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(getBaseContext());
+                            String email;
+                            if (acct != null) {
+                                email = acct.getEmail();
+                            } else {
+                                email = sharedPreferences.getString("userToken", "null");
+                            }
+                            messageInformation.setEmail(email);
                             // Get the token assigned by Firebase when the user signed up / signed in.
                             String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
                             messageInformation.setToken(token);
@@ -712,27 +707,11 @@ public class Chat extends AppCompatActivity implements
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                             newMessage.setValue(messageInformation);
 
-                            UserInformation userInformation = new UserInformation();
-                            // If user has a Google account, get email one way. Else, get email another way.
-                            GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(getBaseContext());
-                            if (acct != null) {
-                                String email = acct.getEmail();
-                                userInformation.setEmail(email);
-                            } else {
-                                String email = sharedPreferences.getString("userToken", "null");
-                                userInformation.setEmail(email);
-                            }
-                            userInformation.setUserUUID(userUUID);
-                            DatabaseReference newUser = FirebaseDatabase.getInstance().getReference().child("Users").push();
-                            newUser.setValue(userInformation);
-
                             mInput.getText().clear();
                             if (removedMentionDuplicates != null) {
                                 removedMentionDuplicates.clear();
                             }
                             sendButtonClicked = false;
-
-                            messageUserIfNeeded();
                         }
                     }
                 }
@@ -2380,6 +2359,15 @@ public class Chat extends AppCompatActivity implements
                             messageInformation.setDate(date);
                             String userUUID = UUID.randomUUID().toString();
                             messageInformation.setUserUUID(userUUID);
+                            // If user has a Google account, get email one way. Else, get email another way.
+                            GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(getBaseContext());
+                            String email;
+                            if (acct != null) {
+                                email = acct.getEmail();
+                            } else {
+                                email = sharedPreferences.getString("userToken", "null");
+                            }
+                            messageInformation.setEmail(email);
                             messageInformation.setShapeUUID(shapeUUID);
                             // Get the token assigned by Firebase when the user signed up / signed in.
                             String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
@@ -2390,20 +2378,6 @@ public class Chat extends AppCompatActivity implements
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                             newMessage.setValue(messageInformation);
-
-                            UserInformation userInformation = new UserInformation();
-                            // If user has a Google account, get email one way. Else, get email another way.
-                            GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(getBaseContext());
-                            if (acct != null) {
-                                String email = acct.getEmail();
-                                userInformation.setEmail(email);
-                            } else {
-                                String email = sharedPreferences.getString("userToken", "null");
-                                userInformation.setEmail(email);
-                            }
-                            userInformation.setUserUUID(userUUID);
-                            DatabaseReference newUser = FirebaseDatabase.getInstance().getReference().child("Users").push();
-                            newUser.setValue(userInformation);
 
                             mInput.getText().clear();
                             if (removedMentionDuplicates != null) {
@@ -2417,8 +2391,6 @@ public class Chat extends AppCompatActivity implements
                             }
                             sendButtonClicked = false;
                             loadingIcon.setVisibility(View.GONE);
-
-                            messageUserIfNeeded();
                         }
                     });
                 }
@@ -2538,6 +2510,15 @@ public class Chat extends AppCompatActivity implements
                             messageInformation.setDate(date);
                             String userUUID = UUID.randomUUID().toString();
                             messageInformation.setUserUUID(userUUID);
+                            // If user has a Google account, get email one way. Else, get email another way.
+                            GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(getBaseContext());
+                            String email;
+                            if (acct != null) {
+                                email = acct.getEmail();
+                            } else {
+                                email = sharedPreferences.getString("userToken", "null");
+                            }
+                            messageInformation.setEmail(email);
                             messageInformation.setShapeUUID(shapeUUID);
                             // Get the token assigned by Firebase when the user signed up / signed in.
                             String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
@@ -2548,20 +2529,6 @@ public class Chat extends AppCompatActivity implements
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                             newMessage.setValue(messageInformation);
-
-                            UserInformation userInformation = new UserInformation();
-                            // If user has a Google account, get email one way. Else, get email another way.
-                            GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(getBaseContext());
-                            if (acct != null) {
-                                String email = acct.getEmail();
-                                userInformation.setEmail(email);
-                            } else {
-                                String email = sharedPreferences.getString("userToken", "null");
-                                userInformation.setEmail(email);
-                            }
-                            userInformation.setUserUUID(userUUID);
-                            DatabaseReference newUser = FirebaseDatabase.getInstance().getReference().child("Users").push();
-                            newUser.setValue(userInformation);
 
                             mInput.getText().clear();
                             if (removedMentionDuplicates != null) {
@@ -2575,8 +2542,6 @@ public class Chat extends AppCompatActivity implements
                             }
                             sendButtonClicked = false;
                             loadingIcon.setVisibility(View.GONE);
-
-                            messageUserIfNeeded();
                         }
                     });
                 }
@@ -2696,6 +2661,15 @@ public class Chat extends AppCompatActivity implements
                             messageInformation.setDate(date);
                             String userUUID = UUID.randomUUID().toString();
                             messageInformation.setUserUUID(userUUID);
+                            // If user has a Google account, get email one way. Else, get email another way.
+                            GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(getBaseContext());
+                            String email;
+                            if (acct != null) {
+                                email = acct.getEmail();
+                            } else {
+                                email = sharedPreferences.getString("userToken", "null");
+                            }
+                            messageInformation.setEmail(email);
                             messageInformation.setShapeUUID(shapeUUID);
                             // Get the token assigned by Firebase when the user signed up / signed in.
                             String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
@@ -2706,20 +2680,6 @@ public class Chat extends AppCompatActivity implements
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                             newMessage.setValue(messageInformation);
-
-                            UserInformation userInformation = new UserInformation();
-                            // If user has a Google account, get email one way. Else, get email another way.
-                            GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(getBaseContext());
-                            if (acct != null) {
-                                String email = acct.getEmail();
-                                userInformation.setEmail(email);
-                            } else {
-                                String email = sharedPreferences.getString("userToken", "null");
-                                userInformation.setEmail(email);
-                            }
-                            userInformation.setUserUUID(userUUID);
-                            DatabaseReference newUser = FirebaseDatabase.getInstance().getReference().child("Users").push();
-                            newUser.setValue(userInformation);
 
                             mInput.getText().clear();
                             if (removedMentionDuplicates != null) {
@@ -2733,8 +2693,6 @@ public class Chat extends AppCompatActivity implements
                             }
                             sendButtonClicked = false;
                             loadingIcon.setVisibility(View.GONE);
-
-                            messageUserIfNeeded();
                         }
                     });
                 }
@@ -2750,52 +2708,6 @@ public class Chat extends AppCompatActivity implements
                             Log.e(TAG, "firebaseUpload() -> else -> onFailure -> " + ex.getMessage());
                         }
                     });
-        }
-    }
-
-    private void messageUserIfNeeded() {
-
-        if (removedMentionDuplicates != null) {
-
-            Log.i(TAG, "messageUserIfNeeded()");
-
-            // Connect to Firebase.
-            DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-            DatabaseReference firebaseUsers = rootRef.child("Users");
-
-            // Load Firebase circles.
-            firebaseUsers.addListenerForSingleValueEvent(new ValueEventListener() {
-
-                @Override
-                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-
-                    for (DataSnapshot ds : dataSnapshot.getChildren()) {
-
-                        if (dataSnapshot.getValue() != null) {
-
-                            String userUUID = (String) ds.child("userUUID").getValue();
-
-                            if (userUUID != null) {
-
-                                for (String removedMentionDuplicate : removedMentionDuplicates) {
-
-                                    if (userUUID.equals(removedMentionDuplicate)) {
-
-                                        String registrationToken = (String) ds.child("token").getValue();
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                @Override
-                public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                    Log.e(TAG, "DatabaseError");
-                    toastMessageLong(databaseError.getMessage());
-                }
-            });
         }
     }
 

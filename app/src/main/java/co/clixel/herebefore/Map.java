@@ -104,9 +104,8 @@ public class Map extends FragmentActivity implements
     private LocationProvider locationProvider;
     private FloatingActionButton dmButton;
 
-    // Add bottom bar with a menu to differentiate screens. Or add text to the top of Chat and DirectMentions to differentiate them.
-    // Get rid of Users node in Firebase if possible.
     // Go to specific area of chat after onClick in DirectMentions.
+    // Add bottom bar with a menu to differentiate screens. Or add text to the top of Chat and DirectMentions to differentiate them.
     // Delete some Firebase data after deleting account?
     // The nested dataSnapshot.getChildren() in DirectMentions is newly getting called for every mention. Fix this to cut down on processing / data usage?
     // Make notification icon for being in-app when notification appears.
@@ -118,7 +117,7 @@ public class Map extends FragmentActivity implements
     // Use network for more precise GPS?
     // Check for warning messages.
     // More ads.
-    // Use onChildAdded() or childEventListener in chat to limit data usage / Don't get new dataSnapshot every time in DirectMentions / Prevent directMentions from updating if it's not necessary.
+    // Use onChildAdded() or childEventListener in chat to limit data usage / Don't get new dataSnapshot every time in DirectMentions / Prevent directMentions from updating if it's not necessary. Also, the nested listeners will not scale well.
     // Put the snapshots in reverse order before search for faster results.
     // Make sure Firebase has enough bandwidth.
     // Make sure the secret stuff is secret.

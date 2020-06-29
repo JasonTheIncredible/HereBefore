@@ -24,6 +24,10 @@ class MessageInformation {
         this.userUUID = userUUID;
     }
 
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
     public void setImageURL(String imageURL) {
         this.imageURL = imageURL;
     }

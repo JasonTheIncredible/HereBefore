@@ -131,7 +131,7 @@ public class DirectMentions extends AppCompatActivity {
 
                                 // If mentionCount == mentionCount1, initialize the adapter.
                                 mentionCount++;
-                                databaseReferenceTwo = rootRef.child("Users");
+                                databaseReferenceTwo = rootRef.child("MessageThreads");
                                 eventListenerTwo = new ValueEventListener() {
 
                                     @Override
