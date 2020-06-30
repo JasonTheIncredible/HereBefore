@@ -106,18 +106,16 @@ public class Map extends FragmentActivity implements
 
     // Go to specific area of chat after onClick in DirectMentions.
     // Add bottom bar with a menu to differentiate screens. Or add text to the top of Chat and DirectMentions to differentiate them.
-    // Delete some Firebase data after deleting account?
-    // The nested dataSnapshot.getChildren() in DirectMentions is newly getting called for every mention. Fix this to cut down on processing / data usage?
     // Make notification icon for being in-app when notification appears.
+    // Make user in recyclerView clickable and have it create a mentionable.
+    // Use onChildAdded() or childEventListener in chat to limit data usage / Don't get new dataSnapshot every time in DirectMentions / Prevent directMentions from updating if it's not necessary. The nested dataSnapshot.getChildren() in DirectMentions is newly getting called for every mention. Fix this to cut down on processing / data usage. Maybe add real mention email to messageInformation for faster search in future?
     // When is token renewed / renew it (this means going through all Firebase email and checking token).
     // Add notifications adjustments to settings.
-    // Make user in recyclerView clickable and have it create a mentionable.
-    // Make sure aboutLibraries is up to date.
     // Test location services / make sure it works on first install and in new places.
     // Use network for more precise GPS?
     // Check for warning messages.
+    // Make sure aboutLibraries is up to date.
     // More ads.
-    // Use onChildAdded() or childEventListener in chat to limit data usage / Don't get new dataSnapshot every time in DirectMentions / Prevent directMentions from updating if it's not necessary. Also, the nested listeners will not scale well.
     // Put the snapshots in reverse order before search for faster results.
     // Make sure Firebase has enough bandwidth.
     // Make sure the secret stuff is secret.
