@@ -38,6 +38,7 @@ public class DirectMentions extends AppCompatActivity {
     private String email;
     private ArrayList<String> mTime = new ArrayList<>(), mUser = new ArrayList<>(), mImage = new ArrayList<>(), mVideo = new ArrayList<>(), mText = new ArrayList<>(), mShapeUUID = new ArrayList<>();
     private ArrayList<Boolean> mUserIsWithinShape = new ArrayList<>();
+    private ArrayList<Integer> mPosition = new ArrayList<>();
     private RecyclerView directMentionsRecyclerView;
     private static int index = -1, top = -1, last, mentionCount = 0, mentionCount1 = 0;
     private DatabaseReference databaseReferenceOne, databaseReferenceTwo;
@@ -109,6 +110,7 @@ public class DirectMentions extends AppCompatActivity {
                     mVideo.clear();
                     mText.clear();
                     mShapeUUID.clear();
+                    mPosition.clear();
                     mUserIsWithinShape.clear();
                 }
 
@@ -155,6 +157,7 @@ public class DirectMentions extends AppCompatActivity {
                                                         String videoURL = (String) ds.child("videoURL").getValue();
                                                         String messageText = (String) ds.child("message").getValue();
                                                         String shapeUUID = (String) ds.child("shapeUUID").getValue();
+                                                        Integer position = ((Long) ds.child("position").getValue()).intValue();
                                                         Boolean userIsWithinShape = (Boolean) ds.child("userIsWithinShape").getValue();
                                                         DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
                                                         // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
@@ -173,6 +176,7 @@ public class DirectMentions extends AppCompatActivity {
                                                         mVideo.add(videoURL);
                                                         mText.add(messageText);
                                                         mShapeUUID.add(shapeUUID);
+                                                        mPosition.add(position);
                                                         mUserIsWithinShape.add(userIsWithinShape);
                                                     }
                                                 }
@@ -342,7 +346,7 @@ public class DirectMentions extends AppCompatActivity {
         // Initialize the RecyclerView.
         Log.i(TAG, "initDirectMentionsAdapter()");
 
-        DirectMentionsAdapter adapter = new DirectMentionsAdapter(this, mTime, mUser, mImage, mVideo, mText, mShapeUUID, mUserIsWithinShape);
+        DirectMentionsAdapter adapter = new DirectMentionsAdapter(this, mTime, mUser, mImage, mVideo, mText, mShapeUUID, mPosition, mUserIsWithinShape);
         directMentionsRecyclerView.setAdapter(adapter);
         directMentionsRecyclerView.setLayoutManager(directMentionsRecyclerViewLinearLayoutManager);
 

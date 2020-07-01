@@ -125,6 +125,7 @@ public class Chat extends AppCompatActivity implements
     private ArrayList<String> removedMentionDuplicates;
     private RecyclerView chatRecyclerView, mentionsRecyclerView;
     private static int index = -1, top = -1, last;
+    private Integer directMentionsPosition;
     private DatabaseReference databaseReference;
     private ValueEventListener eventListener;
     private FloatingActionButton sendButton, mediaButton;
@@ -196,6 +197,7 @@ public class Chat extends AppCompatActivity implements
         Bundle extras = getIntent().getExtras();
         if (extras != null) {
 
+            directMentionsPosition = extras.getInt("directMentionsPosition");
             newShape = extras.getBoolean("newShape");
             shapeUUID = extras.getString("shapeUUID");
             userIsWithinShape = extras.getBoolean("userIsWithinShape");
@@ -496,6 +498,7 @@ public class Chat extends AppCompatActivity implements
                                         messageInformation.setDate(date);
                                         String userUUID = UUID.randomUUID().toString();
                                         messageInformation.setUserUUID(userUUID);
+                                        messageInformation.setPosition(mUser.size());
                                         // If user has a Google account, get email one way. Else, get email another way.
                                         GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(getBaseContext());
                                         String email;
@@ -506,6 +509,7 @@ public class Chat extends AppCompatActivity implements
                                         }
                                         messageInformation.setEmail(email);
                                         messageInformation.setShapeUUID(shapeUUID);
+                                        messageInformation.setPosition(mUser.size());
                                         // Get the token assigned by Firebase when the user signed up / signed in.
                                         String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
                                         messageInformation.setToken(token);
@@ -620,6 +624,7 @@ public class Chat extends AppCompatActivity implements
                                         messageInformation.setDate(date);
                                         String userUUID = UUID.randomUUID().toString();
                                         messageInformation.setUserUUID(userUUID);
+                                        messageInformation.setPosition(mUser.size());
                                         // If user has a Google account, get email one way. Else, get email another way.
                                         GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(getBaseContext());
                                         String email;
@@ -687,6 +692,7 @@ public class Chat extends AppCompatActivity implements
                             messageInformation.setDate(date);
                             String userUUID = UUID.randomUUID().toString();
                             messageInformation.setUserUUID(userUUID);
+                            messageInformation.setPosition(mUser.size());
                             messageInformation.setShapeUUID(shapeUUID);
                             // If user has a Google account, get email one way. Else, get email another way.
                             GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(getBaseContext());
@@ -939,10 +945,14 @@ public class Chat extends AppCompatActivity implements
         chatRecyclerView.setAdapter(adapter);
         chatRecyclerView.setLayoutManager(chatRecyclerViewLinearLayoutManager);
 
-        if (last == (mTime.size() - 2) || firstLoad || messageSent) {
+        Log.i(TAG, "directMentionsPosition: " + directMentionsPosition);
+        if (directMentionsPosition != null) {
+
+            chatRecyclerView.scrollToPosition(directMentionsPosition);
+        } else if (last == (mUser.size() - 2) || firstLoad || messageSent) {
 
             // Scroll to bottom of recyclerviewlayout after first initialization and after sending a recyclerviewlayout.
-            chatRecyclerView.scrollToPosition(mTime.size() - 1);
+            chatRecyclerView.scrollToPosition(mUser.size() - 1);
             messageSent = false;
             firstLoad = false;
         } else {
@@ -2359,6 +2369,7 @@ public class Chat extends AppCompatActivity implements
                             messageInformation.setDate(date);
                             String userUUID = UUID.randomUUID().toString();
                             messageInformation.setUserUUID(userUUID);
+                            messageInformation.setPosition(mUser.size());
                             // If user has a Google account, get email one way. Else, get email another way.
                             GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(getBaseContext());
                             String email;
@@ -2510,6 +2521,7 @@ public class Chat extends AppCompatActivity implements
                             messageInformation.setDate(date);
                             String userUUID = UUID.randomUUID().toString();
                             messageInformation.setUserUUID(userUUID);
+                            messageInformation.setPosition(mUser.size());
                             // If user has a Google account, get email one way. Else, get email another way.
                             GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(getBaseContext());
                             String email;
@@ -2661,6 +2673,7 @@ public class Chat extends AppCompatActivity implements
                             messageInformation.setDate(date);
                             String userUUID = UUID.randomUUID().toString();
                             messageInformation.setUserUUID(userUUID);
+                            messageInformation.setPosition(mUser.size());
                             // If user has a Google account, get email one way. Else, get email another way.
                             GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(getBaseContext());
                             String email;

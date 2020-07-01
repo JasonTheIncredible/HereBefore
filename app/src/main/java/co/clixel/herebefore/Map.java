@@ -104,14 +104,14 @@ public class Map extends FragmentActivity implements
     private LocationProvider locationProvider;
     private FloatingActionButton dmButton;
 
-    // Go to specific area of chat after onClick in DirectMentions.
+    // Highlight clicked message when entering Chat from DirectMentions.
     // Add bottom bar with a menu to differentiate screens. Or add text to the top of Chat and DirectMentions to differentiate them.
     // Make notification icon for being in-app when notification appears.
     // Make user in recyclerView clickable and have it create a mentionable.
     // Use onChildAdded() or childEventListener in chat to limit data usage / Don't get new dataSnapshot every time in DirectMentions / Prevent directMentions from updating if it's not necessary. The nested dataSnapshot.getChildren() in DirectMentions is newly getting called for every mention. Fix this to cut down on processing / data usage. Maybe add real mention email to messageInformation for faster search in future?
     // When is token renewed / renew it (this means going through all Firebase email and checking token).
     // Add notifications adjustments to settings.
-    // Test location services / make sure it works on first install and in new places.
+    // Test location services / doesn't seem to work on first install and in new places.
     // Use network for more precise GPS?
     // Check for warning messages.
     // Make sure aboutLibraries is up to date.

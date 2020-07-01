@@ -9,7 +9,6 @@ import androidx.annotation.NonNull;
 import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -29,6 +28,7 @@ public class DirectMentionsAdapter extends RecyclerView.Adapter<DirectMentionsAd
     private Context mContext;
     private ArrayList<String> mMessageTime, mMessageUser, mMessageImage, mMessageImageVideo, mMessageText, mShapeUUID;
     private ArrayList<Boolean> mUserIsWithinShape;
+    private ArrayList<Integer> mPosition;
     private ImageButton playButtonInside, playButtonOutside;
     private boolean theme;
 
@@ -60,7 +60,7 @@ public class DirectMentionsAdapter extends RecyclerView.Adapter<DirectMentionsAd
         }
     }
 
-    DirectMentionsAdapter(Context context, ArrayList<String> mMessageTime, ArrayList<String> mMessageUser, ArrayList<String> mMessageImage, ArrayList<String> mMessageImageVideo, ArrayList<String> mMessageText, ArrayList<String> mShapeUUID, ArrayList<Boolean> mUserIsWithinShape) {
+    DirectMentionsAdapter(Context context, ArrayList<String> mMessageTime, ArrayList<String> mMessageUser, ArrayList<String> mMessageImage, ArrayList<String> mMessageImageVideo, ArrayList<String> mMessageText, ArrayList<String> mShapeUUID, ArrayList<Integer> mPosition, ArrayList<Boolean> mUserIsWithinShape) {
 
         this.mContext = context;
         this.mMessageTime = mMessageTime;
@@ -69,6 +69,7 @@ public class DirectMentionsAdapter extends RecyclerView.Adapter<DirectMentionsAd
         this.mMessageImageVideo = mMessageImageVideo;
         this.mMessageText = mMessageText;
         this.mShapeUUID = mShapeUUID;
+        this.mPosition = mPosition;
         this.mUserIsWithinShape = mUserIsWithinShape;
     }
 
@@ -80,22 +81,11 @@ public class DirectMentionsAdapter extends RecyclerView.Adapter<DirectMentionsAd
 
         loadPreferences();
 
-        final ViewHolder holder = new ViewHolder(view);
-
-        return holder;
+        return new ViewHolder(view);
     }
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, final int position) {
-
-        holder.itemView.setOnCreateContextMenuListener(new View.OnCreateContextMenuListener() {
-
-            @Override
-            public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
-
-                menu.add(position, R.string.report_post, 0, R.string.report_post);
-            }
-        });
 
         holder.itemView.setOnClickListener(new View.OnClickListener() {
 
@@ -104,6 +94,7 @@ public class DirectMentionsAdapter extends RecyclerView.Adapter<DirectMentionsAd
 
                 Intent Activity = new Intent(mContext, Chat.class);
                 Activity.putExtra("shapeUUID", mShapeUUID.get(position));
+                Activity.putExtra("directMentionsPosition", mPosition.get(position));
                 mContext.startActivity(Activity);
             }
         });

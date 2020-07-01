@@ -10,6 +10,7 @@ class MessageInformation {
     public ArrayList removedMentionDuplicates;
     public String userUUID, message, shapeUUID, token, imageURL, videoURL, email;
     public Object date;
+    public int position;
     public Boolean userIsWithinShape;
 
     @Keep
@@ -42,6 +43,10 @@ class MessageInformation {
 
     public void setShapeUUID(String shapeUUID) {
         this.shapeUUID = shapeUUID;
+    }
+
+    public void setPosition(int position) {
+        this.position = position;
     }
 
     public void setToken(String token) {
