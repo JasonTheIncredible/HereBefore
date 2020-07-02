@@ -15,6 +15,9 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         multiDexEnabled true
     }
+    dexOptions {
+        javaMaxHeapSize "8G"
+    }
     aboutLibraries {
         configPath = "C:\\Users\\Jason\\AndroidStudioProjects\\HereBefore\\app\\src\\main\\res\\values\\aboutLibrariesCustom.xml" // the path to the directory containing configuration files
     }

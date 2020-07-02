@@ -57,6 +57,18 @@ public class DirectMentionsAdapter extends RecyclerView.Adapter<DirectMentionsAd
             messageTextInside = itemView.findViewById(R.id.messageTextInside);
             messageTextOutside = itemView.findViewById(R.id.messageTextOutside);
             messageItem = itemView.findViewById(R.id.message);
+
+            itemView.setOnClickListener(new View.OnClickListener() {
+
+                @Override
+                public void onClick(View v) {
+
+                    Intent Activity = new Intent(mContext, Chat.class);
+                    Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
+                    Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
+                    mContext.startActivity(Activity);
+                }
+            });
         }
     }
 
@@ -86,18 +98,6 @@ public class DirectMentionsAdapter extends RecyclerView.Adapter<DirectMentionsAd
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, final int position) {
-
-        holder.itemView.setOnClickListener(new View.OnClickListener() {
-
-            @Override
-            public void onClick(View v) {
-
-                Intent Activity = new Intent(mContext, Chat.class);
-                Activity.putExtra("shapeUUID", mShapeUUID.get(position));
-                Activity.putExtra("directMentionsPosition", mPosition.get(position));
-                mContext.startActivity(Activity);
-            }
-        });
 
         // Set the left side if the user sent the message from inside the shape.
         if (mUserIsWithinShape.get(position)) {
