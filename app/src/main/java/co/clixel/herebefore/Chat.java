@@ -262,7 +262,6 @@ public class Chat extends AppCompatActivity implements
         loadPreferences();
         updatePreferences();
 
-        // Connect to Firebase.
         DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
         databaseReference = rootRef.child("MessageThreads");
         eventListener = new ValueEventListener() {
@@ -1092,7 +1091,6 @@ public class Chat extends AppCompatActivity implements
             loadPreferences();
 
             Bundle extras = getIntent().getExtras();
-
             if (extras != null) {
 
                 directMentionsPosition = extras.getInt("directMentionsPosition");
@@ -1102,6 +1100,9 @@ public class Chat extends AppCompatActivity implements
 
                     directMentionsPosition = null;
                 }
+            } else {
+
+                Log.e(TAG, "ChatAdapter -> extras == null");
             }
 
             return new ViewHolder(view);

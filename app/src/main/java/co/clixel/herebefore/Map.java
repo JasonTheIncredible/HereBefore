@@ -104,8 +104,7 @@ public class Map extends FragmentActivity implements
     private LocationProvider locationProvider;
     private FloatingActionButton dmButton;
 
-    // Get rid of highlight on scroll.
-    // Check location when entering Chat from DirectMentions.
+    // Check location when entering Chat from DirectMentions for a polygon in Map and from Chat.
     // Click on image instead of itemView to go to image in Chat.
     // Add bottom bar with a menu to differentiate screens. Or add text to the top of Chat and DirectMentions to differentiate them.
     // Make alert icon on directMention buttons when notification appears.
@@ -122,6 +121,7 @@ public class Map extends FragmentActivity implements
     // Make sure Firebase has enough bandwidth.
     // Make sure the secret stuff is secret.
     // Check on feedback.
+    // Decrease app size / Check on accumulation of size over time.
     // Add preference for shape color.
     // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.
     // Leave messages in locations that users get notified of when they enter the area.
@@ -226,11 +226,36 @@ public class Map extends FragmentActivity implements
 
                 Log.i(TAG, "onStart() -> dmButton -> onClick");
 
-                Intent Activity = new Intent(Map.this, DirectMentions.class);
+                loadingIcon.setVisibility(View.VISIBLE);
 
-                cancelToasts();
+                FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
 
-                startActivity(Activity);
+                mFusedLocationClient.getLastLocation()
+                        .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
+
+                            @Override
+                            public void onSuccess(Location location) {
+
+                                if (location != null) {
+
+                                    Intent Activity = new Intent(Map.this, DirectMentions.class);
+
+                                    Activity.putExtra("userLatitude", location.getLatitude());
+                                    Activity.putExtra("userLongitude", location.getLongitude());
+
+                                    cancelToasts();
+
+                                    loadingIcon.setVisibility(View.GONE);
+
+                                    startActivity(Activity);
+                                } else {
+
+                                    loadingIcon.setVisibility(View.GONE);
+                                    Log.e(TAG, "onStart() -> dmButton -> location == null");
+                                    toastMessageLong("An error occurred: your location is null");
+                                }
+                            }
+                        });
             }
         });
 
