@@ -137,7 +137,7 @@ public class Chat extends AppCompatActivity implements
     private Boolean userIsWithinShape;
     private View.OnLayoutChangeListener onLayoutChangeListener;
     private String shapeUUID;
-    private Double polygonArea, circleLatitude, circleLongitude, radius,
+    private Double polygonArea, circleLatitude, circleLongitude, radius, userLatitude, userLongitude,
             marker0Latitude, marker0Longitude, marker1Latitude, marker1Longitude, marker2Latitude, marker2Longitude, marker3Latitude, marker3Longitude, marker4Latitude, marker4Longitude, marker5Latitude, marker5Longitude, marker6Latitude, marker6Longitude, marker7Latitude, marker7Longitude;
     private PopupMenu mediaButtonMenu;
     private ImageView imageView, videoImageView;
@@ -206,6 +206,8 @@ public class Chat extends AppCompatActivity implements
             if (directMentionsPosition == 0) {
                 directMentionsPosition = null;
             }
+            userLatitude = extras.getDouble("userLatitude");
+            userLongitude = extras.getDouble("userLongitude");
             newShape = extras.getBoolean("newShape");
             shapeUUID = extras.getString("shapeUUID");
             userIsWithinShape = extras.getBoolean("userIsWithinShape");
@@ -821,6 +823,9 @@ public class Chat extends AppCompatActivity implements
             cancelToasts();
 
             Intent Activity = new Intent(getBaseContext(), DirectMentions.class);
+
+            Activity.putExtra("userLatitude", userLatitude);
+            Activity.putExtra("userLongitude", userLongitude);
 
             startActivity(Activity);
 

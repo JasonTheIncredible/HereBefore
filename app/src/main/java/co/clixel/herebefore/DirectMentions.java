@@ -60,7 +60,7 @@ public class DirectMentions extends AppCompatActivity {
     private View loadingIcon;
     private SharedPreferences sharedPreferences;
     private Toast longToast, noDMsToast;
-    private Double latitude, longitude;
+    private Double userLatitude, userLongitude;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -79,8 +79,8 @@ public class DirectMentions extends AppCompatActivity {
         Bundle extras = getIntent().getExtras();
         if (extras != null) {
 
-            latitude = extras.getDouble("userLatitude");
-            longitude = extras.getDouble("userLongitude");
+            userLatitude = extras.getDouble("userLatitude");
+            userLongitude = extras.getDouble("userLongitude");
         } else {
 
             Log.e(TAG, "onStart() -> extras == null");
@@ -480,17 +480,17 @@ public class DirectMentions extends AppCompatActivity {
                                                     float[] distance = new float[2];
 
                                                     Location.distanceBetween(mLatitude, mLongitude,
-                                                            latitude, longitude, distance);
+                                                            userLatitude, userLongitude, distance);
 
                                                     // Boolean; will be true if user is within the circle upon circle click.
                                                     userIsWithinShape = !(distance[0] > mRadius);
+
+                                                    cancelToasts();
 
                                                     Intent Activity = new Intent(mContext, Chat.class);
                                                     Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
                                                     Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
                                                     Activity.putExtra("userIsWithinShape", userIsWithinShape);
-
-                                                    cancelToasts();
 
                                                     loadingIcon.setVisibility(View.GONE);
 
@@ -540,8 +540,8 @@ public class DirectMentions extends AppCompatActivity {
             Bundle extras = getIntent().getExtras();
             if (extras != null) {
 
-                latitude = extras.getDouble("userLatitude");
-                longitude = extras.getDouble("userLongitude");
+                userLatitude = extras.getDouble("userLatitude");
+                userLongitude = extras.getDouble("userLongitude");
             } else {
 
                 Log.e(TAG, "DirectMentionsAdapter() -> extras == null");

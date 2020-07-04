@@ -104,13 +104,14 @@ public class Map extends FragmentActivity implements
     private LocationProvider locationProvider;
     private FloatingActionButton dmButton;
 
-    // Check location when entering Chat from DirectMentions for a polygon in Map and from Chat.
+    // Check location when clicking polygon and send it to Chat / DirectMentions. Then generalize so user can enter a circle or polygon from DirectMentions.
     // Click on image instead of itemView to go to image in Chat.
-    // Add bottom bar with a menu to differentiate screens. Or add text to the top of Chat and DirectMentions to differentiate them.
+    // Add bottom bar with a menu to differentiate screens. Make sure location info is being transferred between all activities (Settings). Or add text to the top of Chat and DirectMentions to differentiate them.
     // Make alert icon on directMention buttons when notification appears.
     // Make user in recyclerView clickable and have it create a mentionable.
     // Use onChildAdded() or childEventListener in chat to limit data usage / Don't get new dataSnapshot every time in DirectMentions / Prevent directMentions from updating if it's not necessary. The nested dataSnapshot.getChildren() in DirectMentions is newly getting called for every mention. Fix this to cut down on processing / data usage. Maybe add real mention email to messageInformation for faster search in future?
     // When is token renewed / renew it (this means going through all Firebase email and checking token).
+    // Delete Firebase info when user deletes account (delete userUUID and don't show it in Chat / DM so user knows they can't @ them and so the system doesn't try).
     // Add notifications adjustments to settings.
     // Test location services / doesn't seem to work on first install and in new places.
     // Use network for more precise GPS?
@@ -238,12 +239,12 @@ public class Map extends FragmentActivity implements
 
                                 if (location != null) {
 
+                                    cancelToasts();
+
                                     Intent Activity = new Intent(Map.this, DirectMentions.class);
 
                                     Activity.putExtra("userLatitude", location.getLatitude());
                                     Activity.putExtra("userLongitude", location.getLongitude());
-
-                                    cancelToasts();
 
                                     loadingIcon.setVisibility(View.GONE);
 
@@ -5021,6 +5022,8 @@ public class Map extends FragmentActivity implements
 
     private void goToNextActivityPolygon(Intent Activity, Boolean newShape) {
 
+        cancelToasts();
+
         if (threeMarkers) {
 
             Log.i(TAG, "goToNextActivityPolygon() -> threeMarkers");
@@ -5149,33 +5152,54 @@ public class Map extends FragmentActivity implements
         // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
         Activity.putExtra("userIsWithinShape", userIsWithinShape);
 
-        cancelToasts();
-
         startActivity(Activity);
     }
 
-    private void goToNextActivityCircle(Intent Activity, Circle circle, Boolean newShape) {
+    private void goToNextActivityCircle(final Intent Activity, final Circle circle, final Boolean newShape) {
 
         Log.i(TAG, "goToNextActivityCircle()");
 
-        Activity.putExtra("shapeIsCircle", true);
-        // Pass this boolean value to Chat.java.
-        Activity.putExtra("newShape", newShape);
-        // Pass this value to Chat.java to identify the shape.
-        Activity.putExtra("shapeUUID", shapeUUID);
-        // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
-        Activity.putExtra("userIsWithinShape", userIsWithinShape);
-        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a recyclerviewlayout.
-        if (newShape) {
+        FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
 
-            Activity.putExtra("circleLatitude", circle.getCenter().latitude);
-            Activity.putExtra("circleLongitude", circle.getCenter().longitude);
-            Activity.putExtra("radius", circle.getRadius());
-        }
+        mFusedLocationClient.getLastLocation()
+                .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
 
-        cancelToasts();
+                    @Override
+                    public void onSuccess(Location location) {
 
-        startActivity(Activity);
+                        if (location != null) {
+
+                            cancelToasts();
+
+                            Activity.putExtra("userLatitude", location.getLatitude());
+                            Activity.putExtra("userLongitude", location.getLongitude());
+
+                            Activity.putExtra("shapeIsCircle", true);
+                            // Pass this boolean value to Chat.java.
+                            Activity.putExtra("newShape", newShape);
+                            // Pass this value to Chat.java to identify the shape.
+                            Activity.putExtra("shapeUUID", shapeUUID);
+                            // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
+                            Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                            // Pass this information to Chat.java to create a new circle in Firebase after someone writes a recyclerviewlayout.
+                            if (newShape) {
+
+                                Activity.putExtra("circleLatitude", circle.getCenter().latitude);
+                                Activity.putExtra("circleLongitude", circle.getCenter().longitude);
+                                Activity.putExtra("radius", circle.getRadius());
+                            }
+
+                            loadingIcon.setVisibility(View.GONE);
+
+                            startActivity(Activity);
+                        } else {
+
+                            loadingIcon.setVisibility(View.GONE);
+                            Log.e(TAG, "goToNextActivityCircle -> location == null");
+                            toastMessageLong("An error occurred: your location is null");
+                        }
+                    }
+                });
     }
 
     @Override
