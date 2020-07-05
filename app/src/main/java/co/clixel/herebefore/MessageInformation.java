@@ -10,8 +10,8 @@ class MessageInformation {
     public ArrayList removedMentionDuplicates;
     public String userUUID, message, shapeUUID, token, imageURL, videoURL, email;
     public Object date;
+    public Boolean userIsWithinShape, shapeIsCircle;
     public int position;
-    public Boolean userIsWithinShape;
 
     @Keep
     MessageInformation() {
@@ -59,5 +59,9 @@ class MessageInformation {
 
     public void setUserIsWithinShape(Boolean userIsWithinShape) {
         this.userIsWithinShape = userIsWithinShape;
+    }
+
+    public void setShapeIsCircle(Boolean shapeIsCircle) {
+        this.shapeIsCircle = shapeIsCircle;
     }
 }

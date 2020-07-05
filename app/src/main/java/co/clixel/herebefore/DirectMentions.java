@@ -31,15 +31,18 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.maps.model.LatLng;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.google.maps.android.PolyUtil;
 
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
 import static java.text.DateFormat.getDateTimeInstance;
@@ -49,12 +52,12 @@ public class DirectMentions extends AppCompatActivity {
     private static final String TAG = "DirectMentions";
     private String email;
     private ArrayList<String> mTime = new ArrayList<>(), mUser = new ArrayList<>(), mImage = new ArrayList<>(), mVideo = new ArrayList<>(), mText = new ArrayList<>(), mShapeUUID = new ArrayList<>();
-    private ArrayList<Boolean> mUserIsWithinShape = new ArrayList<>();
+    private ArrayList<Boolean> mUserIsWithinShape = new ArrayList<>(), mShapeIsCircle = new ArrayList<>();
     private ArrayList<Integer> mPosition = new ArrayList<>();
     private RecyclerView directMentionsRecyclerView;
     private static int index = -1, top = -1, last, mentionCount = 0, mentionCount1 = 0;
-    private DatabaseReference databaseReferenceOne, databaseReferenceTwo, databaseReference;
-    private ValueEventListener eventListenerOne, eventListenerTwo, eventListener;
+    private DatabaseReference databaseReferenceOne, databaseReferenceTwo, databaseReferenceCircles, databaseReferencePolygons;
+    private ValueEventListener eventListenerOne, eventListenerTwo, eventListenerCircles, eventListenerPolygons;
     private LinearLayoutManager directMentionsRecyclerViewLinearLayoutManager = new LinearLayoutManager(this);
     private boolean theme, firstLoad, userIsWithinShape;
     private View loadingIcon;
@@ -133,8 +136,9 @@ public class DirectMentions extends AppCompatActivity {
                     mVideo.clear();
                     mText.clear();
                     mShapeUUID.clear();
-                    mPosition.clear();
                     mUserIsWithinShape.clear();
+                    mShapeIsCircle.clear();
+                    mPosition.clear();
                 }
 
                 // Read RecyclerView scroll position (for use in initDirectMentionsAdapter()).
@@ -180,8 +184,9 @@ public class DirectMentions extends AppCompatActivity {
                                                         String videoURL = (String) ds.child("videoURL").getValue();
                                                         String messageText = (String) ds.child("message").getValue();
                                                         String shapeUUID = (String) ds.child("shapeUUID").getValue();
-                                                        Integer position = ((Long) ds.child("position").getValue()).intValue();
                                                         Boolean userIsWithinShape = (Boolean) ds.child("userIsWithinShape").getValue();
+                                                        Boolean shapeIsCircle = (Boolean) ds.child("shapeIsCircle").getValue();
+                                                        Integer position = ((Long) ds.child("position").getValue()).intValue();
                                                         DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
                                                         // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
                                                         // This will cause onDataChange to fire twice; optimizations could be made in the future.
@@ -199,8 +204,9 @@ public class DirectMentions extends AppCompatActivity {
                                                         mVideo.add(videoURL);
                                                         mText.add(messageText);
                                                         mShapeUUID.add(shapeUUID);
-                                                        mPosition.add(position);
                                                         mUserIsWithinShape.add(userIsWithinShape);
+                                                        mShapeIsCircle.add(shapeIsCircle);
+                                                        mPosition.add(position);
                                                     }
                                                 }
                                             }
@@ -292,17 +298,30 @@ public class DirectMentions extends AppCompatActivity {
 
         Log.i(TAG, "onStop()");
 
-        if (databaseReference != null) {
+        if (databaseReferenceCircles != null) {
 
-            if (eventListener != null) {
+            if (eventListenerCircles != null) {
 
-                databaseReference.removeEventListener(eventListener);
+                databaseReferenceCircles.removeEventListener(eventListenerCircles);
             }
         }
 
-        if (eventListener != null) {
+        if (databaseReferencePolygons != null) {
 
-            eventListener = null;
+            if (eventListenerPolygons != null) {
+
+                databaseReferencePolygons.removeEventListener(eventListenerPolygons);
+            }
+        }
+
+        if (eventListenerCircles != null) {
+
+            eventListenerCircles = null;
+        }
+
+        if (eventListenerPolygons != null) {
+
+            eventListenerPolygons = null;
         }
 
         if (databaseReferenceOne != null) {
@@ -382,7 +401,7 @@ public class DirectMentions extends AppCompatActivity {
         // Initialize the RecyclerView.
         Log.i(TAG, "initDirectMentionsAdapter()");
 
-        DirectMentionsAdapter adapter = new DirectMentionsAdapter(this, mTime, mUser, mImage, mVideo, mText, mShapeUUID, mPosition, mUserIsWithinShape);
+        DirectMentionsAdapter adapter = new DirectMentionsAdapter(this, mTime, mUser, mImage, mVideo, mText, mShapeUUID, mUserIsWithinShape, mShapeIsCircle, mPosition);
         directMentionsRecyclerView.setAdapter(adapter);
         directMentionsRecyclerView.setLayoutManager(directMentionsRecyclerViewLinearLayoutManager);
 
@@ -418,7 +437,7 @@ public class DirectMentions extends AppCompatActivity {
 
         private Context mContext;
         private ArrayList<String> mMessageTime, mMessageUser, mMessageImage, mMessageImageVideo, mMessageText, mShapeUUID;
-        private ArrayList<Boolean> mUserIsWithinShape;
+        private ArrayList<Boolean> mUserIsWithinShape, mShapeIsCircle;
         private ArrayList<Integer> mPosition;
         private ImageButton playButtonInside, playButtonOutside;
         private boolean theme;
@@ -430,7 +449,7 @@ public class DirectMentions extends AppCompatActivity {
             FrameLayout videoFrameInside, videoFrameOutside;
             RelativeLayout messageItem;
 
-            ViewHolder(@NonNull View itemView) {
+            ViewHolder(@NonNull final View itemView) {
 
                 super(itemView);
                 messageTimeInside = itemView.findViewById(R.id.messageTimeInside);
@@ -456,34 +475,209 @@ public class DirectMentions extends AppCompatActivity {
 
                         loadingIcon.setVisibility(View.VISIBLE);
 
-                        DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-                        databaseReference = rootRef.child("Circles");
-                        eventListener = new ValueEventListener() {
+                        if (mShapeIsCircle.get(getAdapterPosition())) {
 
-                            @Override
-                            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                            DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
+                            databaseReferenceCircles = rootRef.child("Circles");
+                            eventListenerCircles = new ValueEventListener() {
 
-                                for (DataSnapshot ds : snapshot.getChildren()) {
+                                @Override
+                                public void onDataChange(@NonNull DataSnapshot snapshot) {
 
-                                    String shapeUUID = (String) ds.child("shapeUUID").getValue();
-                                    if (shapeUUID != null) {
+                                    for (DataSnapshot ds : snapshot.getChildren()) {
 
-                                        if (shapeUUID.equals(mShapeUUID.get(getAdapterPosition()))) {
+                                        String shapeUUID = (String) ds.child("shapeUUID").getValue();
+                                        if (shapeUUID != null) {
 
-                                            Double mLatitude = (Double) ds.child("circleOptions").child("center").child("latitude").getValue();
-                                            Double mLongitude = (Double) ds.child("circleOptions").child("center").child("longitude").getValue();
-                                            if (mLatitude != null && mLongitude != null) {
+                                            if (shapeUUID.equals(mShapeUUID.get(getAdapterPosition()))) {
 
-                                                double mRadius = (double) (long) ds.child("circleOptions").child("radius").getValue();
-                                                if (mRadius != 0) {
+                                                Double mLatitude = (Double) ds.child("circleOptions").child("center").child("latitude").getValue();
+                                                Double mLongitude = (Double) ds.child("circleOptions").child("center").child("longitude").getValue();
+                                                if (mLatitude != null && mLongitude != null) {
 
-                                                    float[] distance = new float[2];
+                                                    double mRadius = (double) (long) ds.child("circleOptions").child("radius").getValue();
+                                                    if (mRadius != 0) {
 
-                                                    Location.distanceBetween(mLatitude, mLongitude,
-                                                            userLatitude, userLongitude, distance);
+                                                        float[] distance = new float[2];
 
-                                                    // Boolean; will be true if user is within the circle upon circle click.
-                                                    userIsWithinShape = !(distance[0] > mRadius);
+                                                        Location.distanceBetween(mLatitude, mLongitude,
+                                                                userLatitude, userLongitude, distance);
+
+                                                        // Boolean; will be true if user is within the circle upon circle click.
+                                                        userIsWithinShape = !(distance[0] > mRadius);
+
+                                                        cancelToasts();
+
+                                                        Intent Activity = new Intent(mContext, Chat.class);
+                                                        Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
+                                                        Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
+                                                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
+
+                                                        loadingIcon.setVisibility(View.GONE);
+
+                                                        mContext.startActivity(Activity);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                @Override
+                                public void onCancelled(@NonNull DatabaseError error) {
+
+                                    loadingIcon.setVisibility(View.GONE);
+                                    toastMessageLong(error.getMessage());
+                                }
+                            };
+
+                            databaseReferenceCircles.addListenerForSingleValueEvent(eventListenerCircles);
+                        } else {
+
+                            DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
+                            databaseReferencePolygons = rootRef.child("Polygons");
+                            eventListenerPolygons = new ValueEventListener() {
+
+                                @Override
+                                public void onDataChange(@NonNull DataSnapshot snapshot) {
+
+                                    for (DataSnapshot ds : snapshot.getChildren()) {
+
+                                        String shapeUUID = (String) ds.child("shapeUUID").getValue();
+                                        if (shapeUUID != null) {
+
+                                            if (shapeUUID.equals(mShapeUUID.get(getAdapterPosition()))) {
+
+                                                LatLng marker3Position = null;
+                                                LatLng marker4Position = null;
+                                                LatLng marker5Position = null;
+                                                LatLng marker6Position = null;
+                                                LatLng marker7Position;
+                                                List<LatLng> polygon = new ArrayList<>();
+
+                                                LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                                                LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                                                LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                                if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                    marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                                                }
+                                                if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                    marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
+                                                }
+                                                if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                    marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
+                                                }
+                                                if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                    marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                                                }
+                                                if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
+                                                    marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
+
+                                                    polygon.add(marker7Position);
+                                                    polygon.add(marker6Position);
+                                                    polygon.add(marker5Position);
+                                                    polygon.add(marker4Position);
+                                                    polygon.add(marker3Position);
+                                                    polygon.add(marker2Position);
+                                                    polygon.add(marker1Position);
+                                                    polygon.add(marker0Position);
+
+                                                    userIsWithinShape = PolyUtil.containsLocation(userLatitude, userLongitude, polygon, false);
+
+                                                    cancelToasts();
+
+                                                    Intent Activity = new Intent(mContext, Chat.class);
+                                                    Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
+                                                    Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
+                                                    Activity.putExtra("userIsWithinShape", userIsWithinShape);
+
+                                                    loadingIcon.setVisibility(View.GONE);
+
+                                                    mContext.startActivity(Activity);
+                                                } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                    polygon.add(marker6Position);
+                                                    polygon.add(marker5Position);
+                                                    polygon.add(marker4Position);
+                                                    polygon.add(marker3Position);
+                                                    polygon.add(marker2Position);
+                                                    polygon.add(marker1Position);
+                                                    polygon.add(marker0Position);
+
+                                                    userIsWithinShape = PolyUtil.containsLocation(userLatitude, userLongitude, polygon, false);
+
+                                                    cancelToasts();
+
+                                                    Intent Activity = new Intent(mContext, Chat.class);
+                                                    Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
+                                                    Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
+                                                    Activity.putExtra("userIsWithinShape", userIsWithinShape);
+
+                                                    loadingIcon.setVisibility(View.GONE);
+
+                                                    mContext.startActivity(Activity);
+                                                } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                    polygon.add(marker5Position);
+                                                    polygon.add(marker4Position);
+                                                    polygon.add(marker3Position);
+                                                    polygon.add(marker2Position);
+                                                    polygon.add(marker1Position);
+                                                    polygon.add(marker0Position);
+
+                                                    userIsWithinShape = PolyUtil.containsLocation(userLatitude, userLongitude, polygon, false);
+
+                                                    cancelToasts();
+
+                                                    Intent Activity = new Intent(mContext, Chat.class);
+                                                    Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
+                                                    Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
+                                                    Activity.putExtra("userIsWithinShape", userIsWithinShape);
+
+                                                    loadingIcon.setVisibility(View.GONE);
+
+                                                    mContext.startActivity(Activity);
+                                                } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                    polygon.add(marker4Position);
+                                                    polygon.add(marker3Position);
+                                                    polygon.add(marker2Position);
+                                                    polygon.add(marker1Position);
+                                                    polygon.add(marker0Position);
+
+                                                    userIsWithinShape = PolyUtil.containsLocation(userLatitude, userLongitude, polygon, false);
+
+                                                    cancelToasts();
+
+                                                    Intent Activity = new Intent(mContext, Chat.class);
+                                                    Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
+                                                    Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
+                                                    Activity.putExtra("userIsWithinShape", userIsWithinShape);
+
+                                                    loadingIcon.setVisibility(View.GONE);
+
+                                                    mContext.startActivity(Activity);
+                                                } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                    polygon.add(marker3Position);
+                                                    polygon.add(marker2Position);
+                                                    polygon.add(marker1Position);
+                                                    polygon.add(marker0Position);
+
+                                                    userIsWithinShape = PolyUtil.containsLocation(userLatitude, userLongitude, polygon, false);
+
+                                                    cancelToasts();
+
+                                                    Intent Activity = new Intent(mContext, Chat.class);
+                                                    Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
+                                                    Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
+                                                    Activity.putExtra("userIsWithinShape", userIsWithinShape);
+
+                                                    loadingIcon.setVisibility(View.GONE);
+
+                                                    mContext.startActivity(Activity);
+                                                } else {
+                                                    polygon.add(marker2Position);
+                                                    polygon.add(marker1Position);
+                                                    polygon.add(marker0Position);
+
+                                                    userIsWithinShape = PolyUtil.containsLocation(userLatitude, userLongitude, polygon, false);
 
                                                     cancelToasts();
 
@@ -500,23 +694,23 @@ public class DirectMentions extends AppCompatActivity {
                                         }
                                     }
                                 }
-                            }
 
-                            @Override
-                            public void onCancelled(@NonNull DatabaseError error) {
+                                @Override
+                                public void onCancelled(@NonNull DatabaseError error) {
 
-                                loadingIcon.setVisibility(View.GONE);
-                                toastMessageLong(error.getMessage());
-                            }
-                        };
+                                    loadingIcon.setVisibility(View.GONE);
+                                    toastMessageLong(error.getMessage());
+                                }
+                            };
 
-                        databaseReference.addListenerForSingleValueEvent(eventListener);
+                            databaseReferencePolygons.addListenerForSingleValueEvent(eventListenerPolygons);
+                        }
                     }
                 });
             }
         }
 
-        DirectMentionsAdapter(Context context, ArrayList<String> mMessageTime, ArrayList<String> mMessageUser, ArrayList<String> mMessageImage, ArrayList<String> mMessageImageVideo, ArrayList<String> mMessageText, ArrayList<String> mShapeUUID, ArrayList<Integer> mPosition, ArrayList<Boolean> mUserIsWithinShape) {
+        DirectMentionsAdapter(Context context, ArrayList<String> mMessageTime, ArrayList<String> mMessageUser, ArrayList<String> mMessageImage, ArrayList<String> mMessageImageVideo, ArrayList<String> mMessageText, ArrayList<String> mShapeUUID, ArrayList<Boolean> mUserIsWithinShape, ArrayList<Boolean> mShapeIsCircle, ArrayList<Integer> mPosition) {
 
             this.mContext = context;
             this.mMessageTime = mMessageTime;
@@ -525,8 +719,9 @@ public class DirectMentions extends AppCompatActivity {
             this.mMessageImageVideo = mMessageImageVideo;
             this.mMessageText = mMessageText;
             this.mShapeUUID = mShapeUUID;
-            this.mPosition = mPosition;
             this.mUserIsWithinShape = mUserIsWithinShape;
+            this.mShapeIsCircle = mShapeIsCircle;
+            this.mPosition = mPosition;
         }
 
         @NonNull

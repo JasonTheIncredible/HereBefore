@@ -526,6 +526,7 @@ public class Chat extends AppCompatActivity implements
                                             messageInformation.setRemovedMentionDuplicates(removedMentionDuplicates);
                                         }
                                         messageInformation.setUserIsWithinShape(userIsWithinShape);
+                                        messageInformation.setShapeIsCircle(shapeIsCircle);
                                         DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                                         newMessage.setValue(messageInformation);
 
@@ -651,6 +652,7 @@ public class Chat extends AppCompatActivity implements
                                             messageInformation.setRemovedMentionDuplicates(removedMentionDuplicates);
                                         }
                                         messageInformation.setUserIsWithinShape(userIsWithinShape);
+                                        messageInformation.setShapeIsCircle(shapeIsCircle);
                                         DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                                         newMessage.setValue(messageInformation);
 
@@ -719,6 +721,7 @@ public class Chat extends AppCompatActivity implements
                                 messageInformation.setRemovedMentionDuplicates(removedMentionDuplicates);
                             }
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
+                            messageInformation.setShapeIsCircle(shapeIsCircle);
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                             newMessage.setValue(messageInformation);
 
@@ -2695,6 +2698,7 @@ public class Chat extends AppCompatActivity implements
                                 messageInformation.setRemovedMentionDuplicates(removedMentionDuplicates);
                             }
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
+                            messageInformation.setShapeIsCircle(shapeIsCircle);
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                             newMessage.setValue(messageInformation);
 
@@ -2847,6 +2851,7 @@ public class Chat extends AppCompatActivity implements
                                 messageInformation.setRemovedMentionDuplicates(removedMentionDuplicates);
                             }
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
+                            messageInformation.setShapeIsCircle(shapeIsCircle);
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                             newMessage.setValue(messageInformation);
 
@@ -2999,6 +3004,7 @@ public class Chat extends AppCompatActivity implements
                                 messageInformation.setRemovedMentionDuplicates(removedMentionDuplicates);
                             }
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
+                            messageInformation.setShapeIsCircle(shapeIsCircle);
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                             newMessage.setValue(messageInformation);
 
