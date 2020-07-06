@@ -104,12 +104,11 @@ public class Map extends FragmentActivity implements
     private LocationProvider locationProvider;
     private FloatingActionButton dmButton;
 
-    // Play buttons in DirectMentionsAdapter() are never used.
     // See "Poly Bug" in project 2 bookmarks.
-    // Click on image instead of itemView to go to image in Chat.
     // Add bottom bar with a menu to differentiate screens. Make sure location info is being transferred between all activities (Settings). Or add text to the top of Chat and DirectMentions to differentiate them.
     // Make alert icon on directMention buttons when notification appears.
     // Make user in recyclerView clickable and have it create a mentionable.
+    // Go to random shape button.
     // Use onChildAdded() or childEventListener in chat to limit data usage / Don't get new dataSnapshot every time in DirectMentions / Prevent directMentions from updating if it's not necessary. The nested dataSnapshot.getChildren() in DirectMentions is newly getting called for every mention. Fix this to cut down on processing / data usage. Maybe add real mention email to messageInformation for faster search in future?
     // When is token renewed / renew it (this means going through all Firebase email and checking token).
     // Delete Firebase info when user deletes account (delete userUUID and don't show it in Chat / DM so user knows they can't @ them and so the system doesn't try).

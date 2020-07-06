@@ -854,7 +854,6 @@ public class Chat extends AppCompatActivity implements
         // Clear text and prevent keyboard from opening.
         if (mInput != null) {
 
-            mInput.getText().clear();
             mInput.clearFocus();
         }
 
@@ -988,7 +987,6 @@ public class Chat extends AppCompatActivity implements
         private Context mContext;
         private ArrayList<String> mMessageTime, mMessageUser, mMessageImage, mMessageImageVideo, mMessageText;
         private ArrayList<Boolean> mUserIsWithinShape;
-        private ImageButton playButtonInside, playButtonOutside;
         private boolean theme;
 
         class ViewHolder extends RecyclerView.ViewHolder {
@@ -1011,8 +1009,8 @@ public class Chat extends AppCompatActivity implements
                 videoFrameOutside = itemView.findViewById(R.id.videoFrameOutside);
                 messageImageVideoInside = itemView.findViewById(R.id.messageImageVideoInside);
                 messageImageVideoOutside = itemView.findViewById(R.id.messageImageVideoOutside);
-                playButtonInside = itemView.findViewById(R.id.playButtonInside);
-                playButtonOutside = itemView.findViewById(R.id.playButtonOutside);
+                ImageButton playButtonInside = itemView.findViewById(R.id.playButtonInside);
+                ImageButton playButtonOutside = itemView.findViewById(R.id.playButtonOutside);
                 messageTextInside = itemView.findViewById(R.id.messageTextInside);
                 messageTextOutside = itemView.findViewById(R.id.messageTextOutside);
                 messageItem = itemView.findViewById(R.id.message);
@@ -1026,28 +1024,61 @@ public class Chat extends AppCompatActivity implements
                     }
                 });
 
-                itemView.setOnClickListener(new View.OnClickListener() {
+                if (messageImageInside != null) {
 
-                    @Override
-                    public void onClick(View v) {
+                    messageImageInside.setOnClickListener(new View.OnClickListener() {
 
-                        Log.i(TAG, "holder.getAdapterPosition(): " + getAdapterPosition());
-
-                        if (mMessageImage.get(getAdapterPosition()) != null) {
+                        @Override
+                        public void onClick(View v) {
 
                             Intent Activity = new Intent(mContext, PhotoView.class);
                             Activity.putExtra("imgURL", mMessageImage.get(getAdapterPosition()));
                             mContext.startActivity(Activity);
                         }
+                    });
+                }
 
-                        if (mMessageImageVideo.get(getAdapterPosition()) != null) {
+                if (messageImageOutside != null) {
+
+                    messageImageOutside.setOnClickListener(new View.OnClickListener() {
+
+                        @Override
+                        public void onClick(View v) {
+
+                            Intent Activity = new Intent(mContext, PhotoView.class);
+                            Activity.putExtra("imgURL", mMessageImage.get(getAdapterPosition()));
+                            mContext.startActivity(Activity);
+                        }
+                    });
+                }
+
+                if (messageImageVideoInside != null) {
+
+                    messageImageVideoInside.setOnClickListener(new View.OnClickListener() {
+
+                        @Override
+                        public void onClick(View v) {
 
                             Intent Activity = new Intent(mContext, co.clixel.herebefore.VideoView.class);
                             Activity.putExtra("videoURL", mMessageImageVideo.get(getAdapterPosition()));
                             mContext.startActivity(Activity);
                         }
-                    }
-                });
+                    });
+                }
+
+                if (messageImageVideoOutside != null) {
+
+                    messageImageVideoOutside.setOnClickListener(new View.OnClickListener() {
+
+                        @Override
+                        public void onClick(View v) {
+
+                            Intent Activity = new Intent(mContext, co.clixel.herebefore.VideoView.class);
+                            Activity.putExtra("videoURL", mMessageImageVideo.get(getAdapterPosition()));
+                            mContext.startActivity(Activity);
+                        }
+                    });
+                }
 
                 if (playButtonInside != null) {
 
