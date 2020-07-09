@@ -59,7 +59,7 @@ dependencies {
     androidTestImplementation 'androidx.test:runner:1.2.0'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
 
-    implementation 'com.google.maps.android:android-maps-utils:2.0.1'
+    implementation 'com.google.maps.android:android-maps-utils:2.0.3'
 
     implementation 'com.google.firebase:firebase-core:17.4.3'
     implementation 'com.google.firebase:firebase-auth:19.3.1'
