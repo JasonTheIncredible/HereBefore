@@ -213,7 +213,7 @@ public class SignIn extends AppCompatActivity {
                                             .putString("FIREBASE_TOKEN", token);
                                     editor.apply();
 
-                                    Intent Activity = new Intent(SignIn.this, Chat.class);
+                                    Intent Activity = new Intent(SignIn.this, Navigation.class);
                                     Activity.putExtra("newShape", newShape);
                                     Activity.putExtra("shapeUUID", shapeUUID);
                                     Activity.putExtra("userIsWithinShape", userIsWithinShape);
@@ -475,7 +475,7 @@ public class SignIn extends AppCompatActivity {
 
                                     // Go to Chat.java with the extras.
                                     toastMessageShort("Signed in");
-                                    Intent Activity = new Intent(SignIn.this, Chat.class);
+                                    Intent Activity = new Intent(SignIn.this, Navigation.class);
                                     Activity.putExtra("newShape", newShape);
                                     Activity.putExtra("shapeUUID", shapeUUID);
                                     Activity.putExtra("userIsWithinShape", userIsWithinShape);

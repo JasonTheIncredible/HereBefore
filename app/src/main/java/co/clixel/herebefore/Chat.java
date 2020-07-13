@@ -1,6 +1,7 @@
 package co.clixel.herebefore;
 
 import android.Manifest;
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ContentResolver;
 import android.content.ContentValues;
@@ -21,12 +22,12 @@ import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 import androidx.exifinterface.media.ExifInterface;
+import androidx.fragment.app.Fragment;
 import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -41,7 +42,6 @@ import android.view.ContextMenu;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
-import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 
@@ -71,7 +71,6 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -113,9 +112,10 @@ import java.util.UUID;
 
 import id.zelory.compressor.Compressor;
 
+import static android.app.Activity.RESULT_OK;
 import static java.text.DateFormat.getDateTimeInstance;
 
-public class Chat extends AppCompatActivity implements
+public class Chat extends Fragment implements
         PopupMenu.OnMenuItemClickListener,
         QueryTokenReceiver,
         SuggestionsVisibilityManager {
@@ -137,19 +137,21 @@ public class Chat extends AppCompatActivity implements
     private Boolean userIsWithinShape;
     private View.OnLayoutChangeListener onLayoutChangeListener;
     private String shapeUUID;
-    private Double polygonArea, circleLatitude, circleLongitude, radius, userLatitude, userLongitude,
+    private Double polygonArea, circleLatitude, circleLongitude, radius,
             marker0Latitude, marker0Longitude, marker1Latitude, marker1Longitude, marker2Latitude, marker2Longitude, marker3Latitude, marker3Longitude, marker4Latitude, marker4Longitude, marker5Latitude, marker5Longitude, marker6Latitude, marker6Longitude, marker7Latitude, marker7Longitude;
     private PopupMenu mediaButtonMenu;
     private ImageView imageView, videoImageView;
-    public Uri imageURI, videoURI;
+    private Uri imageURI, videoURI;
     private StorageTask uploadTask;
-    private LinearLayoutManager chatRecyclerViewLinearLayoutManager = new LinearLayoutManager(this);
+    private LinearLayoutManager chatRecyclerViewLinearLayoutManager = new LinearLayoutManager(this.getContext());
     private File image, video;
     private byte[] byteArray;
     private View loadingIcon;
     private SharedPreferences sharedPreferences;
     private Toast shortToast, longToast;
     private static final String BUCKET = "text-suggestions";
+    private Context mContext;
+    private Activity activity;
     private static final WordTokenizerConfig tokenizerConfig = new WordTokenizerConfig
             .Builder()
             .setWordBreakChars(", ")
@@ -157,15 +159,18 @@ public class Chat extends AppCompatActivity implements
             .setThreshold(1)
             .build();
 
+    @NonNull
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
 
-        super.onCreate(savedInstanceState);
-        Log.i(TAG, "onCreate()");
+        Log.i(TAG, "onCreateView()");
+        View rootView = inflater.inflate(R.layout.chat, container, false);
 
-        setContentView(R.layout.chat);
+        mContext = getContext();
+        activity = getActivity();
 
-        AdView bannerAd = findViewById(R.id.chatBanner);
+        AdView bannerAd = rootView.findViewById(R.id.chatBanner);
 
         // Search I/Ads: in Logcat to find ID and/or W/Ads for other info.
         // List<String> testDeviceIds = Collections.singletonList("814BF63877CBD71E91F9D7241907F4FF");
@@ -178,14 +183,14 @@ public class Chat extends AppCompatActivity implements
         AdRequest adRequest = new AdRequest.Builder().build();
         bannerAd.loadAd(adRequest);
 
-        mediaButton = findViewById(R.id.mediaButton);
-        imageView = findViewById(R.id.imageView);
-        videoImageView = findViewById(R.id.videoImageView);
-        mInput = findViewById(R.id.input);
-        sendButton = findViewById(R.id.sendButton);
-        chatRecyclerView = findViewById(R.id.messageList);
-        mentionsRecyclerView = findViewById(R.id.suggestionsList);
-        loadingIcon = findViewById(R.id.loadingIcon);
+        mediaButton = rootView.findViewById(R.id.mediaButton);
+        imageView = rootView.findViewById(R.id.imageView);
+        videoImageView = rootView.findViewById(R.id.videoImageView);
+        mInput = rootView.findViewById(R.id.input);
+        sendButton = rootView.findViewById(R.id.sendButton);
+        chatRecyclerView = rootView.findViewById(R.id.messageList);
+        mentionsRecyclerView = rootView.findViewById(R.id.suggestionsList);
+        loadingIcon = rootView.findViewById(R.id.loadingIcon);
 
         // Set to true to scroll to the bottom of chatRecyclerView.
         firstLoad = true;
@@ -197,7 +202,7 @@ public class Chat extends AppCompatActivity implements
         }
 
         // Get info from Map.java
-        Bundle extras = getIntent().getExtras();
+        Bundle extras = activity.getIntent().getExtras();
         if (extras != null) {
 
             directMentionsPosition = extras.getInt("directMentionsPosition");
@@ -206,8 +211,6 @@ public class Chat extends AppCompatActivity implements
             if (directMentionsPosition == 0) {
                 directMentionsPosition = null;
             }
-            userLatitude = extras.getDouble("userLatitude");
-            userLongitude = extras.getDouble("userLongitude");
             newShape = extras.getBoolean("newShape");
             shapeUUID = extras.getString("shapeUUID");
             userIsWithinShape = extras.getBoolean("userIsWithinShape");
@@ -242,7 +245,7 @@ public class Chat extends AppCompatActivity implements
             marker7Longitude = extras.getDouble("marker7Longitude");
         } else {
 
-            Log.e(TAG, "onStart() -> extras == null");
+            Log.e(TAG, "onCreateView() -> extras == null");
         }
 
         if (userIsWithinShape) {
@@ -252,10 +255,12 @@ public class Chat extends AppCompatActivity implements
 
             mInput.setHint("Message from outside shape...");
         }
+
+        return rootView;
     }
 
     @Override
-    protected void onStart() {
+    public void onStart() {
 
         super.onStart();
         Log.i(TAG, "onStart()");
@@ -263,6 +268,18 @@ public class Chat extends AppCompatActivity implements
         // Update to the user's preferences.
         loadPreferences();
         updatePreferences();
+
+        // Clear text and prevent keyboard from opening.
+        if (mInput != null) {
+
+            mInput.clearFocus();
+        }
+
+        // Hide and clear recyclerView if necessary.
+        if (mentionsRecyclerView != null) {
+
+            mentionsRecyclerView.setVisibility(View.GONE);
+        }
 
         DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
         databaseReference = rootRef.child("MessageThreads");
@@ -418,7 +435,7 @@ public class Chat extends AppCompatActivity implements
 
                 Log.i(TAG, "onStart() -> mediaButton -> onClick");
 
-                mediaButtonMenu = new PopupMenu(Chat.this, mediaButton);
+                mediaButtonMenu = new PopupMenu(mContext, mediaButton);
                 mediaButtonMenu.setOnMenuItemClickListener(Chat.this);
                 mediaButtonMenu.inflate(R.menu.mediabutton_menu);
                 mediaButtonMenu.show();
@@ -509,7 +526,7 @@ public class Chat extends AppCompatActivity implements
                                         messageInformation.setUserUUID(userUUID);
                                         messageInformation.setPosition(mUser.size());
                                         // If user has a Google account, get email one way. Else, get email another way.
-                                        GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(getBaseContext());
+                                        GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
                                         String email;
                                         if (acct != null) {
                                             email = acct.getEmail();
@@ -636,7 +653,7 @@ public class Chat extends AppCompatActivity implements
                                         messageInformation.setUserUUID(userUUID);
                                         messageInformation.setPosition(mUser.size());
                                         // If user has a Google account, get email one way. Else, get email another way.
-                                        GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(getBaseContext());
+                                        GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
                                         String email;
                                         if (acct != null) {
                                             email = acct.getEmail();
@@ -706,7 +723,7 @@ public class Chat extends AppCompatActivity implements
                             messageInformation.setPosition(mUser.size());
                             messageInformation.setShapeUUID(shapeUUID);
                             // If user has a Google account, get email one way. Else, get email another way.
-                            GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(getBaseContext());
+                            GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
                             String email;
                             if (acct != null) {
                                 email = acct.getEmail();
@@ -735,12 +752,12 @@ public class Chat extends AppCompatActivity implements
                 }
 
                 // Close keyboard.
-                if (Chat.this.getCurrentFocus() != null) {
+                if (activity.getCurrentFocus() != null) {
 
-                    InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                    InputMethodManager imm = (InputMethodManager) activity.getSystemService(Context.INPUT_METHOD_SERVICE);
                     if (imm != null) {
 
-                        imm.hideSoftInputFromWindow(Chat.this.getCurrentFocus().getWindowToken(), 0);
+                        imm.hideSoftInputFromWindow(activity.getCurrentFocus().getWindowToken(), 0);
                     } else {
 
                         Log.e(TAG, "onStart() -> sendButton -> imm == null");
@@ -762,7 +779,7 @@ public class Chat extends AppCompatActivity implements
 
                 cancelToasts();
 
-                Intent Activity = new Intent(Chat.this, PhotoView.class);
+                Intent Activity = new Intent(mContext, PhotoView.class);
                 Activity.putExtra("imgURL", imageURI.toString());
                 Chat.this.startActivity(Activity);
             }
@@ -777,7 +794,7 @@ public class Chat extends AppCompatActivity implements
 
                 cancelToasts();
 
-                Intent Activity = new Intent(Chat.this, co.clixel.herebefore.VideoView.class);
+                Intent Activity = new Intent(mContext, co.clixel.herebefore.VideoView.class);
                 Activity.putExtra("videoURL", videoURI.toString());
                 Chat.this.startActivity(Activity);
             }
@@ -785,90 +802,7 @@ public class Chat extends AppCompatActivity implements
     }
 
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-
-        Log.i(TAG, "onCreateOptionsMenu()");
-
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.chatdm_menu, menu);
-
-        getMenuInflater().inflate(R.menu.chatsettings_menu, menu);
-
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        // noinspection SimplifiableIfStatement
-        if (id == R.id.settingsButton) {
-
-            Log.i(TAG, "onOptionsItemSelected() -> settingsButton");
-
-            cancelToasts();
-
-            Intent Activity = new Intent(Chat.this, co.clixel.herebefore.Settings.class);
-
-            startActivity(Activity);
-
-            return true;
-        }
-
-        if (id == R.id.dmButton) {
-
-            Log.i(TAG, "onOptionsItemSelected() -> dmButton");
-
-            cancelToasts();
-
-            Intent Activity = new Intent(getBaseContext(), DirectMentions.class);
-
-            Activity.putExtra("userLatitude", userLatitude);
-            Activity.putExtra("userLongitude", userLongitude);
-
-            startActivity(Activity);
-
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
-    }
-
-    @Override
-    protected void onRestart() {
-
-        super.onRestart();
-        Log.i(TAG, "onRestart()");
-
-        // If the user logged out in settings and returns to this screen, send them back to Map.java.
-        if (FirebaseAuth.getInstance().getCurrentUser() == null && !(GoogleSignIn.getLastSignedInAccount(this) instanceof GoogleSignInAccount)) {
-
-            Intent Activity = new Intent(Chat.this, Map.class);
-            startActivity(Activity);
-        }
-
-        // Clear text and prevent keyboard from opening.
-        if (mInput != null) {
-
-            mInput.clearFocus();
-        }
-
-        // Hide and clear recyclerView if necessary.
-        if (mentionsRecyclerView != null) {
-
-            mentionsRecyclerView.setVisibility(View.GONE);
-        }
-
-        needLoadingIcon = false;
-        sendButtonClicked = false;
-    }
-
-    @Override
-    protected void onStop() {
+    public void onStop() {
 
         Log.i(TAG, "onStop()");
 
@@ -925,7 +859,7 @@ public class Chat extends AppCompatActivity implements
 
         Log.i(TAG, "loadPreferences()");
 
-        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
 
         theme = sharedPreferences.getBoolean(co.clixel.herebefore.Settings.KEY_THEME_SWITCH, false);
     }
@@ -955,7 +889,7 @@ public class Chat extends AppCompatActivity implements
         // Initialize the RecyclerView.
         Log.i(TAG, "initChatAdapter()");
 
-        ChatAdapter adapter = new ChatAdapter(this, mTime, mUser, mImage, mVideo, mText, mUserIsWithinShape);
+        ChatAdapter adapter = new ChatAdapter(mContext, mTime, mUser, mImage, mVideo, mText, mUserIsWithinShape);
         chatRecyclerView.setAdapter(adapter);
         chatRecyclerView.setLayoutManager(chatRecyclerViewLinearLayoutManager);
 
@@ -1129,7 +1063,7 @@ public class Chat extends AppCompatActivity implements
 
             loadPreferences();
 
-            Bundle extras = getIntent().getExtras();
+            Bundle extras = activity.getIntent().getExtras();
             if (extras != null) {
 
                 directMentionsPosition = extras.getInt("directMentionsPosition");
@@ -1328,7 +1262,7 @@ public class Chat extends AppCompatActivity implements
         return buckets;
     }
 
-    public List<String> getSuggestions(QueryToken queryToken) {
+    private List<String> getSuggestions(QueryToken queryToken) {
 
         Log.i(TAG, "getSuggestions()");
 
@@ -1354,13 +1288,13 @@ public class Chat extends AppCompatActivity implements
         }
     }
 
-    public void initMentionsAdapter(@NonNull List<String> suggestions) {
+    private void initMentionsAdapter(@NonNull List<String> suggestions) {
 
         Log.i(TAG, "initMentionsAdapter()");
 
-        MentionsAdapter adapter = new MentionsAdapter(this, suggestions);
+        MentionsAdapter adapter = new MentionsAdapter(mContext, suggestions);
         mentionsRecyclerView.swapAdapter(adapter, true);
-        mentionsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+        mentionsRecyclerView.setLayoutManager(new LinearLayoutManager(mContext));
         boolean display = suggestions.size() > 0;
         displaySuggestions(display);
     }
@@ -1642,8 +1576,8 @@ public class Chat extends AppCompatActivity implements
         // boolean to loop back to this point and start activity after xPermissionAlertDialog.
         checkPermissionsPicture = true;
 
-        int permissionCamera = ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA);
-        int permissionWriteExternalStorage = ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        int permissionCamera = ContextCompat.checkSelfPermission(mContext, Manifest.permission.CAMERA);
+        int permissionWriteExternalStorage = ContextCompat.checkSelfPermission(mContext, Manifest.permission.WRITE_EXTERNAL_STORAGE);
         List<String> listPermissionsNeeded = new ArrayList<>();
 
         if (permissionCamera != PackageManager.PERMISSION_GRANTED) {
@@ -1658,7 +1592,7 @@ public class Chat extends AppCompatActivity implements
 
         if (!listPermissionsNeeded.isEmpty()) {
 
-            ActivityCompat.requestPermissions(this, listPermissionsNeeded.toArray(new String[0]), Request_ID_Take_Photo);
+            ActivityCompat.requestPermissions(activity, listPermissionsNeeded.toArray(new String[0]), Request_ID_Take_Photo);
             return false;
         }
 
@@ -1672,9 +1606,9 @@ public class Chat extends AppCompatActivity implements
         // boolean to loop back to this point and start activity after xPermissionAlertDialog.
         checkPermissionsPicture = false;
 
-        int permissionCamera = ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA);
-        int permissionWriteExternalStorage = ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
-        int permissionRecordAudio = ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO);
+        int permissionCamera = ContextCompat.checkSelfPermission(mContext, Manifest.permission.CAMERA);
+        int permissionWriteExternalStorage = ContextCompat.checkSelfPermission(mContext, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        int permissionRecordAudio = ContextCompat.checkSelfPermission(mContext, Manifest.permission.RECORD_AUDIO);
         List<String> listPermissionsNeeded = new ArrayList<>();
 
         if (permissionCamera != PackageManager.PERMISSION_GRANTED) {
@@ -1694,7 +1628,7 @@ public class Chat extends AppCompatActivity implements
 
         if (!listPermissionsNeeded.isEmpty()) {
 
-            ActivityCompat.requestPermissions(this, listPermissionsNeeded.toArray(new String[0]), Request_ID_Record_Video);
+            ActivityCompat.requestPermissions(activity, listPermissionsNeeded.toArray(new String[0]), Request_ID_Record_Video);
             return false;
         }
 
@@ -1823,7 +1757,7 @@ public class Chat extends AppCompatActivity implements
 
         // Permission was granted, yay! Do the task you need to do.
         Intent cameraIntent = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
-        if (cameraIntent.resolveActivity(getPackageManager()) != null) {
+        if (cameraIntent.resolveActivity(activity.getPackageManager()) != null) {
 
             // Create the File where the photo should go
             File photoFile = null;
@@ -1839,7 +1773,7 @@ public class Chat extends AppCompatActivity implements
             // Continue only if the File was successfully created
             if (photoFile != null) {
 
-                imageURI = FileProvider.getUriForFile(Chat.this,
+                imageURI = FileProvider.getUriForFile(mContext,
                         "com.example.android.fileprovider",
                         photoFile);
                 cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, imageURI);
@@ -1854,7 +1788,7 @@ public class Chat extends AppCompatActivity implements
 
         // Permission was granted, yay! Do the task you need to do.
         Intent videoIntent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
-        if (videoIntent.resolveActivity(getPackageManager()) != null) {
+        if (videoIntent.resolveActivity(activity.getPackageManager()) != null) {
 
             // Create the File where the video should go
             File videoFile = null;
@@ -1870,7 +1804,7 @@ public class Chat extends AppCompatActivity implements
             // Continue only if the File was successfully created
             if (videoFile != null) {
 
-                videoURI = FileProvider.getUriForFile(Chat.this,
+                videoURI = FileProvider.getUriForFile(mContext,
                         "com.example.android.fileprovider",
                         videoFile);
                 videoIntent.putExtra(MediaStore.EXTRA_OUTPUT, videoURI);
@@ -1916,7 +1850,7 @@ public class Chat extends AppCompatActivity implements
 
                 AlertDialog.Builder builder;
 
-                builder = new AlertDialog.Builder(activityWeakRef.get());
+                builder = new AlertDialog.Builder(activityWeakRef.get().getContext());
 
                 // Show an explanation to the user *asynchronously* -- don't block
                 // this thread waiting for the user's response! After the user
@@ -1978,7 +1912,7 @@ public class Chat extends AppCompatActivity implements
 
             if (activityWeakRef != null && activityWeakRef.get() != null) {
 
-                builder = new AlertDialog.Builder(activityWeakRef.get());
+                builder = new AlertDialog.Builder(activityWeakRef.get().getContext());
 
                 // Show an explanation to the user *asynchronously* -- don't block
                 // this thread waiting for the user's response! After the user
@@ -2040,7 +1974,7 @@ public class Chat extends AppCompatActivity implements
 
             if (activityWeakRef != null && activityWeakRef.get() != null) {
 
-                builder = new AlertDialog.Builder(activityWeakRef.get());
+                builder = new AlertDialog.Builder(activityWeakRef.get().getContext());
 
                 // Show an explanation to the user *asynchronously* -- don't block
                 // this thread waiting for the user's response! After the user
@@ -2074,7 +2008,7 @@ public class Chat extends AppCompatActivity implements
 
         // Create an image file name
         String imageFileName = "HereBefore_" + System.currentTimeMillis() + "_jpeg";
-        File storageDir = this.getCacheDir();
+        File storageDir = activity.getCacheDir();
         image = File.createTempFile(
                 imageFileName,  /* prefix */
                 ".jpeg",         /* suffix */
@@ -2090,7 +2024,7 @@ public class Chat extends AppCompatActivity implements
 
         // Create a video file name
         String videoFileName = "HereBefore_" + System.currentTimeMillis() + "_mp4";
-        File storageDir = this.getCacheDir();
+        File storageDir = activity.getCacheDir();
         video = File.createTempFile(
                 videoFileName,  /* prefix */
                 ".mp4",         /* suffix */
@@ -2101,7 +2035,7 @@ public class Chat extends AppCompatActivity implements
     }
 
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+    public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
 
         super.onActivityResult(requestCode, resultCode, data);
 
@@ -2219,7 +2153,7 @@ public class Chat extends AppCompatActivity implements
 
         Log.i(TAG, "getExtension()");
 
-        ContentResolver cr = getContentResolver();
+        ContentResolver cr = activity.getContentResolver();
         MimeTypeMap mimeTypeMap = MimeTypeMap.getSingleton();
         return mimeTypeMap.getExtensionFromMimeType(cr.getType(uri));
     }
@@ -2239,7 +2173,7 @@ public class Chat extends AppCompatActivity implements
             super.onPreExecute();
 
             Chat activity = activityWeakRef.get();
-            if (activity == null || activity.isFinishing()) return;
+            if (activity == null || activity.isRemoving()) return;
 
             // Show the loading icon while the image is being compressed.
             activity.loadingIcon.setVisibility(View.VISIBLE);
@@ -2249,7 +2183,7 @@ public class Chat extends AppCompatActivity implements
         protected String doInBackground(String... paths) {
 
             Chat activity = activityWeakRef.get();
-            if (activity == null || activity.isFinishing()) return "2";
+            if (activity == null || activity.isRemoving()) return "2";
 
             Uri mImageURI = Uri.parse(paths[0]);
             int rotation = 0;
@@ -2258,29 +2192,31 @@ public class Chat extends AppCompatActivity implements
             InputStream imageStream1;
             try {
 
-                // Create 2 inputStreams - imageStream0 to decode into a bitmap and imageStream1 to find the necessary rotation.
-                imageStream0 = activity.getContentResolver().openInputStream(mImageURI);
+                if (activity.getContext() != null) {
+                    // Create 2 inputStreams - imageStream0 to decode into a bitmap and imageStream1 to find the necessary rotation.
+                    imageStream0 = activity.getContext().getContentResolver().openInputStream(mImageURI);
 
-                imageStream1 = activity.getContentResolver().openInputStream(mImageURI);
-                if (imageStream1 != null) {
+                    imageStream1 = activity.getContext().getContentResolver().openInputStream(mImageURI);
+                    if (imageStream1 != null) {
 
-                    ExifInterface exifInterface = new ExifInterface(imageStream1);
-                    int orientation = exifInterface.getAttributeInt(
-                            ExifInterface.TAG_ORIENTATION,
-                            ExifInterface.ORIENTATION_NORMAL);
-                    switch (orientation) {
-                        case ExifInterface.ORIENTATION_ROTATE_90:
-                            rotation = 90;
-                            imageStream1.close();
-                            break;
-                        case ExifInterface.ORIENTATION_ROTATE_180:
-                            rotation = 180;
-                            imageStream1.close();
-                            break;
-                        case ExifInterface.ORIENTATION_ROTATE_270:
-                            rotation = 270;
-                            imageStream1.close();
-                            break;
+                        ExifInterface exifInterface = new ExifInterface(imageStream1);
+                        int orientation = exifInterface.getAttributeInt(
+                                ExifInterface.TAG_ORIENTATION,
+                                ExifInterface.ORIENTATION_NORMAL);
+                        switch (orientation) {
+                            case ExifInterface.ORIENTATION_ROTATE_90:
+                                rotation = 90;
+                                imageStream1.close();
+                                break;
+                            case ExifInterface.ORIENTATION_ROTATE_180:
+                                rotation = 180;
+                                imageStream1.close();
+                                break;
+                            case ExifInterface.ORIENTATION_ROTATE_270:
+                                rotation = 270;
+                                imageStream1.close();
+                                break;
+                        }
                     }
                 }
             } catch (FileNotFoundException ex) {
@@ -2330,7 +2266,7 @@ public class Chat extends AppCompatActivity implements
             super.onPostExecute(meaninglessString);
 
             Chat activity = activityWeakRef.get();
-            if (activity == null || activity.isFinishing()) return;
+            if (activity == null || activity.isRemoving()) return;
 
             Glide.with(activity)
                     .load(activity.byteArray)
@@ -2359,7 +2295,7 @@ public class Chat extends AppCompatActivity implements
             super.onPreExecute();
 
             Chat activity = activityWeakRef.get();
-            if (activity == null || activity.isFinishing()) return;
+            if (activity == null || activity.isRemoving()) return;
 
             // Show the loading icon while the image is being compressed.
             activity.loadingIcon.setVisibility(View.VISIBLE);
@@ -2369,32 +2305,36 @@ public class Chat extends AppCompatActivity implements
         protected String doInBackground(String... paths) {
 
             Chat activity = activityWeakRef.get();
-            if (activity == null || activity.isFinishing()) return "2";
+            if (activity == null || activity.isRemoving()) return "2";
 
             try {
-                // Save a non-compressed image to the gallery.
-                Bitmap imageBitmapFull = new Compressor(activity)
-                        .setMaxWidth(10000)
-                        .setMaxHeight(10000)
-                        .setQuality(100)
-                        .setCompressFormat(Bitmap.CompressFormat.PNG)
-                        .setDestinationDirectoryPath(Environment.getExternalStoragePublicDirectory(
-                                Environment.DIRECTORY_PICTURES).getAbsolutePath())
-                        .compressToBitmap(activity.image);
-                MediaStore.Images.Media.insertImage(activity.getContentResolver(), imageBitmapFull, "HereBefore_" + System.currentTimeMillis() + "_PNG", null);
 
-                // Create a compressed image.
-                Bitmap mImageBitmap = new Compressor(activity)
-                        .setMaxWidth(480)
-                        .setMaxHeight(640)
-                        .setQuality(50)
-                        .setCompressFormat(Bitmap.CompressFormat.JPEG)
-                        .compressToBitmap(activity.image);
+                if (activity.getContext() != null) {
 
-                // Convert the bitmap to a byteArray for use in uploadImage().
-                ByteArrayOutputStream buffer = new ByteArrayOutputStream(mImageBitmap.getWidth() * mImageBitmap.getHeight());
-                mImageBitmap.compress(Bitmap.CompressFormat.JPEG, 100, buffer);
-                activity.byteArray = buffer.toByteArray();
+                    // Save a non-compressed image to the gallery.
+                    Bitmap imageBitmapFull = new Compressor(activity.getContext())
+                            .setMaxWidth(10000)
+                            .setMaxHeight(10000)
+                            .setQuality(100)
+                            .setCompressFormat(Bitmap.CompressFormat.PNG)
+                            .setDestinationDirectoryPath(Environment.getExternalStoragePublicDirectory(
+                                    Environment.DIRECTORY_PICTURES).getAbsolutePath())
+                            .compressToBitmap(activity.image);
+                    MediaStore.Images.Media.insertImage(activity.getContext().getContentResolver(), imageBitmapFull, "HereBefore_" + System.currentTimeMillis() + "_PNG", null);
+
+                    // Create a compressed image.
+                    Bitmap mImageBitmap = new Compressor(activity.getContext())
+                            .setMaxWidth(480)
+                            .setMaxHeight(640)
+                            .setQuality(50)
+                            .setCompressFormat(Bitmap.CompressFormat.JPEG)
+                            .compressToBitmap(activity.image);
+
+                    // Convert the bitmap to a byteArray for use in uploadImage().
+                    ByteArrayOutputStream buffer = new ByteArrayOutputStream(mImageBitmap.getWidth() * mImageBitmap.getHeight());
+                    mImageBitmap.compress(Bitmap.CompressFormat.JPEG, 100, buffer);
+                    activity.byteArray = buffer.toByteArray();
+                }
             } catch (IOException ex) {
 
                 ex.printStackTrace();
@@ -2410,7 +2350,7 @@ public class Chat extends AppCompatActivity implements
             super.onPostExecute(meaninglessString);
 
             Chat activity = activityWeakRef.get();
-            if (activity == null || activity.isFinishing()) return;
+            if (activity == null || activity.isRemoving()) return;
 
             Glide.with(activity)
                     .load(activity.byteArray)
@@ -2442,7 +2382,7 @@ public class Chat extends AppCompatActivity implements
             super.onPreExecute();
 
             Chat activity = activityWeakRef.get();
-            if (activity == null || activity.isFinishing()) return;
+            if (activity == null || activity.isRemoving()) return;
 
             // Show the loading icon while the video is being compressed.
             activity.loadingIcon.setVisibility(View.VISIBLE);
@@ -2452,12 +2392,12 @@ public class Chat extends AppCompatActivity implements
         protected String doInBackground(String... paths) {
 
             Chat activity = activityWeakRef.get();
-            if (activity == null || activity.isFinishing()) return "2";
+            if (activity == null || activity.isRemoving()) return "2";
 
             String filePath = null;
             try {
 
-                filePath = SiliCompressor.with(activity).compressVideo(paths[0], paths[1], 0, 0, 3000000);
+                filePath = SiliCompressor.with(activity.getContext()).compressVideo(paths[0], paths[1], 0, 0, 3000000);
             } catch (URISyntaxException e) {
 
                 e.printStackTrace();
@@ -2470,98 +2410,101 @@ public class Chat extends AppCompatActivity implements
             values.put(MediaStore.Video.Media.MIME_TYPE, "video/mp4");
             values.put(MediaStore.Video.Media.DATA, activity.video.getAbsolutePath());
 
-            // Add a new record (identified by uri) without the video, but with the values just set.
-            Uri uri = activity.getContentResolver().insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values);
+            if (activity.getContext() != null) {
 
-            // Now get a handle to the file for that record, and save the data into it.
-            try {
+                // Add a new record (identified by uri) without the video, but with the values just set.
+                Uri uri = activity.getContext().getContentResolver().insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values);
 
-                InputStream is = new FileInputStream(activity.video);
-                if (uri != null) {
-
-                    OutputStream os = activity.getContentResolver().openOutputStream(uri);
-                    byte[] buffer = new byte[4096]; // tweaking this number may increase performance
-                    int len;
-                    while ((len = is.read(buffer)) != -1) {
-                        if (os != null) {
-
-                            os.write(buffer, 0, len);
-                            os.flush();
-                        }
-                    }
-                    is.close();
-                    if (os != null) {
-
-                        os.close();
-                    }
-                }
-            } catch (Exception e) {
-
-                Log.e(TAG, "Exception while writing video: ", e);
-            }
-
-            activity.sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, uri));
-
-            if (filePath == null) {
-
-                return "2";
-            }
-
-            // Turn the compressed video into a bitmap.
-            File videoFile = new File(filePath);
-
-            float length = videoFile.length() / 1024f; // Size in KB
-            String value;
-            if (length >= 1024) {
-
-                value = length / 1024f + " MB";
-            } else {
-
-                value = length + " KB";
-            }
-
-            String text = String.format(Locale.US, "%s\nName: %s\nSize: %s", "Video compression complete", videoFile.getName(), value);
-            Log.e(TAG, "text: " + text);
-            Log.e(TAG, "imageFile.getName(): " + videoFile.getName());
-            Log.e(TAG, "Path 0: " + filePath);
-
-            try {
-
-                File file = new File(filePath);
-                InputStream inputStream; //You can get an inputStream using any IO API
-                inputStream = new FileInputStream(file.getAbsolutePath());
-                byte[] buffer = new byte[8192];
-                int bytesRead;
-                ByteArrayOutputStream output = new ByteArrayOutputStream();
-                Base64OutputStream output64 = new Base64OutputStream(output, Base64.DEFAULT);
-                activity.videoURI = Uri.fromFile(videoFile);
+                // Now get a handle to the file for that record, and save the data into it.
                 try {
 
-                    while ((bytesRead = inputStream.read(buffer)) != -1) {
+                    InputStream is = new FileInputStream(activity.video);
+                    if (uri != null) {
 
-                        output64.write(buffer, 0, bytesRead);
+                        OutputStream os = activity.getContext().getContentResolver().openOutputStream(uri);
+                        byte[] buffer = new byte[4096]; // tweaking this number may increase performance
+                        int len;
+                        while ((len = is.read(buffer)) != -1) {
+                            if (os != null) {
+
+                                os.write(buffer, 0, len);
+                                os.flush();
+                            }
+                        }
+                        is.close();
+                        if (os != null) {
+
+                            os.close();
+                        }
                     }
+                } catch (Exception e) {
+
+                    Log.e(TAG, "Exception while writing video: ", e);
+                }
+
+                activity.getContext().sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, uri));
+
+                if (filePath == null) {
+
+                    return "2";
+                }
+
+                // Turn the compressed video into a bitmap.
+                File videoFile = new File(filePath);
+
+                float length = videoFile.length() / 1024f; // Size in KB
+                String value;
+                if (length >= 1024) {
+
+                    value = length / 1024f + " MB";
+                } else {
+
+                    value = length + " KB";
+                }
+
+                String text = String.format(Locale.US, "%s\nName: %s\nSize: %s", "Video compression complete", videoFile.getName(), value);
+                Log.e(TAG, "text: " + text);
+                Log.e(TAG, "imageFile.getName(): " + videoFile.getName());
+                Log.e(TAG, "Path 0: " + filePath);
+
+                try {
+
+                    File file = new File(filePath);
+                    InputStream inputStream; //You can get an inputStream using any IO API
+                    inputStream = new FileInputStream(file.getAbsolutePath());
+                    byte[] buffer = new byte[8192];
+                    int bytesRead;
+                    ByteArrayOutputStream output = new ByteArrayOutputStream();
+                    Base64OutputStream output64 = new Base64OutputStream(output, Base64.DEFAULT);
+                    activity.videoURI = Uri.fromFile(videoFile);
+                    try {
+
+                        while ((bytesRead = inputStream.read(buffer)) != -1) {
+
+                            output64.write(buffer, 0, bytesRead);
+                        }
+                    } catch (IOException ex) {
+
+                        ex.printStackTrace();
+                        activity.toastMessageLong(ex.getMessage());
+                    }
+                    output64.close();
+
+                    // Change the videoImageView's orientation depending on the orientation of the video.
+                    MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+                    // Set the video Uri as data source for MediaMetadataRetriever
+                    retriever.setDataSource(filePath);
+                    // Get one "frame"/bitmap - * NOTE - no time was set, so the first available frame will be used
+                    mBmp = retriever.getFrameAtTime(1);
+                    // Get the bitmap width and height
+                    mBmpWidth = mBmp.getWidth();
+                    mBmpHeight = mBmp.getHeight();
+
                 } catch (IOException ex) {
 
                     ex.printStackTrace();
                     activity.toastMessageLong(ex.getMessage());
                 }
-                output64.close();
-
-                // Change the videoImageView's orientation depending on the orientation of the video.
-                MediaMetadataRetriever retriever = new MediaMetadataRetriever();
-                // Set the video Uri as data source for MediaMetadataRetriever
-                retriever.setDataSource(filePath);
-                // Get one "frame"/bitmap - * NOTE - no time was set, so the first available frame will be used
-                mBmp = retriever.getFrameAtTime(1);
-                // Get the bitmap width and height
-                mBmpWidth = mBmp.getWidth();
-                mBmpHeight = mBmp.getHeight();
-
-            } catch (IOException ex) {
-
-                ex.printStackTrace();
-                activity.toastMessageLong(ex.getMessage());
             }
             return "2";
         }
@@ -2572,7 +2515,7 @@ public class Chat extends AppCompatActivity implements
             super.onPostExecute(meaninglessString);
 
             Chat activity = activityWeakRef.get();
-            if (activity == null || activity.isFinishing()) return;
+            if (activity == null || activity.isRemoving()) return;
 
             if (mBmp != null && mBmpHeight != 0 && mBmpWidth != 0) {
 
@@ -2713,7 +2656,7 @@ public class Chat extends AppCompatActivity implements
                             messageInformation.setUserUUID(userUUID);
                             messageInformation.setPosition(mUser.size());
                             // If user has a Google account, get email one way. Else, get email another way.
-                            GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(getBaseContext());
+                            GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
                             String email;
                             if (acct != null) {
                                 email = acct.getEmail();
@@ -2866,7 +2809,7 @@ public class Chat extends AppCompatActivity implements
                             messageInformation.setUserUUID(userUUID);
                             messageInformation.setPosition(mUser.size());
                             // If user has a Google account, get email one way. Else, get email another way.
-                            GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(getBaseContext());
+                            GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
                             String email;
                             if (acct != null) {
                                 email = acct.getEmail();
@@ -3019,7 +2962,7 @@ public class Chat extends AppCompatActivity implements
                             messageInformation.setUserUUID(userUUID);
                             messageInformation.setPosition(mUser.size());
                             // If user has a Google account, get email one way. Else, get email another way.
-                            GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(getBaseContext());
+                            GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
                             String email;
                             if (acct != null) {
                                 email = acct.getEmail();
@@ -3123,14 +3066,14 @@ public class Chat extends AppCompatActivity implements
 
     private void toastMessageShort(String message) {
 
-        shortToast = Toast.makeText(getBaseContext(), message, Toast.LENGTH_SHORT);
+        shortToast = Toast.makeText(mContext, message, Toast.LENGTH_SHORT);
         shortToast.setGravity(Gravity.CENTER, 0, 0);
         shortToast.show();
     }
 
     private void toastMessageLong(String message) {
 
-        longToast = Toast.makeText(getBaseContext(), message, Toast.LENGTH_LONG);
+        longToast = Toast.makeText(mContext, message, Toast.LENGTH_LONG);
         longToast.setGravity(Gravity.CENTER, 0, 0);
         longToast.show();
     }

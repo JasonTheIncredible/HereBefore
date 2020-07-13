@@ -108,6 +108,10 @@
         </service>
 
         <activity
+            android:name=".Navigation"
+            android:label="@string/title_activity_maps" />
+
+        <activity
             android:name=".DirectMentions"
             android:configChanges="orientation|screenSize"
             android:label="@string/title_activity_maps"

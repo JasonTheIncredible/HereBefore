@@ -1,6 +1,6 @@
 package co.clixel.herebefore;
 
-import android.Manifest;
+import  android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
@@ -104,7 +104,9 @@ public class Map extends FragmentActivity implements
     private LocationProvider locationProvider;
     private FloatingActionButton dmButton;
 
+    // Change Chat when user clicks on DM.
     // Add bottom bar with a menu to differentiate screens. Make sure location info is being transferred between all activities (Settings).
+    // Get rid of toggleTheme in settings or settingsFragment? Also make the transition from light mode to dark mode smoother.
     // Make user in recyclerView clickable and have it create a mentionable.
     // Go to random shape button.
     // Make alert icon on directMention buttons when notification appears.
@@ -118,6 +120,7 @@ public class Map extends FragmentActivity implements
     // Check for warning messages.
     // Make sure aboutLibraries is up to date.
     // More ads.
+    // AppIntro on Github.
     // Put the snapshots in reverse order before search for faster results.
     // Make sure Firebase has enough bandwidth.
     // Make sure the secret stuff is secret.
@@ -211,9 +214,11 @@ public class Map extends FragmentActivity implements
 
                 Log.i(TAG, "onStart() -> settingsButton -> onClick");
 
-                Intent Activity = new Intent(Map.this, co.clixel.herebefore.Settings.class);
-
                 cancelToasts();
+
+                Intent Activity = new Intent(Map.this, Navigation.class);
+
+                Activity.putExtra("fromSettings", true);
 
                 startActivity(Activity);
             }
@@ -241,10 +246,12 @@ public class Map extends FragmentActivity implements
 
                                     cancelToasts();
 
-                                    Intent Activity = new Intent(Map.this, DirectMentions.class);
+                                    Intent Activity = new Intent(Map.this, Navigation.class);
 
                                     Activity.putExtra("userLatitude", location.getLatitude());
                                     Activity.putExtra("userLongitude", location.getLongitude());
+
+                                    Activity.putExtra("fromDMs", true);
 
                                     loadingIcon.setVisibility(View.GONE);
 
@@ -2822,7 +2829,7 @@ public class Map extends FragmentActivity implements
                                         shapeUUID = UUID.randomUUID().toString();
 
                                         // Carry the extras all the way to Chat.java.
-                                        Intent Activity = new Intent(Map.this, Chat.class);
+                                        Intent Activity = new Intent(Map.this, Navigation.class);
                                         goToNextActivityCircle(Activity, newCircle, true);
                                     } else {
 
@@ -2831,7 +2838,7 @@ public class Map extends FragmentActivity implements
                                         // uuid does not already exist in Firebase. Go to Chat.java with the uuid.
 
                                         // Carry the extras all the way to Chat.java.
-                                        Intent Activity = new Intent(Map.this, Chat.class);
+                                        Intent Activity = new Intent(Map.this, Navigation.class);
                                         goToNextActivityCircle(Activity, newCircle, true);
                                     }
                                 }
@@ -2973,7 +2980,7 @@ public class Map extends FragmentActivity implements
                                                         shapeUUID = UUID.randomUUID().toString();
 
                                                         // Carry the extras all the way to Chat.java.
-                                                        Intent Activity = new Intent(Map.this, Chat.class);
+                                                        Intent Activity = new Intent(Map.this, Navigation.class);
 
                                                         // Pass this information to Chat.java to create a new shape in Firebase after someone writes a recyclerviewlayout.
                                                         goToNextActivityPolygon(Activity, true);
@@ -2984,7 +2991,7 @@ public class Map extends FragmentActivity implements
                                                         // uuid does not already exist in Firebase. Go to Chat.java with the uuid.
 
                                                         // Carry the extras all the way to Chat.java.
-                                                        Intent Activity = new Intent(Map.this, Chat.class);
+                                                        Intent Activity = new Intent(Map.this, Navigation.class);
 
                                                         // Pass this information to Chat.java to create a new shape in Firebase after someone writes a recyclerviewlayout.
                                                         goToNextActivityPolygon(Activity, true);
@@ -3031,7 +3038,7 @@ public class Map extends FragmentActivity implements
                                                         // uuid does not already exist in Firebase. Go to SignIn.java with the uuid.
 
                                                         // Carry the extras to SignIn.java.
-                                                        Intent Activity = new Intent(Map.this, Chat.class);
+                                                        Intent Activity = new Intent(Map.this, Navigation.class);
 
                                                         // Pass this information to Chat.java to create a new shape in Firebase after someone writes a recyclerviewlayout.
                                                         goToNextActivityPolygon(Activity, true);
@@ -3231,7 +3238,7 @@ public class Map extends FragmentActivity implements
 
                                             // User is signed in.
 
-                                            Intent Activity = new Intent(Map.this, Chat.class);
+                                            Intent Activity = new Intent(Map.this, Navigation.class);
                                             goToNextActivityPolygon(Activity, false);
                                         } else {
 
@@ -3618,7 +3625,7 @@ public class Map extends FragmentActivity implements
                                                         shapeUUID = UUID.randomUUID().toString();
 
                                                         // Carry the extras all the way to Chat.java.
-                                                        Intent Activity = new Intent(Map.this, Chat.class);
+                                                        Intent Activity = new Intent(Map.this, Navigation.class);
 
                                                         // Pass this information to Chat.java to create a new shape in Firebase after someone writes a recyclerviewlayout.
                                                         goToNextActivityCircle(Activity, circle, true);
@@ -3629,7 +3636,7 @@ public class Map extends FragmentActivity implements
                                                         // uuid does not already exist in Firebase. Go to Chat.java with the uuid.
 
                                                         // Carry the extras all the way to Chat.java.
-                                                        Intent Activity = new Intent(Map.this, Chat.class);
+                                                        Intent Activity = new Intent(Map.this, Navigation.class);
 
                                                         // Pass this information to Chat.java to create a new shape in Firebase after someone writes a recyclerviewlayout.
                                                         goToNextActivityCircle(Activity, circle, true);
@@ -3882,7 +3889,7 @@ public class Map extends FragmentActivity implements
 
                                             // User is signed in.
 
-                                            Intent Activity = new Intent(Map.this, Chat.class);
+                                            Intent Activity = new Intent(Map.this, Navigation.class);
                                             goToNextActivityCircle(Activity, circle, false);
                                         } else {
 
@@ -4153,7 +4160,7 @@ public class Map extends FragmentActivity implements
 
                                             // User is signed in.
 
-                                            Intent Activity = new Intent(Map.this, Chat.class);
+                                            Intent Activity = new Intent(Map.this, Navigation.class);
                                             goToNextActivityCircle(Activity, mCircle, false);
                                         } else {
 
@@ -4215,7 +4222,7 @@ public class Map extends FragmentActivity implements
 
                                             // User is signed in.
 
-                                            Intent Activity = new Intent(Map.this, Chat.class);
+                                            Intent Activity = new Intent(Map.this, Navigation.class);
                                             goToNextActivityPolygon(Activity, false);
                                         } else {
 
@@ -7825,7 +7832,7 @@ public class Map extends FragmentActivity implements
                                                         shapeUUID = UUID.randomUUID().toString();
 
                                                         // Carry the extras all the way to Chat.java.
-                                                        Intent Activity = new Intent(Map.this, Chat.class);
+                                                        Intent Activity = new Intent(Map.this, Navigation.class);
                                                         Activity.putExtra("shapeIsCircle", true);
                                                         // Pass this boolean value to Chat.java.
                                                         Activity.putExtra("newShape", true);
@@ -7841,7 +7848,7 @@ public class Map extends FragmentActivity implements
                                                     } else {
 
                                                         // Carry the extras all the way to Chat.java.
-                                                        Intent Activity = new Intent(Map.this, Chat.class);
+                                                        Intent Activity = new Intent(Map.this, Navigation.class);
                                                         Activity.putExtra("shapeIsCircle", true);
                                                         // Pass this boolean value to Chat.java.
                                                         Activity.putExtra("newShape", true);

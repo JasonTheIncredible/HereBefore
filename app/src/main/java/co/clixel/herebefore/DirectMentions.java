@@ -1,5 +1,6 @@
 package co.clixel.herebefore;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -9,7 +10,6 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
-import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,8 +21,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
+import androidx.fragment.app.Fragment;
 import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -47,7 +47,7 @@ import java.util.Locale;
 
 import static java.text.DateFormat.getDateTimeInstance;
 
-public class DirectMentions extends AppCompatActivity {
+public class DirectMentions extends Fragment {
 
     private static final String TAG = "DirectMentions";
     private String email;
@@ -58,46 +58,58 @@ public class DirectMentions extends AppCompatActivity {
     private static int index = -1, top = -1, last, mentionCount = 0, mentionCount1 = 0;
     private DatabaseReference databaseReferenceOne, databaseReferenceTwo, databaseReferenceCircles, databaseReferencePolygons;
     private ValueEventListener eventListenerOne, eventListenerTwo, eventListenerCircles, eventListenerPolygons;
-    private LinearLayoutManager directMentionsRecyclerViewLinearLayoutManager = new LinearLayoutManager(this);
+    private LinearLayoutManager directMentionsRecyclerViewLinearLayoutManager = new LinearLayoutManager(getContext());
     private boolean theme, firstLoad, userIsWithinShape;
     private View loadingIcon;
     private SharedPreferences sharedPreferences;
     private Toast longToast, noDMsToast;
     private Double userLatitude, userLongitude;
+    private Context mContext;
+    private Activity activity;
 
+    @NonNull
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
 
-        super.onCreate(savedInstanceState);
-        Log.i(TAG, "onCreate()");
+        Log.i(TAG, "onCreateView()");
+        View rootView = inflater.inflate(R.layout.directmentions, container, false);
 
-        setContentView(R.layout.directmentions);
+        directMentionsRecyclerView = rootView.findViewById(R.id.mentionsList);
+        loadingIcon = rootView.findViewById(R.id.loadingIcon);
 
-        directMentionsRecyclerView = findViewById(R.id.mentionsList);
-        loadingIcon = findViewById(R.id.loadingIcon);
-
+        mContext = getContext();
+        activity = getActivity();
         // Set to true to scroll to the bottom of directMentionsRecyclerView.
         firstLoad = true;
 
-        Bundle extras = getIntent().getExtras();
-        if (extras != null) {
+        if (activity != null) {
 
-            userLatitude = extras.getDouble("userLatitude");
-            userLongitude = extras.getDouble("userLongitude");
+            Bundle extras = activity.getIntent().getExtras();
+            if (extras != null) {
+
+                userLatitude = extras.getDouble("userLatitude");
+                userLongitude = extras.getDouble("userLongitude");
+            } else {
+
+                Log.e(TAG, "onCreateView() -> extras == null");
+            }
+
+            // Make the loadingIcon visible upon the first load, as it can sometimes take a while to show anything. It should be made invisible in initDirectMentionsAdapter().
+            if (loadingIcon != null) {
+
+                loadingIcon.setVisibility(View.VISIBLE);
+            }
         } else {
 
-            Log.e(TAG, "onStart() -> extras == null");
+            Log.e(TAG, "onCreateView() -> activity == null");
         }
 
-        // Make the loadingIcon visible upon the first load, as it can sometimes take a while to show anything. It should be made invisible in initDirectMentionsAdapter().
-        if (loadingIcon != null) {
-
-            loadingIcon.setVisibility(View.VISIBLE);
-        }
+        return rootView;
     }
 
     @Override
-    protected void onStart() {
+    public void onStart() {
 
         super.onStart();
         Log.i(TAG, "onStart()");
@@ -110,7 +122,7 @@ public class DirectMentions extends AppCompatActivity {
         mentionCount1 = 0;
 
         // If user has a Google account, get email one way. Else, get email another way.
-        GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(getBaseContext());
+        GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
         if (acct != null) {
 
             email = acct.getEmail();
@@ -248,27 +260,6 @@ public class DirectMentions extends AppCompatActivity {
     }
 
     @Override
-    public void onRestart() {
-
-        super.onRestart();
-        Log.i(TAG, "onRestart()");
-
-        mentionCount = 0;
-        mentionCount1 = 0;
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-
-        Log.i(TAG, "onCreateOptionsMenu()");
-
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.chatsettings_menu, menu);
-
-        return true;
-    }
-
-    @Override
     public boolean onOptionsItemSelected(MenuItem item) {
 
         // Handle action bar item clicks here. The action bar will
@@ -283,7 +274,7 @@ public class DirectMentions extends AppCompatActivity {
 
             cancelToasts();
 
-            Intent Activity = new Intent(getBaseContext(), co.clixel.herebefore.Settings.class);
+            Intent Activity = new Intent(mContext, co.clixel.herebefore.Settings.class);
 
             startActivity(Activity);
 
@@ -294,7 +285,7 @@ public class DirectMentions extends AppCompatActivity {
     }
 
     @Override
-    protected void onStop() {
+    public void onStop() {
 
         Log.i(TAG, "onStop()");
 
@@ -371,7 +362,7 @@ public class DirectMentions extends AppCompatActivity {
 
         Log.i(TAG, "loadPreferences()");
 
-        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
 
         theme = sharedPreferences.getBoolean(co.clixel.herebefore.Settings.KEY_THEME_SWITCH, false);
     }
@@ -401,7 +392,7 @@ public class DirectMentions extends AppCompatActivity {
         // Initialize the RecyclerView.
         Log.i(TAG, "initDirectMentionsAdapter()");
 
-        DirectMentionsAdapter adapter = new DirectMentionsAdapter(this, mTime, mUser, mImage, mVideo, mText, mShapeUUID, mUserIsWithinShape, mShapeIsCircle, mPosition);
+        DirectMentionsAdapter adapter = new DirectMentionsAdapter(mContext, mTime, mUser, mImage, mVideo, mText, mShapeUUID, mUserIsWithinShape, mShapeIsCircle, mPosition);
         directMentionsRecyclerView.setAdapter(adapter);
         directMentionsRecyclerView.setLayoutManager(directMentionsRecyclerViewLinearLayoutManager);
 
@@ -424,7 +415,7 @@ public class DirectMentions extends AppCompatActivity {
 
         if (mUser.size() == 0) {
 
-            noDMsToast = Toast.makeText(getBaseContext(), "You have no direct mentions", Toast.LENGTH_LONG);
+            noDMsToast = Toast.makeText(mContext, "You have no direct mentions", Toast.LENGTH_LONG);
             noDMsToast.setGravity(Gravity.CENTER, 0, 0);
             noDMsToast.show();
         }
@@ -1217,7 +1208,7 @@ public class DirectMentions extends AppCompatActivity {
 
             loadPreferences();
 
-            Bundle extras = getIntent().getExtras();
+            Bundle extras = activity.getIntent().getExtras();
             if (extras != null) {
 
                 userLatitude = extras.getDouble("userLatitude");
@@ -1386,7 +1377,7 @@ public class DirectMentions extends AppCompatActivity {
 
     private void toastMessageLong(String message) {
 
-        longToast = Toast.makeText(getBaseContext(), message, Toast.LENGTH_LONG);
+        longToast = Toast.makeText(mContext, message, Toast.LENGTH_LONG);
         longToast.setGravity(Gravity.CENTER, 0, 0);
         longToast.show();
     }

@@ -209,7 +209,7 @@ public class SignUp extends AppCompatActivity {
                                     // Go to Chat.java with the extras.
                                     Toast signedUpToast = Toast.makeText(SignUp.this, "Signed up", Toast.LENGTH_SHORT);
                                     signedUpToast.show();
-                                    Intent Activity = new Intent(SignUp.this, Chat.class);
+                                    Intent Activity = new Intent(SignUp.this, Navigation.class);
                                     Activity.putExtra("newShape", newShape);
                                     Activity.putExtra("shapeUUID", shapeUUID);
                                     Activity.putExtra("userIsWithinShape", userIsWithinShape);
@@ -376,7 +376,7 @@ public class SignUp extends AppCompatActivity {
 
                                     // Go to Chat.java with the extras.
                                     toastMessageShort("Signed in");
-                                    Intent Activity = new Intent(SignUp.this, Chat.class);
+                                    Intent Activity = new Intent(SignUp.this, Navigation.class);
                                     Activity.putExtra("newShape", newShape);
                                     Activity.putExtra("shapeUUID", shapeUUID);
                                     Activity.putExtra("userIsWithinShape", userIsWithinShape);

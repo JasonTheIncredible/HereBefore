@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AppCompatDelegate;
 import androidx.fragment.app.Fragment;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
@@ -13,6 +14,8 @@ import androidx.preference.PreferenceManager;
 
 import com.firebase.ui.auth.AuthUI;
 import com.mikepenz.aboutlibraries.LibsBuilder;
+
+import static co.clixel.herebefore.Settings.KEY_THEME_SWITCH;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -49,6 +52,27 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
         if (getActivity() != null) {
 
             switch (key) {
+
+                case "toggleTheme": {
+
+                    SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getContext());
+
+                    boolean theme = sharedPreferences.getBoolean(KEY_THEME_SWITCH, false);
+
+                    if (theme) {
+
+                        // Set to light mode.
+                        AppCompatDelegate.setDefaultNightMode(
+                                AppCompatDelegate.MODE_NIGHT_NO);
+                    } else {
+
+                        // Set to dark mode.
+                        AppCompatDelegate.setDefaultNightMode(
+                                AppCompatDelegate.MODE_NIGHT_YES);
+                    }
+
+                    break;
+                }
 
                 case "resetPassword": {
 
