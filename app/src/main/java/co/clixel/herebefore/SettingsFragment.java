@@ -30,6 +30,14 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
 
         if (getActivity() != null) {
 
+            // userLatitude and userLongitude are used in the DM fragment. Do not get rid of them!
+            Bundle extras = getActivity().getIntent().getExtras();
+            if (extras != null) {
+
+                Double userLatitude = extras.getDouble("userLatitude");
+                Double userLongitude = extras.getDouble("userLongitude");
+            }
+
             // Check if the account is a Google account. If not, hide "Reset Password".
             SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
             String googleIdToken = sharedPreferences.getString("googleIdToken", "");

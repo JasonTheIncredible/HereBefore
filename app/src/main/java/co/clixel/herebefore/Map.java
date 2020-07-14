@@ -1,6 +1,6 @@
 package co.clixel.herebefore;
 
-import  android.Manifest;
+import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
@@ -104,8 +104,7 @@ public class Map extends FragmentActivity implements
     private LocationProvider locationProvider;
     private FloatingActionButton dmButton;
 
-    // Change Chat when user clicks on DM.
-    // Add bottom bar with a menu to differentiate screens. Make sure location info is being transferred between all activities (Settings).
+    // Customize both bottomNav bars to match color of activity.
     // Get rid of toggleTheme in settings or settingsFragment? Also make the transition from light mode to dark mode smoother.
     // Make user in recyclerView clickable and have it create a mentionable.
     // Go to random shape button.
@@ -214,13 +213,38 @@ public class Map extends FragmentActivity implements
 
                 Log.i(TAG, "onStart() -> settingsButton -> onClick");
 
-                cancelToasts();
+                loadingIcon.setVisibility(View.VISIBLE);
 
-                Intent Activity = new Intent(Map.this, Navigation.class);
+                FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
 
-                Activity.putExtra("fromSettings", true);
+                mFusedLocationClient.getLastLocation()
+                        .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
 
-                startActivity(Activity);
+                            @Override
+                            public void onSuccess(Location location) {
+
+                                if (location != null) {
+
+                                    cancelToasts();
+
+                                    Intent Activity = new Intent(Map.this, Navigation.class);
+
+                                    Activity.putExtra("userLatitude", location.getLatitude());
+                                    Activity.putExtra("userLongitude", location.getLongitude());
+
+                                    Activity.putExtra("fromSettings", true);
+
+                                    loadingIcon.setVisibility(View.GONE);
+
+                                    startActivity(Activity);
+                                } else {
+
+                                    loadingIcon.setVisibility(View.GONE);
+                                    Log.e(TAG, "onStart() -> settingsButton -> location == null");
+                                    toastMessageLong("An error occurred: your location is null");
+                                }
+                            }
+                        });
             }
         });
 

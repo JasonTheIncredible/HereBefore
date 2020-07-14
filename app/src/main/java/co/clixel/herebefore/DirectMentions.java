@@ -498,7 +498,7 @@ public class DirectMentions extends Fragment {
 
                                                         cancelToasts();
 
-                                                        Intent Activity = new Intent(mContext, Chat.class);
+                                                        Intent Activity = new Intent(mContext, Navigation.class);
                                                         Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
                                                         Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
                                                         Activity.putExtra("userIsWithinShape", userIsWithinShape);
@@ -506,6 +506,8 @@ public class DirectMentions extends Fragment {
                                                         loadingIcon.setVisibility(View.GONE);
 
                                                         mContext.startActivity(Activity);
+
+                                                        activity.finish();
                                                     }
                                                 }
                                             }
@@ -576,7 +578,7 @@ public class DirectMentions extends Fragment {
 
                                                     cancelToasts();
 
-                                                    Intent Activity = new Intent(mContext, Chat.class);
+                                                    Intent Activity = new Intent(mContext, Navigation.class);
                                                     Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
                                                     Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
                                                     Activity.putExtra("userIsWithinShape", userIsWithinShape);
@@ -584,6 +586,8 @@ public class DirectMentions extends Fragment {
                                                     loadingIcon.setVisibility(View.GONE);
 
                                                     mContext.startActivity(Activity);
+
+                                                    activity.finish();
                                                 } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
                                                     polygon.add(marker6Position);
                                                     polygon.add(marker5Position);
@@ -597,7 +601,7 @@ public class DirectMentions extends Fragment {
 
                                                     cancelToasts();
 
-                                                    Intent Activity = new Intent(mContext, Chat.class);
+                                                    Intent Activity = new Intent(mContext, Navigation.class);
                                                     Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
                                                     Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
                                                     Activity.putExtra("userIsWithinShape", userIsWithinShape);
@@ -605,6 +609,8 @@ public class DirectMentions extends Fragment {
                                                     loadingIcon.setVisibility(View.GONE);
 
                                                     mContext.startActivity(Activity);
+
+                                                    activity.finish();
                                                 } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
                                                     polygon.add(marker5Position);
                                                     polygon.add(marker4Position);
@@ -617,7 +623,7 @@ public class DirectMentions extends Fragment {
 
                                                     cancelToasts();
 
-                                                    Intent Activity = new Intent(mContext, Chat.class);
+                                                    Intent Activity = new Intent(mContext, Navigation.class);
                                                     Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
                                                     Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
                                                     Activity.putExtra("userIsWithinShape", userIsWithinShape);
@@ -625,6 +631,8 @@ public class DirectMentions extends Fragment {
                                                     loadingIcon.setVisibility(View.GONE);
 
                                                     mContext.startActivity(Activity);
+
+                                                    activity.finish();
                                                 } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
                                                     polygon.add(marker4Position);
                                                     polygon.add(marker3Position);
@@ -636,7 +644,7 @@ public class DirectMentions extends Fragment {
 
                                                     cancelToasts();
 
-                                                    Intent Activity = new Intent(mContext, Chat.class);
+                                                    Intent Activity = new Intent(mContext, Navigation.class);
                                                     Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
                                                     Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
                                                     Activity.putExtra("userIsWithinShape", userIsWithinShape);
@@ -644,6 +652,8 @@ public class DirectMentions extends Fragment {
                                                     loadingIcon.setVisibility(View.GONE);
 
                                                     mContext.startActivity(Activity);
+
+                                                    activity.finish();
                                                 } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
                                                     polygon.add(marker3Position);
                                                     polygon.add(marker2Position);
@@ -654,7 +664,7 @@ public class DirectMentions extends Fragment {
 
                                                     cancelToasts();
 
-                                                    Intent Activity = new Intent(mContext, Chat.class);
+                                                    Intent Activity = new Intent(mContext, Navigation.class);
                                                     Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
                                                     Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
                                                     Activity.putExtra("userIsWithinShape", userIsWithinShape);
@@ -662,6 +672,8 @@ public class DirectMentions extends Fragment {
                                                     loadingIcon.setVisibility(View.GONE);
 
                                                     mContext.startActivity(Activity);
+
+                                                    activity.finish();
                                                 } else {
                                                     polygon.add(marker2Position);
                                                     polygon.add(marker1Position);
@@ -671,7 +683,7 @@ public class DirectMentions extends Fragment {
 
                                                     cancelToasts();
 
-                                                    Intent Activity = new Intent(mContext, Chat.class);
+                                                    Intent Activity = new Intent(mContext, Navigation.class);
                                                     Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
                                                     Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
                                                     Activity.putExtra("userIsWithinShape", userIsWithinShape);
@@ -679,6 +691,8 @@ public class DirectMentions extends Fragment {
                                                     loadingIcon.setVisibility(View.GONE);
 
                                                     mContext.startActivity(Activity);
+
+                                                    activity.finish();
                                                 }
                                             }
                                         }
@@ -740,7 +754,7 @@ public class DirectMentions extends Fragment {
 
                                                             cancelToasts();
 
-                                                            Intent Activity = new Intent(mContext, Chat.class);
+                                                            Intent Activity = new Intent(mContext, Navigation.class);
                                                             Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
                                                             Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
                                                             Activity.putExtra("userIsWithinShape", userIsWithinShape);
@@ -748,6 +762,8 @@ public class DirectMentions extends Fragment {
                                                             loadingIcon.setVisibility(View.GONE);
 
                                                             mContext.startActivity(Activity);
+
+                                                            activity.finish();
                                                         }
                                                     }
                                                 }
@@ -818,7 +834,7 @@ public class DirectMentions extends Fragment {
 
                                                         cancelToasts();
 
-                                                        Intent Activity = new Intent(mContext, Chat.class);
+                                                        Intent Activity = new Intent(mContext, Navigation.class);
                                                         Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
                                                         Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
                                                         Activity.putExtra("userIsWithinShape", userIsWithinShape);
@@ -826,6 +842,8 @@ public class DirectMentions extends Fragment {
                                                         loadingIcon.setVisibility(View.GONE);
 
                                                         mContext.startActivity(Activity);
+
+                                                        activity.finish();
                                                     } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
                                                         polygon.add(marker6Position);
                                                         polygon.add(marker5Position);
@@ -839,7 +857,7 @@ public class DirectMentions extends Fragment {
 
                                                         cancelToasts();
 
-                                                        Intent Activity = new Intent(mContext, Chat.class);
+                                                        Intent Activity = new Intent(mContext, Navigation.class);
                                                         Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
                                                         Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
                                                         Activity.putExtra("userIsWithinShape", userIsWithinShape);
@@ -847,6 +865,8 @@ public class DirectMentions extends Fragment {
                                                         loadingIcon.setVisibility(View.GONE);
 
                                                         mContext.startActivity(Activity);
+
+                                                        activity.finish();
                                                     } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
                                                         polygon.add(marker5Position);
                                                         polygon.add(marker4Position);
@@ -859,7 +879,7 @@ public class DirectMentions extends Fragment {
 
                                                         cancelToasts();
 
-                                                        Intent Activity = new Intent(mContext, Chat.class);
+                                                        Intent Activity = new Intent(mContext, Navigation.class);
                                                         Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
                                                         Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
                                                         Activity.putExtra("userIsWithinShape", userIsWithinShape);
@@ -867,6 +887,8 @@ public class DirectMentions extends Fragment {
                                                         loadingIcon.setVisibility(View.GONE);
 
                                                         mContext.startActivity(Activity);
+
+                                                        activity.finish();
                                                     } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
                                                         polygon.add(marker4Position);
                                                         polygon.add(marker3Position);
@@ -878,7 +900,7 @@ public class DirectMentions extends Fragment {
 
                                                         cancelToasts();
 
-                                                        Intent Activity = new Intent(mContext, Chat.class);
+                                                        Intent Activity = new Intent(mContext, Navigation.class);
                                                         Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
                                                         Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
                                                         Activity.putExtra("userIsWithinShape", userIsWithinShape);
@@ -886,6 +908,8 @@ public class DirectMentions extends Fragment {
                                                         loadingIcon.setVisibility(View.GONE);
 
                                                         mContext.startActivity(Activity);
+
+                                                        activity.finish();
                                                     } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
                                                         polygon.add(marker3Position);
                                                         polygon.add(marker2Position);
@@ -896,7 +920,7 @@ public class DirectMentions extends Fragment {
 
                                                         cancelToasts();
 
-                                                        Intent Activity = new Intent(mContext, Chat.class);
+                                                        Intent Activity = new Intent(mContext, Navigation.class);
                                                         Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
                                                         Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
                                                         Activity.putExtra("userIsWithinShape", userIsWithinShape);
@@ -904,6 +928,8 @@ public class DirectMentions extends Fragment {
                                                         loadingIcon.setVisibility(View.GONE);
 
                                                         mContext.startActivity(Activity);
+
+                                                        activity.finish();
                                                     } else {
                                                         polygon.add(marker2Position);
                                                         polygon.add(marker1Position);
@@ -913,7 +939,7 @@ public class DirectMentions extends Fragment {
 
                                                         cancelToasts();
 
-                                                        Intent Activity = new Intent(mContext, Chat.class);
+                                                        Intent Activity = new Intent(mContext, Navigation.class);
                                                         Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
                                                         Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
                                                         Activity.putExtra("userIsWithinShape", userIsWithinShape);
@@ -921,6 +947,8 @@ public class DirectMentions extends Fragment {
                                                         loadingIcon.setVisibility(View.GONE);
 
                                                         mContext.startActivity(Activity);
+
+                                                        activity.finish();
                                                     }
                                                 }
                                             }
@@ -983,7 +1011,7 @@ public class DirectMentions extends Fragment {
 
                                                             cancelToasts();
 
-                                                            Intent Activity = new Intent(mContext, Chat.class);
+                                                            Intent Activity = new Intent(mContext, Navigation.class);
                                                             Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
                                                             Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
                                                             Activity.putExtra("userIsWithinShape", userIsWithinShape);
@@ -991,6 +1019,8 @@ public class DirectMentions extends Fragment {
                                                             loadingIcon.setVisibility(View.GONE);
 
                                                             mContext.startActivity(Activity);
+
+                                                            activity.finish();
                                                         }
                                                     }
                                                 }
@@ -1061,7 +1091,7 @@ public class DirectMentions extends Fragment {
 
                                                         cancelToasts();
 
-                                                        Intent Activity = new Intent(mContext, Chat.class);
+                                                        Intent Activity = new Intent(mContext, Navigation.class);
                                                         Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
                                                         Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
                                                         Activity.putExtra("userIsWithinShape", userIsWithinShape);
@@ -1069,6 +1099,8 @@ public class DirectMentions extends Fragment {
                                                         loadingIcon.setVisibility(View.GONE);
 
                                                         mContext.startActivity(Activity);
+
+                                                        activity.finish();
                                                     } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
                                                         polygon.add(marker6Position);
                                                         polygon.add(marker5Position);
@@ -1082,7 +1114,7 @@ public class DirectMentions extends Fragment {
 
                                                         cancelToasts();
 
-                                                        Intent Activity = new Intent(mContext, Chat.class);
+                                                        Intent Activity = new Intent(mContext, Navigation.class);
                                                         Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
                                                         Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
                                                         Activity.putExtra("userIsWithinShape", userIsWithinShape);
@@ -1090,6 +1122,8 @@ public class DirectMentions extends Fragment {
                                                         loadingIcon.setVisibility(View.GONE);
 
                                                         mContext.startActivity(Activity);
+
+                                                        activity.finish();
                                                     } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
                                                         polygon.add(marker5Position);
                                                         polygon.add(marker4Position);
@@ -1102,7 +1136,7 @@ public class DirectMentions extends Fragment {
 
                                                         cancelToasts();
 
-                                                        Intent Activity = new Intent(mContext, Chat.class);
+                                                        Intent Activity = new Intent(mContext, Navigation.class);
                                                         Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
                                                         Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
                                                         Activity.putExtra("userIsWithinShape", userIsWithinShape);
@@ -1110,6 +1144,8 @@ public class DirectMentions extends Fragment {
                                                         loadingIcon.setVisibility(View.GONE);
 
                                                         mContext.startActivity(Activity);
+
+                                                        activity.finish();
                                                     } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
                                                         polygon.add(marker4Position);
                                                         polygon.add(marker3Position);
@@ -1121,7 +1157,7 @@ public class DirectMentions extends Fragment {
 
                                                         cancelToasts();
 
-                                                        Intent Activity = new Intent(mContext, Chat.class);
+                                                        Intent Activity = new Intent(mContext, Navigation.class);
                                                         Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
                                                         Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
                                                         Activity.putExtra("userIsWithinShape", userIsWithinShape);
@@ -1129,6 +1165,8 @@ public class DirectMentions extends Fragment {
                                                         loadingIcon.setVisibility(View.GONE);
 
                                                         mContext.startActivity(Activity);
+
+                                                        activity.finish();
                                                     } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
                                                         polygon.add(marker3Position);
                                                         polygon.add(marker2Position);
@@ -1139,7 +1177,7 @@ public class DirectMentions extends Fragment {
 
                                                         cancelToasts();
 
-                                                        Intent Activity = new Intent(mContext, Chat.class);
+                                                        Intent Activity = new Intent(mContext, Navigation.class);
                                                         Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
                                                         Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
                                                         Activity.putExtra("userIsWithinShape", userIsWithinShape);
@@ -1147,6 +1185,8 @@ public class DirectMentions extends Fragment {
                                                         loadingIcon.setVisibility(View.GONE);
 
                                                         mContext.startActivity(Activity);
+
+                                                        activity.finish();
                                                     } else {
                                                         polygon.add(marker2Position);
                                                         polygon.add(marker1Position);
@@ -1156,7 +1196,7 @@ public class DirectMentions extends Fragment {
 
                                                         cancelToasts();
 
-                                                        Intent Activity = new Intent(mContext, Chat.class);
+                                                        Intent Activity = new Intent(mContext, Navigation.class);
                                                         Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
                                                         Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
                                                         Activity.putExtra("userIsWithinShape", userIsWithinShape);
@@ -1164,6 +1204,8 @@ public class DirectMentions extends Fragment {
                                                         loadingIcon.setVisibility(View.GONE);
 
                                                         mContext.startActivity(Activity);
+
+                                                        activity.finish();
                                                     }
                                                 }
                                             }

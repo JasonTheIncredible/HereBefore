@@ -1,7 +1,6 @@
 package co.clixel.herebefore;
 
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 
 import androidx.annotation.NonNull;
