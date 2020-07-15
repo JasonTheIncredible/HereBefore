@@ -63,20 +63,23 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
 
                 case "toggleTheme": {
 
-                    SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getContext());
+                    if (getContext() != null) {
 
-                    boolean theme = sharedPreferences.getBoolean(KEY_THEME_SWITCH, false);
+                        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getContext());
 
-                    if (theme) {
+                        boolean theme = sharedPreferences.getBoolean(KEY_THEME_SWITCH, false);
 
-                        // Set to light mode.
-                        AppCompatDelegate.setDefaultNightMode(
-                                AppCompatDelegate.MODE_NIGHT_NO);
-                    } else {
+                        if (theme) {
 
-                        // Set to dark mode.
-                        AppCompatDelegate.setDefaultNightMode(
-                                AppCompatDelegate.MODE_NIGHT_YES);
+                            // Set to light mode.
+                            AppCompatDelegate.setDefaultNightMode(
+                                    AppCompatDelegate.MODE_NIGHT_NO);
+                        } else {
+
+                            // Set to dark mode.
+                            AppCompatDelegate.setDefaultNightMode(
+                                    AppCompatDelegate.MODE_NIGHT_YES);
+                        }
                     }
 
                     break;

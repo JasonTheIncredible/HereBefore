@@ -58,7 +58,7 @@ public class DirectMentions extends Fragment {
     private static int index = -1, top = -1, last, mentionCount = 0, mentionCount1 = 0;
     private DatabaseReference databaseReferenceOne, databaseReferenceTwo, databaseReferenceCircles, databaseReferencePolygons;
     private ValueEventListener eventListenerOne, eventListenerTwo, eventListenerCircles, eventListenerPolygons;
-    private LinearLayoutManager directMentionsRecyclerViewLinearLayoutManager = new LinearLayoutManager(getContext());
+    private LinearLayoutManager directMentionsRecyclerViewLinearLayoutManager;
     private boolean theme, firstLoad, userIsWithinShape;
     private View loadingIcon;
     private SharedPreferences sharedPreferences;
@@ -77,6 +77,8 @@ public class DirectMentions extends Fragment {
 
         directMentionsRecyclerView = rootView.findViewById(R.id.mentionsList);
         loadingIcon = rootView.findViewById(R.id.loadingIcon);
+
+        directMentionsRecyclerViewLinearLayoutManager = new LinearLayoutManager(getActivity());
 
         mContext = getContext();
         activity = getActivity();
@@ -328,6 +330,7 @@ public class DirectMentions extends Fragment {
         if (directMentionsRecyclerView != null) {
 
             directMentionsRecyclerView.clearOnScrollListeners();
+            directMentionsRecyclerView.setAdapter(null);
         }
 
         if (eventListenerOne != null) {

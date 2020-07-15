@@ -143,7 +143,7 @@ public class Chat extends Fragment implements
     private ImageView imageView, videoImageView;
     private Uri imageURI, videoURI;
     private StorageTask uploadTask;
-    private LinearLayoutManager chatRecyclerViewLinearLayoutManager = new LinearLayoutManager(this.getContext());
+    private LinearLayoutManager chatRecyclerViewLinearLayoutManager;
     private File image, video;
     private byte[] byteArray;
     private View loadingIcon;
@@ -169,6 +169,8 @@ public class Chat extends Fragment implements
 
         mContext = getContext();
         activity = getActivity();
+
+        chatRecyclerViewLinearLayoutManager = new LinearLayoutManager(getActivity());
 
         AdView bannerAd = rootView.findViewById(R.id.chatBanner);
 
@@ -815,12 +817,14 @@ public class Chat extends Fragment implements
 
             chatRecyclerView.clearOnScrollListeners();
             chatRecyclerView.removeOnLayoutChangeListener(onLayoutChangeListener);
+            chatRecyclerView.setAdapter(null);
         }
 
         if (mentionsRecyclerView != null) {
 
             mentionsRecyclerView.clearOnScrollListeners();
             mentionsRecyclerView.removeOnLayoutChangeListener(onLayoutChangeListener);
+            mentionsRecyclerView.setAdapter(null);
         }
 
         if (eventListener != null) {

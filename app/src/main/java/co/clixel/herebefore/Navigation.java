@@ -7,7 +7,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
-import androidx.fragment.app.FragmentStatePagerAdapter;
+import androidx.fragment.app.FragmentPagerAdapter;
 import androidx.viewpager.widget.ViewPager;
 
 import com.gauravk.bubblenavigation.BubbleNavigationConstraintView;
@@ -16,6 +16,9 @@ import com.gauravk.bubblenavigation.listener.BubbleNavigationChangeListener;
 public class Navigation extends AppCompatActivity {
 
     static private boolean fromSettings = false, fromDMs = false;
+    private ViewPager viewPager;
+    private BubbleNavigationConstraintView bubbleNavigationConstraintView;
+    private ViewPager.OnPageChangeListener pagerListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,14 +43,18 @@ public class Navigation extends AppCompatActivity {
                 setContentView(R.layout.navigation);
             }
         }
+    }
+
+    @Override
+    protected void onStart() {
 
         ScreenSlidePagerAdapter pagerAdapter = new ScreenSlidePagerAdapter(getSupportFragmentManager());
 
-        final BubbleNavigationConstraintView bubbleNavigationConstraintView = findViewById(R.id.bottom_navigation_constraint);
+        bubbleNavigationConstraintView = findViewById(R.id.bottom_navigation_constraint);
 
-        final ViewPager viewPager = findViewById(R.id.view_pager);
+        viewPager = findViewById(R.id.view_pager);
         viewPager.setAdapter(pagerAdapter);
-        viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+        pagerListener = new ViewPager.OnPageChangeListener() {
 
             @Override
             public void onPageScrolled(int i, float v, int i1) {
@@ -62,28 +69,34 @@ public class Navigation extends AppCompatActivity {
             @Override
             public void onPageScrollStateChanged(int i) {
             }
-        });
+        };
 
-        bubbleNavigationConstraintView.setNavigationChangeListener(new BubbleNavigationChangeListener() {
+        viewPager.addOnPageChangeListener(pagerListener);
+
+        BubbleNavigationChangeListener bubbleListener = new BubbleNavigationChangeListener() {
 
             @Override
             public void onNavigationChanged(View view, int position) {
 
                 viewPager.setCurrentItem(position, true);
             }
-        });
+        };
+
+        bubbleNavigationConstraintView.setNavigationChangeListener(bubbleListener);
 
         if (fromSettings) {
 
             viewPager.setCurrentItem(1, true);
         }
+
+        super.onStart();
     }
 
     /**
      * A simple pager adapter that represents 5 ScreenSlidePageFragment objects, in
      * sequence.
      */
-    public static class ScreenSlidePagerAdapter extends FragmentStatePagerAdapter {
+    public static class ScreenSlidePagerAdapter extends FragmentPagerAdapter {
 
         ScreenSlidePagerAdapter(FragmentManager fm) {
 
@@ -130,5 +143,24 @@ public class Navigation extends AppCompatActivity {
                 return 3;
             }
         }
+    }
+
+    @Override
+    public void onStop() {
+
+        if (viewPager != null) {
+
+            if (pagerListener != null) {
+
+                viewPager.removeOnPageChangeListener(pagerListener);
+            }
+        }
+
+        if (bubbleNavigationConstraintView != null) {
+
+            bubbleNavigationConstraintView.setNavigationChangeListener(null);
+        }
+
+        super.onStop();
     }
 }
