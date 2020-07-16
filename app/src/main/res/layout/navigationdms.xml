@@ -24,6 +24,7 @@
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:elevation="4dp"
+        android:padding="4dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
@@ -32,6 +33,7 @@
             android:id="@+id/nav_dm"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            app:bt_colorInactive="@color/gray"
             app:bt_icon="@drawable/ic_dm"
             app:bt_title="DMs" />
 
@@ -39,6 +41,7 @@
             android:id="@+id/nav_settings"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            app:bt_colorInactive="@color/gray"
             app:bt_icon="@drawable/ic_more_vert_white_24dp"
             app:bt_title="Settings" />
 

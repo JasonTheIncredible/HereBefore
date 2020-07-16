@@ -104,7 +104,8 @@ public class Map extends FragmentActivity implements
     private LocationProvider locationProvider;
     private FloatingActionButton dmButton;
 
-    // Customize both bottomNav bars to match color of activity.
+    // Returning to Navigation while on something other than Chat shows wrong fragment.
+    // Fix errors in Map.
     // Get rid of toggleTheme in settings or settingsFragment? Also make the transition from light mode to dark mode smoother.
     // Make user in recyclerView clickable and have it create a mentionable.
     // Go to random shape button.

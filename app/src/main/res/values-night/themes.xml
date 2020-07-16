@@ -8,6 +8,7 @@
         <item name="colorOnPrimary">@color/colorOnPrimaryNight</item>
         <item name="colorOnSecondary">@color/colorOnSecondaryNight</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDarkNight</item>
+        <item name="android:navigationBarColor">@color/colorOnSecondaryNight</item>
         <item name="colorAccent">@color/colorAccentNight</item>
         <item name="windowNoTitle">true</item>
     </style>
@@ -19,6 +20,7 @@
         <item name="colorOnPrimary">@color/colorOnPrimaryNight</item>
         <item name="colorOnSecondary">@color/colorOnSecondaryNight</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDarkNight</item>
+        <item name="android:navigationBarColor">@color/colorOnSecondaryNight</item>
         <item name="colorAccent">@color/colorAccentNight</item>
     </style>
 

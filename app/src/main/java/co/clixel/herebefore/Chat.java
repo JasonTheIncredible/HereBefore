@@ -142,17 +142,20 @@ public class Chat extends Fragment implements
     private PopupMenu mediaButtonMenu;
     private ImageView imageView, videoImageView;
     private Uri imageURI, videoURI;
-    private StorageTask uploadTask;
+    private StorageTask<?> uploadTask;
     private LinearLayoutManager chatRecyclerViewLinearLayoutManager;
+    private LinearLayoutManager mentionsRecyclerViewLinearLayoutManager;
     private File image, video;
     private byte[] byteArray;
     private View loadingIcon;
     private SharedPreferences sharedPreferences;
     private Toast shortToast, longToast;
     private static final String BUCKET = "text-suggestions";
+    public View rootView;
     private Context mContext;
-    private Activity activity;
-    private static final WordTokenizerConfig tokenizerConfig = new WordTokenizerConfig
+    private Activity mActivity;
+    private AdView bannerAd;
+    private WordTokenizerConfig tokenizerConfig = new WordTokenizerConfig
             .Builder()
             .setWordBreakChars(", ")
             .setExplicitChars("@")
@@ -165,14 +168,15 @@ public class Chat extends Fragment implements
                              Bundle savedInstanceState) {
 
         Log.i(TAG, "onCreateView()");
-        View rootView = inflater.inflate(R.layout.chat, container, false);
+        rootView = inflater.inflate(R.layout.chat, container, false);
 
         mContext = getContext();
-        activity = getActivity();
+        mActivity = getActivity();
 
-        chatRecyclerViewLinearLayoutManager = new LinearLayoutManager(getActivity());
+        chatRecyclerViewLinearLayoutManager = new LinearLayoutManager(mActivity);
+        mentionsRecyclerViewLinearLayoutManager = new LinearLayoutManager(mActivity);
 
-        AdView bannerAd = rootView.findViewById(R.id.chatBanner);
+        bannerAd = rootView.findViewById(R.id.chatBanner);
 
         // Search I/Ads: in Logcat to find ID and/or W/Ads for other info.
         // List<String> testDeviceIds = Collections.singletonList("814BF63877CBD71E91F9D7241907F4FF");
@@ -204,7 +208,7 @@ public class Chat extends Fragment implements
         }
 
         // Get info from Map.java
-        Bundle extras = activity.getIntent().getExtras();
+        Bundle extras = mActivity.getIntent().getExtras();
         if (extras != null) {
 
             directMentionsPosition = extras.getInt("directMentionsPosition");
@@ -465,6 +469,23 @@ public class Chat extends Fragment implements
             public void onClick(View view) {
 
                 Log.i(TAG, "onStart() -> sendButton -> onClick");
+
+                // Close keyboard.
+                if (mActivity.getCurrentFocus() != null) {
+
+                    InputMethodManager imm = (InputMethodManager) mActivity.getSystemService(Context.INPUT_METHOD_SERVICE);
+                    if (imm != null) {
+
+                        imm.hideSoftInputFromWindow(mActivity.getCurrentFocus().getWindowToken(), 0);
+                    } else {
+
+                        Log.e(TAG, "onStart() -> sendButton -> imm == null");
+                    }
+                    if (mInput != null) {
+
+                        mInput.clearFocus();
+                    }
+                }
 
                 // Prevent double clicking the send button.
                 if (sendButtonClicked) {
@@ -752,23 +773,6 @@ public class Chat extends Fragment implements
                         }
                     }
                 }
-
-                // Close keyboard.
-                if (activity.getCurrentFocus() != null) {
-
-                    InputMethodManager imm = (InputMethodManager) activity.getSystemService(Context.INPUT_METHOD_SERVICE);
-                    if (imm != null) {
-
-                        imm.hideSoftInputFromWindow(activity.getCurrentFocus().getWindowToken(), 0);
-                    } else {
-
-                        Log.e(TAG, "onStart() -> sendButton -> imm == null");
-                    }
-                    if (mInput != null) {
-
-                        mInput.clearFocus();
-                    }
-                }
             }
         });
 
@@ -823,7 +827,6 @@ public class Chat extends Fragment implements
         if (mentionsRecyclerView != null) {
 
             mentionsRecyclerView.clearOnScrollListeners();
-            mentionsRecyclerView.removeOnLayoutChangeListener(onLayoutChangeListener);
             mentionsRecyclerView.setAdapter(null);
         }
 
@@ -852,11 +855,59 @@ public class Chat extends Fragment implements
             mInput.setOnKeyListener(null);
             mInput.setQueryTokenReceiver(null);
             mInput.setSuggestionsVisibilityManager(null);
+            mInput.setTokenizer(null);
         }
 
         cancelToasts();
 
         super.onStop();
+    }
+
+    @Override
+    public void onDestroyView() {
+
+        Log.i(TAG, "onDestroyView()");
+
+        if (rootView != null) {
+
+            rootView = null;
+        }
+
+        if (mContext != null) {
+
+            mContext = null;
+        }
+
+        if (mActivity != null) {
+
+            mActivity = null;
+        }
+
+        if (chatRecyclerViewLinearLayoutManager != null) {
+
+            chatRecyclerViewLinearLayoutManager = null;
+        }
+
+        if (mentionsRecyclerViewLinearLayoutManager != null) {
+
+            mentionsRecyclerViewLinearLayoutManager = null;
+        }
+
+        if (bannerAd != null) {
+
+            bannerAd = null;
+        }
+
+        mediaButton = null;
+        imageView = null;
+        videoImageView = null;
+        mInput = null;
+        sendButton = null;
+        chatRecyclerView = null;
+        mentionsRecyclerView = null;
+        loadingIcon = null;
+
+        super.onDestroyView();
     }
 
     protected void loadPreferences() {
@@ -1067,7 +1118,7 @@ public class Chat extends Fragment implements
 
             loadPreferences();
 
-            Bundle extras = activity.getIntent().getExtras();
+            Bundle extras = mActivity.getIntent().getExtras();
             if (extras != null) {
 
                 directMentionsPosition = extras.getInt("directMentionsPosition");
@@ -1298,7 +1349,7 @@ public class Chat extends Fragment implements
 
         MentionsAdapter adapter = new MentionsAdapter(mContext, suggestions);
         mentionsRecyclerView.swapAdapter(adapter, true);
-        mentionsRecyclerView.setLayoutManager(new LinearLayoutManager(mContext));
+        mentionsRecyclerView.setLayoutManager(mentionsRecyclerViewLinearLayoutManager);
         boolean display = suggestions.size() > 0;
         displaySuggestions(display);
     }
@@ -1596,7 +1647,7 @@ public class Chat extends Fragment implements
 
         if (!listPermissionsNeeded.isEmpty()) {
 
-            ActivityCompat.requestPermissions(activity, listPermissionsNeeded.toArray(new String[0]), Request_ID_Take_Photo);
+            ActivityCompat.requestPermissions(mActivity, listPermissionsNeeded.toArray(new String[0]), Request_ID_Take_Photo);
             return false;
         }
 
@@ -1632,7 +1683,7 @@ public class Chat extends Fragment implements
 
         if (!listPermissionsNeeded.isEmpty()) {
 
-            ActivityCompat.requestPermissions(activity, listPermissionsNeeded.toArray(new String[0]), Request_ID_Record_Video);
+            ActivityCompat.requestPermissions(mActivity, listPermissionsNeeded.toArray(new String[0]), Request_ID_Record_Video);
             return false;
         }
 
@@ -1761,7 +1812,7 @@ public class Chat extends Fragment implements
 
         // Permission was granted, yay! Do the task you need to do.
         Intent cameraIntent = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
-        if (cameraIntent.resolveActivity(activity.getPackageManager()) != null) {
+        if (cameraIntent.resolveActivity(mActivity.getPackageManager()) != null) {
 
             // Create the File where the photo should go
             File photoFile = null;
@@ -1792,7 +1843,7 @@ public class Chat extends Fragment implements
 
         // Permission was granted, yay! Do the task you need to do.
         Intent videoIntent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
-        if (videoIntent.resolveActivity(activity.getPackageManager()) != null) {
+        if (videoIntent.resolveActivity(mActivity.getPackageManager()) != null) {
 
             // Create the File where the video should go
             File videoFile = null;
@@ -2012,7 +2063,7 @@ public class Chat extends Fragment implements
 
         // Create an image file name
         String imageFileName = "HereBefore_" + System.currentTimeMillis() + "_jpeg";
-        File storageDir = activity.getCacheDir();
+        File storageDir = mActivity.getCacheDir();
         image = File.createTempFile(
                 imageFileName,  /* prefix */
                 ".jpeg",         /* suffix */
@@ -2028,7 +2079,7 @@ public class Chat extends Fragment implements
 
         // Create a video file name
         String videoFileName = "HereBefore_" + System.currentTimeMillis() + "_mp4";
-        File storageDir = activity.getCacheDir();
+        File storageDir = mActivity.getCacheDir();
         video = File.createTempFile(
                 videoFileName,  /* prefix */
                 ".mp4",         /* suffix */
@@ -2157,7 +2208,7 @@ public class Chat extends Fragment implements
 
         Log.i(TAG, "getExtension()");
 
-        ContentResolver cr = activity.getContentResolver();
+        ContentResolver cr = mActivity.getContentResolver();
         MimeTypeMap mimeTypeMap = MimeTypeMap.getSingleton();
         return mimeTypeMap.getExtensionFromMimeType(cr.getType(uri));
     }

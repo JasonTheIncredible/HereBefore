@@ -1,7 +1,9 @@
 package co.clixel.herebefore;
 
+import android.content.Context;
 import android.os.Bundle;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -63,6 +65,12 @@ public class Navigation extends AppCompatActivity {
             @Override
             public void onPageSelected(int i) {
 
+                // Close the keyboard when switching fragments.
+                InputMethodManager imm = (InputMethodManager)getApplication().getSystemService(Context.INPUT_METHOD_SERVICE);
+                if (imm != null) {
+
+                    imm.hideSoftInputFromWindow(getWindow().getDecorView().getWindowToken(), 0);
+                }
                 bubbleNavigationConstraintView.setCurrentActiveItem(i);
             }
 

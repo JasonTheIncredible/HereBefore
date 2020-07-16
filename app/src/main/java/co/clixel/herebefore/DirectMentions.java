@@ -65,7 +65,8 @@ public class DirectMentions extends Fragment {
     private Toast longToast, noDMsToast;
     private Double userLatitude, userLongitude;
     private Context mContext;
-    private Activity activity;
+    private Activity mActivity;
+    private View rootView;
 
     @NonNull
     @Override
@@ -73,21 +74,22 @@ public class DirectMentions extends Fragment {
                              Bundle savedInstanceState) {
 
         Log.i(TAG, "onCreateView()");
-        View rootView = inflater.inflate(R.layout.directmentions, container, false);
+        rootView = inflater.inflate(R.layout.directmentions, container, false);
+
+        mContext = getContext();
+        mActivity = getActivity();
 
         directMentionsRecyclerView = rootView.findViewById(R.id.mentionsList);
         loadingIcon = rootView.findViewById(R.id.loadingIcon);
 
-        directMentionsRecyclerViewLinearLayoutManager = new LinearLayoutManager(getActivity());
+        directMentionsRecyclerViewLinearLayoutManager = new LinearLayoutManager(mActivity);
 
-        mContext = getContext();
-        activity = getActivity();
         // Set to true to scroll to the bottom of directMentionsRecyclerView.
         firstLoad = true;
 
-        if (activity != null) {
+        if (mActivity != null) {
 
-            Bundle extras = activity.getIntent().getExtras();
+            Bundle extras = mActivity.getIntent().getExtras();
             if (extras != null) {
 
                 userLatitude = extras.getDouble("userLatitude");
@@ -348,6 +350,41 @@ public class DirectMentions extends Fragment {
         super.onStop();
     }
 
+    @Override
+    public void onDestroyView() {
+
+        Log.i(TAG, "onDestroyView()");
+
+        if (rootView != null) {
+
+            rootView = null;
+        }
+
+        if (mContext != null) {
+
+            mContext = null;
+        }
+
+        if (mActivity != null) {
+
+            mActivity = null;
+        }
+
+        if (directMentionsRecyclerView != null) {
+
+            directMentionsRecyclerView = null;
+        }
+
+        if (directMentionsRecyclerViewLinearLayoutManager != null) {
+
+            directMentionsRecyclerViewLinearLayoutManager = null;
+        }
+
+        loadingIcon = null;
+
+        super.onDestroyView();
+    }
+
     private void cancelToasts() {
 
         if (longToast != null) {
@@ -510,7 +547,7 @@ public class DirectMentions extends Fragment {
 
                                                         mContext.startActivity(Activity);
 
-                                                        activity.finish();
+                                                        mActivity.finish();
                                                     }
                                                 }
                                             }
@@ -590,7 +627,7 @@ public class DirectMentions extends Fragment {
 
                                                     mContext.startActivity(Activity);
 
-                                                    activity.finish();
+                                                    mActivity.finish();
                                                 } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
                                                     polygon.add(marker6Position);
                                                     polygon.add(marker5Position);
@@ -613,7 +650,7 @@ public class DirectMentions extends Fragment {
 
                                                     mContext.startActivity(Activity);
 
-                                                    activity.finish();
+                                                    mActivity.finish();
                                                 } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
                                                     polygon.add(marker5Position);
                                                     polygon.add(marker4Position);
@@ -635,7 +672,7 @@ public class DirectMentions extends Fragment {
 
                                                     mContext.startActivity(Activity);
 
-                                                    activity.finish();
+                                                    mActivity.finish();
                                                 } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
                                                     polygon.add(marker4Position);
                                                     polygon.add(marker3Position);
@@ -656,7 +693,7 @@ public class DirectMentions extends Fragment {
 
                                                     mContext.startActivity(Activity);
 
-                                                    activity.finish();
+                                                    mActivity.finish();
                                                 } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
                                                     polygon.add(marker3Position);
                                                     polygon.add(marker2Position);
@@ -676,7 +713,7 @@ public class DirectMentions extends Fragment {
 
                                                     mContext.startActivity(Activity);
 
-                                                    activity.finish();
+                                                    mActivity.finish();
                                                 } else {
                                                     polygon.add(marker2Position);
                                                     polygon.add(marker1Position);
@@ -695,7 +732,7 @@ public class DirectMentions extends Fragment {
 
                                                     mContext.startActivity(Activity);
 
-                                                    activity.finish();
+                                                    mActivity.finish();
                                                 }
                                             }
                                         }
@@ -766,7 +803,7 @@ public class DirectMentions extends Fragment {
 
                                                             mContext.startActivity(Activity);
 
-                                                            activity.finish();
+                                                            mActivity.finish();
                                                         }
                                                     }
                                                 }
@@ -846,7 +883,7 @@ public class DirectMentions extends Fragment {
 
                                                         mContext.startActivity(Activity);
 
-                                                        activity.finish();
+                                                        mActivity.finish();
                                                     } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
                                                         polygon.add(marker6Position);
                                                         polygon.add(marker5Position);
@@ -869,7 +906,7 @@ public class DirectMentions extends Fragment {
 
                                                         mContext.startActivity(Activity);
 
-                                                        activity.finish();
+                                                        mActivity.finish();
                                                     } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
                                                         polygon.add(marker5Position);
                                                         polygon.add(marker4Position);
@@ -891,7 +928,7 @@ public class DirectMentions extends Fragment {
 
                                                         mContext.startActivity(Activity);
 
-                                                        activity.finish();
+                                                        mActivity.finish();
                                                     } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
                                                         polygon.add(marker4Position);
                                                         polygon.add(marker3Position);
@@ -912,7 +949,7 @@ public class DirectMentions extends Fragment {
 
                                                         mContext.startActivity(Activity);
 
-                                                        activity.finish();
+                                                        mActivity.finish();
                                                     } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
                                                         polygon.add(marker3Position);
                                                         polygon.add(marker2Position);
@@ -932,7 +969,7 @@ public class DirectMentions extends Fragment {
 
                                                         mContext.startActivity(Activity);
 
-                                                        activity.finish();
+                                                        mActivity.finish();
                                                     } else {
                                                         polygon.add(marker2Position);
                                                         polygon.add(marker1Position);
@@ -951,7 +988,7 @@ public class DirectMentions extends Fragment {
 
                                                         mContext.startActivity(Activity);
 
-                                                        activity.finish();
+                                                        mActivity.finish();
                                                     }
                                                 }
                                             }
@@ -1023,7 +1060,7 @@ public class DirectMentions extends Fragment {
 
                                                             mContext.startActivity(Activity);
 
-                                                            activity.finish();
+                                                            mActivity.finish();
                                                         }
                                                     }
                                                 }
@@ -1103,7 +1140,7 @@ public class DirectMentions extends Fragment {
 
                                                         mContext.startActivity(Activity);
 
-                                                        activity.finish();
+                                                        mActivity.finish();
                                                     } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
                                                         polygon.add(marker6Position);
                                                         polygon.add(marker5Position);
@@ -1126,7 +1163,7 @@ public class DirectMentions extends Fragment {
 
                                                         mContext.startActivity(Activity);
 
-                                                        activity.finish();
+                                                        mActivity.finish();
                                                     } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
                                                         polygon.add(marker5Position);
                                                         polygon.add(marker4Position);
@@ -1148,7 +1185,7 @@ public class DirectMentions extends Fragment {
 
                                                         mContext.startActivity(Activity);
 
-                                                        activity.finish();
+                                                        mActivity.finish();
                                                     } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
                                                         polygon.add(marker4Position);
                                                         polygon.add(marker3Position);
@@ -1169,7 +1206,7 @@ public class DirectMentions extends Fragment {
 
                                                         mContext.startActivity(Activity);
 
-                                                        activity.finish();
+                                                        mActivity.finish();
                                                     } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
                                                         polygon.add(marker3Position);
                                                         polygon.add(marker2Position);
@@ -1189,7 +1226,7 @@ public class DirectMentions extends Fragment {
 
                                                         mContext.startActivity(Activity);
 
-                                                        activity.finish();
+                                                        mActivity.finish();
                                                     } else {
                                                         polygon.add(marker2Position);
                                                         polygon.add(marker1Position);
@@ -1208,7 +1245,7 @@ public class DirectMentions extends Fragment {
 
                                                         mContext.startActivity(Activity);
 
-                                                        activity.finish();
+                                                        mActivity.finish();
                                                     }
                                                 }
                                             }
@@ -1253,7 +1290,7 @@ public class DirectMentions extends Fragment {
 
             loadPreferences();
 
-            Bundle extras = activity.getIntent().getExtras();
+            Bundle extras = mActivity.getIntent().getExtras();
             if (extras != null) {
 
                 userLatitude = extras.getDouble("userLatitude");
