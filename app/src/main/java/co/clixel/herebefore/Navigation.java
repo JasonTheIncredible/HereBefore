@@ -17,10 +17,11 @@ import com.gauravk.bubblenavigation.listener.BubbleNavigationChangeListener;
 
 public class Navigation extends AppCompatActivity {
 
-    static private boolean fromSettings = false, fromDMs = false;
+    static private boolean noChat = false, fromDMs = false, firstLoad = true;
     private ViewPager viewPager;
     private BubbleNavigationConstraintView bubbleNavigationConstraintView;
     private ViewPager.OnPageChangeListener pagerListener;
+    private int currentItem = -1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,16 +31,13 @@ public class Navigation extends AppCompatActivity {
         Bundle extras = getIntent().getExtras();
         if (extras != null) {
 
-            // If fromSettings or fromDMs is true, hide Chat, as user entered this activity without clicking a shape.
-            fromSettings = extras.getBoolean("fromSettings");
+            // If noChat is true, hide Chat, as user entered this activity without clicking a shape.
+            noChat = extras.getBoolean("noChat");
             fromDMs = extras.getBoolean("fromDMs");
 
-            if (fromSettings) {
+            if (noChat) {
 
-                setContentView(R.layout.navigationsettings);
-            } else if (fromDMs) {
-
-                setContentView(R.layout.navigationdms);
+                setContentView(R.layout.navigationnochat);
             } else {
 
                 setContentView(R.layout.navigation);
@@ -71,6 +69,7 @@ public class Navigation extends AppCompatActivity {
 
                     imm.hideSoftInputFromWindow(getWindow().getDecorView().getWindowToken(), 0);
                 }
+
                 bubbleNavigationConstraintView.setCurrentActiveItem(i);
             }
 
@@ -87,17 +86,39 @@ public class Navigation extends AppCompatActivity {
             public void onNavigationChanged(View view, int position) {
 
                 viewPager.setCurrentItem(position, true);
+
+                currentItem = viewPager.getCurrentItem();
             }
         };
 
         bubbleNavigationConstraintView.setNavigationChangeListener(bubbleListener);
 
-        if (fromSettings) {
+        // The user has changed the selected item. Reload with this selected item.
+        if (currentItem != -1) {
 
-            viewPager.setCurrentItem(1, true);
+            viewPager.setCurrentItem(currentItem, false);
+            bubbleNavigationConstraintView.setCurrentActiveItem(currentItem);
+        }
+
+        // If user didn't enter this activity from the DMs button,
+        // the layout doesn't include chat and this is the first time loading,
+        // set the current item as 1 (the settings tab).
+        if (!fromDMs && noChat && firstLoad) {
+
+            viewPager.setCurrentItem(1, false);
+            bubbleNavigationConstraintView.setCurrentActiveItem(1);
+            currentItem = 1;
         }
 
         super.onStart();
+    }
+
+    @Override
+    protected void onRestart() {
+
+        super.onRestart();
+
+        firstLoad = false;
     }
 
     /**
@@ -115,7 +136,7 @@ public class Navigation extends AppCompatActivity {
         @Override
         public Fragment getItem(int position) {
 
-            if (fromSettings || fromDMs) {
+            if (noChat) {
 
                 switch (position) {
                     case 0:
@@ -143,7 +164,7 @@ public class Navigation extends AppCompatActivity {
         @Override
         public int getCount() {
 
-            if (fromSettings || fromDMs) {
+            if (noChat) {
 
                 return 2;
             } else {
