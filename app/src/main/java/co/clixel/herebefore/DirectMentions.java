@@ -278,7 +278,7 @@ public class DirectMentions extends Fragment {
 
             cancelToasts();
 
-            Intent Activity = new Intent(mContext, co.clixel.herebefore.Settings.class);
+            Intent Activity = new Intent(mContext, co.clixel.herebefore.SettingsFragment.class);
 
             startActivity(Activity);
 
@@ -404,7 +404,7 @@ public class DirectMentions extends Fragment {
 
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
 
-        theme = sharedPreferences.getBoolean(co.clixel.herebefore.Settings.KEY_THEME_SWITCH, false);
+        theme = sharedPreferences.getBoolean(co.clixel.herebefore.SettingsFragment.KEY_THEME_SWITCH, false);
     }
 
     protected void updatePreferences() {
@@ -424,7 +424,7 @@ public class DirectMentions extends Fragment {
         }
 
         // This will allow the settings button to appear in Map.java.
-        sharedPreferences.edit().putBoolean(Settings.KEY_SIGN_OUT, true).apply();
+        sharedPreferences.edit().putBoolean(SettingsFragment.KEY_SIGN_OUT, true).apply();
     }
 
     private void initDirectMentionsAdapter() {
@@ -1453,7 +1453,7 @@ public class DirectMentions extends Fragment {
 
             SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
 
-            theme = sharedPreferences.getBoolean(co.clixel.herebefore.Settings.KEY_THEME_SWITCH, false);
+            theme = sharedPreferences.getBoolean(co.clixel.herebefore.SettingsFragment.KEY_THEME_SWITCH, false);
         }
     }
 

@@ -289,7 +289,7 @@ public class DeleteAccount extends AppCompatActivity {
 
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
 
-        theme = sharedPreferences.getBoolean(co.clixel.herebefore.Settings.KEY_THEME_SWITCH, false);
+        theme = sharedPreferences.getBoolean(co.clixel.herebefore.SettingsFragment.KEY_THEME_SWITCH, false);
     }
 
     protected void updatePreferences() {

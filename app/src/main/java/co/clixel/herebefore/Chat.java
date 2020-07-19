@@ -916,7 +916,7 @@ public class Chat extends Fragment implements
 
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
 
-        theme = sharedPreferences.getBoolean(co.clixel.herebefore.Settings.KEY_THEME_SWITCH, false);
+        theme = sharedPreferences.getBoolean(co.clixel.herebefore.SettingsFragment.KEY_THEME_SWITCH, false);
     }
 
     protected void updatePreferences() {
@@ -936,7 +936,7 @@ public class Chat extends Fragment implements
         }
 
         // This will allow the settings button to appear in Map.java.
-        sharedPreferences.edit().putBoolean(Settings.KEY_SIGN_OUT, true).apply();
+        sharedPreferences.edit().putBoolean(SettingsFragment.KEY_SIGN_OUT, true).apply();
     }
 
     private void initChatAdapter() {
@@ -1295,7 +1295,7 @@ public class Chat extends Fragment implements
 
             SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
 
-            theme = sharedPreferences.getBoolean(co.clixel.herebefore.Settings.KEY_THEME_SWITCH, false);
+            theme = sharedPreferences.getBoolean(co.clixel.herebefore.SettingsFragment.KEY_THEME_SWITCH, false);
         }
     }
 
@@ -1525,7 +1525,7 @@ public class Chat extends Fragment implements
 
             SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
 
-            theme = sharedPreferences.getBoolean(co.clixel.herebefore.Settings.KEY_THEME_SWITCH, false);
+            theme = sharedPreferences.getBoolean(co.clixel.herebefore.SettingsFragment.KEY_THEME_SWITCH, false);
         }
     }
 

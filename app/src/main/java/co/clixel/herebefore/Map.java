@@ -177,7 +177,7 @@ public class Map extends FragmentActivity implements
         }
 
         // Check if the user is logged in. If true, make the settings button visible.
-        boolean loggedIn = PreferenceManager.getDefaultSharedPreferences(this).getBoolean(co.clixel.herebefore.Settings.KEY_SIGN_OUT, false);
+        boolean loggedIn = PreferenceManager.getDefaultSharedPreferences(this).getBoolean(co.clixel.herebefore.SettingsFragment.KEY_SIGN_OUT, false);
 
         if (loggedIn) {
 
@@ -4464,7 +4464,7 @@ public class Map extends FragmentActivity implements
 
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
 
-        preferredMapType = sharedPreferences.getString(co.clixel.herebefore.Settings.KEY_MAP_TYPE, getResources().getString(R.string.hybrid_view));
+        preferredMapType = sharedPreferences.getString(co.clixel.herebefore.SettingsFragment.KEY_MAP_TYPE, getResources().getString(R.string.hybrid_view));
     }
 
     protected void updatePreferences() {

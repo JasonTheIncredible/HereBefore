@@ -15,8 +15,6 @@ import androidx.preference.PreferenceManager;
 import com.firebase.ui.auth.AuthUI;
 import com.mikepenz.aboutlibraries.LibsBuilder;
 
-import static co.clixel.herebefore.Settings.KEY_THEME_SWITCH;
-
 /**
  * A simple {@link Fragment} subclass.
  */
@@ -25,6 +23,11 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
 
     private DialogInterface.OnClickListener dialogClickListener;
     public static boolean themeToggled = false;
+    //public static final String KEY_NOTIFICATIONS_SWITCH = "notifications";
+    public static final String KEY_THEME_SWITCH = "toggleTheme";
+    public static final String KEY_MAP_TYPE = "mapTypePreference";
+    public static final String KEY_SIGN_OUT = "signOut";
+    // "FIREBASE_TOKEN" to find Firebase token for messaging.
 
     @Override
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
