@@ -24,6 +24,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
         PreferenceManager.OnPreferenceTreeClickListener {
 
     private DialogInterface.OnClickListener dialogClickListener;
+    public static boolean themeToggled = false;
 
     @Override
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
@@ -81,6 +82,9 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
                                     AppCompatDelegate.MODE_NIGHT_YES);
                         }
                     }
+
+                    // Used in Navigation.
+                    themeToggled = true;
 
                     break;
                 }

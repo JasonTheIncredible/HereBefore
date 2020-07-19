@@ -104,10 +104,9 @@ public class Map extends FragmentActivity implements
     private LocationProvider locationProvider;
     private FloatingActionButton dmButton;
 
-    // Get rid of toggleTheme in settings or settingsFragment? Also make the transition from light mode to dark mode smoother.
     // Make user in recyclerView clickable and have it create a mentionable.
     // Go to random shape button.
-    // Hide Chat bottom stuff until user clicks a button and wants to use it?
+    // Hide Chat bottom stuff until user clicks a button and wants to use it.
     // Make alert icon on directMention buttons when notification appears.
     // Use onChildAdded() or childEventListener in chat to limit data usage / Don't get new dataSnapshot every time in DirectMentions / Prevent directMentions from updating if it's not necessary. The nested dataSnapshot.getChildren() in DirectMentions is newly getting called for every mention. Fix this to cut down on processing / data usage. Maybe add real mention email to messageInformation for faster search in future?
     // When is token renewed / renew it (this means going through all Firebase email and checking token).

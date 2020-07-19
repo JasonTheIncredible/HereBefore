@@ -64,7 +64,7 @@ public class Navigation extends AppCompatActivity {
             public void onPageSelected(int i) {
 
                 // Close the keyboard when switching fragments.
-                InputMethodManager imm = (InputMethodManager)getApplication().getSystemService(Context.INPUT_METHOD_SERVICE);
+                InputMethodManager imm = (InputMethodManager) getApplication().getSystemService(Context.INPUT_METHOD_SERVICE);
                 if (imm != null) {
 
                     imm.hideSoftInputFromWindow(getWindow().getDecorView().getWindowToken(), 0);
@@ -110,7 +110,41 @@ public class Navigation extends AppCompatActivity {
             currentItem = 1;
         }
 
+        // The following is used if the user "reloads" the activity after clicking the toggle theme button in Settings.
+        if (fromDMs && !noChat && SettingsFragment.themeToggled) {
+
+            viewPager.setCurrentItem(1, false);
+            bubbleNavigationConstraintView.setCurrentActiveItem(1);
+            currentItem = 1;
+            SettingsFragment.themeToggled = false;
+        } else if (!fromDMs && !noChat && SettingsFragment.themeToggled) {
+
+            viewPager.setCurrentItem(2, false);
+            bubbleNavigationConstraintView.setCurrentActiveItem(2);
+            currentItem = 2;
+            SettingsFragment.themeToggled = false;
+        }
+
         super.onStart();
+    }
+
+    @Override
+    public void onStop() {
+
+        if (viewPager != null) {
+
+            if (pagerListener != null) {
+
+                viewPager.removeOnPageChangeListener(pagerListener);
+            }
+        }
+
+        if (bubbleNavigationConstraintView != null) {
+
+            bubbleNavigationConstraintView.setNavigationChangeListener(null);
+        }
+
+        super.onStop();
     }
 
     @Override
@@ -172,24 +206,5 @@ public class Navigation extends AppCompatActivity {
                 return 3;
             }
         }
-    }
-
-    @Override
-    public void onStop() {
-
-        if (viewPager != null) {
-
-            if (pagerListener != null) {
-
-                viewPager.removeOnPageChangeListener(pagerListener);
-            }
-        }
-
-        if (bubbleNavigationConstraintView != null) {
-
-            bubbleNavigationConstraintView.setNavigationChangeListener(null);
-        }
-
-        super.onStop();
     }
 }
