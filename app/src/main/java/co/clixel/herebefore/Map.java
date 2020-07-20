@@ -62,6 +62,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.Random;
 import java.util.UUID;
 
 import locationprovider.davidserrano.com.LocationProvider;
@@ -102,10 +103,8 @@ public class Map extends FragmentActivity implements
     private Toast longToast;
     private View loadingIcon;
     private LocationProvider locationProvider;
-    private FloatingActionButton dmButton;
+    private FloatingActionButton dmButton, randomButton;
 
-    // Make user in recyclerView clickable and have it create a mentionable.
-    // Go to random shape button.
     // Hide Chat bottom stuff until user clicks a button and wants to use it.
     // Make alert icon on directMention buttons when notification appears.
     // Use onChildAdded() or childEventListener in chat to limit data usage / Don't get new dataSnapshot every time in DirectMentions / Prevent directMentions from updating if it's not necessary. The nested dataSnapshot.getChildren() in DirectMentions is newly getting called for every mention. Fix this to cut down on processing / data usage. Maybe add real mention email to messageInformation for faster search in future?
@@ -156,6 +155,7 @@ public class Map extends FragmentActivity implements
         settingsButton = findViewById(R.id.settingsButton);
         chatViewsButton = findViewById(R.id.chatViewsButton);
         dmButton = findViewById(R.id.dmButton);
+        randomButton = findViewById(R.id.randomButton);
         createChatButton = findViewById(R.id.createChatButton);
         chatSizeSeekBar = findViewById(R.id.chatSizeSeekBar);
         chatSelectorSeekBar = findViewById(R.id.chatSelectorSeekBar);
@@ -305,6 +305,276 @@ public class Map extends FragmentActivity implements
                 } else {
 
                     checkLocationPermissions();
+                }
+            }
+        });
+
+        // Go to random shape.
+        randomButton.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+
+                Log.i(TAG, "onStart() -> randomButton -> onClick");
+
+                // RNG.
+                long time = System.currentTimeMillis();
+                if (time % 2 == 0) {
+
+                    firebaseCircles.addListenerForSingleValueEvent(new ValueEventListener() {
+
+                        @Override
+                        public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                            // Get a random child from Firebase.
+                            long children = dataSnapshot.getChildrenCount();
+                            int count = (int) children;
+                            int random = new Random().nextInt(count - 1);
+
+                            int i=0;
+                            for (DataSnapshot ds : dataSnapshot.getChildren()) {
+
+                                if (i == random) {
+
+                                    CameraPosition cameraPosition = new CameraPosition.Builder()
+                                            .target(new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue()))      // Sets the center of the map to user's location
+                                            .zoom(18)                   // Sets the zoom
+                                            .bearing(0)                // Sets the orientation of the camera
+                                            .tilt(0)                   // Sets the tilt of the camera
+                                            .build();                   // Creates a CameraPosition from the builder
+
+                                    // Move the camera to the user's location once the map is available.
+                                    mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition), 2000, null);
+
+                                    // Adjust boolean values to prevent this logic from being called again.
+                                    firstLoad = false;
+                                    cameraMoved = true;
+
+                                    // The following 3 boolean will determine when the loading icon will disappear. It should only disappear once the camera is adjusted and all shapes are loaded.
+                                    stillUpdatingCamera = false;
+                                    break;
+                                }
+
+                                i++;
+                            }
+                        }
+
+                        @Override
+                        public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                            Log.e(TAG, "DatabaseError");
+                            toastMessageLong(databaseError.getMessage());
+                        }
+                    });
+                } else {
+
+                    firebasePolygons.addListenerForSingleValueEvent(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                            // Get a random child from Firebase.
+                            long children = dataSnapshot.getChildrenCount();
+                            // If no children exist, try circles.
+                            if (children == 0) {
+
+                                firebaseCircles.addListenerForSingleValueEvent(new ValueEventListener() {
+
+                                    @Override
+                                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                                        // Get a random child from Firebase.
+                                        long children = dataSnapshot.getChildrenCount();
+                                        int count = (int) children;
+                                        int random = new Random().nextInt(count);
+
+                                        int i = 0;
+                                        for (DataSnapshot ds : dataSnapshot.getChildren()) {
+
+                                            if (i == random) {
+
+                                                CameraPosition cameraPosition = new CameraPosition.Builder()
+                                                        .target(new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue()))      // Sets the center of the map to user's location
+                                                        .zoom(18)                   // Sets the zoom
+                                                        .bearing(0)                // Sets the orientation of the camera
+                                                        .tilt(0)                   // Sets the tilt of the camera
+                                                        .build();                   // Creates a CameraPosition from the builder
+
+                                                // Move the camera to the user's location once the map is available.
+                                                mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition), 2000, null);
+
+                                                // Adjust boolean values to prevent this logic from being called again.
+                                                firstLoad = false;
+                                                cameraMoved = true;
+
+                                                // The following 3 boolean will determine when the loading icon will disappear. It should only disappear once the camera is adjusted and all shapes are loaded.
+                                                stillUpdatingCamera = false;
+                                                break;
+                                            }
+
+                                            i++;
+                                        }
+                                    }
+
+                                    @Override
+                                    public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                                        Log.e(TAG, "DatabaseError");
+                                        toastMessageLong(databaseError.getMessage());
+                                    }
+                                });
+
+                                return;
+                            }
+                            int count = (int) children;
+                            int random = new Random().nextInt(count - 1);
+
+                            int i=0;
+                            for (DataSnapshot ds : dataSnapshot.getChildren()) {
+
+                                if (i == random) {
+
+                                    LatLng marker3Position = null;
+                                    LatLng marker4Position = null;
+                                    LatLng marker5Position = null;
+                                    LatLng marker6Position = null;
+
+                                    LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                    if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                        marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                                    }
+                                    if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                        marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
+                                    }
+                                    if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                        marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
+                                    }
+                                    if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                        marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                                    }
+                                    if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
+                                        LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
+
+                                        CameraPosition cameraPosition = new CameraPosition.Builder()
+                                                .target(marker7Position)      // Sets the center of the map to user's location
+                                                .zoom(18)                   // Sets the zoom
+                                                .bearing(0)                // Sets the orientation of the camera
+                                                .tilt(0)                   // Sets the tilt of the camera
+                                                .build();                   // Creates a CameraPosition from the builder
+
+                                        // Move the camera to the user's location once the map is available.
+                                        mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition), 2000, null);
+
+                                        // Adjust boolean values to prevent this logic from being called again.
+                                        firstLoad = false;
+                                        cameraMoved = true;
+
+                                        // The following 3 boolean will determine when the loading icon will disappear. It should only disappear once the camera is adjusted and all shapes are loaded.
+                                        stillUpdatingCamera = false;
+                                        break;
+                                    } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                        CameraPosition cameraPosition = new CameraPosition.Builder()
+                                                .target(marker6Position)      // Sets the center of the map to user's location
+                                                .zoom(18)                   // Sets the zoom
+                                                .bearing(0)                // Sets the orientation of the camera
+                                                .tilt(0)                   // Sets the tilt of the camera
+                                                .build();                   // Creates a CameraPosition from the builder
+
+                                        // Move the camera to the user's location once the map is available.
+                                        mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition), 2000, null);
+
+                                        // Adjust boolean values to prevent this logic from being called again.
+                                        firstLoad = false;
+                                        cameraMoved = true;
+
+                                        // The following 3 boolean will determine when the loading icon will disappear. It should only disappear once the camera is adjusted and all shapes are loaded.
+                                        stillUpdatingCamera = false;
+                                        break;
+                                    } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                        CameraPosition cameraPosition = new CameraPosition.Builder()
+                                                .target(marker5Position)      // Sets the center of the map to user's location
+                                                .zoom(18)                   // Sets the zoom
+                                                .bearing(0)                // Sets the orientation of the camera
+                                                .tilt(0)                   // Sets the tilt of the camera
+                                                .build();                   // Creates a CameraPosition from the builder
+
+                                        // Move the camera to the user's location once the map is available.
+                                        mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition), 2000, null);
+
+                                        // Adjust boolean values to prevent this logic from being called again.
+                                        firstLoad = false;
+                                        cameraMoved = true;
+
+                                        // The following 3 boolean will determine when the loading icon will disappear. It should only disappear once the camera is adjusted and all shapes are loaded.
+                                        stillUpdatingCamera = false;
+                                        break;
+                                    } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                        CameraPosition cameraPosition = new CameraPosition.Builder()
+                                                .target(marker4Position)      // Sets the center of the map to user's location
+                                                .zoom(18)                   // Sets the zoom
+                                                .bearing(0)                // Sets the orientation of the camera
+                                                .tilt(0)                   // Sets the tilt of the camera
+                                                .build();                   // Creates a CameraPosition from the builder
+
+                                        // Move the camera to the user's location once the map is available.
+                                        mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition), 2000, null);
+
+                                        // Adjust boolean values to prevent this logic from being called again.
+                                        firstLoad = false;
+                                        cameraMoved = true;
+
+                                        // The following 3 boolean will determine when the loading icon will disappear. It should only disappear once the camera is adjusted and all shapes are loaded.
+                                        stillUpdatingCamera = false;
+                                        break;
+                                    } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                        CameraPosition cameraPosition = new CameraPosition.Builder()
+                                                .target(marker3Position)      // Sets the center of the map to user's location
+                                                .zoom(18)                   // Sets the zoom
+                                                .bearing(0)                // Sets the orientation of the camera
+                                                .tilt(0)                   // Sets the tilt of the camera
+                                                .build();                   // Creates a CameraPosition from the builder
+
+                                        // Move the camera to the user's location once the map is available.
+                                        mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition), 2000, null);
+
+                                        // Adjust boolean values to prevent this logic from being called again.
+                                        firstLoad = false;
+                                        cameraMoved = true;
+
+                                        // The following 3 boolean will determine when the loading icon will disappear. It should only disappear once the camera is adjusted and all shapes are loaded.
+                                        stillUpdatingCamera = false;
+                                        break;
+                                    } else {
+                                        CameraPosition cameraPosition = new CameraPosition.Builder()
+                                                .target(marker2Position)      // Sets the center of the map to user's location
+                                                .zoom(18)                   // Sets the zoom
+                                                .bearing(0)                // Sets the orientation of the camera
+                                                .tilt(0)                   // Sets the tilt of the camera
+                                                .build();                   // Creates a CameraPosition from the builder
+
+                                        // Move the camera to the user's location once the map is available.
+                                        mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition), 2000, null);
+
+                                        // Adjust boolean values to prevent this logic from being called again.
+                                        firstLoad = false;
+                                        cameraMoved = true;
+
+                                        // The following 3 boolean will determine when the loading icon will disappear. It should only disappear once the camera is adjusted and all shapes are loaded.
+                                        stillUpdatingCamera = false;
+                                        break;
+                                    }
+                                }
+
+                                i++;
+                            }
+                        }
+
+                        @Override
+                        public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                            Log.e(TAG, "DatabaseError");
+                            toastMessageLong(databaseError.getMessage());
+                        }
+                    });
                 }
             }
         });
@@ -8110,6 +8380,8 @@ public class Map extends FragmentActivity implements
 
         dmButton.setBackgroundTintList(ContextCompat.getColorStateList(this, R.color.purple));
 
+        randomButton.setBackgroundTintList(ContextCompat.getColorStateList(this, R.color.purple));
+
         // Remove the polygon and markers.
         if (newPolygon != null) {
 
@@ -8466,6 +8738,8 @@ public class Map extends FragmentActivity implements
         settingsButton.setBackgroundResource(R.drawable.ic_more_vert_yellow_24dp);
 
         dmButton.setBackgroundTintList(ContextCompat.getColorStateList(this, R.color.yellow));
+
+        randomButton.setBackgroundTintList(ContextCompat.getColorStateList(this, R.color.yellow));
 
         // Remove the polygon and markers.
         if (newPolygon != null) {
