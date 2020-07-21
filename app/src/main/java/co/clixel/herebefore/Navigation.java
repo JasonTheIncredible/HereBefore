@@ -136,6 +136,7 @@ public class Navigation extends AppCompatActivity {
             if (pagerListener != null) {
 
                 viewPager.removeOnPageChangeListener(pagerListener);
+                viewPager = null;
             }
         }
 

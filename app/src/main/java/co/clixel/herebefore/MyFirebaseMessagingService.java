@@ -1,10 +1,12 @@
 package co.clixel.herebefore;
 
+import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -44,22 +46,23 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     @Override
     public void onMessageReceived(@NonNull RemoteMessage remoteMessage) {
 
+        super.onMessageReceived(remoteMessage);
+
         Log.d(TAG, "onMessageReceived: New incoming message.");
         String title = remoteMessage.getData().get("title");
         String message = remoteMessage.getData().get("body");
-        String clickAction = remoteMessage.getData().get("click_action");
         String notificationId = remoteMessage.getData().get("notification_id");
-        sendMessageNotification(title, message, clickAction, notificationId);
+        sendMessageNotification(title, message, notificationId);
     }
 
     /**
      * Build a push notification for a chat message
      */
-    private void sendMessageNotification(String title, String message, String clickAction, String notificationId) {
+    private void sendMessageNotification(String title, String message, String notificationId) {
 
         Log.d(TAG, "sendChatmessageNotification: building a chatmessage notification");
 
-        Intent intent = new Intent(clickAction);
+        Intent intent = new Intent(getBaseContext(), Map.class);
         intent.putExtra("notification_id", notificationId);
 
         PendingIntent pendingIntent = PendingIntent.getActivity(this, PENDING_INTENT_REQ_CODE,
@@ -81,6 +84,12 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
         if (mNotificationManager != null) {
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+
+                NotificationChannel channel = new NotificationChannel(DEFAULT_NOTIFICATION_CHANNEL_ID, "Default channel", NotificationManager.IMPORTANCE_DEFAULT);
+                mNotificationManager.createNotificationChannel(channel);
+            }
 
             mNotificationManager.notify((int) System.currentTimeMillis(), builder.build());
         }

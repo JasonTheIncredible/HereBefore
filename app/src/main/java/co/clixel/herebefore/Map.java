@@ -105,8 +105,10 @@ public class Map extends FragmentActivity implements
     private LocationProvider locationProvider;
     private FloatingActionButton dmButton, randomButton;
 
-    // Hide Chat bottom stuff until user clicks a button and wants to use it.
-    // Make alert icon on directMention buttons when notification appears.
+    // Add a "DM waiting" visual on Map and possibly highlight new messages.
+    // Change color for highlighted Chat message from DirectMentions for non-dark mode.
+    // Fix map button color on emulator.
+    // "You have no direct mentions" toast issue in fragment when DMs exist.
     // Use onChildAdded() or childEventListener in chat to limit data usage / Don't get new dataSnapshot every time in DirectMentions / Prevent directMentions from updating if it's not necessary. The nested dataSnapshot.getChildren() in DirectMentions is newly getting called for every mention. Fix this to cut down on processing / data usage. Maybe add real mention email to messageInformation for faster search in future?
     // When is token renewed / renew it (this means going through all Firebase email and checking token).
     // Delete Firebase info when user deletes account (delete userUUID and don't show it in Chat / DM so user knows they can't @ them and so the system doesn't try).
