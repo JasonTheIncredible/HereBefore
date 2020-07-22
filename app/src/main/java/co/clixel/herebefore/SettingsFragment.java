@@ -23,7 +23,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
 
     private DialogInterface.OnClickListener dialogClickListener;
     public static boolean themeToggled = false;
-    //public static final String KEY_NOTIFICATIONS_SWITCH = "notifications";
+    public static final String KEY_NOTIFICATIONS_SWITCH = "notifications";
     public static final String KEY_THEME_SWITCH = "toggleTheme";
     public static final String KEY_MAP_TYPE = "mapTypePreference";
     public static final String KEY_SIGN_OUT = "signOut";

@@ -111,8 +111,6 @@ public class Map extends FragmentActivity implements
     // "You have no direct mentions" toast issue in fragment when DMs exist.
     // Use onChildAdded() or childEventListener in chat to limit data usage / Don't get new dataSnapshot every time in DirectMentions / Prevent directMentions from updating if it's not necessary. The nested dataSnapshot.getChildren() in DirectMentions is newly getting called for every mention. Fix this to cut down on processing / data usage. Maybe add real mention email to messageInformation for faster search in future?
     // When is token renewed / renew it (this means going through all Firebase email and checking token).
-    // Delete Firebase info when user deletes account (delete userUUID and don't show it in Chat / DM so user knows they can't @ them and so the system doesn't try).
-    // Add notifications adjustments to settings.
     // Test location services / doesn't seem to work on first install and in new places.
     // Check if polygon is simple or complex before entering Chat?
     // Use network for more precise GPS?
@@ -179,7 +177,7 @@ public class Map extends FragmentActivity implements
         }
 
         // Check if the user is logged in. If true, make the settings button visible.
-        boolean loggedIn = PreferenceManager.getDefaultSharedPreferences(this).getBoolean(co.clixel.herebefore.SettingsFragment.KEY_SIGN_OUT, false);
+        boolean loggedIn = PreferenceManager.getDefaultSharedPreferences(this).getBoolean(SettingsFragment.KEY_SIGN_OUT, false);
 
         if (loggedIn) {
 
@@ -4736,7 +4734,7 @@ public class Map extends FragmentActivity implements
 
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
 
-        preferredMapType = sharedPreferences.getString(co.clixel.herebefore.SettingsFragment.KEY_MAP_TYPE, getResources().getString(R.string.hybrid_view));
+        preferredMapType = sharedPreferences.getString(SettingsFragment.KEY_MAP_TYPE, getResources().getString(R.string.hybrid_view));
     }
 
     protected void updatePreferences() {
@@ -4754,9 +4752,9 @@ public class Map extends FragmentActivity implements
 
                     Log.i(TAG, "updatePreferences() -> Road Map");
 
-                    purpleAdjustmentsForMap();
-
                     mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
+
+                    purpleAdjustmentsForMap();
                 } else {
 
                     Log.e(TAG, "updatePreferences() -> Road Map -> mMap == null");

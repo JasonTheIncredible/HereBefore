@@ -916,7 +916,7 @@ public class Chat extends Fragment implements
 
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
 
-        theme = sharedPreferences.getBoolean(co.clixel.herebefore.SettingsFragment.KEY_THEME_SWITCH, false);
+        theme = sharedPreferences.getBoolean(SettingsFragment.KEY_THEME_SWITCH, false);
     }
 
     protected void updatePreferences() {
@@ -1295,7 +1295,7 @@ public class Chat extends Fragment implements
 
             SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
 
-            theme = sharedPreferences.getBoolean(co.clixel.herebefore.SettingsFragment.KEY_THEME_SWITCH, false);
+            theme = sharedPreferences.getBoolean(SettingsFragment.KEY_THEME_SWITCH, false);
         }
     }
 
@@ -1525,7 +1525,7 @@ public class Chat extends Fragment implements
 
             SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
 
-            theme = sharedPreferences.getBoolean(co.clixel.herebefore.SettingsFragment.KEY_THEME_SWITCH, false);
+            theme = sharedPreferences.getBoolean(SettingsFragment.KEY_THEME_SWITCH, false);
         }
     }
 

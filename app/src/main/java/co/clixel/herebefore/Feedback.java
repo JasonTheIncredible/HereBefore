@@ -141,7 +141,7 @@ public class Feedback extends AppCompatActivity {
 
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
 
-        theme = sharedPreferences.getBoolean(co.clixel.herebefore.SettingsFragment.KEY_THEME_SWITCH, false);
+        theme = sharedPreferences.getBoolean(SettingsFragment.KEY_THEME_SWITCH, false);
     }
 
     protected void updatePreferences() {

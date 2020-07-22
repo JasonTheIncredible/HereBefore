@@ -404,7 +404,7 @@ public class DirectMentions extends Fragment {
 
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
 
-        theme = sharedPreferences.getBoolean(co.clixel.herebefore.SettingsFragment.KEY_THEME_SWITCH, false);
+        theme = sharedPreferences.getBoolean(SettingsFragment.KEY_THEME_SWITCH, false);
     }
 
     protected void updatePreferences() {
@@ -1453,7 +1453,7 @@ public class DirectMentions extends Fragment {
 
             SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
 
-            theme = sharedPreferences.getBoolean(co.clixel.herebefore.SettingsFragment.KEY_THEME_SWITCH, false);
+            theme = sharedPreferences.getBoolean(SettingsFragment.KEY_THEME_SWITCH, false);
         }
     }
 

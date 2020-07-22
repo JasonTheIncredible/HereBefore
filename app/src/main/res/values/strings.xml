@@ -45,11 +45,4 @@
         <item>Hybrid view</item>
         <item>Terrain view</item>
     </string-array>
-
-    <string-array name="pref_map_types_values">
-        <item>Road map view</item>
-        <item>Satellite view</item>
-        <item>Hybrid view</item>
-        <item>Terrain view</item>
-    </string-array>
 </resources>
