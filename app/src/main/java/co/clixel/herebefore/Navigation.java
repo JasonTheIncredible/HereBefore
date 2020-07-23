@@ -17,7 +17,7 @@ import com.gauravk.bubblenavigation.listener.BubbleNavigationChangeListener;
 
 public class Navigation extends AppCompatActivity {
 
-    static private boolean noChat = false, fromDMs = false, firstLoad = true;
+    static private boolean noChat = false, fromDMs = false;
     private ViewPager viewPager;
     private BubbleNavigationConstraintView bubbleNavigationConstraintView;
     private ViewPager.OnPageChangeListener pagerListener;
@@ -100,28 +100,18 @@ public class Navigation extends AppCompatActivity {
             bubbleNavigationConstraintView.setCurrentActiveItem(currentItem);
         }
 
-        // If user didn't enter this activity from the DMs button,
-        // the layout doesn't include chat and this is the first time loading,
-        // set the current item as 1 (the settings tab).
-        if (!fromDMs && noChat && firstLoad) {
-
-            viewPager.setCurrentItem(1, false);
-            bubbleNavigationConstraintView.setCurrentActiveItem(1);
-            currentItem = 1;
-        }
-
         // The following is used if the user "reloads" the activity after clicking the toggle theme button in Settings.
-        if (fromDMs && !noChat && SettingsFragment.themeToggled) {
-
-            viewPager.setCurrentItem(1, false);
-            bubbleNavigationConstraintView.setCurrentActiveItem(1);
-            currentItem = 1;
-            SettingsFragment.themeToggled = false;
-        } else if (!fromDMs && !noChat && SettingsFragment.themeToggled) {
+        if (!fromDMs && !noChat && SettingsFragment.themeToggled) {
 
             viewPager.setCurrentItem(2, false);
             bubbleNavigationConstraintView.setCurrentActiveItem(2);
             currentItem = 2;
+            SettingsFragment.themeToggled = false;
+        } else if (noChat && SettingsFragment.themeToggled) {
+
+            viewPager.setCurrentItem(1, false);
+            bubbleNavigationConstraintView.setCurrentActiveItem(1);
+            currentItem = 1;
             SettingsFragment.themeToggled = false;
         }
 
@@ -152,8 +142,6 @@ public class Navigation extends AppCompatActivity {
     protected void onRestart() {
 
         super.onRestart();
-
-        firstLoad = false;
     }
 
     /**

@@ -39,6 +39,7 @@ import android.util.Base64;
 import android.util.Base64OutputStream;
 import android.util.Log;
 import android.view.ContextMenu;
+import android.view.ContextThemeWrapper;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -168,7 +169,12 @@ public class Chat extends Fragment implements
                              Bundle savedInstanceState) {
 
         Log.i(TAG, "onCreateView()");
-        rootView = inflater.inflate(R.layout.chat, container, false);
+
+        Context contextThemeWrapper = new ContextThemeWrapper(getActivity(), R.style.AppTheme);
+
+        LayoutInflater localInflater = inflater.cloneInContext(contextThemeWrapper);
+
+        rootView = localInflater.inflate(R.layout.chat, container, false);
 
         mContext = getContext();
         mActivity = getActivity();
@@ -1274,7 +1280,13 @@ public class Chat extends Fragment implements
 
                 if (position == directMentionsPosition) {
 
-                    holder.itemView.setBackgroundColor(Color.parseColor("#1338BE"));
+                    if (theme) {
+
+                        holder.itemView.setBackgroundColor(Color.parseColor("#859FFF"));
+                    } else {
+
+                        holder.itemView.setBackgroundColor(Color.parseColor("#1338BE"));
+                    }
                 }
             }
         }

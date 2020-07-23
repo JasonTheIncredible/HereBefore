@@ -105,10 +105,8 @@ public class Map extends FragmentActivity implements
     private LocationProvider locationProvider;
     private FloatingActionButton dmButton, randomButton;
 
-    // Add a "DM waiting" visual on Map and possibly highlight new messages.
-    // Change color for highlighted Chat message from DirectMentions for non-dark mode.
-    // Fix map button color on emulator.
     // "You have no direct mentions" toast issue in fragment when DMs exist.
+    // DM button badge number if user has DMs and highlight them when entering DMs.
     // Use onChildAdded() or childEventListener in chat to limit data usage / Don't get new dataSnapshot every time in DirectMentions / Prevent directMentions from updating if it's not necessary. The nested dataSnapshot.getChildren() in DirectMentions is newly getting called for every mention. Fix this to cut down on processing / data usage. Maybe add real mention email to messageInformation for faster search in future?
     // When is token renewed / renew it (this means going through all Firebase email and checking token).
     // Test location services / doesn't seem to work on first install and in new places.
