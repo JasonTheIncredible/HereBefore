@@ -62,11 +62,12 @@ public class DirectMentions extends Fragment {
     private boolean theme, firstLoad, userIsWithinShape;
     private View loadingIcon;
     private SharedPreferences sharedPreferences;
-    private Toast longToast, noDMsToast;
+    private Toast longToast;
     private Double userLatitude, userLongitude;
     private Context mContext;
     private Activity mActivity;
     private View rootView;
+    private TextView noDMsTextView;
 
     @NonNull
     @Override
@@ -81,6 +82,7 @@ public class DirectMentions extends Fragment {
 
         directMentionsRecyclerView = rootView.findViewById(R.id.mentionsList);
         loadingIcon = rootView.findViewById(R.id.loadingIcon);
+        noDMsTextView = rootView.findViewById(R.id.noDMsTextView);
 
         directMentionsRecyclerViewLinearLayoutManager = new LinearLayoutManager(mActivity);
 
@@ -391,11 +393,6 @@ public class DirectMentions extends Fragment {
 
             longToast.cancel();
         }
-
-        if (noDMsToast != null) {
-
-            noDMsToast.cancel();
-        }
     }
 
     protected void loadPreferences() {
@@ -455,9 +452,10 @@ public class DirectMentions extends Fragment {
 
         if (mUser.size() == 0) {
 
-            noDMsToast = Toast.makeText(mContext, "You have no direct mentions", Toast.LENGTH_LONG);
-            noDMsToast.setGravity(Gravity.CENTER, 0, 0);
-            noDMsToast.show();
+            noDMsTextView.setVisibility(View.VISIBLE);
+        } else {
+
+            noDMsTextView.setVisibility(View.GONE);
         }
 
         mentionCount = 0;

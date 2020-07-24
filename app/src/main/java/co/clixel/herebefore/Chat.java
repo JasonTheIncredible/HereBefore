@@ -1491,8 +1491,6 @@ public class Chat extends Fragment implements
 
             View view = LayoutInflater.from(mContext).inflate(R.layout.mentionsadapterlayout, parent, false);
 
-            loadPreferences();
-
             return new ViewHolder(view);
         }
 
@@ -1500,6 +1498,8 @@ public class Chat extends Fragment implements
         public void onBindViewHolder(@NonNull final ViewHolder holder, final int position) {
 
             holder.suggestion.setText(mSuggestions.get(position));
+
+            loadPreferences();
 
             // Clear list so if user deletes a mention, it won't appear in this list.
             allMentions.clear();
