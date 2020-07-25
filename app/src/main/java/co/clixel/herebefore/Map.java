@@ -30,6 +30,7 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
 import androidx.preference.PreferenceManager;
 
+import com.andremion.counterfab.CounterFab;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -81,9 +82,10 @@ public class Map extends FragmentActivity implements
     private Marker marker0, marker1, marker2, marker3, marker4, marker5, marker6, marker7;
     private Circle newCircle, circleTemp, mCircle = null;
     private Polygon newPolygon, polygonTemp, mPolygon = null;
-    private DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference(), firebaseCircles = rootRef.child("Circles"), firebasePolygons = rootRef.child("Polygons");
+    private DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference(), firebaseCircles = rootRef.child("Circles"), firebasePolygons = rootRef.child("Polygons"), databaseReferenceOne, databaseReferenceTwo;
+    private ValueEventListener eventListenerOne, eventListenerTwo;
     private SeekBar chatSizeSeekBar, chatSelectorSeekBar;
-    private String preferredMapType, shapeUUID, marker0ID, marker1ID, marker2ID, marker3ID, marker4ID, marker5ID, marker6ID, marker7ID, selectedOverlappingShapeUUID;
+    private String preferredMapType, shapeUUID, marker0ID, marker1ID, marker2ID, marker3ID, marker4ID, marker5ID, marker6ID, marker7ID, selectedOverlappingShapeUUID, email;
     private Button createChatButton, chatViewsButton, mapTypeButton, settingsButton;
     private PopupMenu popupMapType, popupChatViews, popupCreateChat;
     private boolean stillLoadingCircles = true, stillLoadingPolygons = true, stillUpdatingCamera = true;
@@ -99,28 +101,27 @@ public class Map extends FragmentActivity implements
     private ArrayList<Double> overlappingShapesCircleRadius = new ArrayList<>();
     private ArrayList<java.util.List<LatLng>> overlappingShapesPolygonVertices = new ArrayList<>();
     private float x, y;
-    private int chatsSize;
+    private int chatsSize, dmCounter = 0;
     private Toast longToast;
     private View loadingIcon;
     private LocationProvider locationProvider;
-    private FloatingActionButton dmButton, randomButton;
+    private FloatingActionButton randomButton;
+    private CounterFab dmButton;
 
-    // Make dark to light loading transition smoother.
-    // DM button badge number if user has DMs and highlight them when entering DMs.
-    // Use onChildAdded() or childEventListener in chat to limit data usage / Don't get new dataSnapshot every time in DirectMentions / Prevent directMentions from updating if it's not necessary. The nested dataSnapshot.getChildren() in DirectMentions is newly getting called for every mention. Fix this to cut down on processing / data usage. Maybe add real mention email to messageInformation for faster search in future?
     // When is token renewed / renew it (this means going through all Firebase email and checking token).
+    // Use onChildAdded() or childEventListener in chat to limit data usage / Don't get new dataSnapshot every time in DirectMentions / Prevent directMentions from updating if it's not necessary. The nested dataSnapshot.getChildren() in DirectMentions is newly getting called for every mention. Fix this to cut down on processing / data usage. Maybe add real mention email to messageInformation for faster search in future?
     // Test location services / doesn't seem to work on first install and in new places.
     // Check if polygon is simple or complex before entering Chat?
     // Use network for more precise GPS?
-    // Check for warning messages.
-    // Make sure aboutLibraries is up to date.
-    // More ads.
     // AppIntro on Github.
     // Put the snapshots in reverse order before search for faster results.
     // Make sure Firebase has enough bandwidth.
     // Make sure the secret stuff is secret.
-    // Check on feedback.
     // Decrease app size / Check on accumulation of size over time.
+    // Check on feedback.
+    // Make sure aboutLibraries is up to date.
+    // Check warning messages.
+    // More ads.
     // Add preference for shape color.
     // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.
     // Leave messages in locations that users get notified of when they enter the area.
@@ -172,6 +173,18 @@ public class Map extends FragmentActivity implements
                 == PackageManager.PERMISSION_GRANTED)) {
 
             checkLocationPermissions();
+        }
+
+        // Used to set dmButton badge number.
+        // If user has a Google account, get email one way. Else, get email another way.
+        GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(this);
+        if (acct != null) {
+
+            email = acct.getEmail();
+        } else {
+
+            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+            email = sharedPreferences.getString("userToken", "null");
         }
 
         // Check if the user is logged in. If true, make the settings button visible.
@@ -253,6 +266,77 @@ public class Map extends FragmentActivity implements
                 }
             }
         });
+
+        // If new DMs, update dmButton badge.
+        if (email != null) {
+
+            databaseReferenceOne = rootRef.child("MessageThreads");
+            eventListenerOne = new ValueEventListener() {
+
+                @Override
+                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                    for (final DataSnapshot ds : dataSnapshot.getChildren()) {
+
+                        if (ds.child("removedMentionDuplicates").getValue() != null) {
+
+                            for (final DataSnapshot mention : ds.child("removedMentionDuplicates").getChildren()) {
+
+                                if (mention.getValue() != null) {
+
+                                    dmCounter = 0;
+                                    databaseReferenceTwo = rootRef.child("MessageThreads");
+                                    eventListenerTwo = new ValueEventListener() {
+
+                                        @Override
+                                        public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                                            for (DataSnapshot dss : dataSnapshot.getChildren()) {
+
+                                                String userUUID = (String) dss.child("userUUID").getValue();
+                                                if (mention.getValue().toString().equals(userUUID)) {
+
+                                                    String userEmail = (String) dss.child("email").getValue();
+                                                    if (userEmail != null) {
+
+                                                        if (userEmail.equals(email)) {
+
+                                                            Boolean seenByUser = (Boolean) ds.child("seenByUser").getValue();
+                                                            if (!seenByUser) {
+
+                                                                dmCounter++;
+                                                                dmButton.setCount(dmCounter);
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        @Override
+                                        public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                                            toastMessageLong(databaseError.getMessage());
+                                        }
+                                    };
+
+                                    // Add the second Firebase listener.
+                                    databaseReferenceTwo.addListenerForSingleValueEvent(eventListenerTwo);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                    toastMessageLong(databaseError.getMessage());
+                }
+            };
+
+            // Add the first Firebase listener.
+            databaseReferenceOne.addValueEventListener(eventListenerOne);
+        }
 
         // Go to DMs.
         dmButton.setOnClickListener(new View.OnClickListener() {
@@ -2414,6 +2498,12 @@ public class Map extends FragmentActivity implements
         stillLoadingPolygons = true;
         // Update the following boolean to prevent the loading icon from appearing after the user restarts.
         stillUpdatingCamera = false;
+        dmCounter = 0;
+
+        if (dmButton != null) {
+
+            dmButton.setCount(0);
+        }
 
         // Clear map before adding new Firebase circles in onStart() to prevent overlap.
         // Set shape to null so changing chatSizeSeekBar in onStart() will create a circle and createChatButton will reset itself.
@@ -2659,6 +2749,26 @@ public class Map extends FragmentActivity implements
         if (dmButton != null) {
 
             dmButton.setOnClickListener(null);
+        }
+
+        if (databaseReferenceOne != null) {
+
+            databaseReferenceOne.removeEventListener(eventListenerOne);
+        }
+
+        if (databaseReferenceTwo != null) {
+
+            databaseReferenceTwo.removeEventListener(eventListenerTwo);
+        }
+
+        if (eventListenerOne != null) {
+
+            eventListenerOne = null;
+        }
+
+        if (eventListenerTwo != null) {
+
+            eventListenerTwo = null;
         }
 
         if (createChatButton != null) {

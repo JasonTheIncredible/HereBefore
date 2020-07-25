@@ -7,10 +7,10 @@ import java.util.ArrayList;
 @Keep
 class MessageInformation {
 
-    public ArrayList removedMentionDuplicates;
+    public ArrayList<String> removedMentionDuplicates;
     public String userUUID, message, shapeUUID, token, imageURL, videoURL, email;
     public Object date;
-    public Boolean userIsWithinShape, shapeIsCircle;
+    public Boolean userIsWithinShape, shapeIsCircle, seenByUser;
     public int position;
 
     @Keep
@@ -53,7 +53,7 @@ class MessageInformation {
         this.token = token;
     }
 
-    public void setRemovedMentionDuplicates(ArrayList removedMentionDuplicates) {
+    public void setRemovedMentionDuplicates(ArrayList<String> removedMentionDuplicates) {
         this.removedMentionDuplicates = removedMentionDuplicates;
     }
 
@@ -63,5 +63,9 @@ class MessageInformation {
 
     public void setShapeIsCircle(Boolean shapeIsCircle) {
         this.shapeIsCircle = shapeIsCircle;
+    }
+
+    public void setSeenByUser(Boolean seenByUser) {
+        this.seenByUser = seenByUser;
     }
 }

@@ -22,7 +22,6 @@ import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
@@ -124,8 +123,8 @@ public class Chat extends Fragment implements
     private static final String TAG = "Chat";
     private static final int Request_ID_Take_Photo = 1700, Request_ID_Record_Video = 1800;
     private MentionsEditText mInput;
-    private ArrayList<String> mTime = new ArrayList<>(), mUser = new ArrayList<>(), mImage = new ArrayList<>(), mVideo = new ArrayList<>(), mText = new ArrayList<>(), mSuggestions = new ArrayList<>(), allMentions = new ArrayList<>();
-    private ArrayList<Boolean> mUserIsWithinShape = new ArrayList<>();
+    private ArrayList<String> mTime, mUser, mImage, mVideo, mText, mSuggestions, allMentions;
+    private ArrayList<Boolean> mUserIsWithinShape;
     private ArrayList<String> removedMentionDuplicates;
     private RecyclerView chatRecyclerView, mentionsRecyclerView;
     private static int index = -1, top = -1, last;
@@ -133,7 +132,7 @@ public class Chat extends Fragment implements
     private DatabaseReference databaseReference;
     private ValueEventListener eventListener;
     private FloatingActionButton sendButton, mediaButton;
-    private boolean theme, firstLoad, needLoadingIcon = false, reachedEndOfRecyclerView = false, recyclerViewHasScrolled = false, messageSent = false, sendButtonClicked = false, mediaButtonMenuIsOpen, fileIsImage, checkPermissionsPicture, URIisFile,
+    private boolean firstLoad, needLoadingIcon = false, reachedEndOfRecyclerView = false, recyclerViewHasScrolled = false, messageSent = false, sendButtonClicked = false, mediaButtonMenuIsOpen, fileIsImage, checkPermissionsPicture, URIisFile,
             newShape, threeMarkers, fourMarkers, fiveMarkers, sixMarkers, sevenMarkers, eightMarkers, shapeIsCircle;
     private Boolean userIsWithinShape;
     private View.OnLayoutChangeListener onLayoutChangeListener;
@@ -149,7 +148,6 @@ public class Chat extends Fragment implements
     private File image, video;
     private byte[] byteArray;
     private View loadingIcon;
-    private SharedPreferences sharedPreferences;
     private Toast shortToast, longToast;
     private static final String BUCKET = "text-suggestions";
     public View rootView;
@@ -181,6 +179,16 @@ public class Chat extends Fragment implements
 
         chatRecyclerViewLinearLayoutManager = new LinearLayoutManager(mActivity);
         mentionsRecyclerViewLinearLayoutManager = new LinearLayoutManager(mActivity);
+
+        mTime = new ArrayList<>();
+        mUser = new ArrayList<>();
+        mImage = new ArrayList<>();
+        mVideo = new ArrayList<>();
+        mText = new ArrayList<>();
+        mSuggestions = new ArrayList<>();
+        allMentions = new ArrayList<>();
+        mUserIsWithinShape = new ArrayList<>();
+        removedMentionDuplicates = new ArrayList<>();
 
         bannerAd = rootView.findViewById(R.id.chatBanner);
 
@@ -276,10 +284,6 @@ public class Chat extends Fragment implements
 
         super.onStart();
         Log.i(TAG, "onStart()");
-
-        // Update to the user's preferences.
-        loadPreferences();
-        updatePreferences();
 
         // Clear text and prevent keyboard from opening.
         if (mInput != null) {
@@ -557,6 +561,7 @@ public class Chat extends Fragment implements
                                         // If user has a Google account, get email one way. Else, get email another way.
                                         GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
                                         String email;
+                                        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
                                         if (acct != null) {
                                             email = acct.getEmail();
                                         } else {
@@ -568,8 +573,11 @@ public class Chat extends Fragment implements
                                         // Get the token assigned by Firebase when the user signed up / signed in.
                                         String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
                                         messageInformation.setToken(token);
-                                        if (removedMentionDuplicates != null) {
+                                        if (removedMentionDuplicates.isEmpty()) {
+                                            messageInformation.setSeenByUser(true);
+                                        } else {
                                             messageInformation.setRemovedMentionDuplicates(removedMentionDuplicates);
+                                            messageInformation.setSeenByUser(false);
                                         }
                                         messageInformation.setUserIsWithinShape(userIsWithinShape);
                                         messageInformation.setShapeIsCircle(shapeIsCircle);
@@ -684,6 +692,7 @@ public class Chat extends Fragment implements
                                         // If user has a Google account, get email one way. Else, get email another way.
                                         GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
                                         String email;
+                                        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
                                         if (acct != null) {
                                             email = acct.getEmail();
                                         } else {
@@ -694,8 +703,11 @@ public class Chat extends Fragment implements
                                         // Get the token assigned by Firebase when the user signed up / signed in.
                                         String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
                                         messageInformation.setToken(token);
-                                        if (removedMentionDuplicates != null) {
+                                        if (removedMentionDuplicates.isEmpty()) {
+                                            messageInformation.setSeenByUser(true);
+                                        } else {
                                             messageInformation.setRemovedMentionDuplicates(removedMentionDuplicates);
+                                            messageInformation.setSeenByUser(false);
                                         }
                                         messageInformation.setUserIsWithinShape(userIsWithinShape);
                                         messageInformation.setShapeIsCircle(shapeIsCircle);
@@ -754,6 +766,7 @@ public class Chat extends Fragment implements
                             // If user has a Google account, get email one way. Else, get email another way.
                             GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
                             String email;
+                            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
                             if (acct != null) {
                                 email = acct.getEmail();
                             } else {
@@ -763,8 +776,11 @@ public class Chat extends Fragment implements
                             // Get the token assigned by Firebase when the user signed up / signed in.
                             String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
                             messageInformation.setToken(token);
-                            if (removedMentionDuplicates != null) {
+                            if (removedMentionDuplicates.isEmpty()) {
+                                messageInformation.setSeenByUser(true);
+                            } else {
                                 messageInformation.setRemovedMentionDuplicates(removedMentionDuplicates);
+                                messageInformation.setSeenByUser(false);
                             }
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
                             messageInformation.setShapeIsCircle(shapeIsCircle);
@@ -904,6 +920,16 @@ public class Chat extends Fragment implements
             bannerAd = null;
         }
 
+        mTime = null;
+        mUser = null;
+        mImage = null;
+        mVideo = null;
+        mText = null;
+        mSuggestions = null;
+        allMentions = null;
+        mUserIsWithinShape = null;
+        removedMentionDuplicates = null;
+
         mediaButton = null;
         imageView = null;
         videoImageView = null;
@@ -914,35 +940,6 @@ public class Chat extends Fragment implements
         loadingIcon = null;
 
         super.onDestroyView();
-    }
-
-    protected void loadPreferences() {
-
-        Log.i(TAG, "loadPreferences()");
-
-        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-
-        theme = sharedPreferences.getBoolean(SettingsFragment.KEY_THEME_SWITCH, false);
-    }
-
-    protected void updatePreferences() {
-
-        Log.i(TAG, "updatePreferences()");
-
-        if (theme) {
-
-            // Set to light mode.
-            AppCompatDelegate.setDefaultNightMode(
-                    AppCompatDelegate.MODE_NIGHT_NO);
-        } else {
-
-            // Set to dark mode.
-            AppCompatDelegate.setDefaultNightMode(
-                    AppCompatDelegate.MODE_NIGHT_YES);
-        }
-
-        // This will allow the settings button to appear in Map.java.
-        sharedPreferences.edit().putBoolean(SettingsFragment.KEY_SIGN_OUT, true).apply();
     }
 
     private void initChatAdapter() {
@@ -2725,6 +2722,7 @@ public class Chat extends Fragment implements
                             // If user has a Google account, get email one way. Else, get email another way.
                             GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
                             String email;
+                            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
                             if (acct != null) {
                                 email = acct.getEmail();
                             } else {
@@ -2735,8 +2733,11 @@ public class Chat extends Fragment implements
                             // Get the token assigned by Firebase when the user signed up / signed in.
                             String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
                             messageInformation.setToken(token);
-                            if (removedMentionDuplicates != null) {
+                            if (removedMentionDuplicates.isEmpty()) {
+                                messageInformation.setSeenByUser(true);
+                            } else {
                                 messageInformation.setRemovedMentionDuplicates(removedMentionDuplicates);
+                                messageInformation.setSeenByUser(false);
                             }
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
                             messageInformation.setShapeIsCircle(shapeIsCircle);
@@ -2878,6 +2879,7 @@ public class Chat extends Fragment implements
                             // If user has a Google account, get email one way. Else, get email another way.
                             GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
                             String email;
+                            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
                             if (acct != null) {
                                 email = acct.getEmail();
                             } else {
@@ -2888,8 +2890,11 @@ public class Chat extends Fragment implements
                             // Get the token assigned by Firebase when the user signed up / signed in.
                             String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
                             messageInformation.setToken(token);
-                            if (removedMentionDuplicates != null) {
+                            if (removedMentionDuplicates.isEmpty()) {
+                                messageInformation.setSeenByUser(true);
+                            } else {
                                 messageInformation.setRemovedMentionDuplicates(removedMentionDuplicates);
+                                messageInformation.setSeenByUser(false);
                             }
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
                             messageInformation.setShapeIsCircle(shapeIsCircle);
@@ -3031,6 +3036,7 @@ public class Chat extends Fragment implements
                             // If user has a Google account, get email one way. Else, get email another way.
                             GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
                             String email;
+                            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
                             if (acct != null) {
                                 email = acct.getEmail();
                             } else {
@@ -3041,8 +3047,11 @@ public class Chat extends Fragment implements
                             // Get the token assigned by Firebase when the user signed up / signed in.
                             String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
                             messageInformation.setToken(token);
-                            if (removedMentionDuplicates != null) {
+                            if (removedMentionDuplicates.isEmpty()) {
+                                messageInformation.setSeenByUser(true);
+                            } else {
                                 messageInformation.setRemovedMentionDuplicates(removedMentionDuplicates);
+                                messageInformation.setSeenByUser(false);
                             }
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
                             messageInformation.setShapeIsCircle(shapeIsCircle);

@@ -47,9 +47,9 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.1.0'
     implementation 'com.google.android.gms:play-services-maps:17.0.0'
     implementation 'com.google.android.gms:play-services-location:17.0.0'
-    implementation 'com.google.android.gms:play-services-auth:18.0.0'
+    implementation 'com.google.android.gms:play-services-auth:18.1.0'
     implementation 'com.google.firebase:firebase-storage:19.1.1'
-    implementation 'com.google.android.gms:play-services-ads-lite:19.2.0'
+    implementation 'com.google.android.gms:play-services-ads-lite:19.3.0'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     testImplementation 'junit:junit:4.13'
     androidTestImplementation 'androidx.test:runner:1.2.0'
@@ -96,6 +96,8 @@ dependencies {
     implementation 'com.linkedin.android.spyglass:spyglass:2.1.1'
 
     implementation 'com.gauravk.bubblenavigation:bubblenavigation:1.0.7'
+
+    implementation 'com.github.andremion:counterfab:1.2.2'
 
     // debugImplementation because LeakCanary should only run in debug builds.
     debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.4'

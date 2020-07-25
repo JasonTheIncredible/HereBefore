@@ -1,15 +1,18 @@
 package co.clixel.herebefore;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatDelegate;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentPagerAdapter;
+import androidx.preference.PreferenceManager;
 import androidx.viewpager.widget.ViewPager;
 
 import com.gauravk.bubblenavigation.BubbleNavigationConstraintView;
@@ -22,11 +25,17 @@ public class Navigation extends AppCompatActivity {
     private BubbleNavigationConstraintView bubbleNavigationConstraintView;
     private ViewPager.OnPageChangeListener pagerListener;
     private int currentItem = -1;
+    private SharedPreferences sharedPreferences;
+    private boolean theme;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
+
+        // Update to the user's preferences.
+        loadPreferences();
+        updatePreferences();
 
         Bundle extras = getIntent().getExtras();
         if (extras != null) {
@@ -43,6 +52,31 @@ public class Navigation extends AppCompatActivity {
                 setContentView(R.layout.navigation);
             }
         }
+    }
+
+    protected void loadPreferences() {
+
+        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+
+        theme = sharedPreferences.getBoolean(SettingsFragment.KEY_THEME_SWITCH, false);
+    }
+
+    protected void updatePreferences() {
+
+        if (theme) {
+
+            // Set to light mode.
+            AppCompatDelegate.setDefaultNightMode(
+                    AppCompatDelegate.MODE_NIGHT_NO);
+        } else {
+
+            // Set to dark mode.
+            AppCompatDelegate.setDefaultNightMode(
+                    AppCompatDelegate.MODE_NIGHT_YES);
+        }
+
+        // This will allow the settings button to appear in Map.java.
+        sharedPreferences.edit().putBoolean(SettingsFragment.KEY_SIGN_OUT, true).apply();
     }
 
     @Override

@@ -41,7 +41,7 @@
         android:layout_marginTop="60dp"
         android:background="@drawable/chatviews_button" />
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
+    <com.andremion.counterfab.CounterFab
         android:id="@+id/dmButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -52,6 +52,7 @@
         android:focusable="true"
         android:src="@drawable/ic_dm"
         android:visibility="gone"
+        app:badgeBackgroundColor="@color/red"
         app:fabSize="mini" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton

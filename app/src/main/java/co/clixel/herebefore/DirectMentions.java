@@ -21,7 +21,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatDelegate;
 import androidx.fragment.app.Fragment;
 import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -51,17 +50,16 @@ public class DirectMentions extends Fragment {
 
     private static final String TAG = "DirectMentions";
     private String email;
-    private ArrayList<String> mTime = new ArrayList<>(), mUser = new ArrayList<>(), mImage = new ArrayList<>(), mVideo = new ArrayList<>(), mText = new ArrayList<>(), mShapeUUID = new ArrayList<>();
-    private ArrayList<Boolean> mUserIsWithinShape = new ArrayList<>(), mShapeIsCircle = new ArrayList<>();
-    private ArrayList<Integer> mPosition = new ArrayList<>();
+    private ArrayList<String> mTime, mUser, mImage, mVideo, mText, mShapeUUID;
+    private ArrayList<Boolean> mUserIsWithinShape, mShapeIsCircle, mSeenByUser;
+    private ArrayList<Integer> mPosition, notSeenByUserList;
     private RecyclerView directMentionsRecyclerView;
-    private static int index = -1, top = -1, last, mentionCount = 0, mentionCount1 = 0;
+    private static int index = -1, top = -1, last, mentionCounter = 0, mentionCounter1 = 0;
     private DatabaseReference databaseReferenceOne, databaseReferenceTwo, databaseReferenceCircles, databaseReferencePolygons;
     private ValueEventListener eventListenerOne, eventListenerTwo, eventListenerCircles, eventListenerPolygons;
     private LinearLayoutManager directMentionsRecyclerViewLinearLayoutManager;
-    private boolean theme, firstLoad, userIsWithinShape;
+    private boolean firstLoad, userIsWithinShape;
     private View loadingIcon;
-    private SharedPreferences sharedPreferences;
     private Toast longToast;
     private Double userLatitude, userLongitude;
     private Context mContext;
@@ -85,6 +83,18 @@ public class DirectMentions extends Fragment {
         noDMsTextView = rootView.findViewById(R.id.noDMsTextView);
 
         directMentionsRecyclerViewLinearLayoutManager = new LinearLayoutManager(mActivity);
+
+        mTime = new ArrayList<>();
+        mUser = new ArrayList<>();
+        mImage = new ArrayList<>();
+        mVideo = new ArrayList<>();
+        mText = new ArrayList<>();
+        mShapeUUID = new ArrayList<>();
+        mUserIsWithinShape = new ArrayList<>();
+        mShapeIsCircle = new ArrayList<>();
+        mSeenByUser = new ArrayList<>();
+        mPosition = new ArrayList<>();
+        notSeenByUserList = new ArrayList<>();
 
         // Set to true to scroll to the bottom of directMentionsRecyclerView.
         firstLoad = true;
@@ -120,12 +130,8 @@ public class DirectMentions extends Fragment {
         super.onStart();
         Log.i(TAG, "onStart()");
 
-        // Update to the user's preferences.
-        loadPreferences();
-        updatePreferences();
-
-        mentionCount = 0;
-        mentionCount1 = 0;
+        mentionCounter = 0;
+        mentionCounter1 = 0;
 
         // If user has a Google account, get email one way. Else, get email another way.
         GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
@@ -134,6 +140,7 @@ public class DirectMentions extends Fragment {
             email = acct.getEmail();
         } else {
 
+            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
             email = sharedPreferences.getString("userToken", "null");
         }
 
@@ -157,6 +164,7 @@ public class DirectMentions extends Fragment {
                     mUserIsWithinShape.clear();
                     mShapeIsCircle.clear();
                     mPosition.clear();
+                    mSeenByUser.clear();
                 }
 
                 // Read RecyclerView scroll position (for use in initDirectMentionsAdapter()).
@@ -177,7 +185,7 @@ public class DirectMentions extends Fragment {
                             if (mention.getValue() != null) {
 
                                 // If mentionCount == mentionCount1, initialize the adapter.
-                                mentionCount++;
+                                mentionCounter++;
                                 databaseReferenceTwo = rootRef.child("MessageThreads");
                                 eventListenerTwo = new ValueEventListener() {
 
@@ -190,7 +198,7 @@ public class DirectMentions extends Fragment {
                                             if (mention.getValue().toString().equals(userUUID)) {
 
                                                 // If mentionCount == mentionCount1, initialize the adapter.
-                                                mentionCount1++;
+                                                mentionCounter1++;
                                                 String userEmail = (String) dss.child("email").getValue();
                                                 if (userEmail != null) {
 
@@ -205,6 +213,7 @@ public class DirectMentions extends Fragment {
                                                         Boolean userIsWithinShape = (Boolean) ds.child("userIsWithinShape").getValue();
                                                         Boolean shapeIsCircle = (Boolean) ds.child("shapeIsCircle").getValue();
                                                         Integer position = ((Long) ds.child("position").getValue()).intValue();
+                                                        Boolean seenByUser = (Boolean) ds.child("seenByUser").getValue();
                                                         DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
                                                         // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
                                                         // This will cause onDataChange to fire twice; optimizations could be made in the future.
@@ -225,6 +234,15 @@ public class DirectMentions extends Fragment {
                                                         mUserIsWithinShape.add(userIsWithinShape);
                                                         mShapeIsCircle.add(shapeIsCircle);
                                                         mPosition.add(position);
+                                                        mSeenByUser.add(seenByUser);
+
+                                                        // If this is a "new" DM, add it to the list (for use in initDirectMentionRecyclerView)
+                                                        // and update the child.
+                                                        if (!seenByUser) {
+
+                                                            notSeenByUserList.add(position);
+                                                            ds.child("seenByUser").getRef().setValue(true);
+                                                        }
                                                     }
                                                 }
                                             }
@@ -232,7 +250,7 @@ public class DirectMentions extends Fragment {
 
                                         // Prevent recyclerView from getting initialized more than once,
                                         // as the loading icon / toast is dependant on this happening only once.
-                                        if (mentionCount == mentionCount1) {
+                                        if (mentionCounter == mentionCounter1) {
 
                                             initDirectMentionsAdapter();
                                         }
@@ -382,6 +400,18 @@ public class DirectMentions extends Fragment {
             directMentionsRecyclerViewLinearLayoutManager = null;
         }
 
+        mTime = null;
+        mUser = null;
+        mImage = null;
+        mVideo = null;
+        mText = null;
+        mShapeUUID = null;
+        mUserIsWithinShape = null;
+        mShapeIsCircle = null;
+        mSeenByUser = null;
+        mPosition = null;
+        notSeenByUserList = null;
+
         loadingIcon = null;
 
         super.onDestroyView();
@@ -395,41 +425,12 @@ public class DirectMentions extends Fragment {
         }
     }
 
-    protected void loadPreferences() {
-
-        Log.i(TAG, "loadPreferences()");
-
-        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-
-        theme = sharedPreferences.getBoolean(SettingsFragment.KEY_THEME_SWITCH, false);
-    }
-
-    protected void updatePreferences() {
-
-        Log.i(TAG, "updatePreferences()");
-
-        if (theme) {
-
-            // Set to light mode.
-            AppCompatDelegate.setDefaultNightMode(
-                    AppCompatDelegate.MODE_NIGHT_NO);
-        } else {
-
-            // Set to dark mode.
-            AppCompatDelegate.setDefaultNightMode(
-                    AppCompatDelegate.MODE_NIGHT_YES);
-        }
-
-        // This will allow the settings button to appear in Map.java.
-        sharedPreferences.edit().putBoolean(SettingsFragment.KEY_SIGN_OUT, true).apply();
-    }
-
     private void initDirectMentionsAdapter() {
 
         // Initialize the RecyclerView.
         Log.i(TAG, "initDirectMentionsAdapter()");
 
-        DirectMentionsAdapter adapter = new DirectMentionsAdapter(mContext, mTime, mUser, mImage, mVideo, mText, mShapeUUID, mUserIsWithinShape, mShapeIsCircle, mPosition);
+        DirectMentionsAdapter adapter = new DirectMentionsAdapter(mContext, mTime, mUser, mImage, mVideo, mText, mShapeUUID, mUserIsWithinShape, mShapeIsCircle, mPosition, mSeenByUser);
         directMentionsRecyclerView.setAdapter(adapter);
         directMentionsRecyclerView.setLayoutManager(directMentionsRecyclerViewLinearLayoutManager);
 
@@ -458,8 +459,8 @@ public class DirectMentions extends Fragment {
             noDMsTextView.setVisibility(View.GONE);
         }
 
-        mentionCount = 0;
-        mentionCount1 = 0;
+        mentionCounter = 0;
+        mentionCounter1 = 0;
     }
 
     public class DirectMentionsAdapter extends RecyclerView.Adapter<DirectMentionsAdapter.ViewHolder> {
@@ -1266,7 +1267,7 @@ public class DirectMentions extends Fragment {
             }
         }
 
-        DirectMentionsAdapter(Context context, ArrayList<String> mMessageTime, ArrayList<String> mMessageUser, ArrayList<String> mMessageImage, ArrayList<String> mMessageImageVideo, ArrayList<String> mMessageText, ArrayList<String> mShapeUUID, ArrayList<Boolean> mUserIsWithinShape, ArrayList<Boolean> mShapeIsCircle, ArrayList<Integer> mPosition) {
+        DirectMentionsAdapter(Context context, ArrayList<String> mMessageTime, ArrayList<String> mMessageUser, ArrayList<String> mMessageImage, ArrayList<String> mMessageImageVideo, ArrayList<String> mMessageText, ArrayList<String> mShapeUUID, ArrayList<Boolean> mUserIsWithinShape, ArrayList<Boolean> mShapeIsCircle, ArrayList<Integer> mPosition, ArrayList<Boolean> mSeenByUser) {
 
             this.mContext = context;
             this.mMessageTime = mMessageTime;
@@ -1431,6 +1432,17 @@ public class DirectMentions extends Fragment {
                 } else {
 
                     holder.itemView.setBackgroundColor(Color.parseColor("#F2F2F2"));
+                }
+            }
+
+            if (notSeenByUserList.contains(mPosition.get(position))) {
+
+                if (theme) {
+
+                    holder.itemView.setBackgroundColor(Color.parseColor("#859FFF"));
+                } else {
+
+                    holder.itemView.setBackgroundColor(Color.parseColor("#1338BE"));
                 }
             }
         }

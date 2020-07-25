@@ -45,6 +45,10 @@ public class DeleteAccount extends AppCompatActivity {
 
         super.onCreate(savedInstanceState);
 
+        // Update to the user's preferences.
+        loadPreferences();
+        updatePreferences();
+
         setContentView(R.layout.deleteaccount);
 
         AdView bannerAd = findViewById(R.id.chatBanner);
@@ -116,14 +120,32 @@ public class DeleteAccount extends AppCompatActivity {
         }
     }
 
+    protected void loadPreferences() {
+
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+
+        theme = sharedPreferences.getBoolean(SettingsFragment.KEY_THEME_SWITCH, false);
+    }
+
+    protected void updatePreferences() {
+
+        if (theme) {
+
+            // Set to light mode.
+            AppCompatDelegate.setDefaultNightMode(
+                    AppCompatDelegate.MODE_NIGHT_NO);
+        } else {
+
+            // Set to dark mode.
+            AppCompatDelegate.setDefaultNightMode(
+                    AppCompatDelegate.MODE_NIGHT_YES);
+        }
+    }
+
     @Override
     protected void onStart() {
 
         super.onStart();
-
-        // Update to the user's preferences.
-        loadPreferences();
-        updatePreferences();
 
         deleteAccount.setOnClickListener(new View.OnClickListener() {
 
@@ -283,28 +305,6 @@ public class DeleteAccount extends AppCompatActivity {
                 onBackPressed();
             }
         });
-    }
-
-    protected void loadPreferences() {
-
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-
-        theme = sharedPreferences.getBoolean(SettingsFragment.KEY_THEME_SWITCH, false);
-    }
-
-    protected void updatePreferences() {
-
-        if (theme) {
-
-            // Set to light mode.
-            AppCompatDelegate.setDefaultNightMode(
-                    AppCompatDelegate.MODE_NIGHT_NO);
-        } else {
-
-            // Set to dark mode.
-            AppCompatDelegate.setDefaultNightMode(
-                    AppCompatDelegate.MODE_NIGHT_YES);
-        }
     }
 
     @Override
