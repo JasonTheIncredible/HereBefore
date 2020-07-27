@@ -3,15 +3,13 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:layout_gravity="center"
-    android:gravity="center"
-    android:background="@color/purple">
+    android:gravity="center">
 
     <TextView
         android:id="@+id/screen_slide_title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Default Text"
         android:textColor="@color/white"
-        android:textSize="30sp"/>
+        android:textSize="30sp" />
 
 </LinearLayout>

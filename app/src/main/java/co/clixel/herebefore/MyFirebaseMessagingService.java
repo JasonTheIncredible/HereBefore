@@ -13,23 +13,69 @@ import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
 import androidx.preference.PreferenceManager;
 
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
+
+import java.util.Objects;
 
 public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
     private static final String TAG = "MyFirebaseMsgService";
     private static final String DEFAULT_NOTIFICATION_CHANNEL_ID = "DEFAULT_NOTIFICATION_CHANNEL_ID";
     private static final int PENDING_INTENT_REQ_CODE = 69;
+    private String email;
 
     @Override
-    public void onNewToken(@NonNull String token) {
+    public void onNewToken(@NonNull final String token) {
 
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
 
         SharedPreferences.Editor editor = sharedPreferences.edit()
                 .putString("FIREBASE_TOKEN", token);
         editor.apply();
+
+        // If user has a Google account, get email one way. Else, get email another way.
+        GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(this);
+        if (acct != null) {
+
+            email = acct.getEmail();
+        } else {
+
+            sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+            email = sharedPreferences.getString("userToken", "null");
+        }
+
+        final DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
+        DatabaseReference databaseReferenceOne = rootRef.child("MessageThreads");
+        ValueEventListener eventListenerOne = new ValueEventListener() {
+
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                for (final DataSnapshot ds : dataSnapshot.getChildren()) {
+
+                    if (ds.child("email").getValue() != null) {
+
+                        if (Objects.equals(ds.child("email").getValue(), email)) {
+
+                            ds.child("token").getRef().setValue(token);
+                        }
+                    }
+                }
+            }
+
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+            }
+        };
+
+        databaseReferenceOne.addListenerForSingleValueEvent(eventListenerOne);
     }
 
     @Override

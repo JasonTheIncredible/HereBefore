@@ -108,7 +108,6 @@ public class Map extends FragmentActivity implements
     private FloatingActionButton randomButton;
     private CounterFab dmButton;
 
-    // When is token renewed / renew it (this means going through all Firebase email and checking token).
     // Use onChildAdded() or childEventListener in chat to limit data usage / Don't get new dataSnapshot every time in DirectMentions / Prevent directMentions from updating if it's not necessary. The nested dataSnapshot.getChildren() in DirectMentions is newly getting called for every mention. Fix this to cut down on processing / data usage. Maybe add real mention email to messageInformation for faster search in future?
     // Test location services / doesn't seem to work on first install and in new places.
     // Check if polygon is simple or complex before entering Chat?
@@ -413,7 +412,7 @@ public class Map extends FragmentActivity implements
                             int count = (int) children;
                             int random = new Random().nextInt(count - 1);
 
-                            int i=0;
+                            int i = 0;
                             for (DataSnapshot ds : dataSnapshot.getChildren()) {
 
                                 if (i == random) {
@@ -510,7 +509,7 @@ public class Map extends FragmentActivity implements
                             int count = (int) children;
                             int random = new Random().nextInt(count - 1);
 
-                            int i=0;
+                            int i = 0;
                             for (DataSnapshot ds : dataSnapshot.getChildren()) {
 
                                 if (i == random) {
@@ -4926,6 +4925,27 @@ public class Map extends FragmentActivity implements
                 } else {
 
                     Log.e(TAG, "updatePreferences() -> Terrain Map -> mMap == null");
+                    toastMessageLong("An error occurred while loading the map");
+                }
+
+                break;
+
+            default:
+
+                Log.i(TAG, "updatePreferences() -> default (something went wrong, error probably on next line)");
+                Log.i(TAG, "updatePreferences(): preferredMapType: " + preferredMapType);
+
+                // Use the "hybrid" map type if the map is not null.
+                if (mMap != null) {
+
+                    Log.i(TAG, "updatePreferences() -> Hybrid Map, default");
+
+                    mMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
+
+                    yellowAdjustmentsForMap();
+                } else {
+
+                    Log.e(TAG, "updatePreferences() -> default -> mMap == null");
                     toastMessageLong("An error occurred while loading the map");
                 }
 
