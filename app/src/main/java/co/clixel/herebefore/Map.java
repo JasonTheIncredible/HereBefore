@@ -10,9 +10,11 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.location.Location;
+import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Looper;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.Gravity;
@@ -34,6 +36,12 @@ import com.andremion.counterfab.CounterFab;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationCallback;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationResult;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.LocationSettingsRequest;
+import com.google.android.gms.location.SettingsClient;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -66,14 +74,13 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.UUID;
 
-import locationprovider.davidserrano.com.LocationProvider;
-
 import static com.google.android.gms.location.LocationServices.getFusedLocationProviderClient;
 import static java.lang.Math.cos;
 import static java.lang.Math.sin;
 
 public class Map extends FragmentActivity implements
         OnMapReadyCallback,
+        LocationListener,
         PopupMenu.OnMenuItemClickListener {
 
     private static final String TAG = "Map";
@@ -104,16 +111,14 @@ public class Map extends FragmentActivity implements
     private int chatsSize, dmCounter = 0;
     private Toast longToast;
     private View loadingIcon;
-    private LocationProvider locationProvider;
     private FloatingActionButton randomButton;
     private CounterFab dmButton;
+    private LocationManager locationManager;
 
-    // Use onChildAdded() or childEventListener in chat to limit data usage / Don't get new dataSnapshot every time in DirectMentions / Prevent directMentions from updating if it's not necessary. The nested dataSnapshot.getChildren() in DirectMentions is newly getting called for every mention. Fix this to cut down on processing / data usage. Maybe add real mention email to messageInformation for faster search in future?
-    // Test location services / doesn't seem to work on first install and in new places.
-    // Check if polygon is simple or complex before entering Chat?
     // Use network for more precise GPS?
-    // AppIntro on Github.
+    // Use onChildAdded() or childEventListener in chat to limit data usage / Don't get new dataSnapshot every time in DirectMentions / Prevent directMentions from updating if it's not necessary. The nested dataSnapshot.getChildren() in DirectMentions is newly getting called for every mention. Fix this to cut down on processing / data usage. Maybe add real mention email to messageInformation for faster search in future?
     // Put the snapshots in reverse order before search for faster results.
+    // AppIntro on Github.
     // Make sure Firebase has enough bandwidth.
     // Make sure the secret stuff is secret.
     // Decrease app size / Check on accumulation of size over time.
@@ -121,12 +126,13 @@ public class Map extends FragmentActivity implements
     // Make sure aboutLibraries is up to date.
     // Check warning messages.
     // More ads.
+    // Update existing values in Firebase so new users can view old shapes.
     // Add preference for shape color.
     // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.
     // Leave messages in locations that users get notified of when they enter the area.
     // Add ability to filter recyclerView by type of content (recorded at the scene...).
     // Work on deprecated methods.
-    // Fix the loading icon in DirectMentions to only go away after it is completely done loading - this will be difficult with the nested async calls. Also add a toast.
+    // Add geo-fencing.
     // Load preferences after logging out and back in - looks like it will require saving info to database; is this worth it?
     // Add ability to add both picture and video to firebase at the same time.
 
@@ -2622,12 +2628,12 @@ public class Map extends FragmentActivity implements
         super.onResume();
         Log.i(TAG, "onResume()");
 
-        LocationManager manager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
 
         // Check if GPS is enabled.
-        if (manager != null) {
+        if (locationManager != null) {
 
-            if (!manager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+            if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
 
                 // If GPS is disabled, show an alert dialog and have the user turn GPS on.
                 new buildAlertNoGPS(this).execute();
@@ -2638,9 +2644,24 @@ public class Map extends FragmentActivity implements
             toastMessageLong("An error occurred while checking if GPS is enabled");
         }
 
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+        // Start updating location.
+        if (ContextCompat.checkSelfPermission(Map.this,
+                Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
 
-            updateLocation();
+            String provider = LocationManager.NETWORK_PROVIDER;
+            if (locationManager != null) {
+
+                locationManager.requestLocationUpdates(provider, 5000, 0, this);
+                startLocationUpdates();
+            } else {
+
+                Log.e(TAG, "onResume() -> locationManager == null");
+                toastMessageLong("Error retrieving your location");
+            }
+        } else {
+
+            checkLocationPermissions();
         }
     }
 
@@ -2700,10 +2721,22 @@ public class Map extends FragmentActivity implements
     @Override
     protected void onPause() {
 
-        // Remove updating location information.
-        if (locationProvider != null) {
+        Log.i(TAG, "onPause()");
 
-            locationProvider = null;
+        // Remove updating location information.
+        if (locationManager != null) {
+
+            if (ContextCompat.checkSelfPermission(Map.this,
+                    Manifest.permission.ACCESS_FINE_LOCATION)
+                    == PackageManager.PERMISSION_GRANTED) {
+
+                locationManager.removeUpdates(Map.this);
+            }
+        }
+
+        if (locationManager != null) {
+
+            locationManager = null;
         }
 
         super.onPause();
@@ -2713,12 +2746,6 @@ public class Map extends FragmentActivity implements
     protected void onStop() {
 
         Log.i(TAG, "onStop()");
-
-        // Remove updating location information.
-        if (locationProvider != null) {
-
-            locationProvider = null;
-        }
 
         if (mapTypeButton != null) {
 
@@ -2853,7 +2880,7 @@ public class Map extends FragmentActivity implements
                         Manifest.permission.ACCESS_FINE_LOCATION)
                         == PackageManager.PERMISSION_GRANTED) {
 
-                    updateLocation();
+                    startLocationUpdates();
                 }
             } else if (ActivityCompat.shouldShowRequestPermissionRationale(this,
                     Manifest.permission.ACCESS_FINE_LOCATION)) {
@@ -2927,6 +2954,143 @@ public class Map extends FragmentActivity implements
         }
     }
 
+    protected void startLocationUpdates() {
+
+        Log.i(TAG, "startLocationUpdates()");
+
+        // Create the location request to start receiving updates
+        LocationRequest mLocationRequest = new LocationRequest();
+        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+
+        /* 10 secs */
+        long UPDATE_INTERVAL = 10 * 1000;
+        mLocationRequest.setInterval(UPDATE_INTERVAL);
+
+        /* 1 sec */
+        long FASTEST_INTERVAL = 1000;
+        mLocationRequest.setFastestInterval(FASTEST_INTERVAL);
+
+        // Create LocationSettingsRequest object using location request
+        LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder();
+        builder.addLocationRequest(mLocationRequest);
+        LocationSettingsRequest locationSettingsRequest = builder.build();
+
+        // Check whether location settings are satisfied
+        // https://developers.google.com/android/reference/com/google/android/gms/location/SettingsClient
+        SettingsClient settingsClient = LocationServices.getSettingsClient(this);
+        settingsClient.checkLocationSettings(locationSettingsRequest);
+
+        // New Google API SDK v11 uses getFusedLocationProviderClient(this).
+        if (ContextCompat.checkSelfPermission(Map.this,
+                Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
+
+            getFusedLocationProviderClient(this).requestLocationUpdates(mLocationRequest, new LocationCallback() {
+
+                        @Override
+                        public void onLocationResult(LocationResult locationResult) {
+
+                            onLocationChanged(locationResult.getLastLocation());
+                        }
+                    },
+
+                    Looper.myLooper());
+        } else {
+
+            checkLocationPermissions();
+        }
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+
+        if (mMap != null) {
+
+            // If this is the first time loading the map and the user has NOT changed the camera position manually (from onMapReadyAndRestart() -> onCameraMoveListener) after the camera was changed programmatically with bad accuracy,
+            // OR the camera position was changed by the user BEFORE the camera position was changed programmatically, this will get called to either change the camera position programmatically with good accuracy
+            // or update it with bad accuracy and then wait to update it again with good accuracy assuming the user does not update it manually before it can be updated with good accuracy. This also gets called if the camera is zoomed
+            // out after restart to get around bugs involving alert dialogs at start-up.
+            // The following line allows the blue dot to appear on the map.
+
+            // Check location permissions.
+            if (ContextCompat.checkSelfPermission(getBaseContext(),
+                    Manifest.permission.ACCESS_FINE_LOCATION)
+                    == PackageManager.PERMISSION_GRANTED) {
+
+                mMap.setMyLocationEnabled(true);
+                if (firstLoad && !cameraMoved && location.getAccuracy() < 60) {
+
+                    Log.i(TAG, "updateLocation() -> Good accuracy");
+
+                    CameraPosition cameraPosition = new CameraPosition.Builder()
+                            .target(new LatLng(location.getLatitude(), location.getLongitude()))      // Sets the center of the map to user's location
+                            .zoom(18)                   // Sets the zoom
+                            .bearing(0)                // Sets the orientation of the camera
+                            .tilt(0)                   // Sets the tilt of the camera
+                            .build();                   // Creates a CameraPosition from the builder
+
+                    // Move the camera to the user's location once the map is available.
+                    mMap.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
+
+                    // Adjust boolean values to prevent this logic from being called again.
+                    firstLoad = false;
+                    cameraMoved = true;
+
+                    // The following 3 boolean will determine when the loading icon will disappear. It should only disappear once the camera is adjusted and all shapes are loaded.
+                    stillUpdatingCamera = false;
+
+                    if (!stillLoadingCircles && !stillLoadingPolygons) {
+
+                        loadingIcon.setVisibility(View.GONE);
+                    }
+                } else if (firstLoad && !badAccuracy && location.getAccuracy() >= 60) {
+
+                    Log.i(TAG, "updateLocation() -> Bad accuracy");
+
+                    CameraPosition cameraPosition = new CameraPosition.Builder()
+                            .target(new LatLng(location.getLatitude(), location.getLongitude()))      // Sets the center of the map to user's location
+                            .zoom(18)                   // Sets the zoom
+                            .bearing(0)                // Sets the orientation of the camera
+                            .tilt(0)                   // Sets the tilt of the camera
+                            .build();                   // Creates a CameraPosition from the builder
+
+                    // Move the camera to the user's location once the map is available.
+                    mMap.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
+
+                    // Adjust boolean values to prevent this logic from being called again.
+                    badAccuracy = true;
+                    waitingForBetterLocationAccuracy = true;
+
+                    // The following 3 boolean will determine when the loading icon will disappear. It should only disappear once the camera is adjusted and all shapes are loaded.
+                    stillUpdatingCamera = false;
+
+                    if (!stillLoadingCircles && !stillLoadingPolygons) {
+
+                        loadingIcon.setVisibility(View.GONE);
+                    }
+                }
+            } else {
+
+                checkLocationPermissions();
+            }
+        }
+    }
+
+    @Override
+    public void onStatusChanged(String provider, int status, Bundle extras) {
+    }
+
+    @Override
+    public void onProviderEnabled(String provider) {
+    }
+
+    @Override
+    public void onProviderDisabled(String provider) {
+
+        Log.i(TAG, "onProviderDisabled()");
+        toastMessageLong("Your location provider is disabled");
+    }
+
     @Override
     public void onMapReady(GoogleMap googleMap) {
 
@@ -2934,134 +3098,8 @@ public class Map extends FragmentActivity implements
 
         mMap = googleMap;
 
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-
-            updateLocation();
-        }
-
         // Cut down on code by using one method for the shared code from onMapReady() and onRestart().
         onMapReadyAndRestart();
-    }
-
-    protected void updateLocation() {
-
-        Log.i(TAG, "updateLocation()");
-
-        // Create a callback.
-        LocationProvider.LocationCallback callback = new LocationProvider.LocationCallback() {
-
-            @Override
-            public void onNewLocationAvailable(float lat, float lon) {
-
-                // Location update.
-                if (mMap != null) {
-
-                    // If this is the first time loading the map and the user has NOT changed the camera position manually (from onMapReadyAndRestart() -> onCameraMoveListener) after the camera was changed programmatically with bad accuracy,
-                    // OR the camera position was changed by the user BEFORE the camera position was changed programmatically, this will get called to either change the camera position programmatically with good accuracy
-                    // or update it with bad accuracy and then wait to update it again with good accuracy assuming the user does not update it manually before it can be updated with good accuracy. This also gets called if the camera is zoomed
-                    // out after restart to get around bugs involving alert dialogs at start-up.
-                    // The following line allows the blue dot to appear on the map.
-
-                    // Check location permissions.
-                    if (ContextCompat.checkSelfPermission(getBaseContext(),
-                            Manifest.permission.ACCESS_FINE_LOCATION)
-                            == PackageManager.PERMISSION_GRANTED) {
-
-                        mMap.setMyLocationEnabled(true);
-                        Location location = new Location("");
-                        location.setLatitude(lat);
-                        location.setLongitude(lon);
-                        if (firstLoad && !cameraMoved && location.getAccuracy() < 60) {
-
-                            Log.i(TAG, "updateLocation() -> Good accuracy");
-
-                            CameraPosition cameraPosition = new CameraPosition.Builder()
-                                    .target(new LatLng(lat, lon))      // Sets the center of the map to user's location
-                                    .zoom(18)                   // Sets the zoom
-                                    .bearing(0)                // Sets the orientation of the camera
-                                    .tilt(0)                   // Sets the tilt of the camera
-                                    .build();                   // Creates a CameraPosition from the builder
-
-                            // Move the camera to the user's location once the map is available.
-                            mMap.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
-
-                            // Adjust boolean values to prevent this logic from being called again.
-                            firstLoad = false;
-                            cameraMoved = true;
-
-                            // The following 3 boolean will determine when the loading icon will disappear. It should only disappear once the camera is adjusted and all shapes are loaded.
-                            stillUpdatingCamera = false;
-
-                            if (!stillLoadingCircles && !stillLoadingPolygons) {
-
-                                loadingIcon.setVisibility(View.GONE);
-                            }
-                        } else if (firstLoad && !badAccuracy && location.getAccuracy() >= 60) {
-
-                            Log.i(TAG, "updateLocation() -> Bad accuracy");
-
-                            CameraPosition cameraPosition = new CameraPosition.Builder()
-                                    .target(new LatLng(lat, lon))      // Sets the center of the map to user's location
-                                    .zoom(18)                   // Sets the zoom
-                                    .bearing(0)                // Sets the orientation of the camera
-                                    .tilt(0)                   // Sets the tilt of the camera
-                                    .build();                   // Creates a CameraPosition from the builder
-
-                            // Move the camera to the user's location once the map is available.
-                            mMap.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
-
-                            // Adjust boolean values to prevent this logic from being called again.
-                            badAccuracy = true;
-                            waitingForBetterLocationAccuracy = true;
-
-                            // The following 3 boolean will determine when the loading icon will disappear. It should only disappear once the camera is adjusted and all shapes are loaded.
-                            stillUpdatingCamera = false;
-
-                            if (!stillLoadingCircles && !stillLoadingPolygons) {
-
-                                loadingIcon.setVisibility(View.GONE);
-                            }
-                        }
-                    } else {
-
-                        checkLocationPermissions();
-                    }
-                }
-            }
-
-            @Override
-            public void locationServicesNotEnabled() {
-
-                // Failed finding a location.
-                loadingIcon.setVisibility(View.GONE);
-                Log.e(TAG, "updateLocation() -> locationServicesNotEnabled()");
-                toastMessageLong("Failed to find your location. Please try again later.");
-            }
-
-            @Override
-            public void updateLocationInBackground(float lat, float lon) {
-                // If a listener returns after the main locationAvailable callback, it will go here.
-            }
-
-            @Override
-            public void networkListenerInitialised() {
-                // When the library switched from GPS only to GPS & network.
-            }
-
-            @Override
-            public void locationRequestStopped() {
-                // Location updated stopped.
-            }
-        };
-
-        // Initialise an instance with the two required parameters.
-        locationProvider = new LocationProvider.Builder()
-                .setContext(this)
-                .setListener(callback)
-                .create();
-
-        // Start getting location.
-        locationProvider.requestLocation();
     }
 
     // Cut down on code by using one method for the shared code from onMapReady() and onRestart().
