@@ -61,6 +61,7 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 import com.google.maps.android.PolyUtil;
 import com.google.maps.android.SphericalUtil;
@@ -90,7 +91,7 @@ public class Map extends FragmentActivity implements
     private Circle newCircle, circleTemp, mCircle = null;
     private Polygon newPolygon, polygonTemp, mPolygon = null;
     private DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference(), firebaseCircles = rootRef.child("Circles"), firebasePolygons = rootRef.child("Polygons"), databaseReferenceOne, databaseReferenceTwo;
-    private ValueEventListener eventListenerOne, eventListenerTwo;
+    private ValueEventListener eventListenerOne, eventListenerTwo, eventListenerThree;
     private SeekBar chatSizeSeekBar, chatSelectorSeekBar;
     private String preferredMapType, shapeUUID, marker0ID, marker1ID, marker2ID, marker3ID, marker4ID, marker5ID, marker6ID, marker7ID, selectedOverlappingShapeUUID, email;
     private Button createChatButton, chatViewsButton, mapTypeButton, settingsButton;
@@ -108,20 +109,22 @@ public class Map extends FragmentActivity implements
     private ArrayList<Double> overlappingShapesCircleRadius = new ArrayList<>();
     private ArrayList<java.util.List<LatLng>> overlappingShapesPolygonVertices = new ArrayList<>();
     private float x, y;
-    private int chatsSize, dmCounter = 0;
+    private int chatsSize, dmCounter = -1, dmCounter1 = 0, dmCounter2 = 0;
     private Toast longToast;
     private View loadingIcon;
     private FloatingActionButton randomButton;
     private CounterFab dmButton;
     private LocationManager locationManager;
+    private Query query;
 
-    // Use network for more precise GPS?
+    // Use more precise children when querying Firebase to cut down on data usage.
     // Use onChildAdded() or childEventListener in chat to limit data usage / Don't get new dataSnapshot every time in DirectMentions / Prevent directMentions from updating if it's not necessary. The nested dataSnapshot.getChildren() in DirectMentions is newly getting called for every mention. Fix this to cut down on processing / data usage. Maybe add real mention email to messageInformation for faster search in future?
+    // Only download shapes when necessary to cut down on database usage.
     // Put the snapshots in reverse order before search for faster results.
     // AppIntro on Github.
-    // Make sure Firebase has enough bandwidth.
     // Make sure the secret stuff is secret.
     // Decrease app size / Check on accumulation of size over time.
+    // Make sure Firebase has enough bandwidth.
     // Check on feedback.
     // Make sure aboutLibraries is up to date.
     // Check warning messages.
@@ -289,7 +292,7 @@ public class Map extends FragmentActivity implements
 
                                 if (mention.getValue() != null) {
 
-                                    dmCounter = 0;
+                                    dmCounter1++;
                                     databaseReferenceTwo = rootRef.child("MessageThreads");
                                     eventListenerTwo = new ValueEventListener() {
 
@@ -301,20 +304,30 @@ public class Map extends FragmentActivity implements
                                                 String userUUID = (String) dss.child("userUUID").getValue();
                                                 if (mention.getValue().toString().equals(userUUID)) {
 
+                                                    dmCounter2++;
                                                     String userEmail = (String) dss.child("email").getValue();
                                                     if (userEmail != null) {
 
                                                         if (userEmail.equals(email)) {
 
                                                             Boolean seenByUser = (Boolean) ds.child("seenByUser").getValue();
-                                                            if (!seenByUser) {
+                                                            if (seenByUser != null) {
 
-                                                                dmCounter++;
-                                                                dmButton.setCount(dmCounter);
+                                                                if (!seenByUser) {
+
+                                                                    dmCounter++;
+                                                                }
                                                             }
                                                         }
                                                     }
                                                 }
+                                            }
+
+                                            // If these counters equal, the DMs have all been received from Firebase.
+                                            // Therefore, switch to .limitToLast(1) to cut down on data usage.
+                                            if (dmCounter1 == dmCounter2) {
+
+                                                AddQuery();
                                             }
                                         }
 
@@ -2483,6 +2496,82 @@ public class Map extends FragmentActivity implements
         deleteDirectory(this.getCacheDir());
     }
 
+    // Change to .limitToLast(1) to cut down on data usage. Otherwise, EVERY child at this node will be downloaded every time the child is updated.
+    private void AddQuery() {
+
+        Log.i(TAG, "changeListener()");
+
+        databaseReferenceOne.removeEventListener(eventListenerOne);
+
+        query = rootRef.child("MessageThreads").limitToLast(1);
+
+        eventListenerThree = new ValueEventListener() {
+
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                for (final DataSnapshot ds : dataSnapshot.getChildren()) {
+
+                    if (ds.child("removedMentionDuplicates").getValue() != null) {
+
+                        for (final DataSnapshot mention : ds.child("removedMentionDuplicates").getChildren()) {
+
+                            if (mention.getValue() != null) {
+
+                                databaseReferenceTwo = rootRef.child("MessageThreads");
+                                eventListenerTwo = new ValueEventListener() {
+
+                                    @Override
+                                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                                        for (DataSnapshot dss : dataSnapshot.getChildren()) {
+
+                                            String userUUID = (String) dss.child("userUUID").getValue();
+                                            if (mention.getValue().toString().equals(userUUID)) {
+
+                                                String userEmail = (String) dss.child("email").getValue();
+                                                if (userEmail != null) {
+
+                                                    if (userEmail.equals(email)) {
+
+                                                        Boolean seenByUser = (Boolean) ds.child("seenByUser").getValue();
+                                                        if (seenByUser != null) {
+
+                                                            if (!seenByUser) {
+
+                                                                dmCounter++;
+                                                                dmButton.setCount(dmCounter);
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    @Override
+                                    public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                                        toastMessageLong(databaseError.getMessage());
+                                    }
+                                };
+
+                                // Add the second Firebase listener.
+                                databaseReferenceTwo.addListenerForSingleValueEvent(eventListenerTwo);
+                            }
+                        }
+                    }
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+            }
+        };
+
+        query.addValueEventListener(eventListenerThree);
+    }
+
     @Override
     protected void onRestart() {
 
@@ -2503,7 +2592,9 @@ public class Map extends FragmentActivity implements
         stillLoadingPolygons = true;
         // Update the following boolean to prevent the loading icon from appearing after the user restarts.
         stillUpdatingCamera = false;
-        dmCounter = 0;
+        dmCounter = -1;
+        dmCounter1 = 0;
+        dmCounter2 = 0;
 
         if (dmButton != null) {
 
@@ -2779,12 +2870,24 @@ public class Map extends FragmentActivity implements
 
         if (databaseReferenceOne != null) {
 
-            databaseReferenceOne.removeEventListener(eventListenerOne);
+            if (eventListenerOne != null) {
+
+                databaseReferenceOne.removeEventListener(eventListenerOne);
+            }
+
+            databaseReferenceOne = null;
         }
 
         if (databaseReferenceTwo != null) {
 
             databaseReferenceTwo.removeEventListener(eventListenerTwo);
+            databaseReferenceTwo = null;
+        }
+
+        if (query != null) {
+
+            query.removeEventListener(eventListenerThree);
+            query = null;
         }
 
         if (eventListenerOne != null) {
@@ -2795,6 +2898,11 @@ public class Map extends FragmentActivity implements
         if (eventListenerTwo != null) {
 
             eventListenerTwo = null;
+        }
+
+        if (eventListenerThree != null) {
+
+            eventListenerThree = null;
         }
 
         if (createChatButton != null) {
