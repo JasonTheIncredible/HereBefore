@@ -109,7 +109,7 @@ public class Map extends FragmentActivity implements
     private ArrayList<Double> overlappingShapesCircleRadius = new ArrayList<>();
     private ArrayList<java.util.List<LatLng>> overlappingShapesPolygonVertices = new ArrayList<>();
     private float x, y;
-    private int chatsSize, dmCounter = -1, dmCounter1 = 0, dmCounter2 = 0;
+    private int chatsSize, dmCounter = 0, dmCounter1 = 0, dmCounter2 = 0;
     private Toast longToast;
     private View loadingIcon;
     private FloatingActionButton randomButton;
@@ -117,7 +117,6 @@ public class Map extends FragmentActivity implements
     private LocationManager locationManager;
     private Query query;
 
-    // Use more precise children when querying Firebase to cut down on data usage.
     // Use onChildAdded() or childEventListener in chat to limit data usage / Don't get new dataSnapshot every time in DirectMentions / Prevent directMentions from updating if it's not necessary. The nested dataSnapshot.getChildren() in DirectMentions is newly getting called for every mention. Fix this to cut down on processing / data usage. Maybe add real mention email to messageInformation for faster search in future?
     // Only download shapes when necessary to cut down on database usage.
     // Put the snapshots in reverse order before search for faster results.
@@ -327,7 +326,12 @@ public class Map extends FragmentActivity implements
                                             // Therefore, switch to .limitToLast(1) to cut down on data usage.
                                             if (dmCounter1 == dmCounter2) {
 
-                                                AddQuery();
+                                                // dmCounter is going to be increased by 1 during addQuery, so temporarily decrease it by 1 here.
+                                                if (dmCounter != 0) {
+
+                                                    dmCounter--;
+                                                }
+                                                addQuery();
                                             }
                                         }
 
@@ -2497,9 +2501,9 @@ public class Map extends FragmentActivity implements
     }
 
     // Change to .limitToLast(1) to cut down on data usage. Otherwise, EVERY child at this node will be downloaded every time the child is updated.
-    private void AddQuery() {
+    private void addQuery() {
 
-        Log.i(TAG, "changeListener()");
+        Log.i(TAG, "addQuery()");
 
         databaseReferenceOne.removeEventListener(eventListenerOne);
 
@@ -2592,7 +2596,7 @@ public class Map extends FragmentActivity implements
         stillLoadingPolygons = true;
         // Update the following boolean to prevent the loading icon from appearing after the user restarts.
         stillUpdatingCamera = false;
-        dmCounter = -1;
+        dmCounter = 0;
         dmCounter1 = 0;
         dmCounter2 = 0;
 
