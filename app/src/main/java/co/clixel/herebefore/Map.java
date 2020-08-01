@@ -117,9 +117,8 @@ public class Map extends FragmentActivity implements
     private LocationManager locationManager;
     private Query query;
 
-    // Use onChildAdded() or childEventListener in chat to limit data usage / Don't get new dataSnapshot every time in DirectMentions / Prevent directMentions from updating if it's not necessary. The nested dataSnapshot.getChildren() in DirectMentions is newly getting called for every mention. Fix this to cut down on processing / data usage. Maybe add real mention email to messageInformation for faster search in future?
-    // Only download shapes when necessary to cut down on database usage.
-    // Put the snapshots in reverse order before search for faster results.
+    // Don't get new dataSnapshot every time in DirectMentions. The nested dataSnapshot.getChildren() in DirectMentions is newly getting called for every mention. Maybe add real mention email to messageInformation for faster search in future?
+    // Only download shapes in Map when necessary to cut down on database usage.
     // AppIntro on Github.
     // Make sure the secret stuff is secret.
     // Decrease app size / Check on accumulation of size over time.

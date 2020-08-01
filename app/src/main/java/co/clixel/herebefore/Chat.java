@@ -75,6 +75,7 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.Query;
 import com.google.firebase.database.ServerValue;
 import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.storage.FirebaseStorage;
@@ -129,10 +130,10 @@ public class Chat extends Fragment implements
     private RecyclerView chatRecyclerView, mentionsRecyclerView;
     private static int index = -1, top = -1, last;
     private Integer directMentionsPosition = null;
-    private DatabaseReference databaseReference;
-    private ValueEventListener eventListener;
+    private DatabaseReference rootRef, databaseReference;
+    private ValueEventListener eventListenerOne, eventListenerTwo;
     private FloatingActionButton sendButton, mediaButton;
-    private boolean firstLoad, needLoadingIcon = false, reachedEndOfRecyclerView = false, recyclerViewHasScrolled = false, messageSent = false, sendButtonClicked = false, mediaButtonMenuIsOpen, fileIsImage, checkPermissionsPicture, URIisFile,
+    private boolean firstLoad, alreadyInitialized = false, needLoadingIcon = false, reachedEndOfRecyclerView = false, recyclerViewHasScrolled = false, messageSent = false, sendButtonClicked = false, mediaButtonMenuIsOpen, fileIsImage, checkPermissionsPicture, URIisFile,
             newShape, threeMarkers, fourMarkers, fiveMarkers, sixMarkers, sevenMarkers, eightMarkers, shapeIsCircle;
     private Boolean userIsWithinShape;
     private View.OnLayoutChangeListener onLayoutChangeListener;
@@ -154,6 +155,7 @@ public class Chat extends Fragment implements
     private Context mContext;
     private Activity mActivity;
     private AdView bannerAd;
+    private Query query;
     private WordTokenizerConfig tokenizerConfig = new WordTokenizerConfig
             .Builder()
             .setWordBreakChars(", ")
@@ -297,9 +299,9 @@ public class Chat extends Fragment implements
             mentionsRecyclerView.setVisibility(View.GONE);
         }
 
-        DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
+        rootRef = FirebaseDatabase.getInstance().getReference();
         databaseReference = rootRef.child("MessageThreads");
-        eventListener = new ValueEventListener() {
+        eventListenerOne = new ValueEventListener() {
 
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
@@ -362,7 +364,7 @@ public class Chat extends Fragment implements
                     top = (v == null) ? 0 : (v.getTop() - chatRecyclerView.getPaddingTop());
                 }
 
-                initChatAdapter();
+                addQuery();
 
                 // Check RecyclerView scroll state (to allow the layout to move up when keyboard appears).
                 chatRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
@@ -418,7 +420,7 @@ public class Chat extends Fragment implements
         };
 
         // Add the Firebase listener.
-        databaseReference.addValueEventListener(eventListener);
+        databaseReference.addListenerForSingleValueEvent(eventListenerOne);
 
         // Hide the imageView or videoImageView if user presses the delete button.
         mInput.setOnKeyListener(new View.OnKeyListener() {
@@ -829,15 +831,113 @@ public class Chat extends Fragment implements
         });
     }
 
+    // Change to .limitToLast(1) to cut down on data usage. Otherwise, EVERY child at this node will be downloaded every time the child is updated.
+    private void addQuery() {
+
+        Log.i(TAG, "addQuery()");
+
+        databaseReference.removeEventListener(eventListenerOne);
+
+        query = rootRef.child("MessageThreads").limitToLast(1);
+
+        eventListenerTwo = new ValueEventListener() {
+
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                if (alreadyInitialized) {
+
+                    alreadyInitialized = false;
+                    return;
+                }
+
+                // If this is the first time calling this eventListener, prevent double posts (as onStart() already added the last item).
+                if (firstLoad) {
+
+                    initChatAdapter();
+                    return;
+                }
+
+                for (DataSnapshot ds : dataSnapshot.getChildren()) {
+
+                    // If the uuid brought from Map.java equals the uuid attached to the recyclerviewlayout in Firebase, load it into the RecyclerView.
+                    String mShapeUUID = (String) ds.child("shapeUUID").getValue();
+                    if (mShapeUUID != null) {
+
+                        if (mShapeUUID.equals(shapeUUID)) {
+
+                            Long serverDate = (Long) ds.child("date").getValue();
+                            String user = (String) ds.child("userUUID").getValue();
+                            // Used when a user mentions another user with "@".
+                            mSuggestions.add(user);
+                            String imageURL = (String) ds.child("imageURL").getValue();
+                            String videoURL = (String) ds.child("videoURL").getValue();
+                            String messageText = (String) ds.child("message").getValue();
+                            Boolean userIsWithinShape = (Boolean) ds.child("userIsWithinShape").getValue();
+                            DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
+                            // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+                            // This will cause onDataChange to fire twice; optimizations could be made in the future.
+                            if (serverDate != null) {
+
+                                Date netDate = (new Date(serverDate));
+                                String messageTime = dateFormat.format(netDate);
+                                mTime.add(messageTime);
+                            } else {
+
+                                Log.e(TAG, "addQuery() -> serverDate == null");
+                            }
+                            mUser.add(user);
+                            mImage.add(imageURL);
+                            mVideo.add(videoURL);
+                            mText.add(messageText);
+                            mUserIsWithinShape.add(userIsWithinShape);
+                        }
+                    }
+                }
+
+                // Read RecyclerView scroll position (for use in initChatAdapter).
+                if (chatRecyclerViewLinearLayoutManager != null) {
+
+                    index = chatRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
+                    last = chatRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
+                    View v = chatRecyclerView.getChildAt(0);
+                    top = (v == null) ? 0 : (v.getTop() - chatRecyclerView.getPaddingTop());
+                }
+
+                alreadyInitialized = true;
+                initChatAdapter();
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+            }
+        };
+
+        query.addValueEventListener(eventListenerTwo);
+    }
+
     @Override
     public void onStop() {
 
         Log.i(TAG, "onStop()");
 
+        if (rootRef != null) {
+
+            rootRef = null;
+        }
+
         if (databaseReference != null) {
 
-            databaseReference.removeEventListener(eventListener);
+            databaseReference.removeEventListener(eventListenerOne);
         }
+
+        if (query != null) {
+
+            query.removeEventListener(eventListenerTwo);
+            query = null;
+        }
+
+        alreadyInitialized = false;
 
         if (chatRecyclerView != null) {
 
@@ -852,9 +952,14 @@ public class Chat extends Fragment implements
             mentionsRecyclerView.setAdapter(null);
         }
 
-        if (eventListener != null) {
+        if (eventListenerOne != null) {
 
-            eventListener = null;
+            eventListenerOne = null;
+        }
+
+        if (eventListenerTwo != null) {
+
+            eventListenerTwo = null;
         }
 
         if (imageView != null) {
