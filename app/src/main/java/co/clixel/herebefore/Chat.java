@@ -515,8 +515,6 @@ public class Chat extends Fragment implements
                     // Check Boolean value from onStart();
                     if (newShape) {
 
-                        DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-
                         if (shapeIsCircle) {
 
                             DatabaseReference firebaseCircles = rootRef.child("Circles");
@@ -1056,7 +1054,7 @@ public class Chat extends Fragment implements
         chatRecyclerView.setAdapter(adapter);
         chatRecyclerView.setLayoutManager(chatRecyclerViewLinearLayoutManager);
 
-        if (directMentionsPosition != null) {
+        if (directMentionsPosition != null && !firstLoad) {
 
             chatRecyclerView.scrollToPosition(directMentionsPosition);
             directMentionsPosition = null;
