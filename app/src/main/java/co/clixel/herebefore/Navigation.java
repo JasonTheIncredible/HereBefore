@@ -141,7 +141,7 @@ public class Navigation extends AppCompatActivity {
             bubbleNavigationConstraintView.setCurrentActiveItem(2);
             currentItem = 2;
             SettingsFragment.themeToggled = false;
-        } else if (noChat && SettingsFragment.themeToggled) {
+        } else if ((!fromDMs && noChat) || (noChat && SettingsFragment.themeToggled)) {
 
             viewPager.setCurrentItem(1, false);
             bubbleNavigationConstraintView.setCurrentActiveItem(1);
