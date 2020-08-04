@@ -10,7 +10,6 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -51,9 +50,9 @@ public class DirectMentions extends Fragment {
 
     private static final String TAG = "DirectMentions";
     private String email;
-    private ArrayList<String> mTime, mUser, mImage, mVideo, mText, mShapeUUID;
-    private ArrayList<Boolean> mUserIsWithinShape, mShapeIsCircle, mSeenByUser;
-    private ArrayList<Integer> mPosition, notSeenByUserList;
+    private ArrayList<String> mTime, mUser, mImage, mVideo, mText, mShapeUUID, userAL, imageURLAL, videoURLAL, messageTextAL, shapeUUIDAL, userUUIDAL, userEmailAL, timeAL;
+    private ArrayList<Boolean> mUserIsWithinShape, mShapeIsCircle, mSeenByUser, userIsWithinShapeAL, shapeIsCircleAL, seenByUserAL;
+    private ArrayList<Integer> mPosition, notSeenByUserList, positionAL;
     private RecyclerView directMentionsRecyclerView;
     private static int index = -1, top = -1, last, mentionCounter = 0, mentionCounter1 = 0;
     private DatabaseReference rootRef, databaseReferenceOne, databaseReferenceTwo, databaseReferenceCircles, databaseReferencePolygons;
@@ -67,7 +66,7 @@ public class DirectMentions extends Fragment {
     private Activity mActivity;
     private View rootView;
     private TextView noDMsTextView;
-    private Query query;
+    private Query query1, query2;
 
     @NonNull
     @Override
@@ -97,6 +96,19 @@ public class DirectMentions extends Fragment {
         mSeenByUser = new ArrayList<>();
         mPosition = new ArrayList<>();
         notSeenByUserList = new ArrayList<>();
+
+        userAL = new ArrayList<>();
+        imageURLAL = new ArrayList<>();
+        timeAL = new ArrayList<>();
+        videoURLAL = new ArrayList<>();
+        messageTextAL = new ArrayList<>();
+        shapeUUIDAL = new ArrayList<>();
+        userUUIDAL = new ArrayList<>();
+        userEmailAL = new ArrayList<>();
+        userIsWithinShapeAL = new ArrayList<>();
+        shapeIsCircleAL = new ArrayList<>();
+        seenByUserAL = new ArrayList<>();
+        positionAL = new ArrayList<>();
 
         // Set to true to scroll to the bottom of directMentionsRecyclerView.
         firstLoad = true;
@@ -216,8 +228,31 @@ public class DirectMentions extends Fragment {
                                                         Integer position = ((Long) ds.child("position").getValue()).intValue();
                                                         Boolean seenByUser = (Boolean) ds.child("seenByUser").getValue();
                                                         DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
+
+                                                        // Add these values to arrayLists for use in addQuery.
+                                                        userUUIDAL.add(userUUID);
+                                                        userEmailAL.add(userEmail);
                                                         // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
                                                         // This will cause onDataChange to fire twice; optimizations could be made in the future.
+                                                        if (serverDate != null) {
+
+                                                            Date netDate = (new Date(serverDate));
+                                                            String messageTime = dateFormat.format(netDate);
+                                                            timeAL.add(messageTime);
+                                                        } else {
+
+                                                            Log.e(TAG, "onStart() -> serverDate == null");
+                                                        }
+                                                        userAL.add(user);
+                                                        imageURLAL.add(imageURL);
+                                                        videoURLAL.add(videoURL);
+                                                        messageTextAL.add(messageText);
+                                                        shapeUUIDAL.add(shapeUUID);
+                                                        userIsWithinShapeAL.add(userIsWithinShape);
+                                                        shapeIsCircleAL.add(shapeIsCircle);
+                                                        positionAL.add(position);
+                                                        seenByUserAL.add(seenByUser);
+
                                                         if (serverDate != null) {
 
                                                             Date netDate = (new Date(serverDate));
@@ -291,13 +326,70 @@ public class DirectMentions extends Fragment {
 
         databaseReferenceOne.removeEventListener(eventListenerOne);
 
-        query = rootRef.child("MessageThreads").limitToLast(1);
+        // Add new values to arrayLists one at a time. This prevents the need to download the whole dataSnapshot every time this information is needed in eventListenerThree.
+        query1 = rootRef.child("MessageThreads").limitToLast(1);
 
-        eventListenerThree = new ValueEventListener() {
+        eventListenerOne = new ValueEventListener() {
 
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
 
+                // Prevent the eventListener from getting called twice.
+                if (alreadyInitialized) {
+
+                    return;
+                }
+
+                // If this is the first time calling this eventListener, prevent double posts (as onStart() already added the last item).
+                if (firstLoad) {
+
+                    return;
+                }
+
+                for (DataSnapshot ds : dataSnapshot.getChildren()) {
+
+                    userUUIDAL.add((String) ds.child("userUUID").getValue());
+                    userEmailAL.add((String) ds.child("email").getValue());
+                    Long serverDate = (Long) ds.child("date").getValue();
+                    DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
+                    if (serverDate != null) {
+
+                        Date netDate = (new Date(serverDate));
+                        String messageTime = dateFormat.format(netDate);
+                        timeAL.add(messageTime);
+                    } else {
+
+                        Log.e(TAG, "addQuery() -> serverDate == null");
+                    }
+                    userAL.add((String) ds.child("userUUID").getValue());
+                    imageURLAL.add((String) ds.child("imageURL").getValue());
+                    videoURLAL.add((String) ds.child("videoURL").getValue());
+                    messageTextAL.add((String) ds.child("message").getValue());
+                    shapeUUIDAL.add((String) ds.child("shapeUUID").getValue());
+                    userIsWithinShapeAL.add((Boolean) ds.child("userIsWithinShape").getValue());
+                    shapeIsCircleAL.add((Boolean) ds.child("shapeIsCircle").getValue());
+                    positionAL.add(((Long) ds.child("position").getValue()).intValue());
+                    seenByUserAL.add((Boolean) ds.child("seenByUser").getValue());
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                toastMessageLong(databaseError.getMessage());
+            }
+        };
+
+        query1.addValueEventListener(eventListenerOne);
+
+        query2 = rootRef.child("MessageThreads").limitToLast(1);
+
+        eventListenerTwo = new ValueEventListener() {
+
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                // Prevent the eventListener from getting called twice.
                 if (alreadyInitialized) {
 
                     alreadyInitialized = false;
@@ -320,96 +412,42 @@ public class DirectMentions extends Fragment {
                     top = (v == null) ? 0 : (v.getTop() - directMentionsRecyclerView.getPaddingTop());
                 }
 
-                for (final DataSnapshot ds : dataSnapshot.getChildren()) {
+                for (DataSnapshot ds : dataSnapshot.getChildren()) {
 
                     if (ds.child("removedMentionDuplicates").getValue() != null) {
 
-                        for (final DataSnapshot mention : ds.child("removedMentionDuplicates").getChildren()) {
+                        for (DataSnapshot mention : ds.child("removedMentionDuplicates").getChildren()) {
 
                             if (mention.getValue() != null) {
 
-                                // If mentionCount == mentionCount1, initialize the adapter.
-                                mentionCounter++;
-                                databaseReferenceTwo = rootRef.child("MessageThreads");
-                                eventListenerTwo = new ValueEventListener() {
+                                for (int i = 0; i < userUUIDAL.size(); i++) {
 
-                                    @Override
-                                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                                    if (mention.getValue().toString().equals(userUUIDAL.get(i))) {
 
-                                        for (DataSnapshot dss : dataSnapshot.getChildren()) {
+                                        if (userEmailAL.get(i).equals(email)) {
 
-                                            String userUUID = (String) dss.child("userUUID").getValue();
-                                            if (mention.getValue().toString().equals(userUUID)) {
+                                            alreadyInitialized = true;
 
-                                                // If mentionCount == mentionCount1, initialize the adapter.
-                                                mentionCounter1++;
-                                                String userEmail = (String) dss.child("email").getValue();
-                                                if (userEmail != null) {
-
-                                                    if (userEmail.equals(email)) {
-
-                                                        Long serverDate = (Long) ds.child("date").getValue();
-                                                        String user = (String) ds.child("userUUID").getValue();
-                                                        String imageURL = (String) ds.child("imageURL").getValue();
-                                                        String videoURL = (String) ds.child("videoURL").getValue();
-                                                        String messageText = (String) ds.child("message").getValue();
-                                                        String shapeUUID = (String) ds.child("shapeUUID").getValue();
-                                                        Boolean userIsWithinShape = (Boolean) ds.child("userIsWithinShape").getValue();
-                                                        Boolean shapeIsCircle = (Boolean) ds.child("shapeIsCircle").getValue();
-                                                        Integer position = ((Long) ds.child("position").getValue()).intValue();
-                                                        Boolean seenByUser = (Boolean) ds.child("seenByUser").getValue();
-                                                        DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
-                                                        // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                                                        // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                                                        if (serverDate != null) {
-
-                                                            Date netDate = (new Date(serverDate));
-                                                            String messageTime = dateFormat.format(netDate);
-                                                            mTime.add(messageTime);
-                                                        } else {
-
-                                                            Log.e(TAG, "addQuery() -> serverDate == null");
-                                                        }
-                                                        mUser.add(user);
-                                                        mImage.add(imageURL);
-                                                        mVideo.add(videoURL);
-                                                        mText.add(messageText);
-                                                        mShapeUUID.add(shapeUUID);
-                                                        mUserIsWithinShape.add(userIsWithinShape);
-                                                        mShapeIsCircle.add(shapeIsCircle);
-                                                        mPosition.add(position);
-                                                        mSeenByUser.add(seenByUser);
-
-                                                        // If this is a "new" DM, add it to the list (for use in initDirectMentionRecyclerView)
-                                                        // and update the child.
-                                                        if (!seenByUser) {
-
-                                                            alreadyInitialized = true;
-                                                            notSeenByUserList.add(position);
-                                                            ds.child("seenByUser").getRef().setValue(true);
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-
-                                        // Prevent recyclerView from getting initialized more than once,
-                                        // as the loading icon / toast is dependant on this happening only once.
-                                        if (mentionCounter == mentionCounter1) {
+                                            mTime.add(timeAL.get(userUUIDAL.size() - 1));
+                                            mUser.add(userAL.get(userUUIDAL.size() - 1));
+                                            mImage.add(imageURLAL.get(userUUIDAL.size() - 1));
+                                            mVideo.add(videoURLAL.get(userUUIDAL.size() - 1));
+                                            mText.add(messageTextAL.get(userUUIDAL.size() - 1));
+                                            mShapeUUID.add(shapeUUIDAL.get(userUUIDAL.size() - 1));
+                                            mUserIsWithinShape.add(userIsWithinShapeAL.get(userUUIDAL.size() - 1));
+                                            mShapeIsCircle.add(shapeIsCircleAL.get(userUUIDAL.size() - 1));
+                                            mPosition.add(positionAL.get(userUUIDAL.size() - 1));
+                                            mSeenByUser.add(seenByUserAL.get(userUUIDAL.size() - 1));
+                                            // All DMs will be "new", so add them to notSeenByUserList and update their value in Firebase.
+                                            notSeenByUserList.add(positionAL.get(userUUIDAL.size() - 1));
+                                            ds.child("seenByUser").getRef().setValue(true);
 
                                             initDirectMentionsAdapter();
+                                            // Only updating one value, so return.
+                                            return;
                                         }
                                     }
-
-                                    @Override
-                                    public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                                        toastMessageLong(databaseError.getMessage());
-                                    }
-                                };
-
-                                // Add the second Firebase listener.
-                                databaseReferenceTwo.addListenerForSingleValueEvent(eventListenerTwo);
+                                }
                             }
                         }
                     }
@@ -421,7 +459,7 @@ public class DirectMentions extends Fragment {
             }
         };
 
-        query.addValueEventListener(eventListenerThree);
+        query2.addValueEventListener(eventListenerTwo);
     }
 
     private void initDirectMentionsAdapter() {
@@ -508,10 +546,16 @@ public class DirectMentions extends Fragment {
             databaseReferenceTwo.removeEventListener(eventListenerTwo);
         }
 
-        if (query != null) {
+        if (query1 != null) {
 
-            query.removeEventListener(eventListenerThree);
-            query = null;
+            query1.removeEventListener(eventListenerOne);
+            query1 = null;
+        }
+
+        if (query2 != null) {
+
+            query2.removeEventListener(eventListenerTwo);
+            query2 = null;
         }
 
         alreadyInitialized = false;
@@ -584,7 +628,21 @@ public class DirectMentions extends Fragment {
         mPosition = null;
         notSeenByUserList = null;
 
+        userAL = null;
+        imageURLAL = null;
+        timeAL = null;
+        videoURLAL = null;
+        messageTextAL = null;
+        shapeUUIDAL = null;
+        userUUIDAL = null;
+        userEmailAL = null;
+        userIsWithinShapeAL = null;
+        shapeIsCircleAL = null;
+        seenByUserAL = null;
+        positionAL = null;
+
         loadingIcon = null;
+        noDMsTextView = null;
 
         super.onDestroyView();
     }

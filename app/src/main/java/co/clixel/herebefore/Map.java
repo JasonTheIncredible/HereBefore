@@ -117,8 +117,9 @@ public class Map extends FragmentActivity implements
     private LocationManager locationManager;
     private Query query;
 
-    // The nested dataSnapshot.getChildren() in DirectMentions is newly getting called for every mention.
-    // // Maybe use first dataSnapshot, get newest data, add it to old dataSnapshot, then make that the new dataSnapshot?
+    // Change DMs in Map to be like DirectMentions.
+    // Mentions in Chat is returning the wrong value.
+    // Use more specific children nodes when searching Firebase.
     // Only download shapes in Map when necessary to cut down on database usage.
     // AppIntro on Github.
     // Make sure the secret stuff is secret.

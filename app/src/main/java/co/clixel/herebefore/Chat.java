@@ -133,7 +133,7 @@ public class Chat extends Fragment implements
     private DatabaseReference rootRef, databaseReference;
     private ValueEventListener eventListenerOne, eventListenerTwo;
     private FloatingActionButton sendButton, mediaButton;
-    private boolean firstLoad, alreadyInitialized = false, needLoadingIcon = false, reachedEndOfRecyclerView = false, recyclerViewHasScrolled = false, messageSent = false, sendButtonClicked = false, mediaButtonMenuIsOpen, fileIsImage, checkPermissionsPicture, URIisFile,
+    private boolean firstLoad, needLoadingIcon = false, reachedEndOfRecyclerView = false, recyclerViewHasScrolled = false, messageSent = false, sendButtonClicked = false, mediaButtonMenuIsOpen, fileIsImage, checkPermissionsPicture, URIisFile,
             newShape, threeMarkers, fourMarkers, fiveMarkers, sixMarkers, sevenMarkers, eightMarkers, shapeIsCircle;
     private Boolean userIsWithinShape;
     private View.OnLayoutChangeListener onLayoutChangeListener;
@@ -843,12 +843,6 @@ public class Chat extends Fragment implements
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
 
-                if (alreadyInitialized) {
-
-                    alreadyInitialized = false;
-                    return;
-                }
-
                 // If this is the first time calling this eventListener, prevent double posts (as onStart() already added the last item).
                 if (firstLoad) {
 
@@ -902,7 +896,6 @@ public class Chat extends Fragment implements
                     top = (v == null) ? 0 : (v.getTop() - chatRecyclerView.getPaddingTop());
                 }
 
-                alreadyInitialized = true;
                 initChatAdapter();
             }
 
@@ -934,8 +927,6 @@ public class Chat extends Fragment implements
             query.removeEventListener(eventListenerTwo);
             query = null;
         }
-
-        alreadyInitialized = false;
 
         if (chatRecyclerView != null) {
 
@@ -1033,6 +1024,7 @@ public class Chat extends Fragment implements
         mUserIsWithinShape = null;
         removedMentionDuplicates = null;
 
+        bannerAd = null;
         mediaButton = null;
         imageView = null;
         videoImageView = null;
@@ -1040,6 +1032,7 @@ public class Chat extends Fragment implements
         sendButton = null;
         chatRecyclerView = null;
         mentionsRecyclerView = null;
+
         loadingIcon = null;
 
         super.onDestroyView();
