@@ -133,7 +133,7 @@ public class Chat extends Fragment implements
     private DatabaseReference rootRef, databaseReference;
     private ValueEventListener eventListenerOne, eventListenerTwo;
     private FloatingActionButton sendButton, mediaButton;
-    private boolean firstLoad, needLoadingIcon = false, reachedEndOfRecyclerView = false, recyclerViewHasScrolled = false, messageSent = false, sendButtonClicked = false, mediaButtonMenuIsOpen, fileIsImage, checkPermissionsPicture, URIisFile,
+    private boolean firstLoad, needLoadingIcon = false, preventInitialization = false, reachedEndOfRecyclerView = false, recyclerViewHasScrolled = false, messageSent = false, sendButtonClicked = false, mediaButtonMenuIsOpen, fileIsImage, checkPermissionsPicture, URIisFile,
             newShape, threeMarkers, fourMarkers, fiveMarkers, sixMarkers, sevenMarkers, eightMarkers, shapeIsCircle;
     private Boolean userIsWithinShape;
     private View.OnLayoutChangeListener onLayoutChangeListener;
@@ -512,6 +512,9 @@ public class Chat extends Fragment implements
                 // Send recyclerviewlayout to Firebase.
                 if (!input.equals("") || imageView.getVisibility() != View.GONE || videoImageView.getVisibility() != View.GONE) {
 
+                    // Prevent double posts in addQuery.
+                    preventInitialization = true;
+
                     // Check Boolean value from onStart();
                     if (newShape) {
 
@@ -598,6 +601,7 @@ public class Chat extends Fragment implements
 
                                     toastMessageLong(databaseError.getMessage());
 
+                                    preventInitialization = false;
                                     sendButtonClicked = false;
                                 }
                             });
@@ -728,6 +732,7 @@ public class Chat extends Fragment implements
 
                                     toastMessageLong(databaseError.getMessage());
 
+                                    preventInitialization = false;
                                     sendButtonClicked = false;
                                 }
                             });
@@ -843,6 +848,13 @@ public class Chat extends Fragment implements
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
 
+                // Prevent double posts.
+                if (preventInitialization) {
+
+                    preventInitialization = false;
+                    return;
+                }
+
                 // If this is the first time calling this eventListener, prevent double posts (as onStart() already added the last item).
                 if (firstLoad) {
 
@@ -951,6 +963,30 @@ public class Chat extends Fragment implements
             eventListenerTwo = null;
         }
 
+        if (mInput != null) {
+
+            mInput.setOnKeyListener(null);
+            mInput.setQueryTokenReceiver(null);
+            mInput.setSuggestionsVisibilityManager(null);
+            mInput.setTokenizer(null);
+        }
+
+        if (mediaButton != null) {
+
+            mediaButton.setOnClickListener(null);
+        }
+
+        if (mediaButtonMenu != null) {
+
+            mediaButtonMenu.setOnMenuItemClickListener(null);
+            mediaButtonMenu = null;
+        }
+
+        if (sendButton != null) {
+
+            sendButton.setOnClickListener(null);
+        }
+
         if (imageView != null) {
 
             imageView.setOnClickListener(null);
@@ -959,19 +995,6 @@ public class Chat extends Fragment implements
         if (videoImageView != null) {
 
             videoImageView.setOnClickListener(null);
-        }
-
-        if (sendButton != null) {
-
-            sendButton.setOnClickListener(null);
-        }
-
-        if (mInput != null) {
-
-            mInput.setOnKeyListener(null);
-            mInput.setQueryTokenReceiver(null);
-            mInput.setSuggestionsVisibilityManager(null);
-            mInput.setTokenizer(null);
         }
 
         cancelToasts();

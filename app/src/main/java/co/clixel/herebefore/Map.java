@@ -91,7 +91,7 @@ public class Map extends FragmentActivity implements
     private Circle newCircle, circleTemp, mCircle = null;
     private Polygon newPolygon, polygonTemp, mPolygon = null;
     private DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference(), firebaseCircles = rootRef.child("Circles"), firebasePolygons = rootRef.child("Polygons"), databaseReferenceOne, databaseReferenceTwo;
-    private ValueEventListener eventListenerOne, eventListenerTwo, eventListenerThree;
+    private ValueEventListener eventListenerOne, eventListenerTwo;
     private SeekBar chatSizeSeekBar, chatSelectorSeekBar;
     private String preferredMapType, shapeUUID, marker0ID, marker1ID, marker2ID, marker3ID, marker4ID, marker5ID, marker6ID, marker7ID, selectedOverlappingShapeUUID, email;
     private Button createChatButton, chatViewsButton, mapTypeButton, settingsButton;
@@ -104,9 +104,10 @@ public class Map extends FragmentActivity implements
     private Double relativeAngle = 0.0, selectedOverlappingShapeCircleRadius;
     private Location mlocation;
     private List<LatLng> polygonPointsList, selectedOverlappingShapePolygonVertices;
-    private ArrayList<String> overlappingShapesUUID = new ArrayList<>(), overlappingShapesCircleUUID = new ArrayList<>(), overlappingShapesPolygonUUID = new ArrayList<>();
+    private ArrayList<String> overlappingShapesUUID = new ArrayList<>(), overlappingShapesCircleUUID = new ArrayList<>(), overlappingShapesPolygonUUID = new ArrayList<>(), userUUIDAL = new ArrayList<>(), userEmailAL = new ArrayList<>();
     private ArrayList<LatLng> overlappingShapesCircleLocation = new ArrayList<>();
     private ArrayList<Double> overlappingShapesCircleRadius = new ArrayList<>();
+    private ArrayList<Boolean> seenByUserAL = new ArrayList<>();
     private ArrayList<java.util.List<LatLng>> overlappingShapesPolygonVertices = new ArrayList<>();
     private float x, y;
     private int chatsSize, dmCounter = 0, dmCounter1 = 0, dmCounter2 = 0;
@@ -115,12 +116,15 @@ public class Map extends FragmentActivity implements
     private FloatingActionButton randomButton;
     private CounterFab dmButton;
     private LocationManager locationManager;
-    private Query query;
+    private Query query1, query2;
 
-    // Change DMs in Map to be like DirectMentions.
-    // Mentions in Chat is returning the wrong value.
+    // Change DirectMentions' onStart() to be like addQuery(), then do the same to Map.
     // Use more specific children nodes when searching Firebase.
+    // Mentions in Chat is returning the wrong value.
+    // Prevent entering circle when locationProvider is disabled.
+    // In Chat, begin taking picture and recording video once user has accepted permissions.
     // Only download shapes in Map when necessary to cut down on database usage.
+    // Location seems to be tracked even when app is closed.
     // AppIntro on Github.
     // Make sure the secret stuff is secret.
     // Decrease app size / Check on accumulation of size over time.
@@ -312,6 +316,11 @@ public class Map extends FragmentActivity implements
 
                                                             Boolean seenByUser = (Boolean) ds.child("seenByUser").getValue();
                                                             if (seenByUser != null) {
+
+                                                                // Add these values to arrayLists for use in addQuery.
+                                                                userUUIDAL.add(userUUID);
+                                                                userEmailAL.add(userEmail);
+                                                                seenByUserAL.add(seenByUser);
 
                                                                 if (!seenByUser) {
 
@@ -2508,61 +2517,69 @@ public class Map extends FragmentActivity implements
 
         databaseReferenceOne.removeEventListener(eventListenerOne);
 
-        query = rootRef.child("MessageThreads").limitToLast(1);
+        // Add new values to arrayLists one at a time. This prevents the need to download the whole dataSnapshot every time this information is needed in eventListenerThree.
+        query1 = rootRef.child("MessageThreads").limitToLast(1);
 
-        eventListenerThree = new ValueEventListener() {
+        eventListenerOne = new ValueEventListener() {
 
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
 
-                for (final DataSnapshot ds : dataSnapshot.getChildren()) {
+                // If this is the first time calling this eventListener, prevent double posts (as onStart() already added the last item).
+                if (firstLoad) {
+
+                    return;
+                }
+
+                for (DataSnapshot ds : dataSnapshot.getChildren()) {
+
+                    userUUIDAL.add((String) ds.child("userUUID").getValue());
+                    userEmailAL.add((String) ds.child("email").getValue());
+                    seenByUserAL.add((Boolean) ds.child("seenByUser").getValue());
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                toastMessageLong(databaseError.getMessage());
+            }
+        };
+
+        query1.addValueEventListener(eventListenerOne);
+
+        query2 = rootRef.child("MessageThreads").limitToLast(1);
+
+        eventListenerTwo = new ValueEventListener() {
+
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                for (DataSnapshot ds : dataSnapshot.getChildren()) {
 
                     if (ds.child("removedMentionDuplicates").getValue() != null) {
 
-                        for (final DataSnapshot mention : ds.child("removedMentionDuplicates").getChildren()) {
+                        for (DataSnapshot mention : ds.child("removedMentionDuplicates").getChildren()) {
 
                             if (mention.getValue() != null) {
 
-                                databaseReferenceTwo = rootRef.child("MessageThreads");
-                                eventListenerTwo = new ValueEventListener() {
+                                for (int i = 0; i < userUUIDAL.size(); i++) {
 
-                                    @Override
-                                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                                    if (mention.getValue().toString().equals(userUUIDAL.get(i))) {
 
-                                        for (DataSnapshot dss : dataSnapshot.getChildren()) {
+                                        if (userEmailAL.get(i).equals(email)) {
 
-                                            String userUUID = (String) dss.child("userUUID").getValue();
-                                            if (mention.getValue().toString().equals(userUUID)) {
+                                            if (!seenByUserAL.get(userUUIDAL.size() - 1)) {
 
-                                                String userEmail = (String) dss.child("email").getValue();
-                                                if (userEmail != null) {
-
-                                                    if (userEmail.equals(email)) {
-
-                                                        Boolean seenByUser = (Boolean) ds.child("seenByUser").getValue();
-                                                        if (seenByUser != null) {
-
-                                                            if (!seenByUser) {
-
-                                                                dmCounter++;
-                                                                dmButton.setCount(dmCounter);
-                                                            }
-                                                        }
-                                                    }
-                                                }
+                                                dmCounter++;
+                                                dmButton.setCount(dmCounter);
                                             }
+
+                                            // Only updating one value, so return.
+                                            return;
                                         }
                                     }
-
-                                    @Override
-                                    public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                                        toastMessageLong(databaseError.getMessage());
-                                    }
-                                };
-
-                                // Add the second Firebase listener.
-                                databaseReferenceTwo.addListenerForSingleValueEvent(eventListenerTwo);
+                                }
                             }
                         }
                     }
@@ -2574,7 +2591,7 @@ public class Map extends FragmentActivity implements
             }
         };
 
-        query.addValueEventListener(eventListenerThree);
+        query2.addValueEventListener(eventListenerTwo);
     }
 
     @Override
@@ -2885,14 +2902,32 @@ public class Map extends FragmentActivity implements
 
         if (databaseReferenceTwo != null) {
 
-            databaseReferenceTwo.removeEventListener(eventListenerTwo);
+            if (eventListenerTwo != null) {
+
+                databaseReferenceTwo.removeEventListener(eventListenerTwo);
+            }
+
             databaseReferenceTwo = null;
         }
 
-        if (query != null) {
+        if (query1 != null) {
 
-            query.removeEventListener(eventListenerThree);
-            query = null;
+            if (eventListenerOne != null) {
+
+                query1.removeEventListener(eventListenerOne);
+            }
+
+            query1 = null;
+        }
+
+        if (query2 != null) {
+
+            if (eventListenerTwo != null) {
+
+                query2.removeEventListener(eventListenerTwo);
+            }
+
+            query2 = null;
         }
 
         if (eventListenerOne != null) {
@@ -2903,11 +2938,6 @@ public class Map extends FragmentActivity implements
         if (eventListenerTwo != null) {
 
             eventListenerTwo = null;
-        }
-
-        if (eventListenerThree != null) {
-
-            eventListenerThree = null;
         }
 
         if (createChatButton != null) {
@@ -3202,6 +3232,7 @@ public class Map extends FragmentActivity implements
 
         Log.i(TAG, "onProviderDisabled()");
         toastMessageLong("Your location provider is disabled");
+        loadingIcon.setVisibility(View.GONE);
     }
 
     @Override
