@@ -116,11 +116,16 @@ public class Map extends FragmentActivity implements
     private FloatingActionButton randomButton;
     private CounterFab dmButton;
     private LocationManager locationManager;
-    private Query query1, query2;
+    private Query queryOne, queryTwo;
 
-    // Change DirectMentions' onStart() to be like addQuery(), then do the same to Map.
+    // Add mentions in first eventListener in DirectMentions so there's no need to call second.
+    // Clicking on a
+    // Change Map's DMs to be like DirectMentions.
     // Use more specific children nodes when searching Firebase.
+    // Emulator is double posting and causing position to be wrong / This is creating a bug where clicking on a DM does not highlight that item in Chat.
     // Mentions in Chat is returning the wrong value.
+    // Chat is slow to load last item.
+    // Switch to onChildAdded to prevent updates when getting rid of messages?
     // Prevent entering circle when locationProvider is disabled.
     // In Chat, begin taking picture and recording video once user has accepted permissions.
     // Only download shapes in Map when necessary to cut down on database usage.
@@ -2518,8 +2523,7 @@ public class Map extends FragmentActivity implements
         databaseReferenceOne.removeEventListener(eventListenerOne);
 
         // Add new values to arrayLists one at a time. This prevents the need to download the whole dataSnapshot every time this information is needed in eventListenerThree.
-        query1 = rootRef.child("MessageThreads").limitToLast(1);
-
+        queryOne = rootRef.child("MessageThreads").limitToLast(1);
         eventListenerOne = new ValueEventListener() {
 
             @Override
@@ -2546,10 +2550,9 @@ public class Map extends FragmentActivity implements
             }
         };
 
-        query1.addValueEventListener(eventListenerOne);
+        queryOne.addValueEventListener(eventListenerOne);
 
-        query2 = rootRef.child("MessageThreads").limitToLast(1);
-
+        queryTwo = rootRef.child("MessageThreads").limitToLast(1);
         eventListenerTwo = new ValueEventListener() {
 
             @Override
@@ -2591,7 +2594,7 @@ public class Map extends FragmentActivity implements
             }
         };
 
-        query2.addValueEventListener(eventListenerTwo);
+        queryTwo.addValueEventListener(eventListenerTwo);
     }
 
     @Override
@@ -2910,24 +2913,24 @@ public class Map extends FragmentActivity implements
             databaseReferenceTwo = null;
         }
 
-        if (query1 != null) {
+        if (queryOne != null) {
 
             if (eventListenerOne != null) {
 
-                query1.removeEventListener(eventListenerOne);
+                queryOne.removeEventListener(eventListenerOne);
             }
 
-            query1 = null;
+            queryOne = null;
         }
 
-        if (query2 != null) {
+        if (queryTwo != null) {
 
             if (eventListenerTwo != null) {
 
-                query2.removeEventListener(eventListenerTwo);
+                queryTwo.removeEventListener(eventListenerTwo);
             }
 
-            query2 = null;
+            queryTwo = null;
         }
 
         if (eventListenerOne != null) {
