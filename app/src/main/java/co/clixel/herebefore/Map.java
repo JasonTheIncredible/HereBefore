@@ -118,8 +118,8 @@ public class Map extends FragmentActivity implements
     private LocationManager locationManager;
     private Query queryOne, queryTwo;
 
-    // Add mentions in first eventListener in DirectMentions so there's no need to call second.
-    // Clicking on a
+    // If chat exists, use that snapShot in DirectMentions.
+    // Get rid of unnecessary ALs in DirectMentions if message doesn't have a mention and email != email.
     // Change Map's DMs to be like DirectMentions.
     // Use more specific children nodes when searching Firebase.
     // Emulator is double posting and causing position to be wrong / This is creating a bug where clicking on a DM does not highlight that item in Chat.
