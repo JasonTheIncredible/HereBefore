@@ -837,8 +837,6 @@ public class Chat extends Fragment implements
     // Change to .limitToLast(1) to cut down on data usage. Otherwise, EVERY child at this node will be downloaded every time the child is updated.
     private void addQuery() {
 
-        Log.i(TAG, "addQuery()");
-
         databaseReference.removeEventListener(eventListenerOne);
 
         query = rootRef.child("MessageThreads").limitToLast(1);
@@ -847,6 +845,8 @@ public class Chat extends Fragment implements
 
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                Log.i(TAG, "addQuery()");
 
                 // Prevent double posts.
                 if (preventInitialization) {

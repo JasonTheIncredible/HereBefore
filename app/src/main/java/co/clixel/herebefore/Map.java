@@ -118,11 +118,10 @@ public class Map extends FragmentActivity implements
     private LocationManager locationManager;
     private Query queryOne, queryTwo;
 
-    // If chat exists, use that snapShot in DirectMentions.
-    // Get rid of unnecessary ALs in DirectMentions if message doesn't have a mention and email != email.
+    // If Chat exists, use that snapShot in DirectMentions.
+    // Chat mentions are double posting and causing position to be wrong / This is creating a bug where clicking on a DM does not highlight that item in Chat.
     // Change Map's DMs to be like DirectMentions.
     // Use more specific children nodes when searching Firebase.
-    // Emulator is double posting and causing position to be wrong / This is creating a bug where clicking on a DM does not highlight that item in Chat.
     // Mentions in Chat is returning the wrong value.
     // Chat is slow to load last item.
     // Switch to onChildAdded to prevent updates when getting rid of messages?
@@ -2564,9 +2563,9 @@ public class Map extends FragmentActivity implements
 
                         for (DataSnapshot mention : ds.child("removedMentionDuplicates").getChildren()) {
 
-                            if (mention.getValue() != null) {
+                            for (int i = 0; i < userUUIDAL.size(); i++) {
 
-                                for (int i = 0; i < userUUIDAL.size(); i++) {
+                                if (mention.getValue() != null) {
 
                                     if (mention.getValue().toString().equals(userUUIDAL.get(i))) {
 

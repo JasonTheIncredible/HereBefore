@@ -194,6 +194,15 @@ public class DirectMentions extends Fragment {
 
         for (DataSnapshot ds : dataSnapshot.getChildren()) {
 
+            // Only add necessary items to arrayLists.
+            if (ds.child("email").getValue() != null) {
+
+                if (ds.child("removedMentionDuplicates").getValue() == null && !ds.child("email").getValue().equals(email)) {
+
+                    return;
+                }
+            }
+
             userUUIDAL.add((String) ds.child("userUUID").getValue());
             userEmailAL.add((String) ds.child("email").getValue());
 
@@ -240,9 +249,9 @@ public class DirectMentions extends Fragment {
 
                 for (DataSnapshot mention : ds.child("removedMentionDuplicates").getChildren()) {
 
-                    if (mention.getValue() != null) {
+                    for (int i = 0; i < userUUIDAL.size(); i++) {
 
-                        for (int i = 0; i < userUUIDAL.size(); i++) {
+                        if (mention.getValue() != null) {
 
                             if (mention.getValue().toString().equals(userUUIDAL.get(i))) {
 
@@ -288,14 +297,14 @@ public class DirectMentions extends Fragment {
     // Change to .limitToLast(1) to cut down on data usage. Otherwise, EVERY child at this node will be downloaded every time the child is updated.
     private void addQueryOne() {
 
-        Log.i(TAG, "addQueryOne()");
-
         // Add new values to arrayLists one at a time. This prevents the need to download the whole dataSnapshot every time this information is needed in eventListenerThree.
         queryOne = rootRef.child("MessageThreads").limitToLast(1);
         eventListenerOne = new ValueEventListener() {
 
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                Log.i(TAG, "addQueryOne()");
 
                 // Prevent the eventListener from getting called twice.
                 if (alreadyInitialized) {
@@ -307,11 +316,20 @@ public class DirectMentions extends Fragment {
                 // If this is the first time calling this eventListener, prevent double posts (as onStart() already added the last item).
                 if (firstLoad) {
 
-                    addQueryTwo();
+                    addQueryTwo(dataSnapshot);
                     return;
                 }
 
                 for (DataSnapshot ds : dataSnapshot.getChildren()) {
+
+                    // Only add necessary items to arrayLists.
+                    if (ds.child("email").getValue() != null) {
+
+                        if (ds.child("removedMentionDuplicates").getValue() == null && !ds.child("email").getValue().equals(email)) {
+
+                            return;
+                        }
+                    }
 
                     userUUIDAL.add((String) ds.child("userUUID").getValue());
                     userEmailAL.add((String) ds.child("email").getValue());
@@ -335,9 +353,9 @@ public class DirectMentions extends Fragment {
                     shapeIsCircleAL.add((Boolean) ds.child("shapeIsCircle").getValue());
                     positionAL.add((Long) ds.child("position").getValue());
                     seenByUserAL.add((Boolean) ds.child("seenByUser").getValue());
-                }
 
-                addQueryTwo();
+                    addQueryTwo(dataSnapshot);
+                }
             }
 
             @Override
@@ -350,80 +368,67 @@ public class DirectMentions extends Fragment {
         queryOne.addValueEventListener(eventListenerOne);
     }
 
-    // Change to .limitToLast(1) to cut down on data usage. Otherwise, EVERY child at this node will be downloaded every time the child is updated.
-    private void addQueryTwo() {
+    private void addQueryTwo(@NonNull DataSnapshot dataSnapshot) {
 
         Log.i(TAG, "addQueryTwo()");
 
-        queryTwo = rootRef.child("MessageThreads").limitToLast(1);
-        eventListenerTwo = new ValueEventListener() {
+        // If this is the first time calling this eventListener, prevent double posts (as onStart() already added the last item).
+        if (firstLoad) {
 
-            @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+            firstLoad = false;
+            initDirectMentionsAdapter();
+            return;
+        }
 
-                // If this is the first time calling this eventListener, prevent double posts (as onStart() already added the last item).
-                if (firstLoad) {
+        // Read RecyclerView scroll position (for use in initDirectMentionsAdapter()).
+        if (directMentionsRecyclerViewLinearLayoutManager != null) {
 
-                    firstLoad = false;
-                    initDirectMentionsAdapter();
-                    return;
-                }
+            index = directMentionsRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
+            last = directMentionsRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
+            View v = directMentionsRecyclerView.getChildAt(0);
+            top = (v == null) ? 0 : (v.getTop() - directMentionsRecyclerView.getPaddingTop());
+        }
 
-                // Read RecyclerView scroll position (for use in initDirectMentionsAdapter()).
-                if (directMentionsRecyclerViewLinearLayoutManager != null) {
+        for (DataSnapshot ds : dataSnapshot.getChildren()) {
 
-                    index = directMentionsRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
-                    last = directMentionsRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
-                    View v = directMentionsRecyclerView.getChildAt(0);
-                    top = (v == null) ? 0 : (v.getTop() - directMentionsRecyclerView.getPaddingTop());
-                }
+            if (ds.child("removedMentionDuplicates").getValue() != null) {
 
-                for (DataSnapshot ds : dataSnapshot.getChildren()) {
+                for (DataSnapshot mention : ds.child("removedMentionDuplicates").getChildren()) {
 
-                    if (ds.child("removedMentionDuplicates").getValue() != null) {
+                    if (mention.getValue() != null) {
 
-                        for (DataSnapshot mention : ds.child("removedMentionDuplicates").getChildren()) {
+                        for (int i = 0; i < userUUIDAL.size(); i++) {
 
-                            if (mention.getValue() != null) {
+                            if (mention.getValue().toString().equals(userUUIDAL.get(i))) {
 
-                                for (int i = 0; i < userUUIDAL.size(); i++) {
+                                if (userEmailAL.get(i).equals(email)) {
 
-                                    if (mention.getValue().toString().equals(userUUIDAL.get(i))) {
+                                    alreadyInitialized = true;
 
-                                        if (userEmailAL.get(i).equals(email)) {
+                                    mTime.add(timeAL.get(userUUIDAL.size() - 1));
+                                    mUser.add(userAL.get(userUUIDAL.size() - 1));
+                                    mImage.add(imageURLAL.get(userUUIDAL.size() - 1));
+                                    mVideo.add(videoURLAL.get(userUUIDAL.size() - 1));
+                                    mText.add(messageTextAL.get(userUUIDAL.size() - 1));
+                                    mShapeUUID.add(shapeUUIDAL.get(userUUIDAL.size() - 1));
+                                    mUserIsWithinShape.add(userIsWithinShapeAL.get(userUUIDAL.size() - 1));
+                                    mShapeIsCircle.add(shapeIsCircleAL.get(userUUIDAL.size() - 1));
+                                    mPosition.add(positionAL.get(userUUIDAL.size() - 1));
+                                    mSeenByUser.add(seenByUserAL.get(userUUIDAL.size() - 1));
+                                    // All DMs will be "new", so add them to notSeenByUserList and update their value in Firebase.
+                                    notSeenByUserList.add(positionAL.get(userUUIDAL.size() - 1));
+                                    ds.child("seenByUser").getRef().setValue(true);
 
-                                            alreadyInitialized = true;
-
-                                            mTime.add(timeAL.get(userUUIDAL.size() - 1));
-                                            mUser.add(userAL.get(userUUIDAL.size() - 1));
-                                            mImage.add(imageURLAL.get(userUUIDAL.size() - 1));
-                                            mVideo.add(videoURLAL.get(userUUIDAL.size() - 1));
-                                            mText.add(messageTextAL.get(userUUIDAL.size() - 1));
-                                            mShapeUUID.add(shapeUUIDAL.get(userUUIDAL.size() - 1));
-                                            mUserIsWithinShape.add(userIsWithinShapeAL.get(userUUIDAL.size() - 1));
-                                            mShapeIsCircle.add(shapeIsCircleAL.get(userUUIDAL.size() - 1));
-                                            mPosition.add(positionAL.get(userUUIDAL.size() - 1));
-                                            mSeenByUser.add(seenByUserAL.get(userUUIDAL.size() - 1));
-                                            // All DMs will be "new", so add them to notSeenByUserList and update their value in Firebase.
-                                            notSeenByUserList.add(positionAL.get(userUUIDAL.size() - 1));
-                                            ds.child("seenByUser").getRef().setValue(true);
-
-                                            initDirectMentionsAdapter();
-                                            // Only updating one value, so return.
-                                            return;
-                                        }
-                                    }
+                                    initDirectMentionsAdapter();
+                                    // Only updating one value, so return.
+                                    return;
                                 }
                             }
                         }
                     }
                 }
             }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-            }
-        };
+        }
 
         queryTwo.addListenerForSingleValueEvent(eventListenerTwo);
     }
