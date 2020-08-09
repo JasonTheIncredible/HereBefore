@@ -128,10 +128,10 @@ public class Chat extends Fragment implements
     private ArrayList<Boolean> mUserIsWithinShape;
     private ArrayList<String> removedMentionDuplicates;
     private RecyclerView chatRecyclerView, mentionsRecyclerView;
-    private static int index = -1, top = -1, last;
+    private static int index = -1, top = -1, last, eventListenerCounter = -1;
     private Integer directMentionsPosition = null;
     private DatabaseReference rootRef, databaseReference;
-    private ValueEventListener eventListenerOne, eventListenerTwo;
+    private ValueEventListener eventListener;
     private FloatingActionButton sendButton, mediaButton;
     private boolean firstLoad, needLoadingIcon = false, preventInitialization = false, reachedEndOfRecyclerView = false, recyclerViewHasScrolled = false, messageSent = false, sendButtonClicked = false, mediaButtonMenuIsOpen, fileIsImage, checkPermissionsPicture, URIisFile,
             newShape, threeMarkers, fourMarkers, fiveMarkers, sixMarkers, sevenMarkers, eightMarkers, shapeIsCircle;
@@ -301,7 +301,7 @@ public class Chat extends Fragment implements
 
         rootRef = FirebaseDatabase.getInstance().getReference();
         databaseReference = rootRef.child("MessageThreads");
-        eventListenerOne = new ValueEventListener() {
+        eventListener = new ValueEventListener() {
 
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
@@ -420,7 +420,7 @@ public class Chat extends Fragment implements
         };
 
         // Add the Firebase listener.
-        databaseReference.addListenerForSingleValueEvent(eventListenerOne);
+        databaseReference.addListenerForSingleValueEvent(eventListener);
 
         // Hide the imageView or videoImageView if user presses the delete button.
         mInput.setOnKeyListener(new View.OnKeyListener() {
@@ -576,21 +576,12 @@ public class Chat extends Fragment implements
                                         // Get the token assigned by Firebase when the user signed up / signed in.
                                         String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
                                         messageInformation.setToken(token);
-                                        if (removedMentionDuplicates.isEmpty()) {
-                                            messageInformation.setSeenByUser(true);
-                                        } else {
-                                            messageInformation.setRemovedMentionDuplicates(removedMentionDuplicates);
-                                            messageInformation.setSeenByUser(false);
-                                        }
                                         messageInformation.setUserIsWithinShape(userIsWithinShape);
                                         messageInformation.setShapeIsCircle(shapeIsCircle);
                                         DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                                         newMessage.setValue(messageInformation);
 
                                         mInput.getText().clear();
-                                        if (removedMentionDuplicates != null) {
-                                            removedMentionDuplicates.clear();
-                                        }
                                         newShape = false;
                                         sendButtonClicked = false;
                                     }
@@ -707,21 +698,12 @@ public class Chat extends Fragment implements
                                         // Get the token assigned by Firebase when the user signed up / signed in.
                                         String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
                                         messageInformation.setToken(token);
-                                        if (removedMentionDuplicates.isEmpty()) {
-                                            messageInformation.setSeenByUser(true);
-                                        } else {
-                                            messageInformation.setRemovedMentionDuplicates(removedMentionDuplicates);
-                                            messageInformation.setSeenByUser(false);
-                                        }
                                         messageInformation.setUserIsWithinShape(userIsWithinShape);
                                         messageInformation.setShapeIsCircle(shapeIsCircle);
                                         DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                                         newMessage.setValue(messageInformation);
 
                                         mInput.getText().clear();
-                                        if (removedMentionDuplicates != null) {
-                                            removedMentionDuplicates.clear();
-                                        }
                                         newShape = false;
                                         sendButtonClicked = false;
                                     }
@@ -837,16 +819,24 @@ public class Chat extends Fragment implements
     // Change to .limitToLast(1) to cut down on data usage. Otherwise, EVERY child at this node will be downloaded every time the child is updated.
     private void addQuery() {
 
-        databaseReference.removeEventListener(eventListenerOne);
+        databaseReference.removeEventListener(eventListener);
 
         query = rootRef.child("MessageThreads").limitToLast(1);
 
-        eventListenerTwo = new ValueEventListener() {
+        eventListener = new ValueEventListener() {
 
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
 
                 Log.i(TAG, "addQuery()");
+
+                // Prevent double posts.
+                //  When a removedMentionDuplicate exists, onDataChange is called three times (I'm not sure why, but this could probably be optimized in the future).
+                if (removedMentionDuplicates != null && eventListenerCounter == 0) {
+
+                    eventListenerCounter++;
+                    return;
+                }
 
                 // Prevent double posts.
                 if (preventInitialization) {
@@ -908,6 +898,7 @@ public class Chat extends Fragment implements
                     top = (v == null) ? 0 : (v.getTop() - chatRecyclerView.getPaddingTop());
                 }
 
+                eventListenerCounter = 0;
                 initChatAdapter();
             }
 
@@ -916,7 +907,7 @@ public class Chat extends Fragment implements
             }
         };
 
-        query.addValueEventListener(eventListenerTwo);
+        query.addValueEventListener(eventListener);
     }
 
     @Override
@@ -931,12 +922,12 @@ public class Chat extends Fragment implements
 
         if (databaseReference != null) {
 
-            databaseReference.removeEventListener(eventListenerOne);
+            databaseReference.removeEventListener(eventListener);
         }
 
         if (query != null) {
 
-            query.removeEventListener(eventListenerTwo);
+            query.removeEventListener(eventListener);
             query = null;
         }
 
@@ -953,14 +944,9 @@ public class Chat extends Fragment implements
             mentionsRecyclerView.setAdapter(null);
         }
 
-        if (eventListenerOne != null) {
+        if (eventListener != null) {
 
-            eventListenerOne = null;
-        }
-
-        if (eventListenerTwo != null) {
-
-            eventListenerTwo = null;
+            eventListener = null;
         }
 
         if (mInput != null) {

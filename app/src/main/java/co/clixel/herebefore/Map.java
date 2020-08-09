@@ -119,7 +119,6 @@ public class Map extends FragmentActivity implements
     private Query queryOne, queryTwo;
 
     // If Chat exists, use that snapShot in DirectMentions.
-    // Chat mentions are double posting and causing position to be wrong / This is creating a bug where clicking on a DM does not highlight that item in Chat.
     // Change Map's DMs to be like DirectMentions.
     // Use more specific children nodes when searching Firebase.
     // Mentions in Chat is returning the wrong value.

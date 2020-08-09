@@ -56,7 +56,7 @@ public class DirectMentions extends Fragment {
     private RecyclerView directMentionsRecyclerView;
     private static int index = -1, top = -1, last;
     private DatabaseReference rootRef, databaseReferenceOne, databaseReferenceCircles, databaseReferencePolygons;
-    private ValueEventListener eventListenerOne, eventListenerTwo, eventListenerCircles, eventListenerPolygons;
+    private ValueEventListener eventListener, eventListenerCircles, eventListenerPolygons;
     private LinearLayoutManager directMentionsRecyclerViewLinearLayoutManager;
     private boolean firstLoad, userIsWithinShape, alreadyInitialized = false;
     private View loadingIcon;
@@ -66,7 +66,7 @@ public class DirectMentions extends Fragment {
     private Activity mActivity;
     private View rootView;
     private TextView noDMsTextView;
-    private Query queryOne, queryTwo;
+    private Query query;
 
     @NonNull
     @Override
@@ -166,7 +166,7 @@ public class DirectMentions extends Fragment {
 
         rootRef = FirebaseDatabase.getInstance().getReference();
         databaseReferenceOne = rootRef.child("MessageThreads");
-        eventListenerOne = new ValueEventListener() {
+        eventListener = new ValueEventListener() {
 
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
@@ -185,7 +185,7 @@ public class DirectMentions extends Fragment {
             }
         };
 
-        databaseReferenceOne.addListenerForSingleValueEvent(eventListenerOne);
+        databaseReferenceOne.addListenerForSingleValueEvent(eventListener);
     }
 
     private void fillArrayLists(@NonNull DataSnapshot dataSnapshot) {
@@ -291,20 +291,20 @@ public class DirectMentions extends Fragment {
             }
         }
 
-        addQueryOne();
+        addQueryPartOne();
     }
 
     // Change to .limitToLast(1) to cut down on data usage. Otherwise, EVERY child at this node will be downloaded every time the child is updated.
-    private void addQueryOne() {
+    private void addQueryPartOne() {
 
         // Add new values to arrayLists one at a time. This prevents the need to download the whole dataSnapshot every time this information is needed in eventListenerThree.
-        queryOne = rootRef.child("MessageThreads").limitToLast(1);
-        eventListenerOne = new ValueEventListener() {
+        query = rootRef.child("MessageThreads").limitToLast(1);
+        eventListener = new ValueEventListener() {
 
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
 
-                Log.i(TAG, "addQueryOne()");
+                Log.i(TAG, "addQueryPartOne()");
 
                 // Prevent the eventListener from getting called twice.
                 if (alreadyInitialized) {
@@ -316,7 +316,7 @@ public class DirectMentions extends Fragment {
                 // If this is the first time calling this eventListener, prevent double posts (as onStart() already added the last item).
                 if (firstLoad) {
 
-                    addQueryTwo(dataSnapshot);
+                    addQueryPartTwo(dataSnapshot);
                     return;
                 }
 
@@ -354,7 +354,7 @@ public class DirectMentions extends Fragment {
                     positionAL.add((Long) ds.child("position").getValue());
                     seenByUserAL.add((Boolean) ds.child("seenByUser").getValue());
 
-                    addQueryTwo(dataSnapshot);
+                    addQueryPartTwo(dataSnapshot);
                 }
             }
 
@@ -365,12 +365,12 @@ public class DirectMentions extends Fragment {
             }
         };
 
-        queryOne.addValueEventListener(eventListenerOne);
+        query.addValueEventListener(eventListener);
     }
 
-    private void addQueryTwo(@NonNull DataSnapshot dataSnapshot) {
+    private void addQueryPartTwo(@NonNull DataSnapshot dataSnapshot) {
 
-        Log.i(TAG, "addQueryTwo()");
+        Log.i(TAG, "addQueryPartTwo()");
 
         // If this is the first time calling this eventListener, prevent double posts (as onStart() already added the last item).
         if (firstLoad) {
@@ -429,8 +429,6 @@ public class DirectMentions extends Fragment {
                 }
             }
         }
-
-        queryTwo.addListenerForSingleValueEvent(eventListenerTwo);
     }
 
     private void initDirectMentionsAdapter() {
@@ -505,19 +503,13 @@ public class DirectMentions extends Fragment {
 
         if (databaseReferenceOne != null) {
 
-            databaseReferenceOne.removeEventListener(eventListenerOne);
+            databaseReferenceOne.removeEventListener(eventListener);
         }
 
-        if (queryOne != null) {
+        if (query != null) {
 
-            queryOne.removeEventListener(eventListenerOne);
-            queryOne = null;
-        }
-
-        if (queryTwo != null) {
-
-            queryTwo.removeEventListener(eventListenerTwo);
-            queryTwo = null;
+            query.removeEventListener(eventListener);
+            query = null;
         }
 
         alreadyInitialized = false;
@@ -528,14 +520,9 @@ public class DirectMentions extends Fragment {
             directMentionsRecyclerView.setAdapter(null);
         }
 
-        if (eventListenerOne != null) {
+        if (eventListener != null) {
 
-            eventListenerOne = null;
-        }
-
-        if (eventListenerTwo != null) {
-
-            eventListenerTwo = null;
+            eventListener = null;
         }
 
         cancelToasts();
