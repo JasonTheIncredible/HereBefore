@@ -156,36 +156,41 @@ public class DirectMentions extends Fragment {
         }
 
         // Search Firebase for DirectMentions.
-        addEventListenerOne();
+        // If Chat doesn't exist, use the listeners here. Otherwise, use the snapShot from Chat.
+        int chatLayout = mContext.getResources().getIdentifier("chat", "chat", mContext.getPackageName());
+        if (chatLayout == 0) {
+
+            rootRef = FirebaseDatabase.getInstance().getReference();
+            databaseReferenceOne = rootRef.child("MessageThreads");
+            eventListener = new ValueEventListener() {
+
+                @Override
+                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                    addEventListener(dataSnapshot);
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                    toastMessageLong(databaseError.getMessage());
+                }
+            };
+
+            databaseReferenceOne.addListenerForSingleValueEvent(eventListener);
+        }
     }
 
     // Search Firebase for DirectMentions. As these calls are asynchronous, add them one at a time.
-    private void addEventListenerOne() {
+    public void addEventListener(DataSnapshot dataSnapshot) {
 
-        Log.i(TAG, "addEventListenerOne()");
+        Log.i(TAG, "addEventListener()");
 
-        rootRef = FirebaseDatabase.getInstance().getReference();
-        databaseReferenceOne = rootRef.child("MessageThreads");
-        eventListener = new ValueEventListener() {
+        // First, fill the arrayLists. Then, use the arrayLists to fill out recyclerView.
+        // Using the same dataSnapshot cuts down on data usage.
+        fillArrayLists(dataSnapshot);
 
-            @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-
-                // First, fill the arrayLists. Then, use the arrayLists to fill out recyclerView.
-                // Using the same dataSnapshot cuts down on data usage.
-                fillArrayLists(dataSnapshot);
-
-                fillRecyclerView(dataSnapshot);
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                toastMessageLong(databaseError.getMessage());
-            }
-        };
-
-        databaseReferenceOne.addListenerForSingleValueEvent(eventListener);
+        fillRecyclerView(dataSnapshot);
     }
 
     private void fillArrayLists(@NonNull DataSnapshot dataSnapshot) {
@@ -215,7 +220,7 @@ public class DirectMentions extends Fragment {
                 timeAL.add(messageTime);
             } else {
 
-                Log.e(TAG, "addEventListenerOne() -> serverDate == null");
+                Log.e(TAG, "fillArrayList() -> serverDate == null");
             }
             userAL.add((String) ds.child("userUUID").getValue());
             imageURLAL.add((String) ds.child("imageURL").getValue());
@@ -266,7 +271,7 @@ public class DirectMentions extends Fragment {
                                         mTime.add(messageTime);
                                     } else {
 
-                                        Log.e(TAG, "addEventListenerTwo() -> serverDate == null");
+                                        Log.e(TAG, "fillRecyclerView() -> serverDate == null");
                                     }
                                     mUser.add((String) ds.child("userUUID").getValue());
                                     mImage.add((String) ds.child("imageURL").getValue());
@@ -333,6 +338,7 @@ public class DirectMentions extends Fragment {
 
                     userUUIDAL.add((String) ds.child("userUUID").getValue());
                     userEmailAL.add((String) ds.child("email").getValue());
+
                     Long serverDate = (Long) ds.child("date").getValue();
                     DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
                     if (serverDate != null) {
@@ -342,7 +348,7 @@ public class DirectMentions extends Fragment {
                         timeAL.add(messageTime);
                     } else {
 
-                        Log.e(TAG, "addQueryOne() -> serverDate == null");
+                        Log.e(TAG, "addQueryPartOne() -> serverDate == null");
                     }
                     userAL.add((String) ds.child("userUUID").getValue());
                     imageURLAL.add((String) ds.child("imageURL").getValue());

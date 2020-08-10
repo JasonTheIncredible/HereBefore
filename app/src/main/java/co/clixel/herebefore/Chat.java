@@ -216,6 +216,7 @@ public class Chat extends Fragment implements
 
         // Set to true to scroll to the bottom of chatRecyclerView.
         firstLoad = true;
+        eventListenerCounter = -1;
 
         // Make the loadingIcon visible upon the first load, as it can sometimes take a while to show anything. It should be made invisible in initChatAdapter().
         if (loadingIcon != null) {
@@ -305,6 +306,14 @@ public class Chat extends Fragment implements
 
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                // Use this dataSnapshot in DirectMentions to cut down on data usage.
+                int directMentionsLayout = mContext.getResources().getIdentifier("directMentions", "directMentions", mContext.getPackageName());
+                if (directMentionsLayout != 0) {
+
+                    DirectMentions directMentions = new DirectMentions();
+                    directMentions.addEventListener(dataSnapshot);
+                }
 
                 // Clear the RecyclerView before adding new entries to prevent duplicates.
                 if (chatRecyclerViewLinearLayoutManager != null) {

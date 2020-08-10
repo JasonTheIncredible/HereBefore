@@ -118,7 +118,7 @@ public class Map extends FragmentActivity implements
     private LocationManager locationManager;
     private Query queryOne, queryTwo;
 
-    // If Chat exists, use that snapShot in DirectMentions.
+    // Bug: New messages are not added to Chat when added too quickly.
     // Change Map's DMs to be like DirectMentions.
     // Use more specific children nodes when searching Firebase.
     // Mentions in Chat is returning the wrong value.
