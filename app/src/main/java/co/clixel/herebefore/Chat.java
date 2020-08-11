@@ -315,18 +315,6 @@ public class Chat extends Fragment implements
                     directMentions.addEventListener(dataSnapshot);
                 }
 
-                // Clear the RecyclerView before adding new entries to prevent duplicates.
-                if (chatRecyclerViewLinearLayoutManager != null) {
-
-                    mTime.clear();
-                    mUser.clear();
-                    mSuggestions.clear();
-                    mImage.clear();
-                    mVideo.clear();
-                    mText.clear();
-                    mUserIsWithinShape.clear();
-                }
-
                 for (DataSnapshot ds : dataSnapshot.getChildren()) {
 
                     // If the uuid brought from Map.java equals the uuid attached to the recyclerviewlayout in Firebase, load it into the RecyclerView.
@@ -784,9 +772,6 @@ public class Chat extends Fragment implements
                             newMessage.setValue(messageInformation);
 
                             mInput.getText().clear();
-                            if (removedMentionDuplicates != null) {
-                                removedMentionDuplicates.clear();
-                            }
                             sendButtonClicked = false;
                         }
                     }
@@ -841,7 +826,7 @@ public class Chat extends Fragment implements
 
                 // Prevent double posts.
                 //  When a removedMentionDuplicate exists, onDataChange is called three times (I'm not sure why, but this could probably be optimized in the future).
-                if (removedMentionDuplicates != null && eventListenerCounter == 0) {
+                if (!removedMentionDuplicates.isEmpty() && eventListenerCounter == 0) {
 
                     eventListenerCounter++;
                     return;
@@ -908,6 +893,10 @@ public class Chat extends Fragment implements
                 }
 
                 eventListenerCounter = 0;
+                if (removedMentionDuplicates != null) {
+
+                    removedMentionDuplicates.clear();
+                }
                 initChatAdapter();
             }
 
@@ -1514,79 +1503,6 @@ public class Chat extends Fragment implements
 
                 super(itemView);
                 suggestion = itemView.findViewById(R.id.suggestion);
-
-                itemView.setOnClickListener(new View.OnClickListener() {
-
-                    @Override
-                    public void onClick(View v) {
-
-                        // Convert the string into a mentionable to be inserted into the MentionsEditText.
-                        Mentionable mentionable = new Mentionable() {
-
-                            @NonNull
-                            @Override
-                            public String getTextForDisplayMode(@NonNull MentionDisplayMode mode) {
-
-                                if (mSuggestions.get(getAdapterPosition()) != null) {
-
-                                    // Add mentions to this list. Duplicates will be added and later cleared from this list.
-                                    allMentions.add(mSuggestions.get(getAdapterPosition()));
-
-                                    return "@" + mSuggestions.get(getAdapterPosition()).substring(0, 10) + "...";
-                                } else {
-
-                                    return "ERROR";
-                                }
-                            }
-
-                            @NonNull
-                            @Override
-                            public MentionDeleteStyle getDeleteStyle() {
-
-                                return MentionDeleteStyle.FULL_DELETE;
-                            }
-
-                            @Override
-                            public int getSuggestibleId() {
-
-                                return 0;
-                            }
-
-                            @NonNull
-                            @Override
-                            public String getSuggestiblePrimaryText() {
-
-                                if (mSuggestions.get(getAdapterPosition()) != null) {
-
-                                    return mSuggestions.get(getAdapterPosition());
-                                } else {
-
-                                    return "ERROR";
-                                }
-                            }
-
-                            @Override
-                            public int describeContents() {
-
-                                return 0;
-                            }
-
-                            @Override
-                            public void writeToParcel(Parcel dest, int flags) {
-                            }
-                        };
-
-                        mInput.insertMention(mentionable);
-
-                        // A set will not allow duplicates, so this will get rid of any duplicates before they are added to the final list.
-                        // The final list will be sent to Firebase to notify users of messages.
-                        Set<String> hashSet = new LinkedHashSet<>(allMentions);
-                        removedMentionDuplicates = new ArrayList<>(hashSet);
-
-                        // Add a space after inserting mention.
-                        mInput.append(" ");
-                    }
-                });
             }
         }
 
@@ -1609,6 +1525,69 @@ public class Chat extends Fragment implements
         public void onBindViewHolder(@NonNull final ViewHolder holder, final int position) {
 
             holder.suggestion.setText(mSuggestions.get(position));
+
+            holder.itemView.setOnClickListener(new View.OnClickListener() {
+
+                @Override
+                public void onClick(View v) {
+
+                    // Convert the string into a mentionable to be inserted into the MentionsEditText.
+                    Mentionable mentionable = new Mentionable() {
+
+                        @NonNull
+                        @Override
+                        public String getTextForDisplayMode(@NonNull MentionDisplayMode mode) {
+
+                            // Add mentions to this list. Duplicates will be added and later cleared from this list.
+                            allMentions.add((String) mSuggestions.get(position));
+
+                            return "@" + ((String) mSuggestions.get(position)).substring(0, 10) + "...";
+                        }
+
+                        @NonNull
+                        @Override
+                        public MentionDeleteStyle getDeleteStyle() {
+
+                            removedMentionDuplicates.remove((String) mSuggestions.get(position));
+
+                            return MentionDeleteStyle.FULL_DELETE;
+                        }
+
+                        @Override
+                        public int getSuggestibleId() {
+
+                            return 0;
+                        }
+
+                        @NonNull
+                        @Override
+                        public String getSuggestiblePrimaryText() {
+
+                            return (String) mSuggestions.get(position);
+                        }
+
+                        @Override
+                        public int describeContents() {
+
+                            return 0;
+                        }
+
+                        @Override
+                        public void writeToParcel(Parcel dest, int flags) {
+                        }
+                    };
+
+                    mInput.insertMention(mentionable);
+
+                    // A set will not allow duplicates, so this will get rid of any duplicates before they are added to the final list.
+                    // The final list will be sent to Firebase to notify users of messages.
+                    Set<String> hashSet = new LinkedHashSet<>(allMentions);
+                    removedMentionDuplicates = new ArrayList<>(hashSet);
+
+                    // Add a space after inserting mention.
+                    mInput.append(" ");
+                }
+            });
 
             loadPreferences();
 

@@ -90,38 +90,36 @@ public class Map extends FragmentActivity implements
     private Marker marker0, marker1, marker2, marker3, marker4, marker5, marker6, marker7;
     private Circle newCircle, circleTemp, mCircle = null;
     private Polygon newPolygon, polygonTemp, mPolygon = null;
-    private DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference(), firebaseCircles = rootRef.child("Circles"), firebasePolygons = rootRef.child("Polygons"), databaseReferenceOne, databaseReferenceTwo;
-    private ValueEventListener eventListenerOne, eventListenerTwo;
+    private DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference(), firebaseCircles = rootRef.child("Circles"), firebasePolygons = rootRef.child("Polygons"), databaseReference;
+    private ValueEventListener eventListener;
     private SeekBar chatSizeSeekBar, chatSelectorSeekBar;
     private String preferredMapType, shapeUUID, marker0ID, marker1ID, marker2ID, marker3ID, marker4ID, marker5ID, marker6ID, marker7ID, selectedOverlappingShapeUUID, email;
     private Button createChatButton, chatViewsButton, mapTypeButton, settingsButton;
     private PopupMenu popupMapType, popupChatViews, popupCreateChat;
     private boolean stillLoadingCircles = true, stillLoadingPolygons = true, stillUpdatingCamera = true;
-    private Boolean firstLoad = true, cameraMoved = false, waitingForBetterLocationAccuracy = false, badAccuracy = false, showingEverything = true, showingLarge = false, showingMedium = false, showingSmall = false, showingPoints = false,
+    private Boolean firstLoadCamera = true, firstLoadDMs = true, cameraMoved = false, waitingForBetterLocationAccuracy = false, badAccuracy = false, showingEverything = true, showingLarge = false, showingMedium = false, showingSmall = false, showingPoints = false,
             waitingForClicksToProcess = false, waitingForShapeInformationToProcess = false, markerOutsidePolygon = false, usedSeekBar = false,
             userIsWithinShape, selectingShape = false, threeMarkers = false, fourMarkers = false, fiveMarkers = false, sixMarkers = false, sevenMarkers = false, eightMarkers = false;
     private LatLng markerPositionAtVertexOfPolygon, marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position, selectedOverlappingShapeCircleLocation;
     private Double relativeAngle = 0.0, selectedOverlappingShapeCircleRadius;
     private Location mlocation;
     private List<LatLng> polygonPointsList, selectedOverlappingShapePolygonVertices;
-    private ArrayList<String> overlappingShapesUUID = new ArrayList<>(), overlappingShapesCircleUUID = new ArrayList<>(), overlappingShapesPolygonUUID = new ArrayList<>(), userUUIDAL = new ArrayList<>(), userEmailAL = new ArrayList<>();
+    private ArrayList<String> overlappingShapesUUID = new ArrayList<>(), overlappingShapesCircleUUID = new ArrayList<>(), overlappingShapesPolygonUUID = new ArrayList<>(), userUUIDAL, userEmailAL;
     private ArrayList<LatLng> overlappingShapesCircleLocation = new ArrayList<>();
     private ArrayList<Double> overlappingShapesCircleRadius = new ArrayList<>();
-    private ArrayList<Boolean> seenByUserAL = new ArrayList<>();
     private ArrayList<java.util.List<LatLng>> overlappingShapesPolygonVertices = new ArrayList<>();
     private float x, y;
-    private int chatsSize, dmCounter = 0, dmCounter1 = 0, dmCounter2 = 0;
+    private int chatsSize, dmCounter = 0;
     private Toast longToast;
     private View loadingIcon;
     private FloatingActionButton randomButton;
     private CounterFab dmButton;
     private LocationManager locationManager;
-    private Query queryOne, queryTwo;
+    private Query query;
 
-    // Bug: New messages are not added to Chat when added too quickly.
-    // Change Map's DMs to be like DirectMentions.
+    // Every other received DM is double posting (possible problem in DirectMentions).
+    // Use Map's snapshot in Chat / DirectMentions.
     // Use more specific children nodes when searching Firebase.
-    // Mentions in Chat is returning the wrong value.
     // Chat is slow to load last item.
     // Switch to onChildAdded to prevent updates when getting rid of messages?
     // Prevent entering circle when locationProvider is disabled.
@@ -282,95 +280,32 @@ public class Map extends FragmentActivity implements
             }
         });
 
+        userUUIDAL = new ArrayList<>();
+        userEmailAL = new ArrayList<>();
+
         // If new DMs, update dmButton badge.
         if (email != null) {
 
-            databaseReferenceOne = rootRef.child("MessageThreads");
-            eventListenerOne = new ValueEventListener() {
+            rootRef = FirebaseDatabase.getInstance().getReference();
+            databaseReference = rootRef.child("MessageThreads");
+            eventListener = new ValueEventListener() {
 
                 @Override
                 public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
 
-                    for (final DataSnapshot ds : dataSnapshot.getChildren()) {
+                    fillArrayLists(dataSnapshot);
 
-                        if (ds.child("removedMentionDuplicates").getValue() != null) {
-
-                            for (final DataSnapshot mention : ds.child("removedMentionDuplicates").getChildren()) {
-
-                                if (mention.getValue() != null) {
-
-                                    dmCounter1++;
-                                    databaseReferenceTwo = rootRef.child("MessageThreads");
-                                    eventListenerTwo = new ValueEventListener() {
-
-                                        @Override
-                                        public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-
-                                            for (DataSnapshot dss : dataSnapshot.getChildren()) {
-
-                                                String userUUID = (String) dss.child("userUUID").getValue();
-                                                if (mention.getValue().toString().equals(userUUID)) {
-
-                                                    dmCounter2++;
-                                                    String userEmail = (String) dss.child("email").getValue();
-                                                    if (userEmail != null) {
-
-                                                        if (userEmail.equals(email)) {
-
-                                                            Boolean seenByUser = (Boolean) ds.child("seenByUser").getValue();
-                                                            if (seenByUser != null) {
-
-                                                                // Add these values to arrayLists for use in addQuery.
-                                                                userUUIDAL.add(userUUID);
-                                                                userEmailAL.add(userEmail);
-                                                                seenByUserAL.add(seenByUser);
-
-                                                                if (!seenByUser) {
-
-                                                                    dmCounter++;
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-
-                                            // If these counters equal, the DMs have all been received from Firebase.
-                                            // Therefore, switch to .limitToLast(1) to cut down on data usage.
-                                            if (dmCounter1 == dmCounter2) {
-
-                                                // dmCounter is going to be increased by 1 during addQuery, so temporarily decrease it by 1 here.
-                                                if (dmCounter != 0) {
-
-                                                    dmCounter--;
-                                                }
-                                                addQuery();
-                                            }
-                                        }
-
-                                        @Override
-                                        public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                                            toastMessageLong(databaseError.getMessage());
-                                        }
-                                    };
-
-                                    // Add the second Firebase listener.
-                                    databaseReferenceTwo.addListenerForSingleValueEvent(eventListenerTwo);
-                                }
-                            }
-                        }
-                    }
+                    dmCounterIncrease(dataSnapshot);
                 }
 
+                @Override
                 public void onCancelled(@NonNull DatabaseError databaseError) {
 
                     toastMessageLong(databaseError.getMessage());
                 }
             };
 
-            // Add the first Firebase listener.
-            databaseReferenceOne.addValueEventListener(eventListenerOne);
+            databaseReference.addListenerForSingleValueEvent(eventListener);
         }
 
         // Go to DMs.
@@ -464,7 +399,7 @@ public class Map extends FragmentActivity implements
                                     mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition), 2000, null);
 
                                     // Adjust boolean values to prevent this logic from being called again.
-                                    firstLoad = false;
+                                    firstLoadCamera = false;
                                     cameraMoved = true;
 
                                     // The following 3 boolean will determine when the loading icon will disappear. It should only disappear once the camera is adjusted and all shapes are loaded.
@@ -520,7 +455,7 @@ public class Map extends FragmentActivity implements
                                                 mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition), 2000, null);
 
                                                 // Adjust boolean values to prevent this logic from being called again.
-                                                firstLoad = false;
+                                                firstLoadCamera = false;
                                                 cameraMoved = true;
 
                                                 // The following 3 boolean will determine when the loading icon will disappear. It should only disappear once the camera is adjusted and all shapes are loaded.
@@ -582,7 +517,7 @@ public class Map extends FragmentActivity implements
                                         mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition), 2000, null);
 
                                         // Adjust boolean values to prevent this logic from being called again.
-                                        firstLoad = false;
+                                        firstLoadCamera = false;
                                         cameraMoved = true;
 
                                         // The following 3 boolean will determine when the loading icon will disappear. It should only disappear once the camera is adjusted and all shapes are loaded.
@@ -600,7 +535,7 @@ public class Map extends FragmentActivity implements
                                         mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition), 2000, null);
 
                                         // Adjust boolean values to prevent this logic from being called again.
-                                        firstLoad = false;
+                                        firstLoadCamera = false;
                                         cameraMoved = true;
 
                                         // The following 3 boolean will determine when the loading icon will disappear. It should only disappear once the camera is adjusted and all shapes are loaded.
@@ -618,7 +553,7 @@ public class Map extends FragmentActivity implements
                                         mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition), 2000, null);
 
                                         // Adjust boolean values to prevent this logic from being called again.
-                                        firstLoad = false;
+                                        firstLoadCamera = false;
                                         cameraMoved = true;
 
                                         // The following 3 boolean will determine when the loading icon will disappear. It should only disappear once the camera is adjusted and all shapes are loaded.
@@ -636,7 +571,7 @@ public class Map extends FragmentActivity implements
                                         mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition), 2000, null);
 
                                         // Adjust boolean values to prevent this logic from being called again.
-                                        firstLoad = false;
+                                        firstLoadCamera = false;
                                         cameraMoved = true;
 
                                         // The following 3 boolean will determine when the loading icon will disappear. It should only disappear once the camera is adjusted and all shapes are loaded.
@@ -654,7 +589,7 @@ public class Map extends FragmentActivity implements
                                         mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition), 2000, null);
 
                                         // Adjust boolean values to prevent this logic from being called again.
-                                        firstLoad = false;
+                                        firstLoadCamera = false;
                                         cameraMoved = true;
 
                                         // The following 3 boolean will determine when the loading icon will disappear. It should only disappear once the camera is adjusted and all shapes are loaded.
@@ -672,7 +607,7 @@ public class Map extends FragmentActivity implements
                                         mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition), 2000, null);
 
                                         // Adjust boolean values to prevent this logic from being called again.
-                                        firstLoad = false;
+                                        firstLoadCamera = false;
                                         cameraMoved = true;
 
                                         // The following 3 boolean will determine when the loading icon will disappear. It should only disappear once the camera is adjusted and all shapes are loaded.
@@ -2513,23 +2448,76 @@ public class Map extends FragmentActivity implements
         deleteDirectory(this.getCacheDir());
     }
 
+    private void fillArrayLists(@NonNull DataSnapshot dataSnapshot) {
+
+        Log.i(TAG, "fillArrayLists()");
+
+        for (DataSnapshot ds : dataSnapshot.getChildren()) {
+
+            // Only add necessary items to arrayLists.
+            if (ds.child("email").getValue() != null) {
+
+                if (ds.child("removedMentionDuplicates").getValue() == null && !ds.child("email").getValue().equals(email)) {
+
+                    return;
+                }
+            }
+
+            userUUIDAL.add((String) ds.child("userUUID").getValue());
+            userEmailAL.add((String) ds.child("email").getValue());
+        }
+    }
+
+    private void dmCounterIncrease(@NonNull DataSnapshot dataSnapshot) {
+
+        Log.i(TAG, "dmCounterIncrease()");
+
+        for (DataSnapshot ds : dataSnapshot.getChildren()) {
+
+            if (ds.child("removedMentionDuplicates").getValue() != null) {
+
+                for (DataSnapshot mention : ds.child("removedMentionDuplicates").getChildren()) {
+
+                    for (int i = 0; i < userUUIDAL.size(); i++) {
+
+                        if (mention.getValue() != null) {
+
+                            if (mention.getValue().toString().equals(userUUIDAL.get(i))) {
+
+                                if (userEmailAL.get(i).equals(email)) {
+
+                                    if (!(Boolean) ds.child("seenByUser").getValue()) {
+
+                                        dmCounter++;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        dmButton.setCount(dmCounter);
+        addQueryPartOne();
+    }
+
     // Change to .limitToLast(1) to cut down on data usage. Otherwise, EVERY child at this node will be downloaded every time the child is updated.
-    private void addQuery() {
-
-        Log.i(TAG, "addQuery()");
-
-        databaseReferenceOne.removeEventListener(eventListenerOne);
+    private void addQueryPartOne() {
 
         // Add new values to arrayLists one at a time. This prevents the need to download the whole dataSnapshot every time this information is needed in eventListenerThree.
-        queryOne = rootRef.child("MessageThreads").limitToLast(1);
-        eventListenerOne = new ValueEventListener() {
+        query = rootRef.child("MessageThreads").limitToLast(1);
+        eventListener = new ValueEventListener() {
 
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
 
-                // If this is the first time calling this eventListener, prevent double posts (as onStart() already added the last item).
-                if (firstLoad) {
+                Log.i(TAG, "addQueryPartOne()");
 
+                // If this is the first time calling this eventListener, prevent double posts (as onStart() already added the last item).
+                if (firstLoadDMs) {
+
+                    addQueryPartTwo(dataSnapshot);
                     return;
                 }
 
@@ -2537,7 +2525,8 @@ public class Map extends FragmentActivity implements
 
                     userUUIDAL.add((String) ds.child("userUUID").getValue());
                     userEmailAL.add((String) ds.child("email").getValue());
-                    seenByUserAL.add((Boolean) ds.child("seenByUser").getValue());
+
+                    addQueryPartTwo(dataSnapshot);
                 }
             }
 
@@ -2548,51 +2537,45 @@ public class Map extends FragmentActivity implements
             }
         };
 
-        queryOne.addValueEventListener(eventListenerOne);
+        query.addValueEventListener(eventListener);
+    }
 
-        queryTwo = rootRef.child("MessageThreads").limitToLast(1);
-        eventListenerTwo = new ValueEventListener() {
+    private void addQueryPartTwo(@NonNull DataSnapshot dataSnapshot) {
 
-            @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+        Log.i(TAG, "addQueryPartTwo()");
 
-                for (DataSnapshot ds : dataSnapshot.getChildren()) {
+        // If this is the first time calling this eventListener, prevent double posts (as onStart() already added the last item).
+        if (firstLoadDMs) {
 
-                    if (ds.child("removedMentionDuplicates").getValue() != null) {
+            firstLoadDMs = false;
+            return;
+        }
 
-                        for (DataSnapshot mention : ds.child("removedMentionDuplicates").getChildren()) {
+        for (DataSnapshot ds : dataSnapshot.getChildren()) {
 
-                            for (int i = 0; i < userUUIDAL.size(); i++) {
+            if (ds.child("removedMentionDuplicates").getValue() != null) {
 
-                                if (mention.getValue() != null) {
+                for (DataSnapshot mention : ds.child("removedMentionDuplicates").getChildren()) {
 
-                                    if (mention.getValue().toString().equals(userUUIDAL.get(i))) {
+                    if (mention.getValue() != null) {
 
-                                        if (userEmailAL.get(i).equals(email)) {
+                        for (int i = 0; i < userUUIDAL.size(); i++) {
 
-                                            if (!seenByUserAL.get(userUUIDAL.size() - 1)) {
+                            if (mention.getValue().toString().equals(userUUIDAL.get(i))) {
 
-                                                dmCounter++;
-                                                dmButton.setCount(dmCounter);
-                                            }
+                                if (userEmailAL.get(i).equals(email)) {
 
-                                            // Only updating one value, so return.
-                                            return;
-                                        }
-                                    }
+                                    dmCounter++;
+                                    dmButton.setCount(dmCounter);
+                                    // Only updating one value, so return.
+                                    return;
                                 }
                             }
                         }
                     }
                 }
             }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-            }
-        };
-
-        queryTwo.addValueEventListener(eventListenerTwo);
+        }
     }
 
     @Override
@@ -2601,7 +2584,8 @@ public class Map extends FragmentActivity implements
         super.onRestart();
         Log.i(TAG, "onRestart()");
 
-        firstLoad = false;
+        firstLoadCamera = false;
+        firstLoadDMs = true;
         waitingForShapeInformationToProcess = false;
         waitingForClicksToProcess = false;
         selectingShape = false;
@@ -2616,8 +2600,6 @@ public class Map extends FragmentActivity implements
         // Update the following boolean to prevent the loading icon from appearing after the user restarts.
         stillUpdatingCamera = false;
         dmCounter = 0;
-        dmCounter1 = 0;
-        dmCounter2 = 0;
 
         if (dmButton != null) {
 
@@ -2891,55 +2873,25 @@ public class Map extends FragmentActivity implements
             dmButton.setOnClickListener(null);
         }
 
-        if (databaseReferenceOne != null) {
+        if (databaseReference != null) {
 
-            if (eventListenerOne != null) {
-
-                databaseReferenceOne.removeEventListener(eventListenerOne);
-            }
-
-            databaseReferenceOne = null;
+            databaseReference.removeEventListener(eventListener);
+            databaseReference = null;
         }
 
-        if (databaseReferenceTwo != null) {
+        if (query != null) {
 
-            if (eventListenerTwo != null) {
-
-                databaseReferenceTwo.removeEventListener(eventListenerTwo);
-            }
-
-            databaseReferenceTwo = null;
+            query.removeEventListener(eventListener);
+            query = null;
         }
 
-        if (queryOne != null) {
+        if (eventListener != null) {
 
-            if (eventListenerOne != null) {
-
-                queryOne.removeEventListener(eventListenerOne);
-            }
-
-            queryOne = null;
+            eventListener = null;
         }
 
-        if (queryTwo != null) {
-
-            if (eventListenerTwo != null) {
-
-                queryTwo.removeEventListener(eventListenerTwo);
-            }
-
-            queryTwo = null;
-        }
-
-        if (eventListenerOne != null) {
-
-            eventListenerOne = null;
-        }
-
-        if (eventListenerTwo != null) {
-
-            eventListenerTwo = null;
-        }
+        userUUIDAL = null;
+        userEmailAL = null;
 
         if (createChatButton != null) {
 
@@ -3162,7 +3114,7 @@ public class Map extends FragmentActivity implements
                     == PackageManager.PERMISSION_GRANTED) {
 
                 mMap.setMyLocationEnabled(true);
-                if (firstLoad && !cameraMoved && location.getAccuracy() < 60) {
+                if (firstLoadCamera && !cameraMoved && location.getAccuracy() < 60) {
 
                     Log.i(TAG, "updateLocation() -> Good accuracy");
 
@@ -3177,7 +3129,7 @@ public class Map extends FragmentActivity implements
                     mMap.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
 
                     // Adjust boolean values to prevent this logic from being called again.
-                    firstLoad = false;
+                    firstLoadCamera = false;
                     cameraMoved = true;
 
                     // The following 3 boolean will determine when the loading icon will disappear. It should only disappear once the camera is adjusted and all shapes are loaded.
@@ -3187,7 +3139,7 @@ public class Map extends FragmentActivity implements
 
                         loadingIcon.setVisibility(View.GONE);
                     }
-                } else if (firstLoad && !badAccuracy && location.getAccuracy() >= 60) {
+                } else if (firstLoadCamera && !badAccuracy && location.getAccuracy() >= 60) {
 
                     Log.i(TAG, "updateLocation() -> Bad accuracy");
 

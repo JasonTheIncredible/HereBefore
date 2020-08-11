@@ -55,7 +55,7 @@ public class DirectMentions extends Fragment {
     private ArrayList<Long> mPosition, notSeenByUserList, positionAL;
     private RecyclerView directMentionsRecyclerView;
     private static int index = -1, top = -1, last;
-    private DatabaseReference rootRef, databaseReferenceOne, databaseReferenceCircles, databaseReferencePolygons;
+    private DatabaseReference rootRef, databaseReference, databaseReferenceCircles, databaseReferencePolygons;
     private ValueEventListener eventListener, eventListenerCircles, eventListenerPolygons;
     private LinearLayoutManager directMentionsRecyclerViewLinearLayoutManager;
     private boolean firstLoad, userIsWithinShape, alreadyInitialized = false;
@@ -161,7 +161,7 @@ public class DirectMentions extends Fragment {
         if (chatLayout == 0) {
 
             rootRef = FirebaseDatabase.getInstance().getReference();
-            databaseReferenceOne = rootRef.child("MessageThreads");
+            databaseReference = rootRef.child("MessageThreads");
             eventListener = new ValueEventListener() {
 
                 @Override
@@ -177,7 +177,7 @@ public class DirectMentions extends Fragment {
                 }
             };
 
-            databaseReferenceOne.addListenerForSingleValueEvent(eventListener);
+            databaseReference.addListenerForSingleValueEvent(eventListener);
         }
     }
 
@@ -188,9 +188,12 @@ public class DirectMentions extends Fragment {
 
         // First, fill the arrayLists. Then, use the arrayLists to fill out recyclerView.
         // Using the same dataSnapshot cuts down on data usage.
-        fillArrayLists(dataSnapshot);
+        if (email != null) {
 
-        fillRecyclerView(dataSnapshot);
+            fillArrayLists(dataSnapshot);
+
+            fillRecyclerView(dataSnapshot);
+        }
     }
 
     private void fillArrayLists(@NonNull DataSnapshot dataSnapshot) {
@@ -507,9 +510,10 @@ public class DirectMentions extends Fragment {
             eventListenerPolygons = null;
         }
 
-        if (databaseReferenceOne != null) {
+        if (databaseReference != null) {
 
-            databaseReferenceOne.removeEventListener(eventListener);
+            databaseReference.removeEventListener(eventListener);
+            databaseReference = null;
         }
 
         if (query != null) {
