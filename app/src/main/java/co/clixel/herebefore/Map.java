@@ -27,6 +27,7 @@ import android.widget.SeekBar;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
@@ -57,6 +58,7 @@ import com.google.android.gms.maps.model.PolygonOptions;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -91,7 +93,8 @@ public class Map extends FragmentActivity implements
     private Circle newCircle, circleTemp, mCircle = null;
     private Polygon newPolygon, polygonTemp, mPolygon = null;
     private DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference(), firebaseCircles = rootRef.child("Circles"), firebasePolygons = rootRef.child("Polygons"), databaseReference;
-    private ValueEventListener eventListener;
+    private ValueEventListener valueEventListener;
+    private ChildEventListener childEventListener;
     private SeekBar chatSizeSeekBar, chatSelectorSeekBar;
     private String preferredMapType, shapeUUID, marker0ID, marker1ID, marker2ID, marker3ID, marker4ID, marker5ID, marker6ID, marker7ID, selectedOverlappingShapeUUID, email;
     private Button createChatButton, chatViewsButton, mapTypeButton, settingsButton;
@@ -117,15 +120,14 @@ public class Map extends FragmentActivity implements
     private LocationManager locationManager;
     private Query query;
 
-    // Every other received DM is double posting (possible problem in DirectMentions).
+    // Add to OnChildChanged().
     // Use Map's snapshot in Chat / DirectMentions.
-    // Use more specific children nodes when searching Firebase.
+    // Use more specific children nodes when searching Firebase?
+    // Map's global variable is leaking.
     // Chat is slow to load last item.
-    // Switch to onChildAdded to prevent updates when getting rid of messages?
-    // Prevent entering circle when locationProvider is disabled.
     // In Chat, begin taking picture and recording video once user has accepted permissions.
     // Only download shapes in Map when necessary to cut down on database usage.
-    // Location seems to be tracked even when app is closed.
+    // Location seems to be tracked even when app is closed?
     // AppIntro on Github.
     // Make sure the secret stuff is secret.
     // Decrease app size / Check on accumulation of size over time.
@@ -135,6 +137,7 @@ public class Map extends FragmentActivity implements
     // Check warning messages.
     // More ads.
     // Update existing values in Firebase so new users can view old shapes.
+    // Prevent entering circle when locationProvider is disabled.
     // Add preference for shape color.
     // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.
     // Leave messages in locations that users get notified of when they enter the area.
@@ -288,7 +291,7 @@ public class Map extends FragmentActivity implements
 
             rootRef = FirebaseDatabase.getInstance().getReference();
             databaseReference = rootRef.child("MessageThreads");
-            eventListener = new ValueEventListener() {
+            valueEventListener = new ValueEventListener() {
 
                 @Override
                 public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
@@ -305,7 +308,7 @@ public class Map extends FragmentActivity implements
                 }
             };
 
-            databaseReference.addListenerForSingleValueEvent(eventListener);
+            databaseReference.addListenerForSingleValueEvent(valueEventListener);
         }
 
         // Go to DMs.
@@ -2507,40 +2510,49 @@ public class Map extends FragmentActivity implements
 
         // Add new values to arrayLists one at a time. This prevents the need to download the whole dataSnapshot every time this information is needed in eventListenerThree.
         query = rootRef.child("MessageThreads").limitToLast(1);
-        eventListener = new ValueEventListener() {
+        childEventListener = new ChildEventListener() {
 
             @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+            public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
 
                 Log.i(TAG, "addQueryPartOne()");
 
                 // If this is the first time calling this eventListener, prevent double posts (as onStart() already added the last item).
                 if (firstLoadDMs) {
 
-                    addQueryPartTwo(dataSnapshot);
+                    addQueryPartTwo(snapshot);
                     return;
                 }
 
-                for (DataSnapshot ds : dataSnapshot.getChildren()) {
+                userUUIDAL.add((String) snapshot.child("userUUID").getValue());
+                userEmailAL.add((String) snapshot.child("email").getValue());
 
-                    userUUIDAL.add((String) ds.child("userUUID").getValue());
-                    userEmailAL.add((String) ds.child("email").getValue());
-
-                    addQueryPartTwo(dataSnapshot);
-                }
+                addQueryPartTwo(snapshot);
             }
 
             @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
+            public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+            }
 
-                toastMessageLong(databaseError.getMessage());
+            @Override
+            public void onChildRemoved(@NonNull DataSnapshot snapshot) {
+            }
+
+            @Override
+            public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+
+                toastMessageLong(error.getMessage());
             }
         };
 
-        query.addValueEventListener(eventListener);
+        query.addChildEventListener(childEventListener);
     }
 
-    private void addQueryPartTwo(@NonNull DataSnapshot dataSnapshot) {
+    private void addQueryPartTwo(@NonNull DataSnapshot snapshot) {
 
         Log.i(TAG, "addQueryPartTwo()");
 
@@ -2551,25 +2563,22 @@ public class Map extends FragmentActivity implements
             return;
         }
 
-        for (DataSnapshot ds : dataSnapshot.getChildren()) {
+        if (snapshot.child("removedMentionDuplicates").getValue() != null) {
 
-            if (ds.child("removedMentionDuplicates").getValue() != null) {
+            for (DataSnapshot mention : snapshot.child("removedMentionDuplicates").getChildren()) {
 
-                for (DataSnapshot mention : ds.child("removedMentionDuplicates").getChildren()) {
+                if (mention.getValue() != null) {
 
-                    if (mention.getValue() != null) {
+                    for (int i = 0; i < userUUIDAL.size(); i++) {
 
-                        for (int i = 0; i < userUUIDAL.size(); i++) {
+                        if (mention.getValue().toString().equals(userUUIDAL.get(i))) {
 
-                            if (mention.getValue().toString().equals(userUUIDAL.get(i))) {
+                            if (userEmailAL.get(i).equals(email)) {
 
-                                if (userEmailAL.get(i).equals(email)) {
-
-                                    dmCounter++;
-                                    dmButton.setCount(dmCounter);
-                                    // Only updating one value, so return.
-                                    return;
-                                }
+                                dmCounter++;
+                                dmButton.setCount(dmCounter);
+                                // Only updating one value, so return.
+                                return;
                             }
                         }
                     }
@@ -2875,19 +2884,24 @@ public class Map extends FragmentActivity implements
 
         if (databaseReference != null) {
 
-            databaseReference.removeEventListener(eventListener);
+            databaseReference.removeEventListener(valueEventListener);
             databaseReference = null;
         }
 
         if (query != null) {
 
-            query.removeEventListener(eventListener);
+            query.removeEventListener(childEventListener);
             query = null;
         }
 
-        if (eventListener != null) {
+        if (valueEventListener != null) {
 
-            eventListener = null;
+            valueEventListener = null;
+        }
+
+        if (childEventListener != null) {
+
+            childEventListener = null;
         }
 
         userUUIDAL = null;
@@ -3098,7 +3112,7 @@ public class Map extends FragmentActivity implements
     }
 
     @Override
-    public void onLocationChanged(Location location) {
+    public void onLocationChanged(@NonNull Location location) {
 
         if (mMap != null) {
 
@@ -3177,11 +3191,11 @@ public class Map extends FragmentActivity implements
     }
 
     @Override
-    public void onProviderEnabled(String provider) {
+    public void onProviderEnabled(@NonNull String provider) {
     }
 
     @Override
-    public void onProviderDisabled(String provider) {
+    public void onProviderDisabled(@NonNull String provider) {
 
         Log.i(TAG, "onProviderDisabled()");
         toastMessageLong("Your location provider is disabled");

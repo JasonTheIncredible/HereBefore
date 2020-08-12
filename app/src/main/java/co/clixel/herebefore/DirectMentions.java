@@ -20,6 +20,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -30,6 +31,7 @@ import com.bumptech.glide.request.RequestOptions;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -56,9 +58,10 @@ public class DirectMentions extends Fragment {
     private RecyclerView directMentionsRecyclerView;
     private static int index = -1, top = -1, last;
     private DatabaseReference rootRef, databaseReference, databaseReferenceCircles, databaseReferencePolygons;
-    private ValueEventListener eventListener, eventListenerCircles, eventListenerPolygons;
+    private ValueEventListener valueEventListener, eventListenerCircles, eventListenerPolygons;
+    private ChildEventListener childEventListener;
     private LinearLayoutManager directMentionsRecyclerViewLinearLayoutManager;
-    private boolean firstLoad, userIsWithinShape, alreadyInitialized = false;
+    private boolean firstLoad, userIsWithinShape;
     private View loadingIcon;
     private Toast longToast;
     private Double userLatitude, userLongitude;
@@ -162,7 +165,7 @@ public class DirectMentions extends Fragment {
 
             rootRef = FirebaseDatabase.getInstance().getReference();
             databaseReference = rootRef.child("MessageThreads");
-            eventListener = new ValueEventListener() {
+            valueEventListener = new ValueEventListener() {
 
                 @Override
                 public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
@@ -177,7 +180,7 @@ public class DirectMentions extends Fragment {
                 }
             };
 
-            databaseReference.addListenerForSingleValueEvent(eventListener);
+            databaseReference.addListenerForSingleValueEvent(valueEventListener);
         }
     }
 
@@ -307,77 +310,79 @@ public class DirectMentions extends Fragment {
 
         // Add new values to arrayLists one at a time. This prevents the need to download the whole dataSnapshot every time this information is needed in eventListenerThree.
         query = rootRef.child("MessageThreads").limitToLast(1);
-        eventListener = new ValueEventListener() {
+        childEventListener = new ChildEventListener() {
 
             @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+            public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
 
                 Log.i(TAG, "addQueryPartOne()");
-
-                // Prevent the eventListener from getting called twice.
-                if (alreadyInitialized) {
-
-                    alreadyInitialized = false;
-                    return;
-                }
 
                 // If this is the first time calling this eventListener, prevent double posts (as onStart() already added the last item).
                 if (firstLoad) {
 
-                    addQueryPartTwo(dataSnapshot);
+                    addQueryPartTwo(snapshot);
                     return;
                 }
 
-                for (DataSnapshot ds : dataSnapshot.getChildren()) {
+                // Only add necessary items to arrayLists.
+                if (snapshot.child("email").getValue() != null) {
 
-                    // Only add necessary items to arrayLists.
-                    if (ds.child("email").getValue() != null) {
+                    if (snapshot.child("removedMentionDuplicates").getValue() == null && !snapshot.child("email").getValue().equals(email)) {
 
-                        if (ds.child("removedMentionDuplicates").getValue() == null && !ds.child("email").getValue().equals(email)) {
-
-                            return;
-                        }
+                        return;
                     }
-
-                    userUUIDAL.add((String) ds.child("userUUID").getValue());
-                    userEmailAL.add((String) ds.child("email").getValue());
-
-                    Long serverDate = (Long) ds.child("date").getValue();
-                    DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
-                    if (serverDate != null) {
-
-                        Date netDate = (new Date(serverDate));
-                        String messageTime = dateFormat.format(netDate);
-                        timeAL.add(messageTime);
-                    } else {
-
-                        Log.e(TAG, "addQueryPartOne() -> serverDate == null");
-                    }
-                    userAL.add((String) ds.child("userUUID").getValue());
-                    imageURLAL.add((String) ds.child("imageURL").getValue());
-                    videoURLAL.add((String) ds.child("videoURL").getValue());
-                    messageTextAL.add((String) ds.child("message").getValue());
-                    shapeUUIDAL.add((String) ds.child("shapeUUID").getValue());
-                    userIsWithinShapeAL.add((Boolean) ds.child("userIsWithinShape").getValue());
-                    shapeIsCircleAL.add((Boolean) ds.child("shapeIsCircle").getValue());
-                    positionAL.add((Long) ds.child("position").getValue());
-                    seenByUserAL.add((Boolean) ds.child("seenByUser").getValue());
-
-                    addQueryPartTwo(dataSnapshot);
                 }
+
+                userUUIDAL.add((String) snapshot.child("userUUID").getValue());
+                userEmailAL.add((String) snapshot.child("email").getValue());
+
+                Long serverDate = (Long) snapshot.child("date").getValue();
+                DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
+                if (serverDate != null) {
+
+                    Date netDate = (new Date(serverDate));
+                    String messageTime = dateFormat.format(netDate);
+                    timeAL.add(messageTime);
+                } else {
+
+                    Log.e(TAG, "addQueryPartOne() -> serverDate == null");
+                }
+                userAL.add((String) snapshot.child("userUUID").getValue());
+                imageURLAL.add((String) snapshot.child("imageURL").getValue());
+                videoURLAL.add((String) snapshot.child("videoURL").getValue());
+                messageTextAL.add((String) snapshot.child("message").getValue());
+                shapeUUIDAL.add((String) snapshot.child("shapeUUID").getValue());
+                userIsWithinShapeAL.add((Boolean) snapshot.child("userIsWithinShape").getValue());
+                shapeIsCircleAL.add((Boolean) snapshot.child("shapeIsCircle").getValue());
+                positionAL.add((Long) snapshot.child("position").getValue());
+                seenByUserAL.add((Boolean) snapshot.child("seenByUser").getValue());
+
+                addQueryPartTwo(snapshot);
             }
 
             @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
+            public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+            }
 
-                toastMessageLong(databaseError.getMessage());
+            @Override
+            public void onChildRemoved(@NonNull DataSnapshot snapshot) {
+            }
+
+            @Override
+            public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+
+                toastMessageLong(error.getMessage());
             }
         };
 
-        query.addValueEventListener(eventListener);
+        query.addChildEventListener(childEventListener);
     }
 
-    private void addQueryPartTwo(@NonNull DataSnapshot dataSnapshot) {
+    private void addQueryPartTwo(@NonNull DataSnapshot snapshot) {
 
         Log.i(TAG, "addQueryPartTwo()");
 
@@ -398,40 +403,35 @@ public class DirectMentions extends Fragment {
             top = (v == null) ? 0 : (v.getTop() - directMentionsRecyclerView.getPaddingTop());
         }
 
-        for (DataSnapshot ds : dataSnapshot.getChildren()) {
+        if (snapshot.child("removedMentionDuplicates").getValue() != null) {
 
-            if (ds.child("removedMentionDuplicates").getValue() != null) {
+            for (DataSnapshot mention : snapshot.child("removedMentionDuplicates").getChildren()) {
 
-                for (DataSnapshot mention : ds.child("removedMentionDuplicates").getChildren()) {
+                if (mention.getValue() != null) {
 
-                    if (mention.getValue() != null) {
+                    for (int i = 0; i < userUUIDAL.size(); i++) {
 
-                        for (int i = 0; i < userUUIDAL.size(); i++) {
+                        if (mention.getValue().toString().equals(userUUIDAL.get(i))) {
 
-                            if (mention.getValue().toString().equals(userUUIDAL.get(i))) {
+                            if (userEmailAL.get(i).equals(email)) {
 
-                                if (userEmailAL.get(i).equals(email)) {
+                                mTime.add(timeAL.get(userUUIDAL.size() - 1));
+                                mUser.add(userAL.get(userUUIDAL.size() - 1));
+                                mImage.add(imageURLAL.get(userUUIDAL.size() - 1));
+                                mVideo.add(videoURLAL.get(userUUIDAL.size() - 1));
+                                mText.add(messageTextAL.get(userUUIDAL.size() - 1));
+                                mShapeUUID.add(shapeUUIDAL.get(userUUIDAL.size() - 1));
+                                mUserIsWithinShape.add(userIsWithinShapeAL.get(userUUIDAL.size() - 1));
+                                mShapeIsCircle.add(shapeIsCircleAL.get(userUUIDAL.size() - 1));
+                                mPosition.add(positionAL.get(userUUIDAL.size() - 1));
+                                mSeenByUser.add(seenByUserAL.get(userUUIDAL.size() - 1));
+                                // All DMs will be "new", so add them to notSeenByUserList and update their value in Firebase.
+                                notSeenByUserList.add(positionAL.get(userUUIDAL.size() - 1));
+                                snapshot.child("seenByUser").getRef().setValue(true);
 
-                                    alreadyInitialized = true;
-
-                                    mTime.add(timeAL.get(userUUIDAL.size() - 1));
-                                    mUser.add(userAL.get(userUUIDAL.size() - 1));
-                                    mImage.add(imageURLAL.get(userUUIDAL.size() - 1));
-                                    mVideo.add(videoURLAL.get(userUUIDAL.size() - 1));
-                                    mText.add(messageTextAL.get(userUUIDAL.size() - 1));
-                                    mShapeUUID.add(shapeUUIDAL.get(userUUIDAL.size() - 1));
-                                    mUserIsWithinShape.add(userIsWithinShapeAL.get(userUUIDAL.size() - 1));
-                                    mShapeIsCircle.add(shapeIsCircleAL.get(userUUIDAL.size() - 1));
-                                    mPosition.add(positionAL.get(userUUIDAL.size() - 1));
-                                    mSeenByUser.add(seenByUserAL.get(userUUIDAL.size() - 1));
-                                    // All DMs will be "new", so add them to notSeenByUserList and update their value in Firebase.
-                                    notSeenByUserList.add(positionAL.get(userUUIDAL.size() - 1));
-                                    ds.child("seenByUser").getRef().setValue(true);
-
-                                    initDirectMentionsAdapter();
-                                    // Only updating one value, so return.
-                                    return;
-                                }
+                                initDirectMentionsAdapter();
+                                // Only updating one value, so return.
+                                return;
                             }
                         }
                     }
@@ -512,17 +512,15 @@ public class DirectMentions extends Fragment {
 
         if (databaseReference != null) {
 
-            databaseReference.removeEventListener(eventListener);
+            databaseReference.removeEventListener(valueEventListener);
             databaseReference = null;
         }
 
         if (query != null) {
 
-            query.removeEventListener(eventListener);
+            query.removeEventListener(childEventListener);
             query = null;
         }
-
-        alreadyInitialized = false;
 
         if (directMentionsRecyclerView != null) {
 
@@ -530,9 +528,14 @@ public class DirectMentions extends Fragment {
             directMentionsRecyclerView.setAdapter(null);
         }
 
-        if (eventListener != null) {
+        if (valueEventListener != null) {
 
-            eventListener = null;
+            valueEventListener = null;
+        }
+
+        if (childEventListener != null) {
+
+            childEventListener = null;
         }
 
         cancelToasts();

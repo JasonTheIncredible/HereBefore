@@ -71,6 +71,7 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -128,12 +129,13 @@ public class Chat extends Fragment implements
     private ArrayList<Boolean> mUserIsWithinShape;
     private ArrayList<String> removedMentionDuplicates;
     private RecyclerView chatRecyclerView, mentionsRecyclerView;
-    private static int index = -1, top = -1, last, eventListenerCounter = -1;
+    private static int index = -1, top = -1, last;
     private Integer directMentionsPosition = null;
     private DatabaseReference rootRef, databaseReference;
-    private ValueEventListener eventListener;
+    private ValueEventListener valueEventListener;
+    private ChildEventListener childEventListener;
     private FloatingActionButton sendButton, mediaButton;
-    private boolean firstLoad, needLoadingIcon = false, preventInitialization = false, reachedEndOfRecyclerView = false, recyclerViewHasScrolled = false, messageSent = false, sendButtonClicked = false, mediaButtonMenuIsOpen, fileIsImage, checkPermissionsPicture, URIisFile,
+    private boolean firstLoad, needLoadingIcon = false, reachedEndOfRecyclerView = false, recyclerViewHasScrolled = false, messageSent = false, sendButtonClicked = false, mediaButtonMenuIsOpen, fileIsImage, checkPermissionsPicture, URIisFile,
             newShape, threeMarkers, fourMarkers, fiveMarkers, sixMarkers, sevenMarkers, eightMarkers, shapeIsCircle;
     private Boolean userIsWithinShape;
     private View.OnLayoutChangeListener onLayoutChangeListener;
@@ -216,7 +218,6 @@ public class Chat extends Fragment implements
 
         // Set to true to scroll to the bottom of chatRecyclerView.
         firstLoad = true;
-        eventListenerCounter = -1;
 
         // Make the loadingIcon visible upon the first load, as it can sometimes take a while to show anything. It should be made invisible in initChatAdapter().
         if (loadingIcon != null) {
@@ -302,7 +303,7 @@ public class Chat extends Fragment implements
 
         rootRef = FirebaseDatabase.getInstance().getReference();
         databaseReference = rootRef.child("MessageThreads");
-        eventListener = new ValueEventListener() {
+        valueEventListener = new ValueEventListener() {
 
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
@@ -417,7 +418,7 @@ public class Chat extends Fragment implements
         };
 
         // Add the Firebase listener.
-        databaseReference.addListenerForSingleValueEvent(eventListener);
+        databaseReference.addListenerForSingleValueEvent(valueEventListener);
 
         // Hide the imageView or videoImageView if user presses the delete button.
         mInput.setOnKeyListener(new View.OnKeyListener() {
@@ -509,9 +510,6 @@ public class Chat extends Fragment implements
                 // Send recyclerviewlayout to Firebase.
                 if (!input.equals("") || imageView.getVisibility() != View.GONE || videoImageView.getVisibility() != View.GONE) {
 
-                    // Prevent double posts in addQuery.
-                    preventInitialization = true;
-
                     // Check Boolean value from onStart();
                     if (newShape) {
 
@@ -589,7 +587,6 @@ public class Chat extends Fragment implements
 
                                     toastMessageLong(databaseError.getMessage());
 
-                                    preventInitialization = false;
                                     sendButtonClicked = false;
                                 }
                             });
@@ -711,7 +708,6 @@ public class Chat extends Fragment implements
 
                                     toastMessageLong(databaseError.getMessage());
 
-                                    preventInitialization = false;
                                     sendButtonClicked = false;
                                 }
                             });
@@ -813,31 +809,15 @@ public class Chat extends Fragment implements
     // Change to .limitToLast(1) to cut down on data usage. Otherwise, EVERY child at this node will be downloaded every time the child is updated.
     private void addQuery() {
 
-        databaseReference.removeEventListener(eventListener);
+        databaseReference.removeEventListener(valueEventListener);
 
         query = rootRef.child("MessageThreads").limitToLast(1);
-
-        eventListener = new ValueEventListener() {
+        childEventListener = new ChildEventListener() {
 
             @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+            public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
 
                 Log.i(TAG, "addQuery()");
-
-                // Prevent double posts.
-                //  When a removedMentionDuplicate exists, onDataChange is called three times (I'm not sure why, but this could probably be optimized in the future).
-                if (!removedMentionDuplicates.isEmpty() && eventListenerCounter == 0) {
-
-                    eventListenerCounter++;
-                    return;
-                }
-
-                // Prevent double posts.
-                if (preventInitialization) {
-
-                    preventInitialization = false;
-                    return;
-                }
 
                 // If this is the first time calling this eventListener, prevent double posts (as onStart() already added the last item).
                 if (firstLoad) {
@@ -846,40 +826,37 @@ public class Chat extends Fragment implements
                     return;
                 }
 
-                for (DataSnapshot ds : dataSnapshot.getChildren()) {
+                // If the uuid brought from Map.java equals the uuid attached to the recyclerviewlayout in Firebase, load it into the RecyclerView.
+                String mShapeUUID = (String) snapshot.child("shapeUUID").getValue();
+                if (mShapeUUID != null) {
 
-                    // If the uuid brought from Map.java equals the uuid attached to the recyclerviewlayout in Firebase, load it into the RecyclerView.
-                    String mShapeUUID = (String) ds.child("shapeUUID").getValue();
-                    if (mShapeUUID != null) {
+                    if (mShapeUUID.equals(shapeUUID)) {
 
-                        if (mShapeUUID.equals(shapeUUID)) {
+                        Long serverDate = (Long) snapshot.child("date").getValue();
+                        String user = (String) snapshot.child("userUUID").getValue();
+                        // Used when a user mentions another user with "@".
+                        mSuggestions.add(user);
+                        String imageURL = (String) snapshot.child("imageURL").getValue();
+                        String videoURL = (String) snapshot.child("videoURL").getValue();
+                        String messageText = (String) snapshot.child("message").getValue();
+                        Boolean userIsWithinShape = (Boolean) snapshot.child("userIsWithinShape").getValue();
+                        DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
+                        // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+                        // This will cause onDataChange to fire twice; optimizations could be made in the future.
+                        if (serverDate != null) {
 
-                            Long serverDate = (Long) ds.child("date").getValue();
-                            String user = (String) ds.child("userUUID").getValue();
-                            // Used when a user mentions another user with "@".
-                            mSuggestions.add(user);
-                            String imageURL = (String) ds.child("imageURL").getValue();
-                            String videoURL = (String) ds.child("videoURL").getValue();
-                            String messageText = (String) ds.child("message").getValue();
-                            Boolean userIsWithinShape = (Boolean) ds.child("userIsWithinShape").getValue();
-                            DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
-                            // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                            // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                            if (serverDate != null) {
+                            Date netDate = (new Date(serverDate));
+                            String messageTime = dateFormat.format(netDate);
+                            mTime.add(messageTime);
+                        } else {
 
-                                Date netDate = (new Date(serverDate));
-                                String messageTime = dateFormat.format(netDate);
-                                mTime.add(messageTime);
-                            } else {
-
-                                Log.e(TAG, "addQuery() -> serverDate == null");
-                            }
-                            mUser.add(user);
-                            mImage.add(imageURL);
-                            mVideo.add(videoURL);
-                            mText.add(messageText);
-                            mUserIsWithinShape.add(userIsWithinShape);
+                            Log.e(TAG, "addQuery() -> serverDate == null");
                         }
+                        mUser.add(user);
+                        mImage.add(imageURL);
+                        mVideo.add(videoURL);
+                        mText.add(messageText);
+                        mUserIsWithinShape.add(userIsWithinShape);
                     }
                 }
 
@@ -892,20 +869,34 @@ public class Chat extends Fragment implements
                     top = (v == null) ? 0 : (v.getTop() - chatRecyclerView.getPaddingTop());
                 }
 
-                eventListenerCounter = 0;
                 if (removedMentionDuplicates != null) {
 
                     removedMentionDuplicates.clear();
                 }
+
                 initChatAdapter();
             }
 
             @Override
+            public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+            }
+
+            @Override
+            public void onChildRemoved(@NonNull DataSnapshot snapshot) {
+            }
+
+            @Override
+            public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+            }
+
+            @Override
             public void onCancelled(@NonNull DatabaseError error) {
+
+                toastMessageLong(error.getMessage());
             }
         };
 
-        query.addValueEventListener(eventListener);
+        query.addChildEventListener(childEventListener);
     }
 
     @Override
@@ -920,12 +911,12 @@ public class Chat extends Fragment implements
 
         if (databaseReference != null) {
 
-            databaseReference.removeEventListener(eventListener);
+            databaseReference.removeEventListener(valueEventListener);
         }
 
         if (query != null) {
 
-            query.removeEventListener(eventListener);
+            query.removeEventListener(childEventListener);
             query = null;
         }
 
@@ -942,9 +933,14 @@ public class Chat extends Fragment implements
             mentionsRecyclerView.setAdapter(null);
         }
 
-        if (eventListener != null) {
+        if (valueEventListener != null) {
 
-            eventListener = null;
+            valueEventListener = null;
+        }
+
+        if (childEventListener != null) {
+
+            childEventListener = null;
         }
 
         if (mInput != null) {
