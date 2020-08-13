@@ -120,14 +120,11 @@ public class Map extends FragmentActivity implements
     private LocationManager locationManager;
     private Query query;
 
-    // Add to OnChildChanged().
     // Use Map's snapshot in Chat / DirectMentions.
-    // Use more specific children nodes when searching Firebase?
-    // Map's global variable is leaking.
+    // If a mention doesn't exist (because it was manually deleted), delete it. Also change "position" in database and update onChildChanged() (or get rid of "position" entirely?). Also, use more specific children so every Chat is not called.
     // Chat is slow to load last item.
     // In Chat, begin taking picture and recording video once user has accepted permissions.
     // Only download shapes in Map when necessary to cut down on database usage.
-    // Location seems to be tracked even when app is closed?
     // AppIntro on Github.
     // Make sure the secret stuff is secret.
     // Decrease app size / Check on accumulation of size over time.

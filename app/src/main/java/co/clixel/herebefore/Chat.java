@@ -165,6 +165,16 @@ public class Chat extends Fragment implements
             .setThreshold(1)
             .build();
 
+    @Override
+    public void onAttach(@NonNull Context context) {
+
+        super.onAttach(context);
+        Log.i(TAG, "onAttach()");
+
+        mContext = context;
+        mActivity = getActivity();
+    }
+
     @NonNull
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -172,27 +182,7 @@ public class Chat extends Fragment implements
 
         Log.i(TAG, "onCreateView()");
 
-        Context contextThemeWrapper = new ContextThemeWrapper(getActivity(), R.style.AppTheme);
-
-        LayoutInflater localInflater = inflater.cloneInContext(contextThemeWrapper);
-
-        rootView = localInflater.inflate(R.layout.chat, container, false);
-
-        mContext = getContext();
-        mActivity = getActivity();
-
-        chatRecyclerViewLinearLayoutManager = new LinearLayoutManager(mActivity);
-        mentionsRecyclerViewLinearLayoutManager = new LinearLayoutManager(mActivity);
-
-        mTime = new ArrayList<>();
-        mUser = new ArrayList<>();
-        mImage = new ArrayList<>();
-        mVideo = new ArrayList<>();
-        mText = new ArrayList<>();
-        mSuggestions = new ArrayList<>();
-        allMentions = new ArrayList<>();
-        mUserIsWithinShape = new ArrayList<>();
-        removedMentionDuplicates = new ArrayList<>();
+        rootView = inflater.inflate(R.layout.chat, container, false);
 
         bannerAd = rootView.findViewById(R.id.chatBanner);
 
@@ -215,6 +205,19 @@ public class Chat extends Fragment implements
         chatRecyclerView = rootView.findViewById(R.id.messageList);
         mentionsRecyclerView = rootView.findViewById(R.id.suggestionsList);
         loadingIcon = rootView.findViewById(R.id.loadingIcon);
+
+        chatRecyclerViewLinearLayoutManager = new LinearLayoutManager(mActivity);
+        mentionsRecyclerViewLinearLayoutManager = new LinearLayoutManager(mActivity);
+
+        mTime = new ArrayList<>();
+        mUser = new ArrayList<>();
+        mImage = new ArrayList<>();
+        mVideo = new ArrayList<>();
+        mText = new ArrayList<>();
+        mSuggestions = new ArrayList<>();
+        allMentions = new ArrayList<>();
+        mUserIsWithinShape = new ArrayList<>();
+        removedMentionDuplicates = new ArrayList<>();
 
         // Set to true to scroll to the bottom of chatRecyclerView.
         firstLoad = true;
@@ -354,7 +357,7 @@ public class Chat extends Fragment implements
                 }
 
                 // Read RecyclerView scroll position (for use in initChatAdapter).
-                if (chatRecyclerViewLinearLayoutManager != null) {
+                if (chatRecyclerViewLinearLayoutManager != null && chatRecyclerView != null) {
 
                     index = chatRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
                     last = chatRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
@@ -365,50 +368,53 @@ public class Chat extends Fragment implements
                 addQuery();
 
                 // Check RecyclerView scroll state (to allow the layout to move up when keyboard appears).
-                chatRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+                if (chatRecyclerView != null) {
 
-                    @Override
-                    public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
+                    chatRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
 
-                        super.onScrollStateChanged(recyclerView, newState);
+                        @Override
+                        public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
 
-                        // If RecyclerView can't be scrolled down, reachedEndOfRecyclerView = true.
-                        reachedEndOfRecyclerView = !recyclerView.canScrollVertically(1);
+                            super.onScrollStateChanged(recyclerView, newState);
 
-                        // Used to detect if user has just entered the recyclerviewlayout (so layout needs to move up when keyboard appears).
-                        recyclerViewHasScrolled = true;
-                    }
-                });
+                            // If RecyclerView can't be scrolled down, reachedEndOfRecyclerView = true.
+                            reachedEndOfRecyclerView = !recyclerView.canScrollVertically(1);
 
-                // If RecyclerView is scrolled to the bottom, move the layout up when the keyboard appears.
-                chatRecyclerView.addOnLayoutChangeListener(onLayoutChangeListener = new View.OnLayoutChangeListener() {
+                            // Used to detect if user has just entered the recyclerviewlayout (so layout needs to move up when keyboard appears).
+                            recyclerViewHasScrolled = true;
+                        }
+                    });
 
-                    @Override
-                    public void onLayoutChange(View v,
-                                               int left, int top, int right, int bottom,
-                                               int oldLeft, int oldTop, int oldRight, int oldBottom) {
+                    // If RecyclerView is scrolled to the bottom, move the layout up when the keyboard appears.
+                    chatRecyclerView.addOnLayoutChangeListener(onLayoutChangeListener = new View.OnLayoutChangeListener() {
 
-                        if (reachedEndOfRecyclerView || !recyclerViewHasScrolled) {
+                        @Override
+                        public void onLayoutChange(View v,
+                                                   int left, int top, int right, int bottom,
+                                                   int oldLeft, int oldTop, int oldRight, int oldBottom) {
 
-                            if (bottom < oldBottom) {
+                            if (reachedEndOfRecyclerView || !recyclerViewHasScrolled) {
 
-                                if (chatRecyclerView.getAdapter() != null && chatRecyclerView.getAdapter().getItemCount() > 0) {
+                                if (bottom < oldBottom) {
 
-                                    chatRecyclerView.postDelayed(new Runnable() {
+                                    if (chatRecyclerView.getAdapter() != null && chatRecyclerView.getAdapter().getItemCount() > 0) {
 
-                                        @Override
-                                        public void run() {
+                                        chatRecyclerView.postDelayed(new Runnable() {
 
-                                            chatRecyclerView.smoothScrollToPosition(
+                                            @Override
+                                            public void run() {
 
-                                                    chatRecyclerView.getAdapter().getItemCount() - 1);
-                                        }
-                                    }, 100);
+                                                chatRecyclerView.smoothScrollToPosition(
+
+                                                        chatRecyclerView.getAdapter().getItemCount() - 1);
+                                            }
+                                        }, 100);
+                                    }
                                 }
                             }
                         }
-                    }
-                });
+                    });
+                }
             }
 
             public void onCancelled(@NonNull DatabaseError databaseError) {
@@ -904,11 +910,6 @@ public class Chat extends Fragment implements
 
         Log.i(TAG, "onStop()");
 
-        if (rootRef != null) {
-
-            rootRef = null;
-        }
-
         if (databaseReference != null) {
 
             databaseReference.removeEventListener(valueEventListener);
@@ -917,7 +918,6 @@ public class Chat extends Fragment implements
         if (query != null) {
 
             query.removeEventListener(childEventListener);
-            query = null;
         }
 
         if (chatRecyclerView != null) {
@@ -931,16 +931,6 @@ public class Chat extends Fragment implements
 
             mentionsRecyclerView.clearOnScrollListeners();
             mentionsRecyclerView.setAdapter(null);
-        }
-
-        if (valueEventListener != null) {
-
-            valueEventListener = null;
-        }
-
-        if (childEventListener != null) {
-
-            childEventListener = null;
         }
 
         if (mInput != null) {
@@ -959,7 +949,6 @@ public class Chat extends Fragment implements
         if (mediaButtonMenu != null) {
 
             mediaButtonMenu.setOnMenuItemClickListener(null);
-            mediaButtonMenu = null;
         }
 
         if (sendButton != null) {
@@ -977,6 +966,11 @@ public class Chat extends Fragment implements
             videoImageView.setOnClickListener(null);
         }
 
+        if (loadingIcon != null) {
+
+            loadingIcon = null;
+        }
+
         cancelToasts();
 
         super.onStop();
@@ -987,19 +981,44 @@ public class Chat extends Fragment implements
 
         Log.i(TAG, "onDestroyView()");
 
-        if (rootView != null) {
+        if (bannerAd != null) {
 
-            rootView = null;
+            bannerAd = null;
         }
 
-        if (mContext != null) {
+        if (mediaButton != null) {
 
-            mContext = null;
+            mediaButton = null;
         }
 
-        if (mActivity != null) {
+        if (imageView != null) {
 
-            mActivity = null;
+            imageView = null;
+        }
+
+        if (videoImageView != null) {
+
+            videoImageView = null;
+        }
+
+        if (mInput != null) {
+
+            mInput = null;
+        }
+
+        if (sendButton != null) {
+
+            sendButton = null;
+        }
+
+        if (chatRecyclerView != null) {
+
+            chatRecyclerView = null;
+        }
+
+        if (mentionsRecyclerView != null) {
+
+            mentionsRecyclerView = null;
         }
 
         if (chatRecyclerViewLinearLayoutManager != null) {
@@ -1012,33 +1031,22 @@ public class Chat extends Fragment implements
             mentionsRecyclerViewLinearLayoutManager = null;
         }
 
-        if (bannerAd != null) {
+        if (rootView != null) {
 
-            bannerAd = null;
+            rootView = null;
         }
 
-        mTime = null;
-        mUser = null;
-        mImage = null;
-        mVideo = null;
-        mText = null;
-        mSuggestions = null;
-        allMentions = null;
-        mUserIsWithinShape = null;
-        removedMentionDuplicates = null;
-
-        bannerAd = null;
-        mediaButton = null;
-        imageView = null;
-        videoImageView = null;
-        mInput = null;
-        sendButton = null;
-        chatRecyclerView = null;
-        mentionsRecyclerView = null;
-
-        loadingIcon = null;
-
         super.onDestroyView();
+    }
+
+    @Override
+    public void onDetach() {
+
+        super.onDetach();
+        Log.i(TAG, "onDetach()");
+
+        mContext = null;
+        mActivity = null;
     }
 
     private void initChatAdapter() {
@@ -1047,23 +1055,26 @@ public class Chat extends Fragment implements
         Log.i(TAG, "initChatAdapter()");
 
         ChatAdapter adapter = new ChatAdapter(mContext, mTime, mUser, mImage, mVideo, mText, mUserIsWithinShape);
-        chatRecyclerView.setAdapter(adapter);
-        chatRecyclerView.setLayoutManager(chatRecyclerViewLinearLayoutManager);
+        if (chatRecyclerView != null) {
 
-        if (directMentionsPosition != null && !firstLoad) {
+            chatRecyclerView.setAdapter(adapter);
+            chatRecyclerView.setLayoutManager(chatRecyclerViewLinearLayoutManager);
 
-            chatRecyclerView.scrollToPosition(directMentionsPosition);
-            directMentionsPosition = null;
-        } else if (last == (mUser.size() - 2) || firstLoad || messageSent) {
+            if (directMentionsPosition != null && !firstLoad) {
 
-            // Scroll to bottom of recyclerviewlayout after first initialization and after sending a recyclerviewlayout.
-            chatRecyclerView.scrollToPosition(mUser.size() - 1);
-            messageSent = false;
-            firstLoad = false;
-        } else {
+                chatRecyclerView.scrollToPosition(directMentionsPosition);
+                directMentionsPosition = null;
+            } else if (last == (mUser.size() - 2) || firstLoad || messageSent) {
 
-            // Set RecyclerView scroll position to prevent position change when Firebase gets updated and after screen orientation change.
-            chatRecyclerViewLinearLayoutManager.scrollToPositionWithOffset(index, top);
+                // Scroll to bottom of recyclerviewlayout after first initialization and after sending a recyclerviewlayout.
+                chatRecyclerView.scrollToPosition(mUser.size() - 1);
+                messageSent = false;
+                firstLoad = false;
+            } else {
+
+                // Set RecyclerView scroll position to prevent position change when Firebase gets updated and after screen orientation change.
+                chatRecyclerViewLinearLayoutManager.scrollToPositionWithOffset(index, top);
+            }
         }
 
         // After the initial load, make the loadingIcon invisible.

@@ -71,6 +71,16 @@ public class DirectMentions extends Fragment {
     private TextView noDMsTextView;
     private Query query;
 
+    @Override
+    public void onAttach(@NonNull Context context) {
+
+        super.onAttach(context);
+        Log.i(TAG, "onAttach()");
+
+        mContext = context;
+        mActivity = getActivity();
+    }
+
     @NonNull
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -78,9 +88,6 @@ public class DirectMentions extends Fragment {
 
         Log.i(TAG, "onCreateView()");
         rootView = inflater.inflate(R.layout.directmentions, container, false);
-
-        mContext = getContext();
-        mActivity = getActivity();
 
         directMentionsRecyclerView = rootView.findViewById(R.id.mentionsList);
         loadingIcon = rootView.findViewById(R.id.loadingIcon);
@@ -479,11 +486,6 @@ public class DirectMentions extends Fragment {
 
         Log.i(TAG, "onStop()");
 
-        if (rootRef != null) {
-
-            rootRef = null;
-        }
-
         if (databaseReferenceCircles != null) {
 
             if (eventListenerCircles != null) {
@@ -500,42 +502,20 @@ public class DirectMentions extends Fragment {
             }
         }
 
-        if (eventListenerCircles != null) {
-
-            eventListenerCircles = null;
-        }
-
-        if (eventListenerPolygons != null) {
-
-            eventListenerPolygons = null;
-        }
-
         if (databaseReference != null) {
 
             databaseReference.removeEventListener(valueEventListener);
-            databaseReference = null;
         }
 
         if (query != null) {
 
             query.removeEventListener(childEventListener);
-            query = null;
         }
 
         if (directMentionsRecyclerView != null) {
 
             directMentionsRecyclerView.clearOnScrollListeners();
             directMentionsRecyclerView.setAdapter(null);
-        }
-
-        if (valueEventListener != null) {
-
-            valueEventListener = null;
-        }
-
-        if (childEventListener != null) {
-
-            childEventListener = null;
         }
 
         cancelToasts();
@@ -548,24 +528,19 @@ public class DirectMentions extends Fragment {
 
         Log.i(TAG, "onDestroyView()");
 
-        if (rootView != null) {
-
-            rootView = null;
-        }
-
-        if (mContext != null) {
-
-            mContext = null;
-        }
-
-        if (mActivity != null) {
-
-            mActivity = null;
-        }
-
         if (directMentionsRecyclerView != null) {
 
             directMentionsRecyclerView = null;
+        }
+
+        if (loadingIcon != null) {
+
+            loadingIcon = null;
+        }
+
+        if (noDMsTextView != null) {
+
+            noDMsTextView = null;
         }
 
         if (directMentionsRecyclerViewLinearLayoutManager != null) {
@@ -573,35 +548,22 @@ public class DirectMentions extends Fragment {
             directMentionsRecyclerViewLinearLayoutManager = null;
         }
 
-        mTime = null;
-        mUser = null;
-        mImage = null;
-        mVideo = null;
-        mText = null;
-        mShapeUUID = null;
-        mUserIsWithinShape = null;
-        mShapeIsCircle = null;
-        mSeenByUser = null;
-        mPosition = null;
-        notSeenByUserList = null;
+        if (rootView != null) {
 
-        userAL = null;
-        imageURLAL = null;
-        timeAL = null;
-        videoURLAL = null;
-        messageTextAL = null;
-        shapeUUIDAL = null;
-        userUUIDAL = null;
-        userEmailAL = null;
-        userIsWithinShapeAL = null;
-        shapeIsCircleAL = null;
-        seenByUserAL = null;
-        positionAL = null;
-
-        loadingIcon = null;
-        noDMsTextView = null;
+            rootView = null;
+        }
 
         super.onDestroyView();
+    }
+
+    @Override
+    public void onDetach() {
+
+        super.onDetach();
+        Log.i(TAG, "onDetach()");
+
+        mContext = null;
+        mActivity = null;
     }
 
     private void cancelToasts() {
