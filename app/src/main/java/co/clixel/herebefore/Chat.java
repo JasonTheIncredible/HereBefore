@@ -22,7 +22,6 @@ import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 import androidx.exifinterface.media.ExifInterface;
@@ -38,7 +37,6 @@ import android.util.Base64;
 import android.util.Base64OutputStream;
 import android.util.Log;
 import android.view.ContextMenu;
-import android.view.ContextThemeWrapper;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -949,6 +947,7 @@ public class Chat extends Fragment implements
         if (mediaButtonMenu != null) {
 
             mediaButtonMenu.setOnMenuItemClickListener(null);
+            mediaButtonMenu = null;
         }
 
         if (sendButton != null) {
@@ -1756,7 +1755,7 @@ public class Chat extends Fragment implements
 
         if (!listPermissionsNeeded.isEmpty()) {
 
-            ActivityCompat.requestPermissions(mActivity, listPermissionsNeeded.toArray(new String[0]), Request_ID_Take_Photo);
+            requestPermissions(listPermissionsNeeded.toArray(new String[0]), Request_ID_Take_Photo);
             return false;
         }
 
@@ -1792,7 +1791,7 @@ public class Chat extends Fragment implements
 
         if (!listPermissionsNeeded.isEmpty()) {
 
-            ActivityCompat.requestPermissions(mActivity, listPermissionsNeeded.toArray(new String[0]), Request_ID_Record_Video);
+            requestPermissions(listPermissionsNeeded.toArray(new String[0]), Request_ID_Record_Video);
             return false;
         }
 
@@ -2024,6 +2023,7 @@ public class Chat extends Fragment implements
                         .setMessage("Here Before needs permission to use your camera to take pictures or video. " +
                                 "You may need to enable permission manually through the settings menu.")
                         .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+
                             @Override
                             public void onClick(DialogInterface dialogInterface, int i) {
 
@@ -2086,6 +2086,7 @@ public class Chat extends Fragment implements
                         .setMessage("Here Before needs permission to use your storage to save photos or video. " +
                                 "You may need to enable permission manually through the settings menu.")
                         .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+
                             @Override
                             public void onClick(DialogInterface dialogInterface, int i) {
 
@@ -2148,6 +2149,7 @@ public class Chat extends Fragment implements
                         .setMessage("Here Before needs permission to record audio during video recording. " +
                                 "You may need to enable permission manually through the settings menu.")
                         .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+
                             @Override
                             public void onClick(DialogInterface dialogInterface, int i) {
 
@@ -2226,14 +2228,14 @@ public class Chat extends Fragment implements
 
             if (getExtension(imageURI).equals("gif")) {
 
+                // Prevents the loadingIcon from being removed by initChatAdapter().
+                needLoadingIcon = true;
+
                 // For use in uploadImage().
                 URIisFile = true;
 
-                // GIF. No need for compression.
-                Glide.with(this)
-                        .load(imageURI)
-                        .apply(new RequestOptions().override(640, 5000).placeholder(R.drawable.ic_recyclerview_image_placeholder))
-                        .into(imageView);
+                // GIF. No need for compression. However, this needs to be done asynchronously to be work (for some reason).
+                new gifAsyncTask(this).execute(imageURI.toString());
 
                 imageView.setVisibility(View.VISIBLE);
             } else {
@@ -2322,6 +2324,59 @@ public class Chat extends Fragment implements
         return mimeTypeMap.getExtensionFromMimeType(cr.getType(uri));
     }
 
+    private static class gifAsyncTask extends AsyncTask<String, String, String> {
+
+        private WeakReference<Chat> activityWeakRef;
+
+        private gifAsyncTask(Chat activity) {
+
+            activityWeakRef = new WeakReference<>(activity);
+        }
+
+        @Override
+        protected void onPreExecute() {
+
+            super.onPreExecute();
+
+            Chat activity = activityWeakRef.get();
+            if (activity == null || activity.isRemoving()) return;
+
+            // Show the loading icon while the image is being compressed.
+            if (activity.loadingIcon != null) {
+
+                activity.loadingIcon.setVisibility(View.VISIBLE);
+            }
+        }
+
+        @Override
+        protected String doInBackground(String... paths) {
+
+            return "2";
+        }
+
+        @Override
+        protected void onPostExecute(String meaninglessString) {
+
+            super.onPostExecute(meaninglessString);
+
+            Chat activity = activityWeakRef.get();
+            if (activity == null || activity.isRemoving()) return;
+
+            Glide.with(activity)
+                    .load(activity.imageURI)
+                    .apply(new RequestOptions().override(640, 5000).placeholder(R.drawable.ic_recyclerview_image_placeholder))
+                    .into(activity.imageView);
+
+            activity.imageView.setVisibility(View.VISIBLE);
+            if (activity.loadingIcon != null) {
+
+                activity.loadingIcon.setVisibility(View.INVISIBLE);
+            }
+            // Allow initChatAdapter() to get rid of the loadingIcon with this boolean.
+            activity.needLoadingIcon = false;
+        }
+    }
+
     private static class imageCompressAsyncTask extends AsyncTask<String, String, String> {
 
         private WeakReference<Chat> activityWeakRef;
@@ -2340,7 +2395,10 @@ public class Chat extends Fragment implements
             if (activity == null || activity.isRemoving()) return;
 
             // Show the loading icon while the image is being compressed.
-            activity.loadingIcon.setVisibility(View.VISIBLE);
+            if (activity.loadingIcon != null) {
+
+                activity.loadingIcon.setVisibility(View.VISIBLE);
+            }
         }
 
         @Override
@@ -2438,7 +2496,10 @@ public class Chat extends Fragment implements
                     .into(activity.imageView);
 
             activity.imageView.setVisibility(View.VISIBLE);
-            activity.loadingIcon.setVisibility(View.INVISIBLE);
+            if (activity.loadingIcon != null) {
+
+                activity.loadingIcon.setVisibility(View.INVISIBLE);
+            }
             // Allow initChatAdapter() to get rid of the loadingIcon with this boolean.
             activity.needLoadingIcon = false;
         }
