@@ -156,6 +156,7 @@ public class Chat extends Fragment implements
     private Activity mActivity;
     private AdView bannerAd;
     private Query query;
+    private DataSnapshot mSnapshot;
     private WordTokenizerConfig tokenizerConfig = new WordTokenizerConfig
             .Builder()
             .setWordBreakChars(", ")
@@ -171,6 +172,58 @@ public class Chat extends Fragment implements
 
         mContext = context;
         mActivity = getActivity();
+        // Get the snapshot from Map.
+        mSnapshot = Map.mSnapshot;
+
+        // Get info from Map.java
+        if (mActivity != null) {
+
+            Bundle extras = mActivity.getIntent().getExtras();
+            if (extras != null) {
+
+                directMentionsPosition = extras.getInt("directMentionsPosition");
+                // The default value is zero. So if the above line receives nothing, it will default to 0 and the first line will be highlighted.
+                // Prevent this by checking if it is zero. The highlighted text will never be 0.
+                if (directMentionsPosition == 0) {
+                    directMentionsPosition = null;
+                }
+                newShape = extras.getBoolean("newShape");
+                shapeUUID = extras.getString("shapeUUID");
+                userIsWithinShape = extras.getBoolean("userIsWithinShape");
+                // circleLatitude, circleLongitude, and radius will be null if the circle is not new (as a new circle is not being created).
+                circleLatitude = extras.getDouble("circleLatitude");
+                circleLongitude = extras.getDouble("circleLongitude");
+                radius = extras.getDouble("radius");
+                // Most of these will be null if the polygon does not have eight markers, or if the polygon is not new.
+                shapeIsCircle = extras.getBoolean("shapeIsCircle");
+                polygonArea = extras.getDouble("polygonArea");
+                threeMarkers = extras.getBoolean("threeMarkers");
+                fourMarkers = extras.getBoolean("fourMarkers");
+                fiveMarkers = extras.getBoolean("fiveMarkers");
+                sixMarkers = extras.getBoolean("sixMarkers");
+                sevenMarkers = extras.getBoolean("sevenMarkers");
+                eightMarkers = extras.getBoolean("eightMarkers");
+                marker0Latitude = extras.getDouble("marker0Latitude");
+                marker0Longitude = extras.getDouble("marker0Longitude");
+                marker1Latitude = extras.getDouble("marker1Latitude");
+                marker1Longitude = extras.getDouble("marker1Longitude");
+                marker2Latitude = extras.getDouble("marker2Latitude");
+                marker2Longitude = extras.getDouble("marker2Longitude");
+                marker3Latitude = extras.getDouble("marker3Latitude");
+                marker3Longitude = extras.getDouble("marker3Longitude");
+                marker4Latitude = extras.getDouble("marker4Latitude");
+                marker4Longitude = extras.getDouble("marker4Longitude");
+                marker5Latitude = extras.getDouble("marker5Latitude");
+                marker5Longitude = extras.getDouble("marker5Longitude");
+                marker6Latitude = extras.getDouble("marker6Latitude");
+                marker6Longitude = extras.getDouble("marker6Longitude");
+                marker7Latitude = extras.getDouble("marker7Latitude");
+                marker7Longitude = extras.getDouble("marker7Longitude");
+            } else {
+
+                Log.e(TAG, "onCreateView() -> extras == null");
+            }
+        }
     }
 
     @NonNull
@@ -226,53 +279,6 @@ public class Chat extends Fragment implements
             loadingIcon.setVisibility(View.VISIBLE);
         }
 
-        // Get info from Map.java
-        Bundle extras = mActivity.getIntent().getExtras();
-        if (extras != null) {
-
-            directMentionsPosition = extras.getInt("directMentionsPosition");
-            // The default value is zero. So if the above line receives nothing, it will default to 0 and the first line will be highlighted.
-            // Prevent this by checking if it is zero. The highlighted text will never be 0.
-            if (directMentionsPosition == 0) {
-                directMentionsPosition = null;
-            }
-            newShape = extras.getBoolean("newShape");
-            shapeUUID = extras.getString("shapeUUID");
-            userIsWithinShape = extras.getBoolean("userIsWithinShape");
-            // circleLatitude, circleLongitude, and radius will be null if the circle is not new (as a new circle is not being created).
-            circleLatitude = extras.getDouble("circleLatitude");
-            circleLongitude = extras.getDouble("circleLongitude");
-            radius = extras.getDouble("radius");
-            // Most of these will be null if the polygon does not have eight markers, or if the polygon is not new.
-            shapeIsCircle = extras.getBoolean("shapeIsCircle");
-            polygonArea = extras.getDouble("polygonArea");
-            threeMarkers = extras.getBoolean("threeMarkers");
-            fourMarkers = extras.getBoolean("fourMarkers");
-            fiveMarkers = extras.getBoolean("fiveMarkers");
-            sixMarkers = extras.getBoolean("sixMarkers");
-            sevenMarkers = extras.getBoolean("sevenMarkers");
-            eightMarkers = extras.getBoolean("eightMarkers");
-            marker0Latitude = extras.getDouble("marker0Latitude");
-            marker0Longitude = extras.getDouble("marker0Longitude");
-            marker1Latitude = extras.getDouble("marker1Latitude");
-            marker1Longitude = extras.getDouble("marker1Longitude");
-            marker2Latitude = extras.getDouble("marker2Latitude");
-            marker2Longitude = extras.getDouble("marker2Longitude");
-            marker3Latitude = extras.getDouble("marker3Latitude");
-            marker3Longitude = extras.getDouble("marker3Longitude");
-            marker4Latitude = extras.getDouble("marker4Latitude");
-            marker4Longitude = extras.getDouble("marker4Longitude");
-            marker5Latitude = extras.getDouble("marker5Latitude");
-            marker5Longitude = extras.getDouble("marker5Longitude");
-            marker6Latitude = extras.getDouble("marker6Latitude");
-            marker6Longitude = extras.getDouble("marker6Longitude");
-            marker7Latitude = extras.getDouble("marker7Latitude");
-            marker7Longitude = extras.getDouble("marker7Longitude");
-        } else {
-
-            Log.e(TAG, "onCreateView() -> extras == null");
-        }
-
         if (userIsWithinShape) {
 
             mInput.setHint("Message from within shape...");
@@ -303,126 +309,235 @@ public class Chat extends Fragment implements
         }
 
         rootRef = FirebaseDatabase.getInstance().getReference();
-        databaseReference = rootRef.child("MessageThreads");
-        valueEventListener = new ValueEventListener() {
+        if (mSnapshot != null) {
 
-            @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+            // Use this dataSnapshot in DirectMentions to cut down on data usage.
+            int directMentionsLayout = mContext.getResources().getIdentifier("directMentions", "directMentions", mContext.getPackageName());
+            if (directMentionsLayout != 0) {
 
-                // Use this dataSnapshot in DirectMentions to cut down on data usage.
-                int directMentionsLayout = mContext.getResources().getIdentifier("directMentions", "directMentions", mContext.getPackageName());
-                if (directMentionsLayout != 0) {
+                DirectMentions directMentions = new DirectMentions();
+                directMentions.addEventListener(mSnapshot);
+            }
 
-                    DirectMentions directMentions = new DirectMentions();
-                    directMentions.addEventListener(dataSnapshot);
-                }
+            for (DataSnapshot ds : mSnapshot.getChildren()) {
 
-                for (DataSnapshot ds : dataSnapshot.getChildren()) {
+                // If the uuid brought from Map.java equals the uuid attached to the recyclerviewlayout in Firebase, load it into the RecyclerView.
+                String mShapeUUID = (String) ds.child("shapeUUID").getValue();
+                if (mShapeUUID != null) {
 
-                    // If the uuid brought from Map.java equals the uuid attached to the recyclerviewlayout in Firebase, load it into the RecyclerView.
-                    String mShapeUUID = (String) ds.child("shapeUUID").getValue();
-                    if (mShapeUUID != null) {
+                    if (mShapeUUID.equals(shapeUUID)) {
 
-                        if (mShapeUUID.equals(shapeUUID)) {
+                        Long serverDate = (Long) ds.child("date").getValue();
+                        String user = (String) ds.child("userUUID").getValue();
+                        // Used when a user mentions another user with "@".
+                        mSuggestions.add(user);
+                        String imageURL = (String) ds.child("imageURL").getValue();
+                        String videoURL = (String) ds.child("videoURL").getValue();
+                        String messageText = (String) ds.child("message").getValue();
+                        Boolean userIsWithinShape = (Boolean) ds.child("userIsWithinShape").getValue();
+                        DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
+                        // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+                        // This will cause onDataChange to fire twice; optimizations could be made in the future.
+                        if (serverDate != null) {
 
-                            Long serverDate = (Long) ds.child("date").getValue();
-                            String user = (String) ds.child("userUUID").getValue();
-                            // Used when a user mentions another user with "@".
-                            mSuggestions.add(user);
-                            String imageURL = (String) ds.child("imageURL").getValue();
-                            String videoURL = (String) ds.child("videoURL").getValue();
-                            String messageText = (String) ds.child("message").getValue();
-                            Boolean userIsWithinShape = (Boolean) ds.child("userIsWithinShape").getValue();
-                            DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
-                            // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                            // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                            if (serverDate != null) {
+                            Date netDate = (new Date(serverDate));
+                            String messageTime = dateFormat.format(netDate);
+                            mTime.add(messageTime);
+                        } else {
 
-                                Date netDate = (new Date(serverDate));
-                                String messageTime = dateFormat.format(netDate);
-                                mTime.add(messageTime);
-                            } else {
-
-                                Log.e(TAG, "onStart() -> serverDate == null");
-                            }
-                            mUser.add(user);
-                            mImage.add(imageURL);
-                            mVideo.add(videoURL);
-                            mText.add(messageText);
-                            mUserIsWithinShape.add(userIsWithinShape);
+                            Log.e(TAG, "onStart() -> serverDate == null");
                         }
+                        mUser.add(user);
+                        mImage.add(imageURL);
+                        mVideo.add(videoURL);
+                        mText.add(messageText);
+                        mUserIsWithinShape.add(userIsWithinShape);
                     }
                 }
+            }
 
-                // Read RecyclerView scroll position (for use in initChatAdapter).
-                if (chatRecyclerViewLinearLayoutManager != null && chatRecyclerView != null) {
+            // Read RecyclerView scroll position (for use in initChatAdapter).
+            if (chatRecyclerViewLinearLayoutManager != null && chatRecyclerView != null) {
 
-                    index = chatRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
-                    last = chatRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
-                    View v = chatRecyclerView.getChildAt(0);
-                    top = (v == null) ? 0 : (v.getTop() - chatRecyclerView.getPaddingTop());
-                }
+                index = chatRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
+                last = chatRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
+                View v = chatRecyclerView.getChildAt(0);
+                top = (v == null) ? 0 : (v.getTop() - chatRecyclerView.getPaddingTop());
+            }
 
-                addQuery();
+            addQuery();
 
-                // Check RecyclerView scroll state (to allow the layout to move up when keyboard appears).
-                if (chatRecyclerView != null) {
+            // Check RecyclerView scroll state (to allow the layout to move up when keyboard appears).
+            if (chatRecyclerView != null) {
 
-                    chatRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+                chatRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
 
-                        @Override
-                        public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
+                    @Override
+                    public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
 
-                            super.onScrollStateChanged(recyclerView, newState);
+                        super.onScrollStateChanged(recyclerView, newState);
 
-                            // If RecyclerView can't be scrolled down, reachedEndOfRecyclerView = true.
-                            reachedEndOfRecyclerView = !recyclerView.canScrollVertically(1);
+                        // If RecyclerView can't be scrolled down, reachedEndOfRecyclerView = true.
+                        reachedEndOfRecyclerView = !recyclerView.canScrollVertically(1);
 
-                            // Used to detect if user has just entered the recyclerviewlayout (so layout needs to move up when keyboard appears).
-                            recyclerViewHasScrolled = true;
-                        }
-                    });
+                        // Used to detect if user has just entered the recyclerviewlayout (so layout needs to move up when keyboard appears).
+                        recyclerViewHasScrolled = true;
+                    }
+                });
 
-                    // If RecyclerView is scrolled to the bottom, move the layout up when the keyboard appears.
-                    chatRecyclerView.addOnLayoutChangeListener(onLayoutChangeListener = new View.OnLayoutChangeListener() {
+                // If RecyclerView is scrolled to the bottom, move the layout up when the keyboard appears.
+                chatRecyclerView.addOnLayoutChangeListener(onLayoutChangeListener = new View.OnLayoutChangeListener() {
 
-                        @Override
-                        public void onLayoutChange(View v,
-                                                   int left, int top, int right, int bottom,
-                                                   int oldLeft, int oldTop, int oldRight, int oldBottom) {
+                    @Override
+                    public void onLayoutChange(View v,
+                                               int left, int top, int right, int bottom,
+                                               int oldLeft, int oldTop, int oldRight, int oldBottom) {
 
-                            if (reachedEndOfRecyclerView || !recyclerViewHasScrolled) {
+                        if (reachedEndOfRecyclerView || !recyclerViewHasScrolled) {
 
-                                if (bottom < oldBottom) {
+                            if (bottom < oldBottom) {
 
-                                    if (chatRecyclerView.getAdapter() != null && chatRecyclerView.getAdapter().getItemCount() > 0) {
+                                if (chatRecyclerView.getAdapter() != null && chatRecyclerView.getAdapter().getItemCount() > 0) {
 
-                                        chatRecyclerView.postDelayed(new Runnable() {
+                                    chatRecyclerView.postDelayed(new Runnable() {
 
-                                            @Override
-                                            public void run() {
+                                        @Override
+                                        public void run() {
 
-                                                chatRecyclerView.smoothScrollToPosition(
+                                            chatRecyclerView.smoothScrollToPosition(
 
-                                                        chatRecyclerView.getAdapter().getItemCount() - 1);
-                                            }
-                                        }, 100);
-                                    }
+                                                    chatRecyclerView.getAdapter().getItemCount() - 1);
+                                        }
+                                    }, 100);
                                 }
                             }
                         }
-                    });
+                    }
+                });
+            }
+        } else {
+
+            databaseReference = rootRef.child("MessageThreads");
+            valueEventListener = new ValueEventListener() {
+
+                @Override
+                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                    // Use this dataSnapshot in DirectMentions to cut down on data usage.
+                    int directMentionsLayout = mContext.getResources().getIdentifier("directMentions", "directMentions", mContext.getPackageName());
+                    if (directMentionsLayout != 0) {
+
+                        DirectMentions directMentions = new DirectMentions();
+                        directMentions.addEventListener(dataSnapshot);
+                    }
+
+                    for (DataSnapshot ds : dataSnapshot.getChildren()) {
+
+                        // If the uuid brought from Map.java equals the uuid attached to the recyclerviewlayout in Firebase, load it into the RecyclerView.
+                        String mShapeUUID = (String) ds.child("shapeUUID").getValue();
+                        if (mShapeUUID != null) {
+
+                            if (mShapeUUID.equals(shapeUUID)) {
+
+                                Long serverDate = (Long) ds.child("date").getValue();
+                                String user = (String) ds.child("userUUID").getValue();
+                                // Used when a user mentions another user with "@".
+                                mSuggestions.add(user);
+                                String imageURL = (String) ds.child("imageURL").getValue();
+                                String videoURL = (String) ds.child("videoURL").getValue();
+                                String messageText = (String) ds.child("message").getValue();
+                                Boolean userIsWithinShape = (Boolean) ds.child("userIsWithinShape").getValue();
+                                DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
+                                // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+                                // This will cause onDataChange to fire twice; optimizations could be made in the future.
+                                if (serverDate != null) {
+
+                                    Date netDate = (new Date(serverDate));
+                                    String messageTime = dateFormat.format(netDate);
+                                    mTime.add(messageTime);
+                                } else {
+
+                                    Log.e(TAG, "onStart() -> serverDate == null");
+                                }
+                                mUser.add(user);
+                                mImage.add(imageURL);
+                                mVideo.add(videoURL);
+                                mText.add(messageText);
+                                mUserIsWithinShape.add(userIsWithinShape);
+                            }
+                        }
+                    }
+
+                    // Read RecyclerView scroll position (for use in initChatAdapter).
+                    if (chatRecyclerViewLinearLayoutManager != null && chatRecyclerView != null) {
+
+                        index = chatRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
+                        last = chatRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
+                        View v = chatRecyclerView.getChildAt(0);
+                        top = (v == null) ? 0 : (v.getTop() - chatRecyclerView.getPaddingTop());
+                    }
+
+                    addQuery();
+
+                    // Check RecyclerView scroll state (to allow the layout to move up when keyboard appears).
+                    if (chatRecyclerView != null) {
+
+                        chatRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+
+                            @Override
+                            public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
+
+                                super.onScrollStateChanged(recyclerView, newState);
+
+                                // If RecyclerView can't be scrolled down, reachedEndOfRecyclerView = true.
+                                reachedEndOfRecyclerView = !recyclerView.canScrollVertically(1);
+
+                                // Used to detect if user has just entered the recyclerviewlayout (so layout needs to move up when keyboard appears).
+                                recyclerViewHasScrolled = true;
+                            }
+                        });
+
+                        // If RecyclerView is scrolled to the bottom, move the layout up when the keyboard appears.
+                        chatRecyclerView.addOnLayoutChangeListener(onLayoutChangeListener = new View.OnLayoutChangeListener() {
+
+                            @Override
+                            public void onLayoutChange(View v,
+                                                       int left, int top, int right, int bottom,
+                                                       int oldLeft, int oldTop, int oldRight, int oldBottom) {
+
+                                if (reachedEndOfRecyclerView || !recyclerViewHasScrolled) {
+
+                                    if (bottom < oldBottom) {
+
+                                        if (chatRecyclerView.getAdapter() != null && chatRecyclerView.getAdapter().getItemCount() > 0) {
+
+                                            chatRecyclerView.postDelayed(new Runnable() {
+
+                                                @Override
+                                                public void run() {
+
+                                                    chatRecyclerView.smoothScrollToPosition(
+
+                                                            chatRecyclerView.getAdapter().getItemCount() - 1);
+                                                }
+                                            }, 100);
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    }
                 }
-            }
 
-            public void onCancelled(@NonNull DatabaseError databaseError) {
+                public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                toastMessageLong(databaseError.getMessage());
-            }
-        };
+                    toastMessageLong(databaseError.getMessage());
+                }
+            };
 
-        // Add the Firebase listener.
-        databaseReference.addListenerForSingleValueEvent(valueEventListener);
+            // Add the Firebase listener.
+            databaseReference.addListenerForSingleValueEvent(valueEventListener);
+        }
 
         // Hide the imageView or videoImageView if user presses the delete button.
         mInput.setOnKeyListener(new View.OnKeyListener() {
@@ -813,7 +928,17 @@ public class Chat extends Fragment implements
     // Change to .limitToLast(1) to cut down on data usage. Otherwise, EVERY child at this node will be downloaded every time the child is updated.
     private void addQuery() {
 
-        databaseReference.removeEventListener(valueEventListener);
+        // If mSnapshot is null and databaseReference is used in onStart, remove it here. The null check prevents a crash is it was never used in onStart.
+        if (databaseReference != null) {
+
+            databaseReference.removeEventListener(valueEventListener);
+        }
+
+        // This prevents duplicates when loading into Settings fragment then switched back into Chat (as onStop is never called but onStart is called).
+        if (query != null) {
+
+            query.removeEventListener(childEventListener);
+        }
 
         query = rootRef.child("MessageThreads").limitToLast(1);
         childEventListener = new ChildEventListener() {
@@ -907,6 +1032,8 @@ public class Chat extends Fragment implements
     public void onStop() {
 
         Log.i(TAG, "onStop()");
+
+        mSnapshot = null;
 
         if (databaseReference != null) {
 
