@@ -27,6 +27,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
     public static final String KEY_THEME_SWITCH = "toggleTheme";
     public static final String KEY_MAP_TYPE = "mapTypePreference";
     public static final String KEY_SIGN_OUT = "signOut";
+    public static final String KEY_SHOW_INTRO = "showIntro";
     // "FIREBASE_TOKEN" to find Firebase token for messaging.
 
     @Override

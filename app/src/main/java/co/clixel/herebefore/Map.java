@@ -122,6 +122,10 @@ public class Map extends FragmentActivity implements
     public static DataSnapshot mSnapshot;
 
     // AppIntro on Github.
+    // Create an "Extras" section of AppIntro.
+    // AppIntro is leaking.
+    // Test what happens when user logs out and when user installs the app fresh for AppIntro.
+    // Create option (in Settings?) to watch MyAppIntro again.
     // Decrease app size / Check on accumulation of size over time.
     // Check on feedback.
     // Prevent entering circle when locationProvider is disabled.
@@ -130,7 +134,7 @@ public class Map extends FragmentActivity implements
     // Check warning messages.
 
     // More ads.
-    // Make sure aboutLibraries is up to date.
+    // Make randomButton use previous snapShot.
     // Add ability to add video to Chat from gallery. Distinguish it from video taken at location. Do the same distinguishing with pictures.
     // If a mention doesn't exist (because it was manually deleted), delete it. Also change "position" in database and update onChildChanged() (or get rid of "position" entirely?). Also, use more specific children so every Chat is not called.
     // Only download shapes in Map when necessary to cut down on database usage.
@@ -153,6 +157,20 @@ public class Map extends FragmentActivity implements
 
         super.onCreate(savedInstanceState);
         Log.i(TAG, "onCreate()");
+
+        // Show the intro if the user has not yet seen it.
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+
+        sharedPreferences.edit().putBoolean(SettingsFragment.KEY_SHOW_INTRO, true).apply();
+
+        boolean showIntro = sharedPreferences.getBoolean(SettingsFragment.KEY_SHOW_INTRO, true);
+
+        if (showIntro) {
+
+            Intent Activity = new Intent(this, MyAppIntro.class);
+            startActivity(Activity);
+            finish();
+        }
 
         setContentView(R.layout.map);
 

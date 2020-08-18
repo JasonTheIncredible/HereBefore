@@ -53,10 +53,16 @@
             android:value="@string/google_maps_key" />
 
         <activity
+            android:name=".MyAppIntro"
+            android:label="@string/title_activity_maps"
+            android:theme="@style/AppTheme.NoActionBar" />
+
+        <activity
             android:name=".SignIn"
             android:label="@string/title_activity_maps"
             android:theme="@style/AppTheme"
             android:windowSoftInputMode="adjustResize" />
+
         <activity
             android:name=".SignUp"
             android:label="@string/title_activity_maps"
