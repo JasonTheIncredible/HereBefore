@@ -85,6 +85,15 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
                     break;
                 }
 
+                case "introduction": {
+
+                    Intent Activity = new Intent(getActivity(), MyAppIntro.class);
+
+                    startActivity(Activity);
+
+                    break;
+                }
+
                 case "resetPassword": {
 
                     Intent Activity = new Intent(getActivity(), ResetPassword.class);

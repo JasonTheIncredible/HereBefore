@@ -13,6 +13,11 @@
         app:summary="Dark mode &lt;-&gt; Light mode"
         app:title="Toggle between dark and light mode" />
 
+    <Preference
+        app:key="introduction"
+        app:summary="View the introduction again"
+        app:title="Introduction" />
+
     <ListPreference
         app:defaultValue="@string/hybrid_view"
         app:entries="@array/pref_map_types_entries"
