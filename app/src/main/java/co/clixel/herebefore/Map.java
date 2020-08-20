@@ -99,7 +99,7 @@ public class Map extends FragmentActivity implements
     private String preferredMapType, shapeUUID, marker0ID, marker1ID, marker2ID, marker3ID, marker4ID, marker5ID, marker6ID, marker7ID, selectedOverlappingShapeUUID, email;
     private Button createChatButton, chatViewsButton, mapTypeButton, settingsButton;
     private PopupMenu popupMapType, popupChatViews, popupCreateChat;
-    private boolean stillLoadingCircles = true, stillLoadingPolygons = true, stillUpdatingCamera = true;
+    private boolean stillLoadingCircles = true, stillLoadingPolygons = true, stillUpdatingCamera = true, locationProviderDisabled = false;
     private Boolean firstLoadCamera = true, firstLoadDMs = true, cameraMoved = false, waitingForBetterLocationAccuracy = false, badAccuracy = false, showingEverything = true, showingLarge = false, showingMedium = false, showingSmall = false, showingPoints = false,
             waitingForClicksToProcess = false, waitingForShapeInformationToProcess = false, markerOutsidePolygon = false, usedSeekBar = false,
             userIsWithinShape, selectingShape = false, threeMarkers = false, fourMarkers = false, fiveMarkers = false, sixMarkers = false, sevenMarkers = false, eightMarkers = false;
@@ -121,26 +121,22 @@ public class Map extends FragmentActivity implements
     private Query query;
     public static DataSnapshot mSnapshot;
 
-    // Decrease app size / Check on accumulation of size over time.
-    // Check on feedback.
-    // Prevent entering circle when locationProvider is disabled.
-    // Update existing values in Firebase so new users can view old shapes.
-    // Make sure aboutLibraries is up to date.
-    // Check warning messages.
-
     // More ads.
     // Make randomButton and 'change Chat views" button use previous snapShot.
     // Add ability to add video to Chat from gallery. Distinguish it from video taken at location. Do the same distinguishing with pictures.
     // If a mention doesn't exist (because it was manually deleted), delete it. Also change "position" in database and update onChildChanged() (or get rid of "position" entirely?). Also, use more specific children so every Chat is not called.
     // Only download shapes in Map when necessary to cut down on database usage.
+    // Don't get rid of picture when pausing and resuming Chat.
     // Add preference for shape color.
     // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.
+    // Decrease app size / Check on accumulation of size over time.
     // Make sure the secret stuff is secret.
     // Make sure Firebase has enough bandwidth.
     // Make sure aboutLibraries is up to date.
     // Check warning messages.
 
     // Work on deprecated methods.
+    // Create a "general chat" where everyone can chat anonymously.
     // Add ability to add both picture and video to firebase at the same time.
     // Leave messages in locations that users get notified of when they enter the area.
     // Add ability to filter recyclerView by type of content (recorded at the scene...).
@@ -3206,12 +3202,18 @@ public class Map extends FragmentActivity implements
 
     @Override
     public void onProviderEnabled(@NonNull String provider) {
+
+        Log.i(TAG, "onProviderEnabled()");
+        locationProviderDisabled = false;
+        toastMessageLong("Your location provider is enabled");
+        loadingIcon.setVisibility(View.GONE);
     }
 
     @Override
     public void onProviderDisabled(@NonNull String provider) {
 
         Log.i(TAG, "onProviderDisabled()");
+        locationProviderDisabled = true;
         toastMessageLong("Your location provider is disabled");
         loadingIcon.setVisibility(View.GONE);
     }
@@ -5711,147 +5713,156 @@ public class Map extends FragmentActivity implements
 
                             if (location != null) {
 
-                                if (mSnapshot != null) {
-                                    cancelToasts();
+                                if (!locationProviderDisabled) {
 
-                                    if (threeMarkers) {
+                                    if (mSnapshot != null) {
 
-                                        Log.i(TAG, "goToNextActivityPolygon() -> threeMarkers");
+                                        cancelToasts();
 
-                                        // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
-                                        Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
-                                        Activity.putExtra("threeMarkers", true);
-                                        Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                        Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                        Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                        Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                        Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                        Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                        if (threeMarkers) {
+
+                                            Log.i(TAG, "goToNextActivityPolygon() -> threeMarkers");
+
+                                            // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
+                                            Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
+                                            Activity.putExtra("threeMarkers", true);
+                                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                        }
+
+                                        if (fourMarkers) {
+
+                                            Log.i(TAG, "goToNextActivityPolygon() -> fourMarkers");
+
+                                            // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
+                                            Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
+                                            Activity.putExtra("fourMarkers", true);
+                                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                            Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                            Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                        }
+
+                                        if (fiveMarkers) {
+
+                                            Log.i(TAG, "goToNextActivityPolygon() -> fiveMarkers");
+
+                                            // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
+                                            Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
+                                            Activity.putExtra("fiveMarkers", true);
+                                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                            Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                            Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                            Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                            Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                        }
+
+                                        if (sixMarkers) {
+
+                                            Log.i(TAG, "goToNextActivityPolygon() -> sixMarkers");
+
+                                            // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
+                                            Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
+                                            Activity.putExtra("sixMarkers", true);
+                                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                            Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                            Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                            Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                            Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                            Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                            Activity.putExtra("marker5Longitude", marker5Position.longitude);
+                                        }
+
+                                        if (sevenMarkers) {
+
+                                            Log.i(TAG, "goToNextActivityPolygon() -> sevenMarkers");
+
+                                            // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
+                                            Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
+                                            Activity.putExtra("sevenMarkers", true);
+                                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                            Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                            Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                            Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                            Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                            Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                            Activity.putExtra("marker5Longitude", marker5Position.longitude);
+                                            Activity.putExtra("marker6Latitude", marker6Position.latitude);
+                                            Activity.putExtra("marker6Longitude", marker6Position.longitude);
+                                        }
+
+                                        if (eightMarkers) {
+
+                                            Log.i(TAG, "goToNextActivityPolygon() -> eightMarkers");
+
+                                            // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
+                                            Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
+                                            Activity.putExtra("eightMarkers", true);
+                                            Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                            Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                            Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                            Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                            Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                            Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                            Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                            Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                            Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                            Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                            Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                            Activity.putExtra("marker5Longitude", marker5Position.longitude);
+                                            Activity.putExtra("marker6Latitude", marker6Position.latitude);
+                                            Activity.putExtra("marker6Longitude", marker6Position.longitude);
+                                            Activity.putExtra("marker7Latitude", marker7Position.latitude);
+                                            Activity.putExtra("marker7Longitude", marker7Position.longitude);
+                                        }
+
+                                        Activity.putExtra("userLatitude", location.getLatitude());
+                                        Activity.putExtra("userLongitude", location.getLongitude());
+                                        Activity.putExtra("shapeIsCircle", false);
+                                        // Pass this boolean value Chat.java.
+                                        Activity.putExtra("newShape", newShape);
+                                        // Pass this value to Chat.java to identify the shape.
+                                        Activity.putExtra("shapeUUID", shapeUUID);
+                                        // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
+                                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
+
+                                        loadingIcon.setVisibility(View.GONE);
+
+                                        startActivity(Activity);
+                                    } else {
+
+                                        loadingIcon.setVisibility(View.GONE);
+                                        toastMessageLong("Still loading data. Please wait and try again.");
                                     }
-
-                                    if (fourMarkers) {
-
-                                        Log.i(TAG, "goToNextActivityPolygon() -> fourMarkers");
-
-                                        // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
-                                        Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
-                                        Activity.putExtra("fourMarkers", true);
-                                        Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                        Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                        Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                        Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                        Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                        Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                                        Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                                        Activity.putExtra("marker3Longitude", marker3Position.longitude);
-                                    }
-
-                                    if (fiveMarkers) {
-
-                                        Log.i(TAG, "goToNextActivityPolygon() -> fiveMarkers");
-
-                                        // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
-                                        Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
-                                        Activity.putExtra("fiveMarkers", true);
-                                        Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                        Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                        Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                        Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                        Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                        Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                                        Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                                        Activity.putExtra("marker3Longitude", marker3Position.longitude);
-                                        Activity.putExtra("marker4Latitude", marker4Position.latitude);
-                                        Activity.putExtra("marker4Longitude", marker4Position.longitude);
-                                    }
-
-                                    if (sixMarkers) {
-
-                                        Log.i(TAG, "goToNextActivityPolygon() -> sixMarkers");
-
-                                        // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
-                                        Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
-                                        Activity.putExtra("sixMarkers", true);
-                                        Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                        Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                        Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                        Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                        Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                        Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                                        Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                                        Activity.putExtra("marker3Longitude", marker3Position.longitude);
-                                        Activity.putExtra("marker4Latitude", marker4Position.latitude);
-                                        Activity.putExtra("marker4Longitude", marker4Position.longitude);
-                                        Activity.putExtra("marker5Latitude", marker5Position.latitude);
-                                        Activity.putExtra("marker5Longitude", marker5Position.longitude);
-                                    }
-
-                                    if (sevenMarkers) {
-
-                                        Log.i(TAG, "goToNextActivityPolygon() -> sevenMarkers");
-
-                                        // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
-                                        Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
-                                        Activity.putExtra("sevenMarkers", true);
-                                        Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                        Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                        Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                        Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                        Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                        Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                                        Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                                        Activity.putExtra("marker3Longitude", marker3Position.longitude);
-                                        Activity.putExtra("marker4Latitude", marker4Position.latitude);
-                                        Activity.putExtra("marker4Longitude", marker4Position.longitude);
-                                        Activity.putExtra("marker5Latitude", marker5Position.latitude);
-                                        Activity.putExtra("marker5Longitude", marker5Position.longitude);
-                                        Activity.putExtra("marker6Latitude", marker6Position.latitude);
-                                        Activity.putExtra("marker6Longitude", marker6Position.longitude);
-                                    }
-
-                                    if (eightMarkers) {
-
-                                        Log.i(TAG, "goToNextActivityPolygon() -> eightMarkers");
-
-                                        // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
-                                        Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
-                                        Activity.putExtra("eightMarkers", true);
-                                        Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                        Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                        Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                        Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                        Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                        Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                                        Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                                        Activity.putExtra("marker3Longitude", marker3Position.longitude);
-                                        Activity.putExtra("marker4Latitude", marker4Position.latitude);
-                                        Activity.putExtra("marker4Longitude", marker4Position.longitude);
-                                        Activity.putExtra("marker5Latitude", marker5Position.latitude);
-                                        Activity.putExtra("marker5Longitude", marker5Position.longitude);
-                                        Activity.putExtra("marker6Latitude", marker6Position.latitude);
-                                        Activity.putExtra("marker6Longitude", marker6Position.longitude);
-                                        Activity.putExtra("marker7Latitude", marker7Position.latitude);
-                                        Activity.putExtra("marker7Longitude", marker7Position.longitude);
-                                    }
-
-                                    Activity.putExtra("userLatitude", location.getLatitude());
-                                    Activity.putExtra("userLongitude", location.getLongitude());
-                                    Activity.putExtra("shapeIsCircle", false);
-                                    // Pass this boolean value Chat.java.
-                                    Activity.putExtra("newShape", newShape);
-                                    // Pass this value to Chat.java to identify the shape.
-                                    Activity.putExtra("shapeUUID", shapeUUID);
-                                    // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
-                                    Activity.putExtra("userIsWithinShape", userIsWithinShape);
-
-                                    loadingIcon.setVisibility(View.GONE);
-
-                                    startActivity(Activity);
                                 } else {
 
                                     loadingIcon.setVisibility(View.GONE);
-                                    toastMessageLong("Still loading data. Please wait and try again.");
+                                    toastMessageLong("Enable the location provider and try again.");
                                 }
+
                             } else {
 
                                 loadingIcon.setVisibility(View.GONE);
@@ -5885,34 +5896,41 @@ public class Map extends FragmentActivity implements
 
                             if (location != null) {
 
-                                if (mSnapshot != null) {
+                                if (!locationProviderDisabled) {
 
-                                    cancelToasts();
+                                    if (mSnapshot != null) {
 
-                                    Activity.putExtra("userLatitude", location.getLatitude());
-                                    Activity.putExtra("userLongitude", location.getLongitude());
-                                    Activity.putExtra("shapeIsCircle", true);
-                                    // Pass this boolean value to Chat.java.
-                                    Activity.putExtra("newShape", newShape);
-                                    // Pass this value to Chat.java to identify the shape.
-                                    Activity.putExtra("shapeUUID", shapeUUID);
-                                    // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
-                                    Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                    // Pass this information to Chat.java to create a new circle in Firebase after someone writes a recyclerviewlayout.
-                                    if (newShape) {
+                                        cancelToasts();
 
-                                        Activity.putExtra("circleLatitude", circle.getCenter().latitude);
-                                        Activity.putExtra("circleLongitude", circle.getCenter().longitude);
-                                        Activity.putExtra("radius", circle.getRadius());
+                                        Activity.putExtra("userLatitude", location.getLatitude());
+                                        Activity.putExtra("userLongitude", location.getLongitude());
+                                        Activity.putExtra("shapeIsCircle", true);
+                                        // Pass this boolean value to Chat.java.
+                                        Activity.putExtra("newShape", newShape);
+                                        // Pass this value to Chat.java to identify the shape.
+                                        Activity.putExtra("shapeUUID", shapeUUID);
+                                        // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
+                                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a recyclerviewlayout.
+                                        if (newShape) {
+
+                                            Activity.putExtra("circleLatitude", circle.getCenter().latitude);
+                                            Activity.putExtra("circleLongitude", circle.getCenter().longitude);
+                                            Activity.putExtra("radius", circle.getRadius());
+                                        }
+
+                                        loadingIcon.setVisibility(View.GONE);
+
+                                        startActivity(Activity);
+                                    } else {
+
+                                        loadingIcon.setVisibility(View.GONE);
+                                        toastMessageLong("Still loading data. Please wait and try again.");
                                     }
-
-                                    loadingIcon.setVisibility(View.GONE);
-
-                                    startActivity(Activity);
                                 } else {
 
                                     loadingIcon.setVisibility(View.GONE);
-                                    toastMessageLong("Still loading data. Please wait and try again.");
+                                    toastMessageLong("Enable the location provider and try again.");
                                 }
                             } else {
 
