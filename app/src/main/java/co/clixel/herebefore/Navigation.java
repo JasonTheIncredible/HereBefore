@@ -172,12 +172,6 @@ public class Navigation extends AppCompatActivity {
         super.onStop();
     }
 
-    @Override
-    protected void onRestart() {
-
-        super.onRestart();
-    }
-
     /**
      * A simple pager adapter that represents 5 ScreenSlidePageFragment objects, in
      * sequence.

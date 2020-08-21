@@ -121,22 +121,25 @@ public class Map extends FragmentActivity implements
     private Query query;
     public static DataSnapshot mSnapshot;
 
-    // More ads.
-    // Make randomButton and 'change Chat views" button use previous snapShot.
+    // Make randomButton and 'change Chat views' button use previous snapShot.
     // Add ability to add video to Chat from gallery. Distinguish it from video taken at location. Do the same distinguishing with pictures.
     // If a mention doesn't exist (because it was manually deleted), delete it. Also change "position" in database and update onChildChanged() (or get rid of "position" entirely?). Also, use more specific children so every Chat is not called.
     // Only download shapes in Map when necessary to cut down on database usage.
-    // Don't get rid of picture when pausing and resuming Chat.
+    // Does mSnapshot need to be null in Chat onStop?
+    // Stop location being tracked when app is in background.
     // Add preference for shape color.
     // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.
     // Decrease app size / Check on accumulation of size over time.
     // Make sure the secret stuff is secret.
     // Make sure Firebase has enough bandwidth.
+    // Adjust Firebase security rules.
+    // Finish setting up Google ads.
+    // More ads.
     // Make sure aboutLibraries is up to date.
     // Check warning messages.
 
     // Work on deprecated methods.
-    // Create a "general chat" where everyone can chat anonymously.
+    // Create a "general chat" where everyone can chat anonymously, maybe with more specific location rooms too.
     // Add ability to add both picture and video to firebase at the same time.
     // Leave messages in locations that users get notified of when they enter the area.
     // Add ability to filter recyclerView by type of content (recorded at the scene...).

@@ -15,6 +15,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.Matrix;
+import android.graphics.drawable.Drawable;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -157,6 +158,7 @@ public class Chat extends Fragment implements
     private AdView bannerAd;
     private Query query;
     private DataSnapshot mSnapshot;
+    private Drawable imageDrawable, videoDrawable;
     private WordTokenizerConfig tokenizerConfig = new WordTokenizerConfig
             .Builder()
             .setWordBreakChars(", ")
@@ -300,6 +302,27 @@ public class Chat extends Fragment implements
         if (mInput != null) {
 
             mInput.clearFocus();
+        }
+
+        // Reload the image if it exists.
+        if (imageDrawable != null) {
+
+            videoImageView.setVisibility(View.GONE);
+            videoDrawable = null;
+            imageView.setVisibility(View.VISIBLE);
+            imageView.setImageDrawable(imageDrawable);
+        }
+
+        // Reload the video if it exists.
+        if (videoDrawable != null && mInput != null) {
+
+            imageView.setVisibility(View.GONE);
+            imageDrawable = null;
+            RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams) mInput.getLayoutParams();
+            params.addRule(RelativeLayout.END_OF, R.id.videoImageView);
+            mInput.setLayoutParams(params);
+            videoImageView.setVisibility(View.VISIBLE);
+            videoImageView.setImageDrawable(videoDrawable);
         }
 
         // Hide and clear recyclerView if necessary.
@@ -1084,17 +1107,12 @@ public class Chat extends Fragment implements
 
         if (imageView != null) {
 
-            imageView.setOnClickListener(null);
+            imageDrawable = imageView.getDrawable();
         }
 
         if (videoImageView != null) {
 
-            videoImageView.setOnClickListener(null);
-        }
-
-        if (loadingIcon != null) {
-
-            loadingIcon = null;
+            videoDrawable = videoImageView.getDrawable();
         }
 
         cancelToasts();
@@ -1117,16 +1135,6 @@ public class Chat extends Fragment implements
             mediaButton = null;
         }
 
-        if (imageView != null) {
-
-            imageView = null;
-        }
-
-        if (videoImageView != null) {
-
-            videoImageView = null;
-        }
-
         if (mInput != null) {
 
             mInput = null;
@@ -1135,6 +1143,11 @@ public class Chat extends Fragment implements
         if (sendButton != null) {
 
             sendButton = null;
+        }
+
+        if (loadingIcon != null) {
+
+            loadingIcon = null;
         }
 
         if (chatRecyclerView != null) {
@@ -2349,6 +2362,10 @@ public class Chat extends Fragment implements
                 imageView.setImageResource(0);
             }
 
+            // Reset these values to there's no problem with overlap.
+            imageDrawable = null;
+            videoDrawable = null;
+
             fileIsImage = true;
 
             imageURI = data.getData();
@@ -2400,6 +2417,10 @@ public class Chat extends Fragment implements
                 imageView.setImageResource(0);
             }
 
+            // Reset these values to there's no problem with overlap.
+            imageDrawable = null;
+            videoDrawable = null;
+
             // Prevents the loadingIcon from being removed by initChatAdapter().
             needLoadingIcon = true;
 
@@ -2432,6 +2453,10 @@ public class Chat extends Fragment implements
                 imageView.setVisibility(View.GONE);
                 imageView.setImageResource(0);
             }
+
+            // Reset these values to there's no problem with overlap.
+            imageDrawable = null;
+            videoDrawable = null;
 
             // Prevents the loadingIcon from being removed by initChatAdapter().
             needLoadingIcon = true;
