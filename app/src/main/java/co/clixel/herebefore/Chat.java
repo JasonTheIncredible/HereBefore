@@ -175,7 +175,7 @@ public class Chat extends Fragment implements
         mContext = context;
         mActivity = getActivity();
         // Get the snapshot from Map.
-        mSnapshot = Map.mSnapshot;
+        mSnapshot = Map.mSnapshotMessageThreads;
 
         // Get info from Map.java
         if (mActivity != null) {
