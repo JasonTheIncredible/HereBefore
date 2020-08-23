@@ -119,13 +119,15 @@ public class Map extends FragmentActivity implements
     private CounterFab dmButton;
     private LocationManager locationManager;
     private Query query;
-    public static DataSnapshot mSnapshotMessageThreads, mSnapshotCircles, mSnapshotPolygons;
+    public static DataSnapshot mSnapshotMessageThreads;
+    private static DataSnapshot mSnapshotCircles, mSnapshotPolygons;
 
-    // New shapes are not appearing.
     // Clicking into a new Chat while loading icon is visible goes to incorrect Chat.
     // Make EVERYTHING use previous snapShot.
+    // Get rid of extra variables in Chat by changing singleValueListeners to be like Map.
     // Make situations where Firebase circles are added to the map and then polygons are added (like in chatViews) async.
-    // Move Map snapshots in onStart to onCreate to cut down on data usage. Problem - back from chat only calls onRestart, so add new shape somehow. Also, does adjustmentsForMap and loadFirebaseShapes need to be called after every restart?
+    // Does adjustmentsForMap and loadFirebaseShapes need to be called after every restart?
+    // Make location more precise.
     // Add ability to add video to Chat from gallery. Distinguish it from video taken at location. Do the same distinguishing with pictures.
     // If a mention doesn't exist (because it was manually deleted), delete it. Also change "position" in database and update onChildChanged() (or get rid of "position" entirely?). Also, use more specific children so every Chat is not called.
     // Only download shapes in Map when necessary to cut down on database usage.
@@ -329,79 +331,73 @@ public class Map extends FragmentActivity implements
             databaseReference.addListenerForSingleValueEvent(valueEventListener);
         }
 
-        // Load Firebase points and circles if mSnapShot is not null (eg app restarted).
-        if (mSnapshotCircles == null) {
+        // Load Firebase points and circles.
+        firebaseCircles.addListenerForSingleValueEvent(new ValueEventListener() {
 
-            firebaseCircles.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
 
-                @Override
-                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                mSnapshotCircles = dataSnapshot;
 
-                    mSnapshotCircles = dataSnapshot;
+                circlesDone = true;
 
-                    circlesDone = true;
+                if (polygonsDone) {
 
-                    if (polygonsDone) {
+                    if (mMap != null) {
 
-                        if (mMap != null) {
+                        if (mMap.getMapType() == 1 || mMap.getMapType() == 3) {
 
-                            if (mMap.getMapType() == 1 || mMap.getMapType() == 3) {
+                            purpleLoadFirebaseShapes();
+                        } else {
 
-                                purpleLoadFirebaseShapes();
-                            } else {
-
-                                yellowLoadFirebaseShapes();
-                            }
+                            yellowLoadFirebaseShapes();
                         }
                     }
                 }
+            }
 
-                @Override
-                public void onCancelled(@NonNull DatabaseError databaseError) {
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                    Log.e(TAG, "DatabaseError");
-                    loadingIcon.setVisibility(View.GONE);
-                    toastMessageLong(databaseError.getMessage());
-                }
-            });
-        }
+                Log.e(TAG, "DatabaseError");
+                loadingIcon.setVisibility(View.GONE);
+                toastMessageLong(databaseError.getMessage());
+            }
+        });
 
-        // Load Firebase polygons if mSnapShot is not null (eg app restarted).
-        if (mSnapshotPolygons == null) {
+        // Load Firebase polygons.
+        firebasePolygons.addListenerForSingleValueEvent(new ValueEventListener() {
 
-            firebasePolygons.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
 
-                @Override
-                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                mSnapshotPolygons = dataSnapshot;
 
-                    mSnapshotPolygons = dataSnapshot;
+                polygonsDone = true;
 
-                    polygonsDone = true;
+                if (circlesDone) {
 
-                    if (circlesDone) {
+                    if (mMap != null) {
 
-                        if (mMap != null) {
+                        if (mMap.getMapType() == 1 || mMap.getMapType() == 3) {
 
-                            if (mMap.getMapType() == 1 || mMap.getMapType() == 3) {
+                            purpleLoadFirebaseShapes();
+                        } else {
 
-                                purpleLoadFirebaseShapes();
-                            } else {
-
-                                yellowLoadFirebaseShapes();
-                            }
+                            yellowLoadFirebaseShapes();
                         }
                     }
                 }
+            }
 
-                @Override
-                public void onCancelled(@NonNull DatabaseError databaseError) {
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                    Log.e(TAG, "DatabaseError");
-                    loadingIcon.setVisibility(View.GONE);
-                    toastMessageLong(databaseError.getMessage());
-                }
-            });
-        }
+                Log.e(TAG, "DatabaseError");
+                loadingIcon.setVisibility(View.GONE);
+                toastMessageLong(databaseError.getMessage());
+            }
+        });
 
         // Shows a menu to filter circle views.
         chatViewsButton.setOnClickListener(new View.OnClickListener() {
@@ -2681,6 +2677,8 @@ public class Map extends FragmentActivity implements
         dmCounter = 0;
         circlesDone = false;
         polygonsDone = false;
+        mSnapshotCircles = null;
+        mSnapshotPolygons = null;
 
         if (dmButton != null) {
 
