@@ -130,8 +130,6 @@ public class Chat extends Fragment implements
     private RecyclerView chatRecyclerView, mentionsRecyclerView;
     private static int index = -1, top = -1, last;
     private Integer directMentionsPosition = null;
-    private DatabaseReference rootRef, databaseReference;
-    private ValueEventListener valueEventListener;
     private ChildEventListener childEventListener;
     private FloatingActionButton sendButton, mediaButton;
     private boolean firstLoad, needLoadingIcon = false, reachedEndOfRecyclerView = false, recyclerViewHasScrolled = false, messageSent = false, sendButtonClicked = false, mediaButtonMenuIsOpen, fileIsImage, checkPermissionsPicture, URIisFile,
@@ -331,7 +329,8 @@ public class Chat extends Fragment implements
             mentionsRecyclerView.setVisibility(View.GONE);
         }
 
-        rootRef = FirebaseDatabase.getInstance().getReference();
+        DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
+        DatabaseReference firebaseMessages = rootRef.child("MessageThreads");
         if (mSnapshot != null) {
 
             // Use this dataSnapshot in DirectMentions to cut down on data usage.
@@ -440,8 +439,8 @@ public class Chat extends Fragment implements
             }
         } else {
 
-            databaseReference = rootRef.child("MessageThreads");
-            valueEventListener = new ValueEventListener() {
+            // Add the Firebase listener.
+            firebaseMessages.addListenerForSingleValueEvent(new ValueEventListener() {
 
                 @Override
                 public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
@@ -556,10 +555,7 @@ public class Chat extends Fragment implements
 
                     toastMessageLong(databaseError.getMessage());
                 }
-            };
-
-            // Add the Firebase listener.
-            databaseReference.addListenerForSingleValueEvent(valueEventListener);
+            });
         }
 
         // Hide the imageView or videoImageView if user presses the delete button.
@@ -657,6 +653,7 @@ public class Chat extends Fragment implements
 
                         if (shapeIsCircle) {
 
+                            DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
                             DatabaseReference firebaseCircles = rootRef.child("Circles");
                             firebaseCircles.addListenerForSingleValueEvent(new ValueEventListener() {
 
@@ -736,6 +733,7 @@ public class Chat extends Fragment implements
 
                             // Shape is not a circle.
 
+                            DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
                             DatabaseReference firebasePolygons = rootRef.child("Polygons");
                             firebasePolygons.addListenerForSingleValueEvent(new ValueEventListener() {
 
@@ -951,18 +949,13 @@ public class Chat extends Fragment implements
     // Change to .limitToLast(1) to cut down on data usage. Otherwise, EVERY child at this node will be downloaded every time the child is updated.
     private void addQuery() {
 
-        // If mSnapshot is null and databaseReference is used in onStart, remove it here. The null check prevents a crash is it was never used in onStart.
-        if (databaseReference != null) {
-
-            databaseReference.removeEventListener(valueEventListener);
-        }
-
         // This prevents duplicates when loading into Settings fragment then switched back into Chat (as onStop is never called but onStart is called).
         if (query != null) {
 
             query.removeEventListener(childEventListener);
         }
 
+        DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
         query = rootRef.child("MessageThreads").limitToLast(1);
         childEventListener = new ChildEventListener() {
 
@@ -1057,11 +1050,6 @@ public class Chat extends Fragment implements
         Log.i(TAG, "onStop()");
 
         mSnapshot = null;
-
-        if (databaseReference != null) {
-
-            databaseReference.removeEventListener(valueEventListener);
-        }
 
         if (query != null) {
 

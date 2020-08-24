@@ -57,8 +57,6 @@ public class DirectMentions extends Fragment {
     private ArrayList<Long> mPosition, notSeenByUserList, positionAL;
     private RecyclerView directMentionsRecyclerView;
     private static int index = -1, top = -1, last;
-    private DatabaseReference rootRef, databaseReference, databaseReferenceCircles, databaseReferencePolygons;
-    private ValueEventListener valueEventListener, eventListenerCircles, eventListenerPolygons;
     private ChildEventListener childEventListener;
     private LinearLayoutManager directMentionsRecyclerViewLinearLayoutManager;
     private boolean firstLoad, userIsWithinShape;
@@ -170,9 +168,9 @@ public class DirectMentions extends Fragment {
         int chatLayout = mContext.getResources().getIdentifier("chat", "chat", mContext.getPackageName());
         if (chatLayout == 0) {
 
-            rootRef = FirebaseDatabase.getInstance().getReference();
-            databaseReference = rootRef.child("MessageThreads");
-            valueEventListener = new ValueEventListener() {
+            DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
+            DatabaseReference firebaseMessages = rootRef.child("MessageThreads");
+            firebaseMessages.addListenerForSingleValueEvent(new ValueEventListener() {
 
                 @Override
                 public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
@@ -185,9 +183,7 @@ public class DirectMentions extends Fragment {
 
                     toastMessageLong(databaseError.getMessage());
                 }
-            };
-
-            databaseReference.addListenerForSingleValueEvent(valueEventListener);
+            });
         }
     }
 
@@ -316,6 +312,7 @@ public class DirectMentions extends Fragment {
     private void addQueryPartOne() {
 
         // Add new values to arrayLists one at a time. This prevents the need to download the whole dataSnapshot every time this information is needed in eventListenerThree.
+        DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
         query = rootRef.child("MessageThreads").limitToLast(1);
         childEventListener = new ChildEventListener() {
 
@@ -486,27 +483,6 @@ public class DirectMentions extends Fragment {
 
         Log.i(TAG, "onStop()");
 
-        if (databaseReferenceCircles != null) {
-
-            if (eventListenerCircles != null) {
-
-                databaseReferenceCircles.removeEventListener(eventListenerCircles);
-            }
-        }
-
-        if (databaseReferencePolygons != null) {
-
-            if (eventListenerPolygons != null) {
-
-                databaseReferencePolygons.removeEventListener(eventListenerPolygons);
-            }
-        }
-
-        if (databaseReference != null) {
-
-            databaseReference.removeEventListener(valueEventListener);
-        }
-
         if (query != null) {
 
             query.removeEventListener(childEventListener);
@@ -618,8 +594,8 @@ public class DirectMentions extends Fragment {
                         if (mShapeIsCircle.get(getAdapterPosition())) {
 
                             DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-                            databaseReferenceCircles = rootRef.child("Circles");
-                            eventListenerCircles = new ValueEventListener() {
+                            DatabaseReference firebaseCircles = rootRef.child("Circles");
+                            firebaseCircles.addListenerForSingleValueEvent(new ValueEventListener() {
 
                                 @Override
                                 public void onDataChange(@NonNull DataSnapshot snapshot) {
@@ -671,14 +647,12 @@ public class DirectMentions extends Fragment {
                                     loadingIcon.setVisibility(View.GONE);
                                     toastMessageLong(error.getMessage());
                                 }
-                            };
-
-                            databaseReferenceCircles.addListenerForSingleValueEvent(eventListenerCircles);
+                            });
                         } else {
 
                             DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-                            databaseReferencePolygons = rootRef.child("Polygons");
-                            eventListenerPolygons = new ValueEventListener() {
+                            DatabaseReference firebasePolygons = rootRef.child("Polygons");
+                            firebasePolygons.addListenerForSingleValueEvent(new ValueEventListener() {
 
                                 @Override
                                 public void onDataChange(@NonNull DataSnapshot snapshot) {
@@ -855,9 +829,7 @@ public class DirectMentions extends Fragment {
                                     loadingIcon.setVisibility(View.GONE);
                                     toastMessageLong(error.getMessage());
                                 }
-                            };
-
-                            databaseReferencePolygons.addListenerForSingleValueEvent(eventListenerPolygons);
+                            });
                         }
                     }
                 });
@@ -874,8 +846,8 @@ public class DirectMentions extends Fragment {
                             if (mShapeIsCircle.get(getAdapterPosition())) {
 
                                 DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-                                databaseReferenceCircles = rootRef.child("Circles");
-                                eventListenerCircles = new ValueEventListener() {
+                                DatabaseReference firebaseCircles = rootRef.child("Circles");
+                                firebaseCircles.addListenerForSingleValueEvent(new ValueEventListener() {
 
                                     @Override
                                     public void onDataChange(@NonNull DataSnapshot snapshot) {
@@ -927,14 +899,12 @@ public class DirectMentions extends Fragment {
                                         loadingIcon.setVisibility(View.GONE);
                                         toastMessageLong(error.getMessage());
                                     }
-                                };
-
-                                databaseReferenceCircles.addListenerForSingleValueEvent(eventListenerCircles);
+                                });
                             } else {
 
                                 DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-                                databaseReferencePolygons = rootRef.child("Polygons");
-                                eventListenerPolygons = new ValueEventListener() {
+                                DatabaseReference firebasePolygons = rootRef.child("Polygons");
+                                firebasePolygons.addListenerForSingleValueEvent(new ValueEventListener() {
 
                                     @Override
                                     public void onDataChange(@NonNull DataSnapshot snapshot) {
@@ -1111,9 +1081,7 @@ public class DirectMentions extends Fragment {
                                         loadingIcon.setVisibility(View.GONE);
                                         toastMessageLong(error.getMessage());
                                     }
-                                };
-
-                                databaseReferencePolygons.addListenerForSingleValueEvent(eventListenerPolygons);
+                                });
                             }
                         }
                     });
@@ -1131,8 +1099,8 @@ public class DirectMentions extends Fragment {
                             if (mShapeIsCircle.get(getAdapterPosition())) {
 
                                 DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-                                databaseReferenceCircles = rootRef.child("Circles");
-                                eventListenerCircles = new ValueEventListener() {
+                                DatabaseReference firebaseCircles = rootRef.child("Circles");
+                                firebaseCircles.addListenerForSingleValueEvent(new ValueEventListener() {
 
                                     @Override
                                     public void onDataChange(@NonNull DataSnapshot snapshot) {
@@ -1184,14 +1152,12 @@ public class DirectMentions extends Fragment {
                                         loadingIcon.setVisibility(View.GONE);
                                         toastMessageLong(error.getMessage());
                                     }
-                                };
-
-                                databaseReferenceCircles.addListenerForSingleValueEvent(eventListenerCircles);
+                                });
                             } else {
 
                                 DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-                                databaseReferencePolygons = rootRef.child("Polygons");
-                                eventListenerPolygons = new ValueEventListener() {
+                                DatabaseReference firebasePolygons = rootRef.child("Polygons");
+                                firebasePolygons.addListenerForSingleValueEvent(new ValueEventListener() {
 
                                     @Override
                                     public void onDataChange(@NonNull DataSnapshot snapshot) {
@@ -1368,9 +1334,7 @@ public class DirectMentions extends Fragment {
                                         loadingIcon.setVisibility(View.GONE);
                                         toastMessageLong(error.getMessage());
                                     }
-                                };
-
-                                databaseReferencePolygons.addListenerForSingleValueEvent(eventListenerPolygons);
+                                });
                             }
                         }
                     });

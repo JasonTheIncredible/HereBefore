@@ -92,8 +92,6 @@ public class Map extends FragmentActivity implements
     private Marker marker0, marker1, marker2, marker3, marker4, marker5, marker6, marker7;
     private Circle newCircle, circleTemp, mCircle = null;
     private Polygon newPolygon, polygonTemp, mPolygon = null;
-    private DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference(), firebaseCircles = rootRef.child("Circles"), firebasePolygons = rootRef.child("Polygons"), databaseReference;
-    private ValueEventListener valueEventListener;
     private ChildEventListener childEventListener;
     private SeekBar chatSizeSeekBar, chatSelectorSeekBar;
     private String preferredMapType, shapeUUID, marker0ID, marker1ID, marker2ID, marker3ID, marker4ID, marker5ID, marker6ID, marker7ID, selectedOverlappingShapeUUID, email;
@@ -124,7 +122,6 @@ public class Map extends FragmentActivity implements
 
     // Clicking into a new Chat while loading icon is visible goes to incorrect Chat.
     // Make EVERYTHING use previous snapShot.
-    // Get rid of extra variables in Chat by changing singleValueListeners to be like Map.
     // Make situations where Firebase circles are added to the map and then polygons are added (like in chatViews) async.
     // Does adjustmentsForMap and loadFirebaseShapes need to be called after every restart?
     // Make location more precise.
@@ -231,7 +228,7 @@ public class Map extends FragmentActivity implements
         } else {
 
             settingsButton.setVisibility(View.GONE);
-            settingsButton.setVisibility(View.GONE);
+            dmButton.setVisibility(View.GONE);
         }
 
         // Shows a menu to change the map type.
@@ -307,9 +304,9 @@ public class Map extends FragmentActivity implements
         // If new DMs, update dmButton badge.
         if (email != null) {
 
-            rootRef = FirebaseDatabase.getInstance().getReference();
-            databaseReference = rootRef.child("MessageThreads");
-            valueEventListener = new ValueEventListener() {
+            DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
+            DatabaseReference firebaseMessages = rootRef.child("MessageThreads");
+            firebaseMessages.addListenerForSingleValueEvent(new ValueEventListener() {
 
                 @Override
                 public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
@@ -326,12 +323,13 @@ public class Map extends FragmentActivity implements
 
                     toastMessageLong(databaseError.getMessage());
                 }
-            };
-
-            databaseReference.addListenerForSingleValueEvent(valueEventListener);
+            });
         }
 
         // Load Firebase points and circles.
+        DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
+
+        DatabaseReference firebaseCircles = rootRef.child("Circles");
         firebaseCircles.addListenerForSingleValueEvent(new ValueEventListener() {
 
             @Override
@@ -366,6 +364,7 @@ public class Map extends FragmentActivity implements
         });
 
         // Load Firebase polygons.
+        DatabaseReference firebasePolygons = rootRef.child("Polygons");
         firebasePolygons.addListenerForSingleValueEvent(new ValueEventListener() {
 
             @Override
@@ -2575,6 +2574,7 @@ public class Map extends FragmentActivity implements
     private void addQueryPartOne() {
 
         // Add new values to arrayLists one at a time. This prevents the need to download the whole dataSnapshot every time this information is needed in eventListenerThree.
+        DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
         query = rootRef.child("MessageThreads").limitToLast(1);
         childEventListener = new ChildEventListener() {
 
@@ -2952,21 +2952,10 @@ public class Map extends FragmentActivity implements
             dmButton.setOnClickListener(null);
         }
 
-        if (databaseReference != null) {
-
-            databaseReference.removeEventListener(valueEventListener);
-            databaseReference = null;
-        }
-
         if (query != null) {
 
             query.removeEventListener(childEventListener);
             query = null;
-        }
-
-        if (valueEventListener != null) {
-
-            valueEventListener = null;
         }
 
         if (childEventListener != null) {
@@ -3481,6 +3470,8 @@ public class Map extends FragmentActivity implements
                                 // User is signed in.
 
                                 // Compare the uuid to the uuids in Firebase to prevent uuid overlap before adding it to Firebase.
+                                DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
+                                DatabaseReference firebaseCircles = rootRef.child("Circles");
                                 firebaseCircles.orderByChild("shapeUUID").equalTo(shapeUUID).addListenerForSingleValueEvent(new ValueEventListener() {
 
                                     @Override
@@ -3525,6 +3516,8 @@ public class Map extends FragmentActivity implements
                                 // No user is signed in.
 
                                 // Compare the uuid to the uuids in Firebase to prevent uuid overlap before adding it to Firebase.
+                                DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
+                                DatabaseReference firebaseCircles = rootRef.child("Circles");
                                 firebaseCircles.orderByChild("shapeUUID").equalTo(shapeUUID).addListenerForSingleValueEvent(new ValueEventListener() {
 
                                     @Override
@@ -3641,6 +3634,8 @@ public class Map extends FragmentActivity implements
 
                                                 // User is signed in.
 
+                                                DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
+                                                DatabaseReference firebasePolygons = rootRef.child("Polygons");
                                                 firebasePolygons.orderByChild("shapeUUID").equalTo(shapeUUID).addListenerForSingleValueEvent(new ValueEventListener() {
 
                                                     @Override
@@ -3688,6 +3683,8 @@ public class Map extends FragmentActivity implements
 
                                                 // No user is signed in.
 
+                                                DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
+                                                DatabaseReference firebasePolygons = rootRef.child("Polygons");
                                                 firebasePolygons.orderByChild("shapeUUID").equalTo(shapeUUID).addListenerForSingleValueEvent(new ValueEventListener() {
 
                                                     @Override
@@ -4295,6 +4292,8 @@ public class Map extends FragmentActivity implements
                                                 // User is signed in.
 
                                                 // Compare the uuid to the uuids in Firebase to prevent uuid overlap before adding it to Firebase.
+                                                DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
+                                                DatabaseReference firebaseCircles = rootRef.child("Circles");
                                                 firebaseCircles.orderByChild("shapeUUID").equalTo(shapeUUID).addListenerForSingleValueEvent(new ValueEventListener() {
 
                                                     @Override
@@ -4343,6 +4342,8 @@ public class Map extends FragmentActivity implements
                                                 // No user is signed in.
 
                                                 // Compare the uuid to the uuids in Firebase to prevent uuid overlap before adding it to Firebase.
+                                                DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
+                                                DatabaseReference firebaseCircles = rootRef.child("Circles");
                                                 firebaseCircles.orderByChild("shapeUUID").equalTo(shapeUUID).addListenerForSingleValueEvent(new ValueEventListener() {
 
                                                     @Override
@@ -8395,6 +8396,8 @@ public class Map extends FragmentActivity implements
 
                                                 // User is signed in.
                                                 // Connect to Firebase.
+                                                DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
+                                                DatabaseReference firebaseCircles = rootRef.child("Circles");
                                                 firebaseCircles.orderByChild("shapeUUID").equalTo(shapeUUID).addListenerForSingleValueEvent(new ValueEventListener() {
                                                     @Override
                                                     public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
@@ -8449,6 +8452,8 @@ public class Map extends FragmentActivity implements
 
                                                 // No user is signed in.
                                                 // Connect to Firebase.
+                                                DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
+                                                DatabaseReference firebaseCircles = rootRef.child("Circles");
                                                 firebaseCircles.orderByChild("shapeUUID").equalTo(shapeUUID).addListenerForSingleValueEvent(new ValueEventListener() {
 
                                                     @Override
