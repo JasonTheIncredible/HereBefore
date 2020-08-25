@@ -155,7 +155,6 @@ public class Chat extends Fragment implements
     private Activity mActivity;
     private AdView bannerAd;
     private Query query;
-    private DataSnapshot mSnapshot;
     private Drawable imageDrawable, videoDrawable;
     private WordTokenizerConfig tokenizerConfig = new WordTokenizerConfig
             .Builder()
@@ -172,8 +171,6 @@ public class Chat extends Fragment implements
 
         mContext = context;
         mActivity = getActivity();
-        // Get the snapshot from Map.
-        mSnapshot = Map.mSnapshotMessageThreads;
 
         // Get info from Map.java
         if (mActivity != null) {
@@ -329,234 +326,125 @@ public class Chat extends Fragment implements
             mentionsRecyclerView.setVisibility(View.GONE);
         }
 
+        // Add the Firebase listener.
         DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
         DatabaseReference firebaseMessages = rootRef.child("MessageThreads");
-        if (mSnapshot != null) {
+        firebaseMessages.addListenerForSingleValueEvent(new ValueEventListener() {
 
-            // Use this dataSnapshot in DirectMentions to cut down on data usage.
-            int directMentionsLayout = mContext.getResources().getIdentifier("directMentions", "directMentions", mContext.getPackageName());
-            if (directMentionsLayout != 0) {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
 
-                DirectMentions directMentions = new DirectMentions();
-                directMentions.addEventListener(mSnapshot);
-            }
+                // Use this dataSnapshot in DirectMentions to cut down on data usage.
+                int directMentionsLayout = mContext.getResources().getIdentifier("directMentions", "directMentions", mContext.getPackageName());
+                if (directMentionsLayout != 0) {
 
-            for (DataSnapshot ds : mSnapshot.getChildren()) {
+                    DirectMentions directMentions = new DirectMentions();
+                    directMentions.addEventListener(dataSnapshot);
+                }
 
-                // If the uuid brought from Map.java equals the uuid attached to the recyclerviewlayout in Firebase, load it into the RecyclerView.
-                String mShapeUUID = (String) ds.child("shapeUUID").getValue();
-                if (mShapeUUID != null) {
+                for (DataSnapshot ds : dataSnapshot.getChildren()) {
 
-                    if (mShapeUUID.equals(shapeUUID)) {
+                    // If the uuid brought from Map.java equals the uuid attached to the recyclerviewlayout in Firebase, load it into the RecyclerView.
+                    String mShapeUUID = (String) ds.child("shapeUUID").getValue();
+                    if (mShapeUUID != null) {
 
-                        Long serverDate = (Long) ds.child("date").getValue();
-                        String user = (String) ds.child("userUUID").getValue();
-                        // Used when a user mentions another user with "@".
-                        mSuggestions.add(user);
-                        String imageURL = (String) ds.child("imageURL").getValue();
-                        String videoURL = (String) ds.child("videoURL").getValue();
-                        String messageText = (String) ds.child("message").getValue();
-                        Boolean userIsWithinShape = (Boolean) ds.child("userIsWithinShape").getValue();
-                        DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
-                        // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                        // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                        if (serverDate != null) {
+                        if (mShapeUUID.equals(shapeUUID)) {
 
-                            Date netDate = (new Date(serverDate));
-                            String messageTime = dateFormat.format(netDate);
-                            mTime.add(messageTime);
-                        } else {
+                            Long serverDate = (Long) ds.child("date").getValue();
+                            String user = (String) ds.child("userUUID").getValue();
+                            // Used when a user mentions another user with "@".
+                            mSuggestions.add(user);
+                            String imageURL = (String) ds.child("imageURL").getValue();
+                            String videoURL = (String) ds.child("videoURL").getValue();
+                            String messageText = (String) ds.child("message").getValue();
+                            Boolean userIsWithinShape = (Boolean) ds.child("userIsWithinShape").getValue();
+                            DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
+                            // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+                            // This will cause onDataChange to fire twice; optimizations could be made in the future.
+                            if (serverDate != null) {
 
-                            Log.e(TAG, "onStart() -> serverDate == null");
+                                Date netDate = (new Date(serverDate));
+                                String messageTime = dateFormat.format(netDate);
+                                mTime.add(messageTime);
+                            } else {
+
+                                Log.e(TAG, "onStart() -> serverDate == null");
+                            }
+                            mUser.add(user);
+                            mImage.add(imageURL);
+                            mVideo.add(videoURL);
+                            mText.add(messageText);
+                            mUserIsWithinShape.add(userIsWithinShape);
                         }
-                        mUser.add(user);
-                        mImage.add(imageURL);
-                        mVideo.add(videoURL);
-                        mText.add(messageText);
-                        mUserIsWithinShape.add(userIsWithinShape);
                     }
                 }
-            }
 
-            // Read RecyclerView scroll position (for use in initChatAdapter).
-            if (chatRecyclerViewLinearLayoutManager != null && chatRecyclerView != null) {
+                // Read RecyclerView scroll position (for use in initChatAdapter).
+                if (chatRecyclerViewLinearLayoutManager != null && chatRecyclerView != null) {
 
-                index = chatRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
-                last = chatRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
-                View v = chatRecyclerView.getChildAt(0);
-                top = (v == null) ? 0 : (v.getTop() - chatRecyclerView.getPaddingTop());
-            }
+                    index = chatRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
+                    last = chatRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
+                    View v = chatRecyclerView.getChildAt(0);
+                    top = (v == null) ? 0 : (v.getTop() - chatRecyclerView.getPaddingTop());
+                }
 
-            addQuery();
+                addQuery();
 
-            // Check RecyclerView scroll state (to allow the layout to move up when keyboard appears).
-            if (chatRecyclerView != null) {
+                // Check RecyclerView scroll state (to allow the layout to move up when keyboard appears).
+                if (chatRecyclerView != null) {
 
-                chatRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+                    chatRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
 
-                    @Override
-                    public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
+                        @Override
+                        public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
 
-                        super.onScrollStateChanged(recyclerView, newState);
+                            super.onScrollStateChanged(recyclerView, newState);
 
-                        // If RecyclerView can't be scrolled down, reachedEndOfRecyclerView = true.
-                        reachedEndOfRecyclerView = !recyclerView.canScrollVertically(1);
+                            // If RecyclerView can't be scrolled down, reachedEndOfRecyclerView = true.
+                            reachedEndOfRecyclerView = !recyclerView.canScrollVertically(1);
 
-                        // Used to detect if user has just entered the recyclerviewlayout (so layout needs to move up when keyboard appears).
-                        recyclerViewHasScrolled = true;
-                    }
-                });
-
-                // If RecyclerView is scrolled to the bottom, move the layout up when the keyboard appears.
-                chatRecyclerView.addOnLayoutChangeListener(onLayoutChangeListener = new View.OnLayoutChangeListener() {
-
-                    @Override
-                    public void onLayoutChange(View v,
-                                               int left, int top, int right, int bottom,
-                                               int oldLeft, int oldTop, int oldRight, int oldBottom) {
-
-                        if (reachedEndOfRecyclerView || !recyclerViewHasScrolled) {
-
-                            if (bottom < oldBottom) {
-
-                                if (chatRecyclerView.getAdapter() != null && chatRecyclerView.getAdapter().getItemCount() > 0) {
-
-                                    chatRecyclerView.postDelayed(new Runnable() {
-
-                                        @Override
-                                        public void run() {
-
-                                            chatRecyclerView.smoothScrollToPosition(
-
-                                                    chatRecyclerView.getAdapter().getItemCount() - 1);
-                                        }
-                                    }, 100);
-                                }
-                            }
+                            // Used to detect if user has just entered the recyclerviewlayout (so layout needs to move up when keyboard appears).
+                            recyclerViewHasScrolled = true;
                         }
-                    }
-                });
-            }
-        } else {
+                    });
 
-            // Add the Firebase listener.
-            firebaseMessages.addListenerForSingleValueEvent(new ValueEventListener() {
+                    // If RecyclerView is scrolled to the bottom, move the layout up when the keyboard appears.
+                    chatRecyclerView.addOnLayoutChangeListener(onLayoutChangeListener = new View.OnLayoutChangeListener() {
 
-                @Override
-                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                        @Override
+                        public void onLayoutChange(View v,
+                                                   int left, int top, int right, int bottom,
+                                                   int oldLeft, int oldTop, int oldRight, int oldBottom) {
 
-                    // Use this dataSnapshot in DirectMentions to cut down on data usage.
-                    int directMentionsLayout = mContext.getResources().getIdentifier("directMentions", "directMentions", mContext.getPackageName());
-                    if (directMentionsLayout != 0) {
+                            if (reachedEndOfRecyclerView || !recyclerViewHasScrolled) {
 
-                        DirectMentions directMentions = new DirectMentions();
-                        directMentions.addEventListener(dataSnapshot);
-                    }
+                                if (bottom < oldBottom) {
 
-                    for (DataSnapshot ds : dataSnapshot.getChildren()) {
+                                    if (chatRecyclerView.getAdapter() != null && chatRecyclerView.getAdapter().getItemCount() > 0) {
 
-                        // If the uuid brought from Map.java equals the uuid attached to the recyclerviewlayout in Firebase, load it into the RecyclerView.
-                        String mShapeUUID = (String) ds.child("shapeUUID").getValue();
-                        if (mShapeUUID != null) {
+                                        chatRecyclerView.postDelayed(new Runnable() {
 
-                            if (mShapeUUID.equals(shapeUUID)) {
+                                            @Override
+                                            public void run() {
 
-                                Long serverDate = (Long) ds.child("date").getValue();
-                                String user = (String) ds.child("userUUID").getValue();
-                                // Used when a user mentions another user with "@".
-                                mSuggestions.add(user);
-                                String imageURL = (String) ds.child("imageURL").getValue();
-                                String videoURL = (String) ds.child("videoURL").getValue();
-                                String messageText = (String) ds.child("message").getValue();
-                                Boolean userIsWithinShape = (Boolean) ds.child("userIsWithinShape").getValue();
-                                DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
-                                // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                                // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                                if (serverDate != null) {
+                                                chatRecyclerView.smoothScrollToPosition(
 
-                                    Date netDate = (new Date(serverDate));
-                                    String messageTime = dateFormat.format(netDate);
-                                    mTime.add(messageTime);
-                                } else {
-
-                                    Log.e(TAG, "onStart() -> serverDate == null");
-                                }
-                                mUser.add(user);
-                                mImage.add(imageURL);
-                                mVideo.add(videoURL);
-                                mText.add(messageText);
-                                mUserIsWithinShape.add(userIsWithinShape);
-                            }
-                        }
-                    }
-
-                    // Read RecyclerView scroll position (for use in initChatAdapter).
-                    if (chatRecyclerViewLinearLayoutManager != null && chatRecyclerView != null) {
-
-                        index = chatRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
-                        last = chatRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
-                        View v = chatRecyclerView.getChildAt(0);
-                        top = (v == null) ? 0 : (v.getTop() - chatRecyclerView.getPaddingTop());
-                    }
-
-                    addQuery();
-
-                    // Check RecyclerView scroll state (to allow the layout to move up when keyboard appears).
-                    if (chatRecyclerView != null) {
-
-                        chatRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
-
-                            @Override
-                            public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
-
-                                super.onScrollStateChanged(recyclerView, newState);
-
-                                // If RecyclerView can't be scrolled down, reachedEndOfRecyclerView = true.
-                                reachedEndOfRecyclerView = !recyclerView.canScrollVertically(1);
-
-                                // Used to detect if user has just entered the recyclerviewlayout (so layout needs to move up when keyboard appears).
-                                recyclerViewHasScrolled = true;
-                            }
-                        });
-
-                        // If RecyclerView is scrolled to the bottom, move the layout up when the keyboard appears.
-                        chatRecyclerView.addOnLayoutChangeListener(onLayoutChangeListener = new View.OnLayoutChangeListener() {
-
-                            @Override
-                            public void onLayoutChange(View v,
-                                                       int left, int top, int right, int bottom,
-                                                       int oldLeft, int oldTop, int oldRight, int oldBottom) {
-
-                                if (reachedEndOfRecyclerView || !recyclerViewHasScrolled) {
-
-                                    if (bottom < oldBottom) {
-
-                                        if (chatRecyclerView.getAdapter() != null && chatRecyclerView.getAdapter().getItemCount() > 0) {
-
-                                            chatRecyclerView.postDelayed(new Runnable() {
-
-                                                @Override
-                                                public void run() {
-
-                                                    chatRecyclerView.smoothScrollToPosition(
-
-                                                            chatRecyclerView.getAdapter().getItemCount() - 1);
-                                                }
-                                            }, 100);
-                                        }
+                                                        chatRecyclerView.getAdapter().getItemCount() - 1);
+                                            }
+                                        }, 100);
                                     }
                                 }
                             }
-                        });
-                    }
+                        }
+                    });
                 }
+            }
 
-                public void onCancelled(@NonNull DatabaseError databaseError) {
+            public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                    toastMessageLong(databaseError.getMessage());
-                }
-            });
-        }
+                toastMessageLong(databaseError.getMessage());
+            }
+        });
 
         // Hide the imageView or videoImageView if user presses the delete button.
         mInput.setOnKeyListener(new View.OnKeyListener() {
@@ -653,204 +541,170 @@ public class Chat extends Fragment implements
 
                         if (shapeIsCircle) {
 
-                            DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-                            DatabaseReference firebaseCircles = rootRef.child("Circles");
-                            firebaseCircles.addListenerForSingleValueEvent(new ValueEventListener() {
+                            if (imageView.getVisibility() != View.GONE || videoImageView.getVisibility() != View.GONE) {
 
-                                @Override
-                                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                                // Upload the image to Firebase if it exists and is not already in the process of sending an image.
+                                if (uploadTask != null && uploadTask.isInProgress()) {
 
-                                    if (imageView.getVisibility() != View.GONE || videoImageView.getVisibility() != View.GONE) {
+                                    toastMessageShort("Upload in progress");
+                                } else {
 
-                                        // Upload the image to Firebase if it exists and is not already in the process of sending an image.
-                                        if (uploadTask != null && uploadTask.isInProgress()) {
-
-                                            toastMessageShort("Upload in progress");
-                                        } else {
-
-                                            firebaseUpload();
-                                        }
-                                    } else {
-
-                                        // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter()).
-                                        messageSent = true;
-
-                                        // Since the uuid doesn't already exist in Firebase, add the circle.
-                                        CircleOptions circleOptions = new CircleOptions()
-                                                .center(new LatLng(circleLatitude, circleLongitude))
-                                                .clickable(true)
-                                                .radius(radius);
-                                        CircleInformation circleInformation = new CircleInformation();
-                                        circleInformation.setCircleOptions(circleOptions);
-                                        circleInformation.setShapeUUID(shapeUUID);
-                                        DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("Circles").push();
-                                        newFirebaseCircle.setValue(circleInformation);
-
-                                        MessageInformation messageInformation = new MessageInformation();
-                                        messageInformation.setMessage(input);
-                                        // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                                        // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                                        Object date = ServerValue.TIMESTAMP;
-                                        messageInformation.setDate(date);
-                                        String userUUID = UUID.randomUUID().toString();
-                                        messageInformation.setUserUUID(userUUID);
-                                        messageInformation.setPosition(mUser.size());
-                                        // If user has a Google account, get email one way. Else, get email another way.
-                                        GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
-                                        String email;
-                                        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-                                        if (acct != null) {
-                                            email = acct.getEmail();
-                                        } else {
-                                            email = sharedPreferences.getString("userToken", "null");
-                                        }
-                                        messageInformation.setEmail(email);
-                                        messageInformation.setShapeUUID(shapeUUID);
-                                        messageInformation.setPosition(mUser.size());
-                                        // Get the token assigned by Firebase when the user signed up / signed in.
-                                        String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
-                                        messageInformation.setToken(token);
-                                        messageInformation.setUserIsWithinShape(userIsWithinShape);
-                                        messageInformation.setShapeIsCircle(shapeIsCircle);
-                                        DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
-                                        newMessage.setValue(messageInformation);
-
-                                        mInput.getText().clear();
-                                        newShape = false;
-                                        sendButtonClicked = false;
-                                    }
+                                    firebaseUpload();
                                 }
+                            } else {
 
-                                @Override
-                                public void onCancelled(@NonNull DatabaseError databaseError) {
+                                // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter()).
+                                messageSent = true;
 
-                                    toastMessageLong(databaseError.getMessage());
+                                // Since the uuid doesn't already exist in Firebase, add the circle.
+                                CircleOptions circleOptions = new CircleOptions()
+                                        .center(new LatLng(circleLatitude, circleLongitude))
+                                        .clickable(true)
+                                        .radius(radius);
+                                CircleInformation circleInformation = new CircleInformation();
+                                circleInformation.setCircleOptions(circleOptions);
+                                circleInformation.setShapeUUID(shapeUUID);
+                                DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("Circles").push();
+                                newFirebaseCircle.setValue(circleInformation);
 
-                                    sendButtonClicked = false;
+                                MessageInformation messageInformation = new MessageInformation();
+                                messageInformation.setMessage(input);
+                                // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+                                // This will cause onDataChange to fire twice; optimizations could be made in the future.
+                                Object date = ServerValue.TIMESTAMP;
+                                messageInformation.setDate(date);
+                                String userUUID = UUID.randomUUID().toString();
+                                messageInformation.setUserUUID(userUUID);
+                                messageInformation.setPosition(mUser.size());
+                                // If user has a Google account, get email one way. Else, get email another way.
+                                GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
+                                String email;
+                                SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+                                if (acct != null) {
+                                    email = acct.getEmail();
+                                } else {
+                                    email = sharedPreferences.getString("userToken", "null");
                                 }
-                            });
+                                messageInformation.setEmail(email);
+                                messageInformation.setShapeUUID(shapeUUID);
+                                messageInformation.setPosition(mUser.size());
+                                // Get the token assigned by Firebase when the user signed up / signed in.
+                                String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
+                                messageInformation.setToken(token);
+                                messageInformation.setUserIsWithinShape(userIsWithinShape);
+                                messageInformation.setShapeIsCircle(shapeIsCircle);
+                                DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
+                                newMessage.setValue(messageInformation);
+
+                                mInput.getText().clear();
+                                newShape = false;
+                                sendButtonClicked = false;
+                            }
                         } else {
 
                             // Shape is not a circle.
 
-                            DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-                            DatabaseReference firebasePolygons = rootRef.child("Polygons");
-                            firebasePolygons.addListenerForSingleValueEvent(new ValueEventListener() {
+                            if (imageView.getVisibility() != View.GONE || videoImageView.getVisibility() != View.GONE) {
 
-                                @Override
-                                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                                // Upload the image to Firebase if it exists and is not already in the process of sending an image.
+                                if (uploadTask != null && uploadTask.isInProgress()) {
 
-                                    if (imageView.getVisibility() != View.GONE || videoImageView.getVisibility() != View.GONE) {
-
-                                        // Upload the image to Firebase if it exists and is not already in the process of sending an image.
-                                        if (uploadTask != null && uploadTask.isInProgress()) {
-
-                                            toastMessageShort("Upload in progress");
-
-                                            sendButtonClicked = false;
-                                        } else {
-
-                                            firebaseUpload();
-                                        }
-                                    } else {
-
-                                        PolygonOptions polygonOptions = null;
-
-                                        // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter()).
-                                        messageSent = true;
-
-                                        // Since the uuid doesn't already exist in Firebase, add the circle.
-                                        if (threeMarkers) {
-
-                                            polygonOptions = new PolygonOptions()
-                                                    .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude))
-                                                    .clickable(true);
-                                        }
-
-                                        if (fourMarkers) {
-
-                                            polygonOptions = new PolygonOptions()
-                                                    .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude))
-                                                    .clickable(true);
-                                        }
-
-                                        if (fiveMarkers) {
-
-                                            polygonOptions = new PolygonOptions()
-                                                    .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude))
-                                                    .clickable(true);
-                                        }
-
-                                        if (sixMarkers) {
-
-                                            polygonOptions = new PolygonOptions()
-                                                    .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude))
-                                                    .clickable(true);
-                                        }
-
-                                        if (sevenMarkers) {
-
-                                            polygonOptions = new PolygonOptions()
-                                                    .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude), new LatLng(marker6Latitude, marker6Longitude))
-                                                    .clickable(true);
-                                        }
-
-                                        if (eightMarkers) {
-
-                                            polygonOptions = new PolygonOptions()
-                                                    .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude), new LatLng(marker6Latitude, marker6Longitude), new LatLng(marker7Latitude, marker7Longitude))
-                                                    .clickable(true);
-                                        }
-
-                                        PolygonInformation polygonInformation = new PolygonInformation();
-                                        polygonInformation.setPolygonOptions(polygonOptions);
-                                        polygonInformation.setArea(polygonArea);
-                                        polygonInformation.setShapeUUID(shapeUUID);
-                                        DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("Polygons").push();
-                                        newFirebasePolygon.setValue(polygonInformation);
-
-                                        MessageInformation messageInformation = new MessageInformation();
-                                        messageInformation.setMessage(input);
-                                        // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                                        // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                                        Object date = ServerValue.TIMESTAMP;
-                                        messageInformation.setDate(date);
-                                        String userUUID = UUID.randomUUID().toString();
-                                        messageInformation.setUserUUID(userUUID);
-                                        messageInformation.setPosition(mUser.size());
-                                        // If user has a Google account, get email one way. Else, get email another way.
-                                        GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
-                                        String email;
-                                        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-                                        if (acct != null) {
-                                            email = acct.getEmail();
-                                        } else {
-                                            email = sharedPreferences.getString("userToken", "null");
-                                        }
-                                        messageInformation.setEmail(email);
-                                        messageInformation.setShapeUUID(shapeUUID);
-                                        // Get the token assigned by Firebase when the user signed up / signed in.
-                                        String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
-                                        messageInformation.setToken(token);
-                                        messageInformation.setUserIsWithinShape(userIsWithinShape);
-                                        messageInformation.setShapeIsCircle(shapeIsCircle);
-                                        DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
-                                        newMessage.setValue(messageInformation);
-
-                                        mInput.getText().clear();
-                                        newShape = false;
-                                        sendButtonClicked = false;
-                                    }
-                                }
-
-                                @Override
-                                public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                                    toastMessageLong(databaseError.getMessage());
+                                    toastMessageShort("Upload in progress");
 
                                     sendButtonClicked = false;
+                                } else {
+
+                                    firebaseUpload();
                                 }
-                            });
+                            } else {
+
+                                PolygonOptions polygonOptions = null;
+
+                                // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter()).
+                                messageSent = true;
+
+                                // Since the uuid doesn't already exist in Firebase, add the circle.
+                                if (threeMarkers) {
+
+                                    polygonOptions = new PolygonOptions()
+                                            .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude))
+                                            .clickable(true);
+                                }
+
+                                if (fourMarkers) {
+
+                                    polygonOptions = new PolygonOptions()
+                                            .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude))
+                                            .clickable(true);
+                                }
+
+                                if (fiveMarkers) {
+
+                                    polygonOptions = new PolygonOptions()
+                                            .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude))
+                                            .clickable(true);
+                                }
+
+                                if (sixMarkers) {
+
+                                    polygonOptions = new PolygonOptions()
+                                            .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude))
+                                            .clickable(true);
+                                }
+
+                                if (sevenMarkers) {
+
+                                    polygonOptions = new PolygonOptions()
+                                            .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude), new LatLng(marker6Latitude, marker6Longitude))
+                                            .clickable(true);
+                                }
+
+                                if (eightMarkers) {
+
+                                    polygonOptions = new PolygonOptions()
+                                            .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude), new LatLng(marker6Latitude, marker6Longitude), new LatLng(marker7Latitude, marker7Longitude))
+                                            .clickable(true);
+                                }
+
+                                PolygonInformation polygonInformation = new PolygonInformation();
+                                polygonInformation.setPolygonOptions(polygonOptions);
+                                polygonInformation.setArea(polygonArea);
+                                polygonInformation.setShapeUUID(shapeUUID);
+                                DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("Polygons").push();
+                                newFirebasePolygon.setValue(polygonInformation);
+
+                                MessageInformation messageInformation = new MessageInformation();
+                                messageInformation.setMessage(input);
+                                // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+                                // This will cause onDataChange to fire twice; optimizations could be made in the future.
+                                Object date = ServerValue.TIMESTAMP;
+                                messageInformation.setDate(date);
+                                String userUUID = UUID.randomUUID().toString();
+                                messageInformation.setUserUUID(userUUID);
+                                messageInformation.setPosition(mUser.size());
+                                // If user has a Google account, get email one way. Else, get email another way.
+                                GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
+                                String email;
+                                SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+                                if (acct != null) {
+                                    email = acct.getEmail();
+                                } else {
+                                    email = sharedPreferences.getString("userToken", "null");
+                                }
+                                messageInformation.setEmail(email);
+                                messageInformation.setShapeUUID(shapeUUID);
+                                // Get the token assigned by Firebase when the user signed up / signed in.
+                                String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
+                                messageInformation.setToken(token);
+                                messageInformation.setUserIsWithinShape(userIsWithinShape);
+                                messageInformation.setShapeIsCircle(shapeIsCircle);
+                                DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
+                                newMessage.setValue(messageInformation);
+
+                                mInput.getText().clear();
+                                newShape = false;
+                                sendButtonClicked = false;
+                            }
                         }
                     } else {
 
@@ -1048,8 +902,6 @@ public class Chat extends Fragment implements
     public void onStop() {
 
         Log.i(TAG, "onStop()");
-
-        mSnapshot = null;
 
         if (query != null) {
 

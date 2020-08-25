@@ -117,37 +117,34 @@ public class Map extends FragmentActivity implements
     private CounterFab dmButton;
     private LocationManager locationManager;
     private Query query;
-    public static DataSnapshot mSnapshotMessageThreads;
     private static DataSnapshot mSnapshotCircles, mSnapshotPolygons;
 
-    // Clicking into a new Chat while loading icon is visible goes to incorrect Chat.
-    // Make EVERYTHING use previous snapShot.
+    // DM notifications disappear when app closes.
+    // Adjust Firebase security rules.
     // Make situations where Firebase circles are added to the map and then polygons are added (like in chatViews) async.
-    // Does adjustmentsForMap and loadFirebaseShapes need to be called after every restart?
+    // Don't get new snapShots every time map loads? - problem: new shapes that the user adds to Firebase in chat will not load.
     // Make location more precise.
     // Add ability to add video to Chat from gallery. Distinguish it from video taken at location. Do the same distinguishing with pictures.
     // If a mention doesn't exist (because it was manually deleted), delete it. Also change "position" in database and update onChildChanged() (or get rid of "position" entirely?). Also, use more specific children so every Chat is not called.
     // Only download shapes in Map when necessary to cut down on database usage.
-    // Does mSnapshot need to be null in Chat onStop?
-    // Stop location being tracked when app is in background.
     // Add preference for shape color.
     // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.
+    // Adjust AppIntro.
+    // Create a "general chat" where everyone can chat anonymously, maybe with more specific location rooms too.
     // Decrease app size / Check on accumulation of size over time.
     // Make sure the secret stuff is secret.
     // Make sure Firebase has enough bandwidth.
-    // Adjust Firebase security rules.
     // Finish setting up Google ads.
     // More ads.
-    // Make sure aboutLibraries is up to date.
+    // Make sure aboutLibraries is up to date and fix bug where license information isn't showing.
     // Check warning messages.
 
     // Work on deprecated methods.
+    // Further cut down on Firebase listeners - find a way to add to a previous snapshot in Map, then carry that up-to-date snapshot into Chat and DirectMentions.
     // If using is only viewing specific-sized Chats and switches Map types, only load those Chats again.
-    // Create a "general chat" where everyone can chat anonymously, maybe with more specific location rooms too.
     // Add ability to add both picture and video to firebase at the same time.
-    // Leave messages in locations that users get notified of when they enter the area.
+    // Leave messages in locations that users get notified of when they enter the area by adding geo-fencing..
     // Add ability to filter recyclerView by type of content (recorded at the scene...).
-    // Add geo-fencing.
     // Load preferences after logging out and back in - looks like it will require saving info to database; is this worth it?
 
     @Override
@@ -310,8 +307,6 @@ public class Map extends FragmentActivity implements
 
                 @Override
                 public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-
-                    mSnapshotMessageThreads = dataSnapshot;
 
                     fillArrayLists(dataSnapshot);
 
@@ -3406,6 +3401,12 @@ public class Map extends FragmentActivity implements
             @Override
             public boolean onMarkerClick(Marker marker) {
 
+                if (mSnapshotCircles == null) {
+
+                    toastMessageLong("Still loading data. Please wait and try again.");
+                    return false;
+                }
+
                 if (newCircle != null) {
 
                     if (marker.getId().equals(marker0ID)) {
@@ -3469,94 +3470,78 @@ public class Map extends FragmentActivity implements
 
                                 // User is signed in.
 
-                                // Compare the uuid to the uuids in Firebase to prevent uuid overlap before adding it to Firebase.
-                                DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-                                DatabaseReference firebaseCircles = rootRef.child("Circles");
-                                firebaseCircles.orderByChild("shapeUUID").equalTo(shapeUUID).addListenerForSingleValueEvent(new ValueEventListener() {
+                                // Go through each "shapeUUID" child in the snapShot and compare it to the shapeUUID.
+                                int childCount = 0;
+                                for (DataSnapshot pushedValue : mSnapshotCircles.getChildren()) {
 
-                                    @Override
-                                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                                    if (pushedValue.child("shapeUUID").equals(shapeUUID)) {
 
-                                        // If the uuid already exists in Firebase, generate another uuid and try again.
-                                        if (dataSnapshot.exists()) {
+                                        Log.i(TAG, "onMapReadyAndRestart() -> onMarkerClick -> user signed in -> circle -> marker0 -> shapeUUID exists");
 
-                                            Log.i(TAG, "onMapReadyAndRestart() -> onMarkerClick -> user signed in -> circle -> marker0 -> shapeUUID exists");
+                                        // uuid exists in Firebase. Generate another and try again.
 
-                                            // uuid exists in Firebase. Generate another and try again.
+                                        // Generate another uuid and try again.
+                                        shapeUUID = UUID.randomUUID().toString();
 
-                                            // Generate another uuid and try again.
-                                            shapeUUID = UUID.randomUUID().toString();
+                                        // Carry the extras all the way to Chat.java.
+                                        Intent Activity = new Intent(Map.this, Navigation.class);
+                                        goToNextActivityCircle(Activity, newCircle, true);
+                                        break;
+                                    } else {
 
-                                            // Carry the extras all the way to Chat.java.
-                                            Intent Activity = new Intent(Map.this, Navigation.class);
-                                            goToNextActivityCircle(Activity, newCircle, true);
-                                        } else {
-
-                                            Log.i(TAG, "onMapReadyAndRestart() -> onMarkerClick -> user signed in -> circle -> marker0 -> shapeUUID does not exist");
-
-                                            // uuid does not already exist in Firebase. Go to Chat.java with the uuid.
-
-                                            // Carry the extras all the way to Chat.java.
-                                            Intent Activity = new Intent(Map.this, Navigation.class);
-                                            goToNextActivityCircle(Activity, newCircle, true);
-                                        }
+                                        childCount++;
                                     }
 
-                                    @Override
-                                    public void onCancelled(@NonNull DatabaseError databaseError) {
+                                    // The snapShot does not contain a "shapeUUID" child that equals shapeUUID, so start new activity.
+                                    if (childCount == mSnapshotCircles.getChildrenCount()) {
 
-                                        Log.e(TAG, "DatabaseError");
-                                        mMap.getUiSettings().setScrollGesturesEnabled(true);
-                                        loadingIcon.setVisibility(View.GONE);
-                                        toastMessageLong(databaseError.getMessage());
+                                        Log.i(TAG, "onMapReadyAndRestart() -> onMarkerClick -> user signed in -> circle -> marker0 -> shapeUUID does not exist");
+
+                                        // uuid does not already exist in Firebase. Go to Chat.java with the uuid.
+
+                                        // Carry the extras all the way to Chat.java.
+                                        Intent Activity = new Intent(Map.this, Navigation.class);
+                                        goToNextActivityCircle(Activity, newCircle, true);
                                     }
-                                });
+                                }
                             } else {
 
-                                // No user is signed in.
+                                // User NOT signed in.
 
-                                // Compare the uuid to the uuids in Firebase to prevent uuid overlap before adding it to Firebase.
-                                DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-                                DatabaseReference firebaseCircles = rootRef.child("Circles");
-                                firebaseCircles.orderByChild("shapeUUID").equalTo(shapeUUID).addListenerForSingleValueEvent(new ValueEventListener() {
+                                // Go through each "shapeUUID" child in the snapShot and compare it to the shapeUUID.
+                                int childCount = 0;
+                                for (DataSnapshot pushedValue : mSnapshotCircles.getChildren()) {
 
-                                    @Override
-                                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                                    if (pushedValue.child("shapeUUID").equals(shapeUUID)) {
 
-                                        // If the uuid already exists in Firebase, generate another uuid and try again.
-                                        if (dataSnapshot.exists()) {
+                                        Log.i(TAG, "onMapReadyAndRestart() -> onMarkerClick -> user signed in -> circle -> marker0 -> shapeUUID exists");
 
-                                            Log.i(TAG, "onMapReadyAndRestart() -> onMarkerClick -> no user signed in -> circle -> marker0 -> shapeUUID exist");
+                                        // uuid exists in Firebase. Generate another and try again.
 
-                                            // uuid exists in Firebase. Generate another and try again.
+                                        // Generate another uuid and try again.
+                                        shapeUUID = UUID.randomUUID().toString();
 
-                                            // Generate another UUID and try again.
-                                            shapeUUID = UUID.randomUUID().toString();
+                                        // Carry the extras all the way to Chat.java.
+                                        Intent Activity = new Intent(Map.this, SignIn.class);
+                                        goToNextActivityCircle(Activity, newCircle, true);
+                                        break;
+                                    } else {
 
-                                            // Carry the extras all the way to Chat.java.
-                                            Intent Activity = new Intent(Map.this, SignIn.class);
-                                            goToNextActivityCircle(Activity, newCircle, true);
-                                        } else {
-
-                                            Log.i(TAG, "onMapReadyAndRestart() -> onMarkerClick -> no user signed in -> circle -> marker0 -> shapeUUID does not exist");
-
-                                            // uuid does not already exist in Firebase. Go to Chat.java with the uuid.
-
-                                            // Carry the extras all the way to Chat.java.
-                                            Intent Activity = new Intent(Map.this, SignIn.class);
-                                            goToNextActivityCircle(Activity, newCircle, true);
-                                        }
+                                        childCount++;
                                     }
 
-                                    @Override
-                                    public void onCancelled(@NonNull DatabaseError databaseError) {
+                                    // The snapShot does not contain a "shapeUUID" child that equals shapeUUID, so start new activity.
+                                    if (childCount == mSnapshotCircles.getChildrenCount()) {
 
-                                        Log.e(TAG, "DatabaseError");
-                                        mMap.getUiSettings().setScrollGesturesEnabled(true);
-                                        loadingIcon.setVisibility(View.GONE);
-                                        toastMessageLong(databaseError.getMessage());
+                                        Log.i(TAG, "onMapReadyAndRestart() -> onMarkerClick -> user signed in -> circle -> marker0 -> shapeUUID does not exist");
+
+                                        // uuid does not already exist in Firebase. Go to Chat.java with the uuid.
+
+                                        // Carry the extras all the way to Chat.java.
+                                        Intent Activity = new Intent(Map.this, SignIn.class);
+                                        goToNextActivityCircle(Activity, newCircle, true);
                                     }
-                                });
+                                }
                             }
                         } else {
 
@@ -3574,6 +3559,12 @@ public class Map extends FragmentActivity implements
 
             @Override
             public void onPolygonClick(final Polygon polygon) {
+
+                if (mSnapshotPolygons == null) {
+
+                    toastMessageLong("Still loading data. Please wait and try again.");
+                    return;
+                }
 
                 // If the user tries to click on a polygon that is not a polygonTemp while polygonTemp exists, return.
                 if (chatSelectorSeekBar.getVisibility() == View.VISIBLE && (polygon.getTag() != selectedOverlappingShapeUUID)) {
@@ -3634,100 +3625,78 @@ public class Map extends FragmentActivity implements
 
                                                 // User is signed in.
 
-                                                DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-                                                DatabaseReference firebasePolygons = rootRef.child("Polygons");
-                                                firebasePolygons.orderByChild("shapeUUID").equalTo(shapeUUID).addListenerForSingleValueEvent(new ValueEventListener() {
+                                                // Go through each "shapeUUID" child in the snapShot and compare it to the shapeUUID.
+                                                int childCount = 0;
+                                                for (DataSnapshot pushedValue : mSnapshotPolygons.getChildren()) {
 
-                                                    @Override
-                                                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                                                    if (pushedValue.child("shapeUUID").equals(shapeUUID)) {
 
-                                                        // If the uuid already exists in Firebase, generate another uuid and try again.
-                                                        if (dataSnapshot.exists()) {
+                                                        Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> New polygon -> User signed in -> shapeUUID exists");
 
-                                                            Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> New polygon -> User signed in -> shapeUUID exists");
+                                                        // uuid exists in Firebase. Generate another and try again.
 
-                                                            // uuid exists in Firebase. Generate another and try again.
+                                                        // Generate another uuid and try again.
+                                                        shapeUUID = UUID.randomUUID().toString();
 
-                                                            // Generate another uuid and try again.
-                                                            shapeUUID = UUID.randomUUID().toString();
+                                                        // Carry the extras all the way to Chat.java.
+                                                        Intent Activity = new Intent(Map.this, Navigation.class);
+                                                        goToNextActivityPolygon(Activity, true);
+                                                        break;
+                                                    } else {
 
-                                                            // Carry the extras all the way to Chat.java.
-                                                            Intent Activity = new Intent(Map.this, Navigation.class);
-
-                                                            // Pass this information to Chat.java to create a new shape in Firebase after someone writes a recyclerviewlayout.
-                                                            goToNextActivityPolygon(Activity, true);
-                                                        } else {
-
-                                                            Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> New polygon -> User signed in -> shapeUUID does not exist");
-
-                                                            // uuid does not already exist in Firebase. Go to Chat.java with the uuid.
-
-                                                            // Carry the extras all the way to Chat.java.
-                                                            Intent Activity = new Intent(Map.this, Navigation.class);
-
-                                                            // Pass this information to Chat.java to create a new shape in Firebase after someone writes a recyclerviewlayout.
-                                                            goToNextActivityPolygon(Activity, true);
-                                                        }
+                                                        childCount++;
                                                     }
 
-                                                    @Override
-                                                    public void onCancelled(@NonNull DatabaseError databaseError) {
+                                                    // The snapShot does not contain a "shapeUUID" child that equals shapeUUID, so start new activity.
+                                                    if (childCount == mSnapshotCircles.getChildrenCount()) {
 
-                                                        Log.e(TAG, "DatabaseError");
-                                                        mMap.getUiSettings().setScrollGesturesEnabled(true);
-                                                        loadingIcon.setVisibility(View.GONE);
-                                                        toastMessageLong(databaseError.getMessage());
+                                                        Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> New polygon -> User signed in -> shapeUUID does not exist");
+
+                                                        // uuid does not already exist in Firebase. Go to Chat.java with the uuid.
+
+                                                        // Carry the extras all the way to Chat.java.
+                                                        Intent Activity = new Intent(Map.this, Navigation.class);
+                                                        goToNextActivityPolygon(Activity, true);
                                                     }
-                                                });
+                                                }
                                             } else {
 
-                                                // No user is signed in.
+                                                // User NOT signed in.
 
-                                                DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-                                                DatabaseReference firebasePolygons = rootRef.child("Polygons");
-                                                firebasePolygons.orderByChild("shapeUUID").equalTo(shapeUUID).addListenerForSingleValueEvent(new ValueEventListener() {
+                                                // Go through each "shapeUUID" child in the snapShot and compare it to the shapeUUID.
+                                                int childCount = 0;
+                                                for (DataSnapshot pushedValue : mSnapshotPolygons.getChildren()) {
 
-                                                    @Override
-                                                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                                                    if (pushedValue.child("shapeUUID").equals(shapeUUID)) {
 
-                                                        // If the uuid already exists in Firebase, generate another uuid and try again.
-                                                        if (dataSnapshot.exists()) {
+                                                        Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> New polygon -> User signed in -> shapeUUID exists");
 
-                                                            Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> New polygon -> No user signed in -> shapeUUID exists");
+                                                        // uuid exists in Firebase. Generate another and try again.
 
-                                                            // uuid exists in Firebase. Generate another and try again.
+                                                        // Generate another uuid and try again.
+                                                        shapeUUID = UUID.randomUUID().toString();
 
-                                                            // Generate another uuid and try again.
-                                                            shapeUUID = UUID.randomUUID().toString();
+                                                        // Carry the extras all the way to Chat.java.
+                                                        Intent Activity = new Intent(Map.this, SignIn.class);
+                                                        goToNextActivityPolygon(Activity, true);
+                                                        break;
+                                                    } else {
 
-                                                            // Carry the extras to SignIn.java
-                                                            Intent Activity = new Intent(Map.this, SignIn.class);
-
-                                                            // Pass this information to Chat.java to create a new shape in Firebase after someone writes a recyclerviewlayout.
-                                                            goToNextActivityPolygon(Activity, true);
-                                                        } else {
-
-                                                            Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> New polygon -> No user signed in -> shapeUUID does not exist");
-
-                                                            // uuid does not already exist in Firebase. Go to SignIn.java with the uuid.
-
-                                                            // Carry the extras to SignIn.java.
-                                                            Intent Activity = new Intent(Map.this, Navigation.class);
-
-                                                            // Pass this information to Chat.java to create a new shape in Firebase after someone writes a recyclerviewlayout.
-                                                            goToNextActivityPolygon(Activity, true);
-                                                        }
+                                                        childCount++;
                                                     }
 
-                                                    @Override
-                                                    public void onCancelled(@NonNull DatabaseError databaseError) {
+                                                    // The snapShot does not contain a "shapeUUID" child that equals shapeUUID, so start new activity.
+                                                    if (childCount == mSnapshotCircles.getChildrenCount()) {
 
-                                                        Log.e(TAG, "DatabaseError");
-                                                        mMap.getUiSettings().setScrollGesturesEnabled(true);
-                                                        loadingIcon.setVisibility(View.GONE);
-                                                        toastMessageLong(databaseError.getMessage());
+                                                        Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> New polygon -> User signed in -> shapeUUID does not exist");
+
+                                                        // uuid does not already exist in Firebase. Go to Chat.java with the uuid.
+
+                                                        // Carry the extras all the way to Chat.java.
+                                                        Intent Activity = new Intent(Map.this, SignIn.class);
+                                                        goToNextActivityPolygon(Activity, true);
                                                     }
-                                                });
+                                                }
                                             }
                                         } else {
 
@@ -4048,6 +4017,12 @@ public class Map extends FragmentActivity implements
             @Override
             public void onCircleClick(final Circle circle) {
 
+                if (mSnapshotCircles == null) {
+
+                    toastMessageLong("Still loading data. Please wait and try again.");
+                    return;
+                }
+
                 // If the user tries to click on a circle that is not a circleTemp while circleTemp exists, return.
                 if (chatSelectorSeekBar.getVisibility() == View.VISIBLE && (circle.getTag() != selectedOverlappingShapeUUID)) {
 
@@ -4289,104 +4264,76 @@ public class Map extends FragmentActivity implements
                                             // Check if the user is already signed in.
                                             if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) instanceof GoogleSignInAccount) {
 
-                                                // User is signed in.
+                                                // Go through each "shapeUUID" child in the snapShot and compare it to the shapeUUID.
+                                                int childCount = 0;
+                                                for (DataSnapshot pushedValue : mSnapshotCircles.getChildren()) {
 
-                                                // Compare the uuid to the uuids in Firebase to prevent uuid overlap before adding it to Firebase.
-                                                DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-                                                DatabaseReference firebaseCircles = rootRef.child("Circles");
-                                                firebaseCircles.orderByChild("shapeUUID").equalTo(shapeUUID).addListenerForSingleValueEvent(new ValueEventListener() {
+                                                    if (pushedValue.child("shapeUUID").equals(shapeUUID)) {
 
-                                                    @Override
-                                                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                                                        Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> New circle -> User signed in -> shapeUUID exists");
 
-                                                        // If the uuid already exists in Firebase, generate another uuid and try again.
-                                                        if (dataSnapshot.exists()) {
+                                                        // uuid exists in Firebase. Generate another and try again.
 
-                                                            Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> New circle -> User signed in -> shapeUUID exists");
+                                                        // Generate another uuid and try again.
+                                                        shapeUUID = UUID.randomUUID().toString();
 
-                                                            // uuid exists in Firebase. Generate another and try again.
+                                                        // Carry the extras all the way to Chat.java.
+                                                        Intent Activity = new Intent(Map.this, Navigation.class);
+                                                        goToNextActivityCircle(Activity, circle, true);
+                                                        break;
+                                                    } else {
 
-                                                            // Generate another uuid and try again.
-                                                            shapeUUID = UUID.randomUUID().toString();
-
-                                                            // Carry the extras all the way to Chat.java.
-                                                            Intent Activity = new Intent(Map.this, Navigation.class);
-
-                                                            // Pass this information to Chat.java to create a new shape in Firebase after someone writes a recyclerviewlayout.
-                                                            goToNextActivityCircle(Activity, circle, true);
-                                                        } else {
-
-                                                            Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> New circle -> User signed in -> shapeUUID does not exists");
-
-                                                            // uuid does not already exist in Firebase. Go to Chat.java with the uuid.
-
-                                                            // Carry the extras all the way to Chat.java.
-                                                            Intent Activity = new Intent(Map.this, Navigation.class);
-
-                                                            // Pass this information to Chat.java to create a new shape in Firebase after someone writes a recyclerviewlayout.
-                                                            goToNextActivityCircle(Activity, circle, true);
-                                                        }
+                                                        childCount++;
                                                     }
 
-                                                    @Override
-                                                    public void onCancelled(@NonNull DatabaseError databaseError) {
+                                                    // The snapShot does not contain a "shapeUUID" child that equals shapeUUID, so start new activity.
+                                                    if (childCount == mSnapshotCircles.getChildrenCount()) {
 
-                                                        Log.e(TAG, "DatabaseError");
-                                                        mMap.getUiSettings().setScrollGesturesEnabled(true);
-                                                        loadingIcon.setVisibility(View.GONE);
-                                                        toastMessageLong(databaseError.getMessage());
+                                                        Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> New circle -> User signed in -> shapeUUID does not exists");
+
+                                                        // uuid does not already exist in Firebase. Go to Chat.java with the uuid.
+
+                                                        // Carry the extras all the way to Chat.java.
+                                                        Intent Activity = new Intent(Map.this, Navigation.class);
+                                                        goToNextActivityCircle(Activity, circle, true);
                                                     }
-                                                });
+                                                }
                                             } else {
 
-                                                // No user is signed in.
+                                                // Go through each "shapeUUID" child in the snapShot and compare it to the shapeUUID.
+                                                int childCount = 0;
+                                                for (DataSnapshot pushedValue : mSnapshotCircles.getChildren()) {
 
-                                                // Compare the uuid to the uuids in Firebase to prevent uuid overlap before adding it to Firebase.
-                                                DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-                                                DatabaseReference firebaseCircles = rootRef.child("Circles");
-                                                firebaseCircles.orderByChild("shapeUUID").equalTo(shapeUUID).addListenerForSingleValueEvent(new ValueEventListener() {
+                                                    if (pushedValue.child("shapeUUID").equals(shapeUUID)) {
 
-                                                    @Override
-                                                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                                                        Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> New circle -> User signed in -> shapeUUID exists");
 
-                                                        // If the uuid already exists in Firebase, generate another uuid and try again.
-                                                        if (dataSnapshot.exists()) {
+                                                        // uuid exists in Firebase. Generate another and try again.
 
-                                                            Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> New circle -> No user signed in -> shapeUUID exists");
+                                                        // Generate another uuid and try again.
+                                                        shapeUUID = UUID.randomUUID().toString();
 
-                                                            // uuid exists in Firebase. Generate another and try again.
+                                                        // Carry the extras all the way to Chat.java.
+                                                        Intent Activity = new Intent(Map.this, SignIn.class);
+                                                        goToNextActivityCircle(Activity, circle, true);
+                                                        break;
+                                                    } else {
 
-                                                            // Generate another uuid and try again.
-                                                            shapeUUID = UUID.randomUUID().toString();
-
-                                                            // Carry the extras to SignIn.java.
-                                                            Intent Activity = new Intent(Map.this, SignIn.class);
-
-                                                            // Pass this information to Chat.java to create a new shape in Firebase after someone writes a recyclerviewlayout.
-                                                            goToNextActivityCircle(Activity, circle, true);
-                                                        } else {
-
-                                                            Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> New circle -> No user signed in -> shapeUUID does not exists");
-
-                                                            // uuid does not already exist in Firebase. Go to Chat.java with the uuid.
-
-                                                            // Carry the extras to SignIn.java.
-                                                            Intent Activity = new Intent(Map.this, SignIn.class);
-
-                                                            // Pass this information to Chat.java to create a new shape in Firebase after someone writes a recyclerviewlayout.
-                                                            goToNextActivityCircle(Activity, circle, true);
-                                                        }
+                                                        childCount++;
                                                     }
 
-                                                    @Override
-                                                    public void onCancelled(@NonNull DatabaseError databaseError) {
+                                                    // The snapShot does not contain a "shapeUUID" child that equals shapeUUID, so start new activity.
+                                                    if (childCount == mSnapshotCircles.getChildrenCount()) {
 
-                                                        Log.e(TAG, "DatabaseError");
-                                                        mMap.getUiSettings().setScrollGesturesEnabled(true);
-                                                        loadingIcon.setVisibility(View.GONE);
-                                                        toastMessageLong(databaseError.getMessage());
+                                                        Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> New circle -> User signed in -> shapeUUID does not exists");
+
+                                                        // uuid does not already exist in Firebase. Go to Chat.java with the uuid.
+
+                                                        // Carry the extras all the way to Chat.java.
+                                                        Intent Activity = new Intent(Map.this, SignIn.class);
+                                                        goToNextActivityCircle(Activity, circle, true);
                                                     }
-                                                });
+                                                }
                                             }
                                         } else {
 
@@ -5776,8 +5723,6 @@ public class Map extends FragmentActivity implements
 
                                 if (!locationProviderDisabled) {
 
-                                    if (mSnapshotMessageThreads != null) {
-
                                         cancelToasts();
 
                                         if (threeMarkers) {
@@ -5913,17 +5858,11 @@ public class Map extends FragmentActivity implements
                                         loadingIcon.setVisibility(View.GONE);
 
                                         startActivity(Activity);
-                                    } else {
-
-                                        loadingIcon.setVisibility(View.GONE);
-                                        toastMessageLong("Still loading data. Please wait and try again.");
-                                    }
                                 } else {
 
                                     loadingIcon.setVisibility(View.GONE);
                                     toastMessageLong("Enable the location provider and try again.");
                                 }
-
                             } else {
 
                                 loadingIcon.setVisibility(View.GONE);
@@ -5959,8 +5898,6 @@ public class Map extends FragmentActivity implements
 
                                 if (!locationProviderDisabled) {
 
-                                    if (mSnapshotMessageThreads != null) {
-
                                         cancelToasts();
 
                                         Activity.putExtra("userLatitude", location.getLatitude());
@@ -5983,11 +5920,6 @@ public class Map extends FragmentActivity implements
                                         loadingIcon.setVisibility(View.GONE);
 
                                         startActivity(Activity);
-                                    } else {
-
-                                        loadingIcon.setVisibility(View.GONE);
-                                        toastMessageLong("Still loading data. Please wait and try again.");
-                                    }
                                 } else {
 
                                     loadingIcon.setVisibility(View.GONE);
@@ -8394,117 +8326,102 @@ public class Map extends FragmentActivity implements
                                             // Check if the user is already signed in.
                                             if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) instanceof GoogleSignInAccount) {
 
-                                                // User is signed in.
-                                                // Connect to Firebase.
-                                                DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-                                                DatabaseReference firebaseCircles = rootRef.child("Circles");
-                                                firebaseCircles.orderByChild("shapeUUID").equalTo(shapeUUID).addListenerForSingleValueEvent(new ValueEventListener() {
-                                                    @Override
-                                                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                                                // Go through each "shapeUUID" child in the snapShot and compare it to the shapeUUID.
+                                                int childCount = 0;
+                                                for (DataSnapshot pushedValue : mSnapshotCircles.getChildren()) {
 
-                                                        // If the uuid already exists in Firebase, generate another uuid and try again.
-                                                        if (dataSnapshot.exists()) {
+                                                    if (pushedValue.child("shapeUUID").equals(shapeUUID)) {
 
-                                                            shapeUUID = UUID.randomUUID().toString();
+                                                        shapeUUID = UUID.randomUUID().toString();
 
-                                                            // Carry the extras all the way to Chat.java.
-                                                            Intent Activity = new Intent(Map.this, Navigation.class);
-                                                            Activity.putExtra("shapeIsCircle", true);
-                                                            // Pass this boolean value to Chat.java.
-                                                            Activity.putExtra("newShape", true);
-                                                            // Pass this value to Chat.java to identify the shape.
-                                                            Activity.putExtra("shapeUUID", shapeUUID);
-                                                            // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
-                                                            Activity.putExtra("userIsWithinShape", true);
-                                                            // Pass this information to Chat.java to create a new circle in Firebase after someone writes a recyclerviewlayout.
-                                                            Activity.putExtra("circleLatitude", location.getLatitude());
-                                                            Activity.putExtra("circleLongitude", location.getLongitude());
-                                                            Activity.putExtra("radius", 1.0);
-                                                            startActivity(Activity);
-                                                        } else {
+                                                        // Carry the extras all the way to Chat.java.
+                                                        Intent Activity = new Intent(Map.this, Navigation.class);
+                                                        Activity.putExtra("shapeIsCircle", true);
+                                                        // Pass this boolean value to Chat.java.
+                                                        Activity.putExtra("newShape", true);
+                                                        // Pass this value to Chat.java to identify the shape.
+                                                        Activity.putExtra("shapeUUID", shapeUUID);
+                                                        // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
+                                                        Activity.putExtra("userIsWithinShape", true);
+                                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a recyclerviewlayout.
+                                                        Activity.putExtra("circleLatitude", location.getLatitude());
+                                                        Activity.putExtra("circleLongitude", location.getLongitude());
+                                                        Activity.putExtra("radius", 1.0);
+                                                        startActivity(Activity);
+                                                        break;
+                                                    } else {
 
-                                                            // Carry the extras all the way to Chat.java.
-                                                            Intent Activity = new Intent(Map.this, Navigation.class);
-                                                            Activity.putExtra("shapeIsCircle", true);
-                                                            // Pass this boolean value to Chat.java.
-                                                            Activity.putExtra("newShape", true);
-                                                            // Pass this value to Chat.java to identify the shape.
-                                                            Activity.putExtra("shapeUUID", shapeUUID);
-                                                            // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
-                                                            Activity.putExtra("userIsWithinShape", true);
-                                                            // Pass this information to Chat.java to create a new circle in Firebase after someone writes a recyclerviewlayout.
-                                                            Activity.putExtra("circleLatitude", location.getLatitude());
-                                                            Activity.putExtra("circleLongitude", location.getLongitude());
-                                                            Activity.putExtra("radius", 1.0);
-                                                            startActivity(Activity);
-                                                        }
+                                                        childCount++;
                                                     }
 
-                                                    @Override
-                                                    public void onCancelled(@NonNull DatabaseError databaseError) {
+                                                    // The snapShot does not contain a "shapeUUID" child that equals shapeUUID, so start new activity.
+                                                    if (childCount == mSnapshotCircles.getChildrenCount()) {
 
-                                                        Log.e(TAG, "DatabaseError");
-                                                        loadingIcon.setVisibility(View.GONE);
-                                                        toastMessageLong(databaseError.getMessage());
+                                                        // Carry the extras all the way to Chat.java.
+                                                        Intent Activity = new Intent(Map.this, Navigation.class);
+                                                        Activity.putExtra("shapeIsCircle", true);
+                                                        // Pass this boolean value to Chat.java.
+                                                        Activity.putExtra("newShape", true);
+                                                        // Pass this value to Chat.java to identify the shape.
+                                                        Activity.putExtra("shapeUUID", shapeUUID);
+                                                        // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
+                                                        Activity.putExtra("userIsWithinShape", true);
+                                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a recyclerviewlayout.
+                                                        Activity.putExtra("circleLatitude", location.getLatitude());
+                                                        Activity.putExtra("circleLongitude", location.getLongitude());
+                                                        Activity.putExtra("radius", 1.0);
+                                                        startActivity(Activity);
                                                     }
-                                                });
+                                                }
                                             } else {
 
-                                                // No user is signed in.
-                                                // Connect to Firebase.
-                                                DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-                                                DatabaseReference firebaseCircles = rootRef.child("Circles");
-                                                firebaseCircles.orderByChild("shapeUUID").equalTo(shapeUUID).addListenerForSingleValueEvent(new ValueEventListener() {
+                                                // Go through each "shapeUUID" child in the snapShot and compare it to the shapeUUID.
+                                                int childCount = 0;
+                                                for (DataSnapshot pushedValue : mSnapshotCircles.getChildren()) {
 
-                                                    @Override
-                                                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                                                    if (pushedValue.child("shapeUUID").equals(shapeUUID)) {
 
-                                                        // If the uuid already exists in Firebase, generate another uuid and try again.
-                                                        if (dataSnapshot.exists()) {
+                                                        shapeUUID = UUID.randomUUID().toString();
 
-                                                            shapeUUID = UUID.randomUUID().toString();
+                                                        // Carry the extras all the way to Chat.java.
+                                                        Intent Activity = new Intent(Map.this, SignIn.class);
+                                                        Activity.putExtra("shapeIsCircle", true);
+                                                        // Pass this boolean value to Chat.java.
+                                                        Activity.putExtra("newShape", true);
+                                                        // Pass this value to Chat.java to identify the shape.
+                                                        Activity.putExtra("shapeUUID", shapeUUID);
+                                                        // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
+                                                        Activity.putExtra("userIsWithinShape", true);
+                                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a recyclerviewlayout.
+                                                        Activity.putExtra("circleLatitude", location.getLatitude());
+                                                        Activity.putExtra("circleLongitude", location.getLongitude());
+                                                        Activity.putExtra("radius", 1.0);
+                                                        startActivity(Activity);
+                                                        break;
+                                                    } else {
 
-                                                            // Carry the extras all the way to Chat.java.
-                                                            Intent Activity = new Intent(Map.this, SignIn.class);
-                                                            Activity.putExtra("shapeIsCircle", true);
-                                                            // Pass this boolean value to Chat.java.
-                                                            Activity.putExtra("newShape", true);
-                                                            // Pass this value to Chat.java to identify the shape.
-                                                            Activity.putExtra("shapeUUID", shapeUUID);
-                                                            // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
-                                                            Activity.putExtra("userIsWithinShape", true);
-                                                            // Pass this information to Chat.java to create a new circle in Firebase after someone writes a recyclerviewlayout.
-                                                            Activity.putExtra("circleLatitude", location.getLatitude());
-                                                            Activity.putExtra("circleLongitude", location.getLongitude());
-                                                            Activity.putExtra("radius", 1.0);
-                                                            startActivity(Activity);
-                                                        } else {
-
-                                                            // Carry the extras all the way to Chat.java.
-                                                            Intent Activity = new Intent(Map.this, SignIn.class);
-                                                            Activity.putExtra("shapeIsCircle", true);
-                                                            // Pass this boolean value to Chat.java.
-                                                            Activity.putExtra("newShape", true);
-                                                            // Pass this value to Chat.java to identify the shape.
-                                                            Activity.putExtra("shapeUUID", shapeUUID);
-                                                            // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
-                                                            Activity.putExtra("userIsWithinShape", true);
-                                                            // Pass this information to Chat.java to create a new circle in Firebase after someone writes a recyclerviewlayout.
-                                                            Activity.putExtra("circleLatitude", location.getLatitude());
-                                                            Activity.putExtra("circleLongitude", location.getLongitude());
-                                                            Activity.putExtra("radius", 1.0);
-                                                            startActivity(Activity);
-                                                        }
+                                                        childCount++;
                                                     }
 
-                                                    @Override
-                                                    public void onCancelled(@NonNull DatabaseError databaseError) {
+                                                    // The snapShot does not contain a "shapeUUID" child that equals shapeUUID, so start new activity.
+                                                    if (childCount == mSnapshotCircles.getChildrenCount()) {
 
-                                                        Log.e(TAG, "DatabaseError");
-                                                        loadingIcon.setVisibility(View.GONE);
-                                                        toastMessageLong(databaseError.getMessage());
+                                                        // Carry the extras all the way to Chat.java.
+                                                        Intent Activity = new Intent(Map.this, SignIn.class);
+                                                        Activity.putExtra("shapeIsCircle", true);
+                                                        // Pass this boolean value to Chat.java.
+                                                        Activity.putExtra("newShape", true);
+                                                        // Pass this value to Chat.java to identify the shape.
+                                                        Activity.putExtra("shapeUUID", shapeUUID);
+                                                        // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
+                                                        Activity.putExtra("userIsWithinShape", true);
+                                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a recyclerviewlayout.
+                                                        Activity.putExtra("circleLatitude", location.getLatitude());
+                                                        Activity.putExtra("circleLongitude", location.getLongitude());
+                                                        Activity.putExtra("radius", 1.0);
+                                                        startActivity(Activity);
                                                     }
-                                                });
+                                                }
                                             }
                                         }
                                     }
