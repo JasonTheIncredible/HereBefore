@@ -119,7 +119,6 @@ public class Map extends FragmentActivity implements
     private Query query;
     private static DataSnapshot mSnapshotCircles, mSnapshotPolygons;
 
-    // DM notifications disappear when app closes.
     // Adjust Firebase security rules.
     // Make situations where Firebase circles are added to the map and then polygons are added (like in chatViews) async.
     // Don't get new snapShots every time map loads? - problem: new shapes that the user adds to Firebase in chat will not load.
