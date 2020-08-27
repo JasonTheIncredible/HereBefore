@@ -119,28 +119,26 @@ public class Map extends FragmentActivity implements
     private Query query;
     private static DataSnapshot mSnapshotCircles, mSnapshotPolygons;
 
-    // Adjust Firebase security rules.
-    // Make situations where Firebase circles are added to the map and then polygons are added (like in chatViews) async.
-    // Don't get new snapShots every time map loads? - problem: new shapes that the user adds to Firebase in chat will not load.
     // Make location more precise.
+    // If user is only viewing specific-sized Chats and switches Map types, only load those Chats again.
     // Add ability to add video to Chat from gallery. Distinguish it from video taken at location. Do the same distinguishing with pictures.
     // If a mention doesn't exist (because it was manually deleted), delete it. Also change "position" in database and update onChildChanged() (or get rid of "position" entirely?). Also, use more specific children so every Chat is not called.
-    // Only download shapes in Map when necessary to cut down on database usage.
-    // Add preference for shape color.
+    // Only download shapes in Map when necessary to cut down on database usage. Also, 10,000 shapes causes the map to get very laggy. Then make situations where Firebase circles are added to the map and then polygons are added (like in chatViews) async.
+    // Don't get new snapShots every time map loads? - problem: new shapes that the user adds to Firebase in chat will not load.
     // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.
-    // Adjust AppIntro.
-    // Create a "general chat" where everyone can chat anonymously, maybe with more specific location rooms too.
-    // Decrease app size / Check on accumulation of size over time.
-    // Make sure the secret stuff is secret.
-    // Make sure Firebase has enough bandwidth.
-    // Finish setting up Google ads.
-    // More ads.
-    // Make sure aboutLibraries is up to date and fix bug where license information isn't showing.
-    // Check warning messages.
-
-    // Work on deprecated methods.
     // Further cut down on Firebase listeners - find a way to add to a previous snapshot in Map, then carry that up-to-date snapshot into Chat and DirectMentions.
-    // If using is only viewing specific-sized Chats and switches Map types, only load those Chats again.
+    // Create a "general chat" where everyone can chat anonymously, maybe with more specific location rooms too.
+    // Adjust AppIntro.
+    // Decrease app size / Check on accumulation of size over time.
+    // Make sure Firebase has enough bandwidth.
+    // Finish setting up Google ads, then add more ads.
+    // Adjust Firebase security rules - bookmark.
+    // Make sure aboutLibraries is up to date - 8.3.0 does not show license.
+    // Work on deprecated methods.
+    // Check warning messages.
+    // Make sure the secret stuff is secret.
+
+    // Add preference for shape color.
     // Add ability to add both picture and video to firebase at the same time.
     // Leave messages in locations that users get notified of when they enter the area by adding geo-fencing..
     // Add ability to filter recyclerView by type of content (recorded at the scene...).
