@@ -2,7 +2,7 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
     <item android:id="@+id/showEverything"
-        android:title="@string/show_everything"/>
+        android:title="@string/show_all_chats"/>
 
     <item android:id="@+id/showLargeChats"
         android:title="@string/show_large_chats"/>
