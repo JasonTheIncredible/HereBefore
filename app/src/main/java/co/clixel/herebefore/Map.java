@@ -100,7 +100,7 @@ public class Map extends FragmentActivity implements
     private boolean stillLoadingCircles = true, stillLoadingPolygons = true, stillUpdatingCamera = true, locationProviderDisabled = false, circlesDone = false, polygonsDone = false,
             firstLoadCamera = true, firstLoadDMs = true, firstLoadChats = true, mapChanged, cameraMoved = false, waitingForBetterLocationAccuracy = false, badAccuracy = false,
             waitingForClicksToProcess = false, waitingForShapeInformationToProcess = false, markerOutsidePolygon = false, usedSeekBar = false,
-            userIsWithinShape, selectingShape = false, threeMarkers = false, fourMarkers = false, fiveMarkers = false, sixMarkers = false, sevenMarkers = false, eightMarkers = false;
+            userIsWithinShape, selectingShape = false, threeMarkers = false, fourMarkers = false, fiveMarkers = false, sixMarkers = false, sevenMarkers = false, eightMarkers = false, showedLocationAccuracyWarning = false;
     private Boolean showingEverything, showingLarge, showingMedium, showingSmall, showingPoints, restarted;
     private LatLng markerPositionAtVertexOfPolygon, marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position, selectedOverlappingShapeCircleLocation;
     private Double relativeAngle = 0.0, selectedOverlappingShapeCircleRadius;
@@ -120,8 +120,6 @@ public class Map extends FragmentActivity implements
     private Query query;
     private static DataSnapshot mSnapshotCircles, mSnapshotPolygons;
 
-    // Make location more precise - make the user wait a few seconds? Don't check for accuracy because it may never get better?
-    // Require a picture at location when leaving a message?
     // Add ability to add video to Chat from gallery. Distinguish it from video taken at location. Do the same distinguishing with pictures.
     // If a mention doesn't exist (because it was manually deleted), delete it. Also change "position" in database and update onChildChanged() (or get rid of "position" entirely?). Also, use more specific children so every Chat is not called.
     // Only download shapes in Map when necessary to cut down on database usage. Also, 10,000 shapes causes the map to get very laggy. Then make situations where Firebase circles are added to the map and then polygons are added (like in chatViews) async.
@@ -2699,6 +2697,7 @@ public class Map extends FragmentActivity implements
         polygonsDone = false;
         mSnapshotCircles = null;
         mSnapshotPolygons = null;
+        showedLocationAccuracyWarning = false;
 
         if (dmButton != null) {
 
@@ -6853,125 +6852,128 @@ public class Map extends FragmentActivity implements
                                 @Override
                                 public void onSuccess(final Location location) {
 
-                                    // Get last known location. In some rare situations, this can be null.
-                                    if (location != null) {
+                                    if (location.getAccuracy() > 5 && !showedLocationAccuracyWarning) {
 
-                                        // Remove any other shape before adding the circle to Firebase.
-                                        if (newCircle != null) {
+                                        toastMessageLong("Your location might be incorrect, as your location accuracy is too low. Proceed anyway?");
+                                        showedLocationAccuracyWarning = true;
+                                        return;
+                                    }
 
-                                            newCircle.remove();
-                                            newCircle = null;
-                                        }
+                                    // Remove any other shape before adding the circle to Firebase.
+                                    if (newCircle != null) {
 
-                                        if (newPolygon != null) {
+                                        newCircle.remove();
+                                        newCircle = null;
+                                    }
 
-                                            newPolygon.remove();
-                                            newPolygon = null;
-                                        }
+                                    if (newPolygon != null) {
 
-                                        // Add circle to the map and go to recyclerviewlayout.
-                                        if (mMap != null) {
+                                        newPolygon.remove();
+                                        newPolygon = null;
+                                    }
 
-                                            shapeUUID = UUID.randomUUID().toString();
+                                    // Add circle to the map and go to recyclerviewlayout.
+                                    if (mMap != null) {
 
-                                            // Check if the user is already signed in.
-                                            if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) instanceof GoogleSignInAccount) {
+                                        shapeUUID = UUID.randomUUID().toString();
 
-                                                // Go through each "shapeUUID" child in the snapShot and compare it to the shapeUUID.
-                                                int childCount = 0;
-                                                for (DataSnapshot pushedValue : mSnapshotCircles.getChildren()) {
+                                        // Check if the user is already signed in.
+                                        if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) instanceof GoogleSignInAccount) {
 
-                                                    if (pushedValue.child("shapeUUID").equals(shapeUUID)) {
+                                            // Go through each "shapeUUID" child in the snapShot and compare it to the shapeUUID.
+                                            int childCount = 0;
+                                            for (DataSnapshot pushedValue : mSnapshotCircles.getChildren()) {
 
-                                                        shapeUUID = UUID.randomUUID().toString();
+                                                if (pushedValue.child("shapeUUID").equals(shapeUUID)) {
 
-                                                        // Carry the extras all the way to Chat.java.
-                                                        Intent Activity = new Intent(Map.this, Navigation.class);
-                                                        Activity.putExtra("shapeIsCircle", true);
-                                                        // Pass this boolean value to Chat.java.
-                                                        Activity.putExtra("newShape", true);
-                                                        // Pass this value to Chat.java to identify the shape.
-                                                        Activity.putExtra("shapeUUID", shapeUUID);
-                                                        // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
-                                                        Activity.putExtra("userIsWithinShape", true);
-                                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a recyclerviewlayout.
-                                                        Activity.putExtra("circleLatitude", location.getLatitude());
-                                                        Activity.putExtra("circleLongitude", location.getLongitude());
-                                                        Activity.putExtra("radius", 1.0);
-                                                        startActivity(Activity);
-                                                        break;
-                                                    } else {
+                                                    shapeUUID = UUID.randomUUID().toString();
 
-                                                        childCount++;
-                                                    }
+                                                    // Carry the extras all the way to Chat.java.
+                                                    Intent Activity = new Intent(Map.this, Navigation.class);
+                                                    Activity.putExtra("shapeIsCircle", true);
+                                                    // Pass this boolean value to Chat.java.
+                                                    Activity.putExtra("newShape", true);
+                                                    // Pass this value to Chat.java to identify the shape.
+                                                    Activity.putExtra("shapeUUID", shapeUUID);
+                                                    // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
+                                                    Activity.putExtra("userIsWithinShape", true);
+                                                    // Pass this information to Chat.java to create a new circle in Firebase after someone writes a recyclerviewlayout.
+                                                    Activity.putExtra("circleLatitude", location.getLatitude());
+                                                    Activity.putExtra("circleLongitude", location.getLongitude());
+                                                    Activity.putExtra("radius", 1.0);
+                                                    startActivity(Activity);
+                                                    break;
+                                                } else {
 
-                                                    // The snapShot does not contain a "shapeUUID" child that equals shapeUUID, so start new activity.
-                                                    if (childCount == mSnapshotCircles.getChildrenCount()) {
-
-                                                        // Carry the extras all the way to Chat.java.
-                                                        Intent Activity = new Intent(Map.this, Navigation.class);
-                                                        Activity.putExtra("shapeIsCircle", true);
-                                                        // Pass this boolean value to Chat.java.
-                                                        Activity.putExtra("newShape", true);
-                                                        // Pass this value to Chat.java to identify the shape.
-                                                        Activity.putExtra("shapeUUID", shapeUUID);
-                                                        // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
-                                                        Activity.putExtra("userIsWithinShape", true);
-                                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a recyclerviewlayout.
-                                                        Activity.putExtra("circleLatitude", location.getLatitude());
-                                                        Activity.putExtra("circleLongitude", location.getLongitude());
-                                                        Activity.putExtra("radius", 1.0);
-                                                        startActivity(Activity);
-                                                    }
+                                                    childCount++;
                                                 }
-                                            } else {
 
-                                                // Go through each "shapeUUID" child in the snapShot and compare it to the shapeUUID.
-                                                int childCount = 0;
-                                                for (DataSnapshot pushedValue : mSnapshotCircles.getChildren()) {
+                                                // The snapShot does not contain a "shapeUUID" child that equals shapeUUID, so start new activity.
+                                                if (childCount == mSnapshotCircles.getChildrenCount()) {
 
-                                                    if (pushedValue.child("shapeUUID").equals(shapeUUID)) {
+                                                    // Carry the extras all the way to Chat.java.
+                                                    Intent Activity = new Intent(Map.this, Navigation.class);
+                                                    Activity.putExtra("shapeIsCircle", true);
+                                                    // Pass this boolean value to Chat.java.
+                                                    Activity.putExtra("newShape", true);
+                                                    // Pass this value to Chat.java to identify the shape.
+                                                    Activity.putExtra("shapeUUID", shapeUUID);
+                                                    // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
+                                                    Activity.putExtra("userIsWithinShape", true);
+                                                    // Pass this information to Chat.java to create a new circle in Firebase after someone writes a recyclerviewlayout.
+                                                    Activity.putExtra("circleLatitude", location.getLatitude());
+                                                    Activity.putExtra("circleLongitude", location.getLongitude());
+                                                    Activity.putExtra("radius", 1.0);
+                                                    startActivity(Activity);
+                                                }
+                                            }
+                                        } else {
 
-                                                        shapeUUID = UUID.randomUUID().toString();
+                                            // Go through each "shapeUUID" child in the snapShot and compare it to the shapeUUID.
+                                            int childCount = 0;
+                                            for (DataSnapshot pushedValue : mSnapshotCircles.getChildren()) {
 
-                                                        // Carry the extras all the way to Chat.java.
-                                                        Intent Activity = new Intent(Map.this, SignIn.class);
-                                                        Activity.putExtra("shapeIsCircle", true);
-                                                        // Pass this boolean value to Chat.java.
-                                                        Activity.putExtra("newShape", true);
-                                                        // Pass this value to Chat.java to identify the shape.
-                                                        Activity.putExtra("shapeUUID", shapeUUID);
-                                                        // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
-                                                        Activity.putExtra("userIsWithinShape", true);
-                                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a recyclerviewlayout.
-                                                        Activity.putExtra("circleLatitude", location.getLatitude());
-                                                        Activity.putExtra("circleLongitude", location.getLongitude());
-                                                        Activity.putExtra("radius", 1.0);
-                                                        startActivity(Activity);
-                                                        break;
-                                                    } else {
+                                                if (pushedValue.child("shapeUUID").equals(shapeUUID)) {
 
-                                                        childCount++;
-                                                    }
+                                                    shapeUUID = UUID.randomUUID().toString();
 
-                                                    // The snapShot does not contain a "shapeUUID" child that equals shapeUUID, so start new activity.
-                                                    if (childCount == mSnapshotCircles.getChildrenCount()) {
+                                                    // Carry the extras all the way to Chat.java.
+                                                    Intent Activity = new Intent(Map.this, SignIn.class);
+                                                    Activity.putExtra("shapeIsCircle", true);
+                                                    // Pass this boolean value to Chat.java.
+                                                    Activity.putExtra("newShape", true);
+                                                    // Pass this value to Chat.java to identify the shape.
+                                                    Activity.putExtra("shapeUUID", shapeUUID);
+                                                    // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
+                                                    Activity.putExtra("userIsWithinShape", true);
+                                                    // Pass this information to Chat.java to create a new circle in Firebase after someone writes a recyclerviewlayout.
+                                                    Activity.putExtra("circleLatitude", location.getLatitude());
+                                                    Activity.putExtra("circleLongitude", location.getLongitude());
+                                                    Activity.putExtra("radius", 1.0);
+                                                    startActivity(Activity);
+                                                    break;
+                                                } else {
 
-                                                        // Carry the extras all the way to Chat.java.
-                                                        Intent Activity = new Intent(Map.this, SignIn.class);
-                                                        Activity.putExtra("shapeIsCircle", true);
-                                                        // Pass this boolean value to Chat.java.
-                                                        Activity.putExtra("newShape", true);
-                                                        // Pass this value to Chat.java to identify the shape.
-                                                        Activity.putExtra("shapeUUID", shapeUUID);
-                                                        // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
-                                                        Activity.putExtra("userIsWithinShape", true);
-                                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a recyclerviewlayout.
-                                                        Activity.putExtra("circleLatitude", location.getLatitude());
-                                                        Activity.putExtra("circleLongitude", location.getLongitude());
-                                                        Activity.putExtra("radius", 1.0);
-                                                        startActivity(Activity);
-                                                    }
+                                                    childCount++;
+                                                }
+
+                                                // The snapShot does not contain a "shapeUUID" child that equals shapeUUID, so start new activity.
+                                                if (childCount == mSnapshotCircles.getChildrenCount()) {
+
+                                                    // Carry the extras all the way to Chat.java.
+                                                    Intent Activity = new Intent(Map.this, SignIn.class);
+                                                    Activity.putExtra("shapeIsCircle", true);
+                                                    // Pass this boolean value to Chat.java.
+                                                    Activity.putExtra("newShape", true);
+                                                    // Pass this value to Chat.java to identify the shape.
+                                                    Activity.putExtra("shapeUUID", shapeUUID);
+                                                    // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
+                                                    Activity.putExtra("userIsWithinShape", true);
+                                                    // Pass this information to Chat.java to create a new circle in Firebase after someone writes a recyclerviewlayout.
+                                                    Activity.putExtra("circleLatitude", location.getLatitude());
+                                                    Activity.putExtra("circleLongitude", location.getLongitude());
+                                                    Activity.putExtra("radius", 1.0);
+                                                    startActivity(Activity);
                                                 }
                                             }
                                         }
