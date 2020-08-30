@@ -3,7 +3,6 @@ package co.clixel.herebefore;
 import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -12,9 +11,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Color;
-import android.graphics.Matrix;
 import android.graphics.drawable.Drawable;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
@@ -25,7 +22,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
-import androidx.exifinterface.media.ExifInterface;
 import androidx.fragment.app.Fragment;
 import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -61,7 +57,6 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
-import android.webkit.MimeTypeMap;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -94,7 +89,6 @@ import com.linkedin.android.spyglass.ui.MentionsEditText;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -132,7 +126,7 @@ public class Chat extends Fragment implements
     private Integer directMentionsPosition = null;
     private ChildEventListener childEventListener;
     private FloatingActionButton sendButton, mediaButton;
-    private boolean firstLoad, needLoadingIcon = false, reachedEndOfRecyclerView = false, recyclerViewHasScrolled = false, messageSent = false, sendButtonClicked = false, mediaButtonMenuIsOpen, fileIsImage, checkPermissionsPicture, URIisFile,
+    private boolean firstLoad, needLoadingIcon = false, reachedEndOfRecyclerView = false, recyclerViewHasScrolled = false, messageSent = false, sendButtonClicked = false, mediaButtonMenuIsOpen, fileIsImage, checkPermissionsPicture,
             newShape, threeMarkers, fourMarkers, fiveMarkers, sixMarkers, sevenMarkers, eightMarkers, shapeIsCircle;
     private Boolean userIsWithinShape;
     private View.OnLayoutChangeListener onLayoutChangeListener;
@@ -1236,7 +1230,7 @@ public class Chat extends Fragment implements
 
                 holder.messageTimeInside.setText(mMessageTime.get(position));
 
-                holder.messageUserInside.setText(mMessageUser.get(position));
+                holder.messageUserInside.setText("@" + mMessageUser.get(position));
 
                 // Set messageImage, messageImageVideo, or messageText to gone if an image or text doesn't exist, for spacing consistency.
                 if (mMessageImage.get(position) == null) {
@@ -1289,7 +1283,7 @@ public class Chat extends Fragment implements
                 // User sent the message from outside the shape. Setup the right side.
                 holder.messageTimeOutside.setText(mMessageTime.get(position));
 
-                holder.messageUserOutside.setText(mMessageUser.get(position));
+                holder.messageUserOutside.setText("@" + mMessageUser.get(position));
 
                 // Set messageImage, messageImageVideo, or messageText to gone if an image or text doesn't exist, for spacing consistency.
                 if (mMessageImage.get(position) == null) {
@@ -1525,16 +1519,16 @@ public class Chat extends Fragment implements
                         public String getTextForDisplayMode(@NonNull MentionDisplayMode mode) {
 
                             // Add mentions to this list. Duplicates will be added and later cleared from this list.
-                            allMentions.add((String) mSuggestions.get(position));
+                            allMentions.add(mSuggestions.get(position));
 
-                            return "@" + ((String) mSuggestions.get(position)).substring(0, 10) + "...";
+                            return "@" + (mSuggestions.get(position)).substring(0, 10) + "...";
                         }
 
                         @NonNull
                         @Override
                         public MentionDeleteStyle getDeleteStyle() {
 
-                            removedMentionDuplicates.remove((String) mSuggestions.get(position));
+                            removedMentionDuplicates.remove(mSuggestions.get(position));
 
                             return MentionDeleteStyle.FULL_DELETE;
                         }
@@ -1549,7 +1543,7 @@ public class Chat extends Fragment implements
                         @Override
                         public String getSuggestiblePrimaryText() {
 
-                            return (String) mSuggestions.get(position);
+                            return mSuggestions.get(position);
                         }
 
                         @Override
@@ -1654,18 +1648,6 @@ public class Chat extends Fragment implements
 
         switch (menuItem.getItemId()) {
 
-            case R.id.browseGallery:
-
-                Log.i(TAG, "onMenuItemClick() -> browseGallery");
-
-                cancelToasts();
-
-                chooseFromGallery();
-
-                mediaButtonMenuIsOpen = false;
-
-                return true;
-
             case R.id.takePhoto:
 
                 Log.i(TAG, "onMenuItemClick() -> takePhoto");
@@ -1700,16 +1682,6 @@ public class Chat extends Fragment implements
 
                 return false;
         }
-    }
-
-    private void chooseFromGallery() {
-
-        Log.i(TAG, "chooseFromGallery");
-
-        Intent intent = new Intent();
-        intent.setType("image/*");
-        intent.setAction(Intent.ACTION_GET_CONTENT);
-        startActivityForResult(intent, 2);
     }
 
     private boolean checkPermissionsPicture() {
@@ -2185,61 +2157,6 @@ public class Chat extends Fragment implements
 
         super.onActivityResult(requestCode, resultCode, data);
 
-        if (requestCode == 2 && resultCode == RESULT_OK && data != null && data.getData() != null) {
-
-            Log.i(TAG, "onActivityResult() -> Gallery");
-
-            // Set the views to GONE to prevent anything else from being sent to Firebase.
-            if (videoImageView != null) {
-
-                videoImageView.setVisibility(View.GONE);
-                videoImageView.setImageResource(0);
-            }
-
-            if (imageView != null) {
-
-                imageView.setVisibility(View.GONE);
-                imageView.setImageResource(0);
-            }
-
-            // Reset these values to there's no problem with overlap.
-            imageDrawable = null;
-            videoDrawable = null;
-
-            fileIsImage = true;
-
-            imageURI = data.getData();
-
-            if (getExtension(imageURI).equals("gif")) {
-
-                // Prevents the loadingIcon from being removed by initChatAdapter().
-                needLoadingIcon = true;
-
-                // For use in uploadImage().
-                URIisFile = true;
-
-                // GIF. No need for compression. However, this needs to be done asynchronously to be work (for some reason).
-                new gifAsyncTask(this).execute(imageURI.toString());
-
-                imageView.setVisibility(View.VISIBLE);
-            } else {
-
-                // Prevents the loadingIcon from being removed by initChatAdapter().
-                needLoadingIcon = true;
-
-                // For use in uploadImage().
-                URIisFile = false;
-
-                // Not GIF. Needs compression.
-                new imageCompressAsyncTask(this).execute(imageURI.toString());
-            }
-
-            // Change textView to be to the right of imageView.
-            RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams) mInput.getLayoutParams();
-            params.addRule(RelativeLayout.END_OF, R.id.imageView);
-            mInput.setLayoutParams(params);
-        }
-
         if (requestCode == 3 && resultCode == RESULT_OK) {
 
             Log.i(TAG, "onActivityResult() -> Camera");
@@ -2265,9 +2182,6 @@ public class Chat extends Fragment implements
             needLoadingIcon = true;
 
             fileIsImage = true;
-
-            // For use in uploadImage().
-            URIisFile = false;
 
             // Change textView to be to the right of imageView.
             RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams) mInput.getLayoutParams();
@@ -2304,196 +2218,6 @@ public class Chat extends Fragment implements
             fileIsImage = false;
 
             new videoCompressAndAddToGalleryAsyncTask(this).execute(video.getAbsolutePath(), video.getParent());
-        }
-    }
-
-    private String getExtension(Uri uri) {
-
-        Log.i(TAG, "getExtension()");
-
-        ContentResolver cr = mActivity.getContentResolver();
-        MimeTypeMap mimeTypeMap = MimeTypeMap.getSingleton();
-        return mimeTypeMap.getExtensionFromMimeType(cr.getType(uri));
-    }
-
-    private static class gifAsyncTask extends AsyncTask<String, String, String> {
-
-        private WeakReference<Chat> activityWeakRef;
-
-        private gifAsyncTask(Chat activity) {
-
-            activityWeakRef = new WeakReference<>(activity);
-        }
-
-        @Override
-        protected void onPreExecute() {
-
-            super.onPreExecute();
-
-            Chat activity = activityWeakRef.get();
-            if (activity == null || activity.isRemoving()) return;
-
-            // Show the loading icon while the image is being compressed.
-            if (activity.loadingIcon != null) {
-
-                activity.loadingIcon.setVisibility(View.VISIBLE);
-            }
-        }
-
-        @Override
-        protected String doInBackground(String... paths) {
-
-            return "2";
-        }
-
-        @Override
-        protected void onPostExecute(String meaninglessString) {
-
-            super.onPostExecute(meaninglessString);
-
-            Chat activity = activityWeakRef.get();
-            if (activity == null || activity.isRemoving()) return;
-
-            Glide.with(activity)
-                    .load(activity.imageURI)
-                    .apply(new RequestOptions().override(640, 5000).placeholder(R.drawable.ic_recyclerview_image_placeholder))
-                    .into(activity.imageView);
-
-            activity.imageView.setVisibility(View.VISIBLE);
-            if (activity.loadingIcon != null) {
-
-                activity.loadingIcon.setVisibility(View.INVISIBLE);
-            }
-            // Allow initChatAdapter() to get rid of the loadingIcon with this boolean.
-            activity.needLoadingIcon = false;
-        }
-    }
-
-    private static class imageCompressAsyncTask extends AsyncTask<String, String, String> {
-
-        private WeakReference<Chat> activityWeakRef;
-
-        private imageCompressAsyncTask(Chat activity) {
-
-            activityWeakRef = new WeakReference<>(activity);
-        }
-
-        @Override
-        protected void onPreExecute() {
-
-            super.onPreExecute();
-
-            Chat activity = activityWeakRef.get();
-            if (activity == null || activity.isRemoving()) return;
-
-            // Show the loading icon while the image is being compressed.
-            if (activity.loadingIcon != null) {
-
-                activity.loadingIcon.setVisibility(View.VISIBLE);
-            }
-        }
-
-        @Override
-        protected String doInBackground(String... paths) {
-
-            Chat activity = activityWeakRef.get();
-            if (activity == null || activity.isRemoving()) return "2";
-
-            Uri mImageURI = Uri.parse(paths[0]);
-            int rotation = 0;
-
-            InputStream imageStream0 = null;
-            InputStream imageStream1;
-            try {
-
-                if (activity.getContext() != null) {
-                    // Create 2 inputStreams - imageStream0 to decode into a bitmap and imageStream1 to find the necessary rotation.
-                    imageStream0 = activity.getContext().getContentResolver().openInputStream(mImageURI);
-
-                    imageStream1 = activity.getContext().getContentResolver().openInputStream(mImageURI);
-                    if (imageStream1 != null) {
-
-                        ExifInterface exifInterface = new ExifInterface(imageStream1);
-                        int orientation = exifInterface.getAttributeInt(
-                                ExifInterface.TAG_ORIENTATION,
-                                ExifInterface.ORIENTATION_NORMAL);
-                        switch (orientation) {
-                            case ExifInterface.ORIENTATION_ROTATE_90:
-                                rotation = 90;
-                                imageStream1.close();
-                                break;
-                            case ExifInterface.ORIENTATION_ROTATE_180:
-                                rotation = 180;
-                                imageStream1.close();
-                                break;
-                            case ExifInterface.ORIENTATION_ROTATE_270:
-                                rotation = 270;
-                                imageStream1.close();
-                                break;
-                        }
-                    }
-                }
-            } catch (FileNotFoundException ex) {
-
-                ex.printStackTrace();
-                activity.toastMessageLong(ex.getMessage());
-            } catch (IOException e) {
-
-                e.printStackTrace();
-            }
-
-            Bitmap bmp = BitmapFactory.decodeStream(imageStream0);
-            Matrix matrix = new Matrix();
-            matrix.postRotate(rotation);
-            Bitmap rotatedBitmap = Bitmap.createBitmap(bmp, 0, 0, bmp.getWidth(), bmp.getHeight(), matrix, false);
-
-            ByteArrayOutputStream stream = new ByteArrayOutputStream();
-            rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, 50, stream);
-
-            activity.byteArray = stream.toByteArray();
-            bmp.recycle();
-            rotatedBitmap.recycle();
-            try {
-
-                stream.close();
-            } catch (IOException ex) {
-
-                ex.printStackTrace();
-                activity.toastMessageLong(ex.getMessage());
-            }
-
-            if (imageStream0 != null) {
-
-                try {
-                    imageStream0.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            return "2";
-        }
-
-        @Override
-        protected void onPostExecute(String meaninglessString) {
-
-            super.onPostExecute(meaninglessString);
-
-            Chat activity = activityWeakRef.get();
-            if (activity == null || activity.isRemoving()) return;
-
-            Glide.with(activity)
-                    .load(activity.byteArray)
-                    .apply(new RequestOptions().override(480, 5000).placeholder(R.drawable.ic_recyclerview_image_placeholder))
-                    .into(activity.imageView);
-
-            activity.imageView.setVisibility(View.VISIBLE);
-            if (activity.loadingIcon != null) {
-
-                activity.loadingIcon.setVisibility(View.INVISIBLE);
-            }
-            // Allow initChatAdapter() to get rid of the loadingIcon with this boolean.
-            activity.needLoadingIcon = false;
         }
     }
 
@@ -2767,164 +2491,7 @@ public class Chat extends Fragment implements
         // Show the loading icon while the image is being uploaded to Firebase.
         loadingIcon.setVisibility(View.VISIBLE);
 
-        if (URIisFile && fileIsImage) {
-
-            // File and image.
-            final StorageReference storageReferenceImage = FirebaseStorage.getInstance().getReference("Images").child(String.valueOf(System.currentTimeMillis()));
-            uploadTask = storageReferenceImage.putFile(imageURI);
-
-            storageReferenceImage.putFile(imageURI).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
-
-                @Override
-                public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
-
-                    storageReferenceImage.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
-
-                        @Override
-                        public void onSuccess(Uri uri) {
-
-                            Log.i(TAG, "uploadImage() -> onSuccess");
-
-                            if (newShape) {
-
-                                if (shapeIsCircle) {
-
-                                    // Since the uuid doesn't already exist in Firebase, add the circle.
-                                    CircleOptions circleOptions = new CircleOptions()
-                                            .center(new LatLng(circleLatitude, circleLongitude))
-                                            .clickable(true)
-                                            .radius(radius);
-                                    CircleInformation circleInformation = new CircleInformation();
-                                    circleInformation.setCircleOptions(circleOptions);
-                                    circleInformation.setShapeUUID(shapeUUID);
-                                    DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("Circles").push();
-                                    newFirebaseCircle.setValue(circleInformation);
-                                } else {
-
-                                    PolygonOptions polygonOptions = null;
-                                    // Since the uuid doesn't already exist in Firebase, add the circle.
-                                    if (threeMarkers) {
-
-                                        polygonOptions = new PolygonOptions()
-                                                .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude))
-                                                .clickable(true);
-                                    }
-
-                                    if (fourMarkers) {
-
-                                        polygonOptions = new PolygonOptions()
-                                                .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude))
-                                                .clickable(true);
-                                    }
-
-                                    if (fiveMarkers) {
-
-                                        polygonOptions = new PolygonOptions()
-                                                .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude))
-                                                .clickable(true);
-                                    }
-
-                                    if (sixMarkers) {
-
-                                        polygonOptions = new PolygonOptions()
-                                                .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude))
-                                                .clickable(true);
-                                    }
-
-                                    if (sevenMarkers) {
-
-                                        polygonOptions = new PolygonOptions()
-                                                .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude), new LatLng(marker6Latitude, marker6Longitude))
-                                                .clickable(true);
-                                    }
-
-                                    if (eightMarkers) {
-
-                                        polygonOptions = new PolygonOptions()
-                                                .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude), new LatLng(marker6Latitude, marker6Longitude), new LatLng(marker7Latitude, marker7Longitude))
-                                                .clickable(true);
-                                    }
-
-                                    PolygonInformation polygonInformation = new PolygonInformation();
-                                    polygonInformation.setPolygonOptions(polygonOptions);
-                                    polygonInformation.setArea(polygonArea);
-                                    polygonInformation.setShapeUUID(shapeUUID);
-                                    DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("Polygons").push();
-                                    newFirebasePolygon.setValue(polygonInformation);
-                                }
-
-                                newShape = false;
-                            }
-
-                            // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter()).
-                            messageSent = true;
-
-                            MessageInformation messageInformation = new MessageInformation();
-                            messageInformation.setImageURL(uri.toString());
-                            if (mInput.getText().toString().trim().length() != 0) {
-
-                                messageInformation.setMessage(mInput.getText().toString());
-                            }
-                            // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                            // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                            Object date = ServerValue.TIMESTAMP;
-                            messageInformation.setDate(date);
-                            String userUUID = UUID.randomUUID().toString();
-                            messageInformation.setUserUUID(userUUID);
-                            messageInformation.setPosition(mUser.size());
-                            // If user has a Google account, get email one way. Else, get email another way.
-                            GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
-                            String email;
-                            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-                            if (acct != null) {
-                                email = acct.getEmail();
-                            } else {
-                                email = sharedPreferences.getString("userToken", "null");
-                            }
-                            messageInformation.setEmail(email);
-                            messageInformation.setShapeUUID(shapeUUID);
-                            // Get the token assigned by Firebase when the user signed up / signed in.
-                            String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
-                            messageInformation.setToken(token);
-                            if (removedMentionDuplicates.isEmpty()) {
-                                messageInformation.setSeenByUser(true);
-                            } else {
-                                messageInformation.setRemovedMentionDuplicates(removedMentionDuplicates);
-                                messageInformation.setSeenByUser(false);
-                            }
-                            messageInformation.setUserIsWithinShape(userIsWithinShape);
-                            messageInformation.setShapeIsCircle(shapeIsCircle);
-                            DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
-                            newMessage.setValue(messageInformation);
-
-                            mInput.getText().clear();
-                            if (removedMentionDuplicates != null) {
-                                removedMentionDuplicates.clear();
-                            }
-                            imageView.setVisibility(View.GONE);
-                            imageView.setImageDrawable(null);
-                            if (image != null) {
-
-                                deleteDirectory(image);
-                            }
-                            sendButtonClicked = false;
-                            loadingIcon.setVisibility(View.GONE);
-                        }
-                    });
-                }
-            })
-                    .addOnFailureListener(new OnFailureListener() {
-
-                        @Override
-                        public void onFailure(@NonNull Exception ex) {
-
-                            // Handle unsuccessful uploads
-                            loadingIcon.setVisibility(View.GONE);
-                            toastMessageLong(ex.getMessage());
-                            Log.e(TAG, "firebaseUpload() -> URIisFile && fileIsImage -> onFailure -> " + ex.getMessage());
-                        }
-                    });
-        } else if (!fileIsImage) {
+        if (!fileIsImage) {
 
             // Video.
             final StorageReference storageReferenceVideo = FirebaseStorage.getInstance().getReference("Video").child(String.valueOf(System.currentTimeMillis()));
@@ -3059,7 +2626,7 @@ public class Chat extends Fragment implements
                                 removedMentionDuplicates.clear();
                             }
                             videoImageView.setVisibility(View.GONE);
-                            imageView.setImageDrawable(null);
+                            videoImageView.setImageDrawable(null);
                             if (video != null) {
 
                                 deleteDirectory(video);

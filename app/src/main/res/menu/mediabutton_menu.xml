@@ -1,9 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <item android:id="@+id/browseGallery"
-        android:title="@string/browse_gallery"/>
-
     <item android:id="@+id/takePhoto"
         android:title="@string/take_photo"/>
 
