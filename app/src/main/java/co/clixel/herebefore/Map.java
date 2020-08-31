@@ -120,7 +120,7 @@ public class Map extends FragmentActivity implements
     private Query query;
     private static DataSnapshot mSnapshotCircles, mSnapshotPolygons;
 
-    // If a mention doesn't exist (because it was manually deleted), delete it. Also change "position" in database and update onChildChanged() (or get rid of "position" entirely?). Also, use more specific children so every Chat is not called.
+    // If a mention doesn't exist (because it was manually deleted), update onChildChanged() and recyclerView to show a "removed" message. Also change "position" in database and update onChildChanged() (or get rid of "position" entirely?).
     // Only download shapes in Map when necessary to cut down on database usage. Also, 10,000 shapes causes the map to get very laggy. Then make situations where Firebase circles are added to the map and then polygons are added (like in chatViews) async.
     // Don't get new snapShots every time map loads? - problem: new shapes that the user adds to Firebase in chat will not load.
     // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.
@@ -3453,7 +3453,6 @@ public class Map extends FragmentActivity implements
                         if (newCircle.getRadius() < 1) {
 
                             toastMessageLong("Please make the shape larger");
-
                             return false;
                         }
 
@@ -3597,6 +3596,185 @@ public class Map extends FragmentActivity implements
                 if (chatSelectorSeekBar.getVisibility() == View.VISIBLE && (polygon.getTag() != selectedOverlappingShapeUUID)) {
 
                     Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> Selected polygon is not a polygonTemp. Returning");
+
+                    if (circleTemp != null) {
+
+                        circleTemp.remove();
+                    }
+
+                    if (polygonTemp != null) {
+
+                        polygonTemp.remove();
+                    }
+
+                    selectingShape = false;
+
+                    // Change the circle color depending on the map type.
+                    if (mMap.getMapType() == 2 || mMap.getMapType() == 4) {
+
+                        for (int i = 0; i < overlappingShapesCircleLocation.size(); i++) {
+
+                            Circle circle0 = mMap.addCircle(
+                                    new CircleOptions()
+                                            .center(overlappingShapesCircleLocation.get(i))
+                                            .clickable(true)
+                                            .radius(overlappingShapesCircleRadius.get(i))
+                                            .strokeColor(Color.rgb(255, 255, 0))
+                                            .strokeWidth(3f)
+                                            .zIndex(0)
+                            );
+
+                            circle0.setTag(overlappingShapesCircleUUID.get(i));
+                        }
+
+                        for (int i = 0; i < overlappingShapesPolygonVertices.size(); i++) {
+
+                            Polygon polygon0 = mMap.addPolygon(
+                                    new PolygonOptions()
+                                            .clickable(true)
+                                            .addAll(overlappingShapesPolygonVertices.get(i))
+                                            .strokeColor(Color.rgb(255, 255, 0))
+                                            .strokeWidth(3f)
+                                            .zIndex(0)
+                            );
+
+                            polygon0.setTag(overlappingShapesPolygonUUID.get(i));
+                        }
+                    } else {
+
+                        for (int i = 0; i < overlappingShapesCircleLocation.size(); i++) {
+
+                            Circle circle0 = mMap.addCircle(
+                                    new CircleOptions()
+                                            .center(overlappingShapesCircleLocation.get(i))
+                                            .clickable(true)
+                                            .radius(overlappingShapesCircleRadius.get(i))
+                                            .strokeColor(Color.rgb(255, 0, 255))
+                                            .strokeWidth(3f)
+                                            .zIndex(0)
+                            );
+
+                            circle0.setTag(overlappingShapesCircleUUID.get(i));
+                        }
+
+                        for (int i = 0; i < overlappingShapesPolygonVertices.size(); i++) {
+
+                            Polygon polygon0 = mMap.addPolygon(
+                                    new PolygonOptions()
+                                            .clickable(true)
+                                            .addAll(overlappingShapesPolygonVertices.get(i))
+                                            .strokeColor(Color.rgb(255, 0, 255))
+                                            .strokeWidth(3f)
+                                            .zIndex(0)
+                            );
+
+                            polygon0.setTag(overlappingShapesPolygonUUID.get(i));
+                        }
+                    }
+
+                    overlappingShapesUUID = new ArrayList<>();
+                    overlappingShapesCircleUUID = new ArrayList<>();
+                    overlappingShapesPolygonUUID = new ArrayList<>();
+                    overlappingShapesCircleLocation = new ArrayList<>();
+                    overlappingShapesCircleRadius = new ArrayList<>();
+                    overlappingShapesPolygonVertices = new ArrayList<>();
+
+                    chatSelectorSeekBar.setVisibility(View.INVISIBLE);
+                    chatSizeSeekBar.setVisibility(View.VISIBLE);
+                    chatSizeSeekBar.setProgress(0);
+                    chatSelectorSeekBar.setProgress(0);
+
+                    chatsSize = 0;
+
+                    // Get rid of new shapes if the user clicks away from them.
+                    if (newCircle != null) {
+
+                        newCircle.remove();
+
+                        if (marker0 != null) {
+
+                            marker0.remove();
+                        }
+
+                        if (marker1 != null) {
+
+                            marker1.remove();
+                        }
+
+                        newCircle = null;
+                        marker0 = null;
+                        marker1 = null;
+                        marker0Position = null;
+                        marker1Position = null;
+                        marker0ID = null;
+                        marker1ID = null;
+
+                        chatSizeSeekBar.setProgress(0);
+                        relativeAngle = 0.0;
+                        usedSeekBar = false;
+                    }
+
+                    if (newPolygon != null) {
+
+                        newPolygon.remove();
+                        marker0.remove();
+                        marker1.remove();
+                        marker2.remove();
+                        newPolygon = null;
+                        marker0 = null;
+                        marker1 = null;
+                        marker2 = null;
+                        marker0Position = null;
+                        marker1Position = null;
+                        marker2Position = null;
+                        marker0ID = null;
+                        marker1ID = null;
+                        marker2ID = null;
+
+                        if (marker3 != null) {
+
+                            marker3.remove();
+                            marker3 = null;
+                            marker3Position = null;
+                            marker3ID = null;
+                        }
+
+                        if (marker4 != null) {
+
+                            marker4.remove();
+                            marker4 = null;
+                            marker4Position = null;
+                            marker4ID = null;
+                        }
+
+                        if (marker5 != null) {
+
+                            marker5.remove();
+                            marker5 = null;
+                            marker5Position = null;
+                            marker5ID = null;
+                        }
+
+                        if (marker6 != null) {
+
+                            marker6.remove();
+                            marker6 = null;
+                            marker6Position = null;
+                            marker6ID = null;
+                        }
+
+                        if (marker7 != null) {
+
+                            marker7.remove();
+                            marker7 = null;
+                            marker7Position = null;
+                            marker7ID = null;
+                        }
+
+                        chatSizeSeekBar.setProgress(0);
+                        usedSeekBar = false;
+                    }
+
                     return;
                 }
 
@@ -3621,7 +3799,6 @@ public class Map extends FragmentActivity implements
                     if (SphericalUtil.computeArea(polygonPointsList) < Math.PI) {
 
                         toastMessageLong("Please make the shape larger");
-
                         return;
                     }
 
@@ -3754,10 +3931,7 @@ public class Map extends FragmentActivity implements
                         mMap.getUiSettings().setScrollGesturesEnabled(false);
                     }
 
-                    if (loadingIcon.getVisibility() != View.VISIBLE) {
-
-                        loadingIcon.setVisibility(View.VISIBLE);
-                    }
+                    loadingIcon.setVisibility(View.VISIBLE);
 
                     // Drop the z-index to metaphorically check it off the "to click" list.
                     polygon.setZIndex(-1);
@@ -4391,10 +4565,7 @@ public class Map extends FragmentActivity implements
                         mMap.getUiSettings().setScrollGesturesEnabled(false);
                     }
 
-                    if (loadingIcon.getVisibility() != View.VISIBLE) {
-
-                        loadingIcon.setVisibility(View.VISIBLE);
-                    }
+                    loadingIcon.setVisibility(View.VISIBLE);
 
                     // Drop the z-index to metaphorically check it off the "to click" list.
                     circle.setZIndex(-1);

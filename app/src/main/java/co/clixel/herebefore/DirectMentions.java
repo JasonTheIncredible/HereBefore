@@ -213,7 +213,7 @@ public class DirectMentions extends Fragment {
 
                 if (ds.child("removedMentionDuplicates").getValue() == null && !ds.child("email").getValue().equals(email)) {
 
-                    return;
+                    continue;
                 }
             }
 
@@ -626,8 +626,9 @@ public class DirectMentions extends Fragment {
 
                                                         Intent Activity = new Intent(mContext, Navigation.class);
                                                         Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
-                                                        Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
+                                                        Activity.putExtra("directMentionsPosition", mMessageUser.get(getAdapterPosition()) + mMessageText.get(getAdapterPosition()));
                                                         Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                                        Activity.putExtra("shapeIsCircle", true);
 
                                                         loadingIcon.setVisibility(View.GONE);
 
@@ -811,6 +812,7 @@ public class DirectMentions extends Fragment {
                                                     Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
                                                     Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
                                                     Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                                    Activity.putExtra("shapeIsCircle", false);
 
                                                     loadingIcon.setVisibility(View.GONE);
 
