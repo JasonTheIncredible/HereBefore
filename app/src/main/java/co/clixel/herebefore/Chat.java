@@ -130,7 +130,7 @@ public class Chat extends Fragment implements
             newShape, threeMarkers, fourMarkers, fiveMarkers, sixMarkers, sevenMarkers, eightMarkers, shapeIsCircle;
     private Boolean userIsWithinShape;
     private View.OnLayoutChangeListener onLayoutChangeListener;
-    private String shapeUUID;
+    private String shapeUUID, reportedUser;
     private Double polygonArea, circleLatitude, circleLongitude, radius,
             marker0Latitude, marker0Longitude, marker1Latitude, marker1Longitude, marker2Latitude, marker2Longitude, marker3Latitude, marker3Longitude, marker4Latitude, marker4Longitude, marker5Latitude, marker5Longitude, marker6Latitude, marker6Longitude, marker7Latitude, marker7Longitude;
     private PopupMenu mediaButtonMenu;
@@ -1071,7 +1071,7 @@ public class Chat extends Fragment implements
             FrameLayout videoFrameInside, videoFrameOutside;
             RelativeLayout messageItem;
 
-            ViewHolder(@NonNull View itemView) {
+            ViewHolder(@NonNull final View itemView) {
 
                 super(itemView);
                 messageTimeInside = itemView.findViewById(R.id.messageTimeInside);
@@ -1095,7 +1095,9 @@ public class Chat extends Fragment implements
                     @Override
                     public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
 
-                        menu.add(getAdapterPosition(), R.string.report_post, 0, R.string.report_post);
+                        // Get a unique identifier (the user's name) to search for in Firebase.
+                        reportedUser = mMessageUser.get(getAdapterPosition());
+                        menu.add(0, R.string.report_post, 0, R.string.report_post);
                     }
                 });
 
@@ -1618,13 +1620,39 @@ public class Chat extends Fragment implements
 
             loadingIcon.setVisibility(View.VISIBLE);
 
-            ReportPostInformation reportPost = new ReportPostInformation();
-            reportPost.setUUID(shapeUUID);
-            reportPost.setPosition(item.getGroupId());
-            DatabaseReference newReportedPost = FirebaseDatabase.getInstance().getReference().child("Reported_Post").push();
-            newReportedPost.setValue(reportPost);
-            loadingIcon.setVisibility(View.GONE);
-            toastMessageShort("Post reported. Thank you!");
+            DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
+            DatabaseReference firebaseMessages = rootRef.child("MessageThreads");
+            firebaseMessages.addListenerForSingleValueEvent(new ValueEventListener() {
+
+                @Override
+                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                    for (DataSnapshot ds : dataSnapshot.getChildren()) {
+
+                        String userUUID = (String) ds.child("userUUID").getValue();
+                        if (userUUID != null) {
+
+                            if (userUUID.equals(reportedUser)) {
+
+                                String pushId = ds.getKey();
+                                ReportPostInformation reportPost = new ReportPostInformation();
+                                reportPost.setPushId(pushId);
+                                DatabaseReference newReportedPost = FirebaseDatabase.getInstance().getReference().child("ReportedPost").push();
+                                newReportedPost.setValue(reportPost);
+                                loadingIcon.setVisibility(View.GONE);
+                                toastMessageShort("Post reported. Thank you!");
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                    toastMessageLong(databaseError.getMessage());
+                }
+            });
         }
 
         return super.onContextItemSelected(item);

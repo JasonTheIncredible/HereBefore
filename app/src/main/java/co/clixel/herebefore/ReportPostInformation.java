@@ -3,17 +3,12 @@ package co.clixel.herebefore;
 // Getters and setters for chatCircles.
 public class ReportPostInformation {
 
-    public String uuid;
-    public int position;
+    public String pushId;
 
     ReportPostInformation() {
     }
 
-    void setUUID(String uuid) {
-        this.uuid = uuid;
-    }
-
-    void setPosition(int position) {
-        this.position = position;
+    void setPushId(String pushId) {
+        this.pushId = pushId;
     }
 }

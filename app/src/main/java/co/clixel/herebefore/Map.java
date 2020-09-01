@@ -120,8 +120,8 @@ public class Map extends FragmentActivity implements
     private Query query;
     private static DataSnapshot mSnapshotCircles, mSnapshotPolygons;
 
-    // If a mention doesn't exist (because it was manually deleted), update onChildChanged() and recyclerView to show a "removed" message. Also change "position" in database and update onChildChanged() (or get rid of "position" entirely?).
-    // Only download shapes in Map when necessary to cut down on database usage. Also, 10,000 shapes causes the map to get very laggy. Then make situations where Firebase circles are added to the map and then polygons are added (like in chatViews) async.
+    // Only download shapes in Map when necessary to cut down on database usage. Also, 10,000 shapes causes the map to get very laggy.
+    // Make situations where Firebase circles are added to the map and then polygons are added (like in chatViews) async.
     // Don't get new snapShots every time map loads? - problem: new shapes that the user adds to Firebase in chat will not load.
     // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.
     // Further cut down on Firebase listeners - find a way to add to a previous snapshot in Map, then carry that up-to-date snapshot into Chat and DirectMentions.
@@ -135,6 +135,7 @@ public class Map extends FragmentActivity implements
     // Check warning messages.
     // Make sure the secret stuff is secret.
 
+    // Find way to add to existing snapShot. This will cut down on usage in Chat and DirectMentions.
     // Create a "general chat" where everyone can chat anonymously, maybe with more specific location rooms too.
     //// Add ability to add images and video to general chat and Chat from gallery. Distinguish them from media added from location. Github 8/29.
     // Add preference for shape color.
@@ -527,7 +528,7 @@ public class Map extends FragmentActivity implements
 
                                 // The following 3 boolean will determine when the loading icon will disappear. It should only disappear once the camera is adjusted and all shapes are loaded.
                                 stillUpdatingCamera = false;
-                                break;
+                                return;
                             }
 
                             i++;
@@ -573,7 +574,7 @@ public class Map extends FragmentActivity implements
 
                                         // The following 3 boolean will determine when the loading icon will disappear. It should only disappear once the camera is adjusted and all shapes are loaded.
                                         stillUpdatingCamera = false;
-                                        break;
+                                        return;
                                     }
 
                                     i++;
@@ -631,7 +632,7 @@ public class Map extends FragmentActivity implements
 
                                     // The following 3 boolean will determine when the loading icon will disappear. It should only disappear once the camera is adjusted and all shapes are loaded.
                                     stillUpdatingCamera = false;
-                                    break;
+                                    return;
                                 } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
                                     CameraPosition cameraPosition = new CameraPosition.Builder()
                                             .target(marker6Position)      // Sets the center of the map to user's location
@@ -649,7 +650,7 @@ public class Map extends FragmentActivity implements
 
                                     // The following 3 boolean will determine when the loading icon will disappear. It should only disappear once the camera is adjusted and all shapes are loaded.
                                     stillUpdatingCamera = false;
-                                    break;
+                                    return;
                                 } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
                                     CameraPosition cameraPosition = new CameraPosition.Builder()
                                             .target(marker5Position)      // Sets the center of the map to user's location
@@ -667,7 +668,7 @@ public class Map extends FragmentActivity implements
 
                                     // The following 3 boolean will determine when the loading icon will disappear. It should only disappear once the camera is adjusted and all shapes are loaded.
                                     stillUpdatingCamera = false;
-                                    break;
+                                    return;
                                 } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
                                     CameraPosition cameraPosition = new CameraPosition.Builder()
                                             .target(marker4Position)      // Sets the center of the map to user's location
@@ -685,7 +686,7 @@ public class Map extends FragmentActivity implements
 
                                     // The following 3 boolean will determine when the loading icon will disappear. It should only disappear once the camera is adjusted and all shapes are loaded.
                                     stillUpdatingCamera = false;
-                                    break;
+                                    return;
                                 } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
                                     CameraPosition cameraPosition = new CameraPosition.Builder()
                                             .target(marker3Position)      // Sets the center of the map to user's location
@@ -703,7 +704,7 @@ public class Map extends FragmentActivity implements
 
                                     // The following 3 boolean will determine when the loading icon will disappear. It should only disappear once the camera is adjusted and all shapes are loaded.
                                     stillUpdatingCamera = false;
-                                    break;
+                                    return;
                                 } else {
                                     CameraPosition cameraPosition = new CameraPosition.Builder()
                                             .target(marker2Position)      // Sets the center of the map to user's location
@@ -721,7 +722,7 @@ public class Map extends FragmentActivity implements
 
                                     // The following 3 boolean will determine when the loading icon will disappear. It should only disappear once the camera is adjusted and all shapes are loaded.
                                     stillUpdatingCamera = false;
-                                    break;
+                                    return;
                                 }
                             }
 
@@ -2548,7 +2549,7 @@ public class Map extends FragmentActivity implements
 
                 if (ds.child("removedMentionDuplicates").getValue() == null && !ds.child("email").getValue().equals(email)) {
 
-                    return;
+                    continue;
                 }
             }
 
@@ -2609,6 +2610,15 @@ public class Map extends FragmentActivity implements
 
                     addQueryPartTwo(snapshot);
                     return;
+                }
+
+                // Only add necessary items to arrayLists.
+                if (snapshot.child("email").getValue() != null) {
+
+                    if (snapshot.child("removedMentionDuplicates").getValue() == null && !snapshot.child("email").getValue().equals(email)) {
+
+                        return;
+                    }
                 }
 
                 userUUIDAL.add((String) snapshot.child("userUUID").getValue());
