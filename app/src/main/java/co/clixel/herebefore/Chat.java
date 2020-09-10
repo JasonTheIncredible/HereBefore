@@ -127,7 +127,7 @@ public class Chat extends Fragment implements
     private ChildEventListener childEventListener;
     private FloatingActionButton sendButton, mediaButton;
     private boolean firstLoad, needLoadingIcon = false, reachedEndOfRecyclerView = false, recyclerViewHasScrolled = false, messageSent = false, sendButtonClicked = false, mediaButtonMenuIsOpen, fileIsImage, checkPermissionsPicture,
-            newShape, threeMarkers, fourMarkers, fiveMarkers, sixMarkers, sevenMarkers, eightMarkers, shapeIsCircle;
+            newShape, threeMarkers, fourMarkers, fiveMarkers, sixMarkers, sevenMarkers, eightMarkers;
     private Boolean userIsWithinShape;
     private View.OnLayoutChangeListener onLayoutChangeListener;
     private String shapeUUID, reportedUser;
@@ -186,7 +186,6 @@ public class Chat extends Fragment implements
                 circleLongitude = extras.getDouble("circleLongitude");
                 radius = extras.getDouble("radius");
                 // Most of these will be null if the polygon does not have eight markers, or if the polygon is not new.
-                shapeIsCircle = extras.getBoolean("shapeIsCircle");
                 polygonArea = extras.getDouble("polygonArea");
                 threeMarkers = extras.getBoolean("threeMarkers");
                 fourMarkers = extras.getBoolean("fourMarkers");
@@ -533,22 +532,25 @@ public class Chat extends Fragment implements
                     // Check Boolean value from onStart();
                     if (newShape) {
 
-                        if (shapeIsCircle) {
+                        if (imageView.getVisibility() != View.GONE || videoImageView.getVisibility() != View.GONE) {
 
-                            if (imageView.getVisibility() != View.GONE || videoImageView.getVisibility() != View.GONE) {
+                            // Upload the image to Firebase if it exists and is not already in the process of sending an image.
+                            if (uploadTask != null && uploadTask.isInProgress()) {
 
-                                // Upload the image to Firebase if it exists and is not already in the process of sending an image.
-                                if (uploadTask != null && uploadTask.isInProgress()) {
-
-                                    toastMessageShort("Upload in progress");
-                                } else {
-
-                                    firebaseUpload();
-                                }
+                                toastMessageShort("Upload in progress");
                             } else {
 
-                                // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter()).
-                                messageSent = true;
+                                firebaseUpload();
+                            }
+                        } else {
+
+                            // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter()).
+                            messageSent = true;
+
+                            DatabaseReference newFirebaseShape = null;
+                            if (radius != null) {
+
+                                // Shape is a circle.
 
                                 // Since the uuid doesn't already exist in Firebase, add the circle.
                                 CircleOptions circleOptions = new CircleOptions()
@@ -558,64 +560,41 @@ public class Chat extends Fragment implements
                                 CircleInformation circleInformation = new CircleInformation();
                                 circleInformation.setCircleOptions(circleOptions);
                                 circleInformation.setShapeUUID(shapeUUID);
-                                DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("Circles").push();
-                                newFirebaseCircle.setValue(circleInformation);
+                                // Get a value with 1 decimal point and use it for Firebase.
+                                double precisionLat = Math.pow(10, 1);
+                                // Can't create a firebase path with '.', so get rid of decimal.
+                                double latPushValueTemp = (int) (precisionLat * circleLatitude) / precisionLat;
+                                latPushValueTemp *= 10;
+                                int latPushValue = (int) latPushValueTemp;
+                                double precisionLon = Math.pow(10, 1);
+                                // Can't create a firebase path with '.', so get rid of decimal.
+                                double lonPushValueTemp = (int) (precisionLon * circleLongitude) / precisionLon;
+                                lonPushValueTemp *= 10;
+                                int lonPushValue = (int) lonPushValueTemp;
 
-                                MessageInformation messageInformation = new MessageInformation();
-                                messageInformation.setMessage(input);
-                                // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                                // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                                Object date = ServerValue.TIMESTAMP;
-                                messageInformation.setDate(date);
-                                String userUUID = UUID.randomUUID().toString();
-                                messageInformation.setUserUUID(userUUID);
-                                messageInformation.setPosition(mUser.size());
-                                // If user has a Google account, get email one way. Else, get email another way.
-                                GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
-                                String email;
-                                SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-                                if (acct != null) {
-                                    email = acct.getEmail();
-                                } else {
-                                    email = sharedPreferences.getString("userToken", "null");
+                                if (radius == 1) {
+
+                                    newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latPushValue + ", " + lonPushValue + ")").child("Point").push();
+                                } else if (1 < radius && radius <= 10) {
+
+                                    newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latPushValue + ", " + lonPushValue + ")").child("Small").push();
+                                } else if (10 < radius && radius <= 50) {
+
+                                    newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latPushValue + ", " + lonPushValue + ")").child("Medium").push();
+                                } else if (50 < radius) {
+
+                                    newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latPushValue + ", " + lonPushValue + ")").child("Large").push();
                                 }
-                                messageInformation.setEmail(email);
-                                messageInformation.setShapeUUID(shapeUUID);
-                                messageInformation.setPosition(mUser.size());
-                                // Get the token assigned by Firebase when the user signed up / signed in.
-                                String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
-                                messageInformation.setToken(token);
-                                messageInformation.setUserIsWithinShape(userIsWithinShape);
-                                messageInformation.setShapeIsCircle(shapeIsCircle);
-                                DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
-                                newMessage.setValue(messageInformation);
 
-                                mInput.getText().clear();
-                                newShape = false;
-                                sendButtonClicked = false;
-                            }
-                        } else {
+                                if (newFirebaseShape != null) {
 
-                            // Shape is not a circle.
-
-                            if (imageView.getVisibility() != View.GONE || videoImageView.getVisibility() != View.GONE) {
-
-                                // Upload the image to Firebase if it exists and is not already in the process of sending an image.
-                                if (uploadTask != null && uploadTask.isInProgress()) {
-
-                                    toastMessageShort("Upload in progress");
-
-                                    sendButtonClicked = false;
-                                } else {
-
-                                    firebaseUpload();
+                                    newFirebaseShape.setValue(circleInformation);
                                 }
-                            } else {
+                            } else if (polygonArea != null) {
+
+                                // Shape is a polygon.
 
                                 PolygonOptions polygonOptions = null;
-
-                                // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter()).
-                                messageSent = true;
 
                                 // Since the uuid doesn't already exist in Firebase, add the circle.
                                 if (threeMarkers) {
@@ -664,41 +643,72 @@ public class Chat extends Fragment implements
                                 polygonInformation.setPolygonOptions(polygonOptions);
                                 polygonInformation.setArea(polygonArea);
                                 polygonInformation.setShapeUUID(shapeUUID);
-                                DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("Polygons").push();
-                                newFirebasePolygon.setValue(polygonInformation);
 
-                                MessageInformation messageInformation = new MessageInformation();
-                                messageInformation.setMessage(input);
-                                // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                                // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                                Object date = ServerValue.TIMESTAMP;
-                                messageInformation.setDate(date);
-                                String userUUID = UUID.randomUUID().toString();
-                                messageInformation.setUserUUID(userUUID);
-                                messageInformation.setPosition(mUser.size());
-                                // If user has a Google account, get email one way. Else, get email another way.
-                                GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
-                                String email;
-                                SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-                                if (acct != null) {
-                                    email = acct.getEmail();
-                                } else {
-                                    email = sharedPreferences.getString("userToken", "null");
+                                // Get a value with 1 decimal point and use it for Firebase.
+                                double precisionLat = Math.pow(10, 1);
+                                // Can't create a firebase path with '.', so get rid of decimal.
+                                double latPushValueTemp = ((int) precisionLat * marker0Latitude) / precisionLat;
+                                latPushValueTemp *= 10;
+                                int latPushValue = (int) latPushValueTemp;
+                                double precisionLon = Math.pow(10, 1);
+                                // Can't create a firebase path with '.', so get rid of decimal.
+                                double lonPushValueTemp = ((int) precisionLon * marker0Longitude) / precisionLon;
+                                lonPushValueTemp *= 10;
+                                int lonPushValue = (int) lonPushValueTemp;
+
+                                if (polygonArea <= Math.PI * (Math.pow(10, 2))) {
+
+                                    newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latPushValue + ", " + lonPushValue + ")").child("Small").push();
+                                } else if (Math.PI * (Math.pow(10, 2)) < polygonArea && polygonArea <= Math.PI * (Math.pow(50, 2))) {
+
+                                    newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latPushValue + ", " + lonPushValue + ")").child("Medium").push();
+                                } else if (Math.PI * (Math.pow(50, 2)) < polygonArea) {
+
+                                    newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latPushValue + ", " + lonPushValue + ")").child("Large").push();
                                 }
-                                messageInformation.setEmail(email);
-                                messageInformation.setShapeUUID(shapeUUID);
-                                // Get the token assigned by Firebase when the user signed up / signed in.
-                                String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
-                                messageInformation.setToken(token);
-                                messageInformation.setUserIsWithinShape(userIsWithinShape);
-                                messageInformation.setShapeIsCircle(shapeIsCircle);
-                                DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
-                                newMessage.setValue(messageInformation);
 
-                                mInput.getText().clear();
-                                newShape = false;
-                                sendButtonClicked = false;
+                                if (newFirebaseShape != null) {
+
+                                    newFirebaseShape.setValue(polygonInformation);
+                                }
+                            } else {
+
+                                // Both radius and polygonArea are null.
+                                toastMessageLong("Oops! Something went wrong!");
+                                return;
                             }
+
+                            MessageInformation messageInformation = new MessageInformation();
+                            messageInformation.setMessage(input);
+                            // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+                            // This will cause onDataChange to fire twice; optimizations could be made in the future.
+                            Object date = ServerValue.TIMESTAMP;
+                            messageInformation.setDate(date);
+                            String userUUID = UUID.randomUUID().toString();
+                            messageInformation.setUserUUID(userUUID);
+                            messageInformation.setPosition(mUser.size());
+                            // If user has a Google account, get email one way. Else, get email another way.
+                            GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
+                            String email;
+                            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+                            if (acct != null) {
+                                email = acct.getEmail();
+                            } else {
+                                email = sharedPreferences.getString("userToken", "null");
+                            }
+                            messageInformation.setEmail(email);
+                            messageInformation.setShapeUUID(shapeUUID);
+                            messageInformation.setPosition(mUser.size());
+                            // Get the token assigned by Firebase when the user signed up / signed in.
+                            String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
+                            messageInformation.setToken(token);
+                            messageInformation.setUserIsWithinShape(userIsWithinShape);
+                            DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
+                            newMessage.setValue(messageInformation);
+
+                            mInput.getText().clear();
+                            newShape = false;
+                            sendButtonClicked = false;
                         }
                     } else {
 
@@ -751,7 +761,6 @@ public class Chat extends Fragment implements
                                 messageInformation.setSeenByUser(false);
                             }
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
-                            messageInformation.setShapeIsCircle(shapeIsCircle);
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                             newMessage.setValue(messageInformation);
 
@@ -2539,7 +2548,13 @@ public class Chat extends Fragment implements
 
                             if (newShape) {
 
-                                if (shapeIsCircle) {
+                                // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter()).
+                                messageSent = true;
+
+                                DatabaseReference newFirebaseShape = null;
+                                if (radius != null) {
+
+                                    // Shape is a circle.
 
                                     // Since the uuid doesn't already exist in Firebase, add the circle.
                                     CircleOptions circleOptions = new CircleOptions()
@@ -2549,11 +2564,45 @@ public class Chat extends Fragment implements
                                     CircleInformation circleInformation = new CircleInformation();
                                     circleInformation.setCircleOptions(circleOptions);
                                     circleInformation.setShapeUUID(shapeUUID);
-                                    DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("Circles").push();
-                                    newFirebaseCircle.setValue(circleInformation);
-                                } else {
+
+                                    // Get a value with 1 decimal point and use it for Firebase.
+                                    double precisionLat = Math.pow(10, 1);
+                                    // Can't create a firebase path with '.', so get rid of decimal.
+                                    double latPushValueTemp = ((int) precisionLat * circleLatitude) / precisionLat;
+                                    latPushValueTemp *= 10;
+                                    int latPushValue = (int) latPushValueTemp;
+
+                                    // Get a value with 1 decimal point and use it for Firebase.
+                                    double precisionLon = Math.pow(10, 1);
+                                    // Can't create a firebase path with '.', so get rid of decimal.
+                                    double lonPushValueTemp = ((int) precisionLon * circleLongitude) / precisionLon;
+                                    lonPushValueTemp *= 10;
+                                    int lonPushValue = (int) lonPushValueTemp;
+
+                                    if (radius == 1) {
+
+                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latPushValue + ", " + lonPushValue + ")").child("Point").push();
+                                    } else if (1 < radius && radius <= 10) {
+
+                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latPushValue + ", " + lonPushValue + ")").child("Small").push();
+                                    } else if (10 < radius && radius <= 50) {
+
+                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latPushValue + ", " + lonPushValue + ")").child("Medium").push();
+                                    } else if (50 < radius) {
+
+                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latPushValue + ", " + lonPushValue + ")").child("Large").push();
+                                    }
+
+                                    if (newFirebaseShape != null) {
+
+                                        newFirebaseShape.setValue(circleInformation);
+                                    }
+                                } else if (polygonArea != null) {
+
+                                    // Shape is a polygon.
 
                                     PolygonOptions polygonOptions = null;
+
                                     // Since the uuid doesn't already exist in Firebase, add the circle.
                                     if (threeMarkers) {
 
@@ -2601,8 +2650,39 @@ public class Chat extends Fragment implements
                                     polygonInformation.setPolygonOptions(polygonOptions);
                                     polygonInformation.setArea(polygonArea);
                                     polygonInformation.setShapeUUID(shapeUUID);
-                                    DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("Polygons").push();
-                                    newFirebasePolygon.setValue(polygonInformation);
+
+                                    // Get a value with 1 decimal point and use it for Firebase.
+                                    double precisionLat = Math.pow(10, 1);
+                                    // Can't create a firebase path with '.', so get rid of decimal.
+                                    double latPushValueTemp = ((int) precisionLat * marker0Latitude) / precisionLat;
+                                    latPushValueTemp *= 10;
+                                    int latPushValue = (int) latPushValueTemp;
+                                    double precisionLon = Math.pow(10, 1);
+                                    // Can't create a firebase path with '.', so get rid of decimal.
+                                    double lonPushValueTemp = ((int) precisionLon * marker0Longitude) / precisionLon;
+                                    lonPushValueTemp *= 10;
+                                    int lonPushValue = (int) lonPushValueTemp;
+
+                                    if (polygonArea <= Math.PI * (Math.pow(10, 2))) {
+
+                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latPushValue + ", " + lonPushValue + ")").child("Small").push();
+                                    } else if (Math.PI * (Math.pow(10, 2)) < polygonArea && polygonArea <= Math.PI * (Math.pow(50, 2))) {
+
+                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latPushValue + ", " + lonPushValue + ")").child("Medium").push();
+                                    } else if (Math.PI * (Math.pow(50, 2)) < polygonArea) {
+
+                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latPushValue + ", " + lonPushValue + ")").child("Large").push();
+                                    }
+
+                                    if (newFirebaseShape != null) {
+
+                                        newFirebaseShape.setValue(polygonInformation);
+                                    }
+                                } else {
+
+                                    // Both radius and polygonArea are null.
+                                    toastMessageLong("Oops! Something went wrong!");
+                                    return;
                                 }
 
                                 newShape = false;
@@ -2645,7 +2725,6 @@ public class Chat extends Fragment implements
                                 messageInformation.setSeenByUser(false);
                             }
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
-                            messageInformation.setShapeIsCircle(shapeIsCircle);
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                             newMessage.setValue(messageInformation);
 
@@ -2696,7 +2775,13 @@ public class Chat extends Fragment implements
 
                             if (newShape) {
 
-                                if (shapeIsCircle) {
+                                // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter()).
+                                messageSent = true;
+
+                                DatabaseReference newFirebaseShape = null;
+                                if (radius != null) {
+
+                                    // Shape is a circle.
 
                                     // Since the uuid doesn't already exist in Firebase, add the circle.
                                     CircleOptions circleOptions = new CircleOptions()
@@ -2706,11 +2791,42 @@ public class Chat extends Fragment implements
                                     CircleInformation circleInformation = new CircleInformation();
                                     circleInformation.setCircleOptions(circleOptions);
                                     circleInformation.setShapeUUID(shapeUUID);
-                                    DatabaseReference newFirebaseCircle = FirebaseDatabase.getInstance().getReference().child("Circles").push();
-                                    newFirebaseCircle.setValue(circleInformation);
-                                } else {
+                                    // Get a value with 1 decimal point and use it for Firebase.
+                                    double precisionLat = Math.pow(10, 1);
+                                    // Can't create a firebase path with '.', so get rid of decimal.
+                                    double latPushValueTemp = ((int) precisionLat * circleLatitude) / precisionLat;
+                                    latPushValueTemp *= 10;
+                                    int latPushValue = (int) latPushValueTemp;
+                                    double precisionLon = Math.pow(10, 1);
+                                    // Can't create a firebase path with '.', so get rid of decimal.
+                                    double lonPushValueTemp = ((int) precisionLon * circleLongitude) / precisionLon;
+                                    lonPushValueTemp *= 10;
+                                    int lonPushValue = (int) lonPushValueTemp;
+
+                                    if (radius == 1) {
+
+                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latPushValue + ", " + lonPushValue + ")").child("Point").push();
+                                    } else if (1 < radius && radius <= 10) {
+
+                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latPushValue + ", " + lonPushValue + ")").child("Small").push();
+                                    } else if (10 < radius && radius <= 50) {
+
+                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latPushValue + ", " + lonPushValue + ")").child("Medium").push();
+                                    } else if (50 < radius) {
+
+                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latPushValue + ", " + lonPushValue + ")").child("Large").push();
+                                    }
+
+                                    if (newFirebaseShape != null) {
+
+                                        newFirebaseShape.setValue(circleInformation);
+                                    }
+                                } else if (polygonArea != null) {
+
+                                    // Shape is a polygon.
 
                                     PolygonOptions polygonOptions = null;
+
                                     // Since the uuid doesn't already exist in Firebase, add the circle.
                                     if (threeMarkers) {
 
@@ -2758,8 +2874,39 @@ public class Chat extends Fragment implements
                                     polygonInformation.setPolygonOptions(polygonOptions);
                                     polygonInformation.setArea(polygonArea);
                                     polygonInformation.setShapeUUID(shapeUUID);
-                                    DatabaseReference newFirebasePolygon = FirebaseDatabase.getInstance().getReference().child("Polygons").push();
-                                    newFirebasePolygon.setValue(polygonInformation);
+
+                                    // Get a value with 1 decimal point and use it for Firebase.
+                                    double precisionLat = Math.pow(10, 1);
+                                    // Can't create a firebase path with '.', so get rid of decimal.
+                                    double latPushValueTemp = ((int) precisionLat * marker0Latitude) / precisionLat;
+                                    latPushValueTemp *= 10;
+                                    int latPushValue = (int) latPushValueTemp;
+                                    double precisionLon = Math.pow(10, 1);
+                                    // Can't create a firebase path with '.', so get rid of decimal.
+                                    double lonPushValueTemp = ((int) precisionLon * marker0Longitude) / precisionLon;
+                                    lonPushValueTemp *= 10;
+                                    int lonPushValue = (int) lonPushValueTemp;
+
+                                    if (polygonArea <= Math.PI * (Math.pow(10, 2))) {
+
+                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latPushValue + ", " + lonPushValue + ")").child("Small").push();
+                                    } else if (Math.PI * (Math.pow(10, 2)) < polygonArea && polygonArea <= Math.PI * (Math.pow(50, 2))) {
+
+                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latPushValue + ", " + lonPushValue + ")").child("Medium").push();
+                                    } else if (Math.PI * (Math.pow(50, 2)) < polygonArea) {
+
+                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latPushValue + ", " + lonPushValue + ")").child("Large").push();
+                                    }
+
+                                    if (newFirebaseShape != null) {
+
+                                        newFirebaseShape.setValue(polygonInformation);
+                                    }
+                                } else {
+
+                                    // Both radius and polygonArea are null.
+                                    toastMessageLong("Oops! Something went wrong!");
+                                    return;
                                 }
 
                                 newShape = false;
@@ -2802,7 +2949,6 @@ public class Chat extends Fragment implements
                                 messageInformation.setSeenByUser(false);
                             }
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
-                            messageInformation.setShapeIsCircle(shapeIsCircle);
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
                             newMessage.setValue(messageInformation);
 
