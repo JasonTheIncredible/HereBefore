@@ -123,10 +123,7 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // Don't load the map if the user can see more than 7 loadable areas, possibly by Math.abs((newLatRight - newLatLeft) + (newLonRight - newLonLeft)) < some value.
-    // Don't load old areas.
     // Compress all loadShapes into methods.
-    // Prevent clicking on circles if zoomed out too far.
     // Add notes.
     // Switch existing values in Firebase.
     // Scale messageThreads, then adjust Feedback.
@@ -2373,6 +2370,11 @@ public class Map extends FragmentActivity implements
         dmCounter = 0;
         showedLocationAccuracyWarning = false;
         newCameraCoordinates = false;
+        loadedCoordinates.clear();
+        oldNearLeft = null;
+        oldFarLeft = null;
+        oldNearRight = null;
+        oldFarRight = null;
 
         if (dmButton != null) {
 
@@ -2970,23 +2972,7 @@ public class Map extends FragmentActivity implements
 
         if (restarted) {
 
-            // Load the shapes for the visible region of the map.
-            if (showingEverything) {
-
-                loadAllChats();
-            } else if (showingLarge) {
-
-                loadLargeChats();
-            } else if (showingMedium) {
-
-                loadMediumChats();
-            } else if (showingSmall) {
-
-                loadSmallChats();
-            } else if (showingPoints) {
-
-                loadPoints();
-            }
+            cameraIdle();
         }
 
         // Keep the marker on the shapes to allow for dragging.
@@ -4705,111 +4691,130 @@ public class Map extends FragmentActivity implements
             @Override
             public void onCameraIdle() {
 
-                // If the camera is zoomed too far out, don't load any shapes, as too many loaded shapes will affect performance (and user wouldn't be able to see the shapes anyway).
-                if (mMap.getCameraPosition().zoom < 12) {
-
-                    return;
-                }
-
-                newCameraCoordinates = true;
-
-                Projection projection = mMap.getProjection();
-                VisibleRegion visibleRegion = projection.getVisibleRegion();
-                LatLng nearLeft = visibleRegion.nearLeft;
-                LatLng farLeft = visibleRegion.farLeft;
-                LatLng nearRight = visibleRegion.nearRight;
-                LatLng farRight = visibleRegion.farRight;
-
-                // Get a value with 1 decimal point and use it for Firebase.
-                double nearLeftPrecisionLat = Math.pow(10, 1);
-                // Can't create a firebase path with '.', so get rid of decimal.
-                double nearLeftLatTemp = (int) (nearLeftPrecisionLat * nearLeft.latitude) / nearLeftPrecisionLat;
-                nearLeftLatTemp *= 10;
-                newNearLeftLat = (int) nearLeftLatTemp;
-
-                double nearLeftPrecisionLon = Math.pow(10, 1);
-                // Can't create a firebase path with '.', so get rid of decimal.
-                double nearLeftLonTemp = (int) (nearLeftPrecisionLon * nearLeft.longitude) / nearLeftPrecisionLon;
-                nearLeftLonTemp *= 10;
-                newNearLeftLon = (int) nearLeftLonTemp;
-
-                // Get a value with 1 decimal point and use it for Firebase.
-                double farLeftPrecisionLat = Math.pow(10, 1);
-                // Can't create a firebase path with '.', so get rid of decimal.
-                double farLeftLatTemp = (int) (farLeftPrecisionLat * farLeft.latitude) / farLeftPrecisionLat;
-                farLeftLatTemp *= 10;
-                newFarLeftLat = (int) farLeftLatTemp;
-
-                double farLeftPrecisionLon = Math.pow(10, 1);
-                // Can't create a firebase path with '.', so get rid of decimal.
-                double farLeftLonTemp = (int) (farLeftPrecisionLon * farLeft.longitude) / farLeftPrecisionLon;
-                farLeftLonTemp *= 10;
-                newFarLeftLon = (int) farLeftLonTemp;
-
-                // Get a value with 1 decimal point and use it for Firebase.
-                double nearRightPrecisionLat = Math.pow(10, 1);
-                // Can't create a firebase path with '.', so get rid of decimal.
-                double nearRightLatTemp = (int) (nearRightPrecisionLat * nearRight.latitude) / nearRightPrecisionLat;
-                nearRightLatTemp *= 10;
-                newNearRightLat = (int) nearRightLatTemp;
-
-                double nearRightPrecisionLon = Math.pow(10, 1);
-                // Can't create a firebase path with '.', so get rid of decimal.
-                double nearRightLonTemp = (int) (nearRightPrecisionLon * nearRight.longitude) / nearRightPrecisionLon;
-                nearRightLonTemp *= 10;
-                newNearRightLon = (int) nearRightLonTemp;
-
-                // Get a value with 1 decimal point and use it for Firebase.
-                double farRightPrecisionLat = Math.pow(10, 1);
-                // Can't create a firebase path with '.', so get rid of decimal.
-                double farRightLatTemp = (int) (farRightPrecisionLat * farRight.latitude) / farRightPrecisionLat;
-                farRightLatTemp *= 10;
-                newFarRightLat = (int) farRightLatTemp;
-
-                double farRightPrecisionLon = Math.pow(10, 1);
-                // Can't create a firebase path with '.', so get rid of decimal.
-                double farRightLonTemp = (int) (farRightPrecisionLon * farRight.longitude) / farRightPrecisionLon;
-                farRightLonTemp *= 10;
-                newFarRightLon = (int) farRightLonTemp;
-
-                // Do not load the map if the user can see more than 7 loadable areas (e.g. they are on a tablet with a big screen).
-
-                newNearLeft = new Pair<>(newNearLeftLat, newNearLeftLon);
-                newFarLeft = new Pair<>(newFarLeftLat, newFarLeftLon);
-                newNearRight = new Pair<>(newNearRightLat, newNearRightLon);
-                newFarRight = new Pair<>(newFarRightLat, newFarRightLon);
-
-                // If the camera view has not entered a new section of the map, there's no need to load new shapes. Need to account for a 90 degree turn, so check all values against all old values.
-                if ((newNearLeft.equals(oldNearLeft) || newNearLeft.equals(oldFarLeft) || newNearLeft.equals(oldNearRight) || newNearLeft.equals(oldFarRight)) && (newFarLeft.equals(oldNearLeft) || newFarLeft.equals(oldFarLeft) || newFarLeft.equals(oldNearRight) || newFarLeft.equals(oldFarRight))
-                        && (newNearRight.equals(oldNearLeft) || newNearRight.equals(oldFarLeft) || newNearRight.equals(oldNearRight) || newNearRight.equals(oldFarRight)) && (newFarRight.equals(oldNearLeft) || newFarRight.equals(oldFarLeft) || newFarRight.equals(oldNearRight) || newFarRight.equals(oldFarRight))) {
-
-                    return;
-                }
-
-                if (showingEverything != null && showingLarge != null && showingMedium != null && showingSmall != null && showingPoints != null) {
-
-                    if (showingEverything) {
-
-                        loadAllChats();
-                    } else if (showingLarge) {
-
-                        loadLargeChats();
-                    } else if (showingMedium) {
-
-                        loadMediumChats();
-                    } else if (showingSmall) {
-
-                        loadSmallChats();
-                    } else {
-
-                        loadPoints();
-                    }
-                } else {
-
-                    loadAllChats();
-                }
+                cameraIdle();
             }
         });
+    }
+
+    // Used in the onCameraIdle listener and after restart (as the listener is not called after restart).
+    private void cameraIdle() {
+
+        Log.i(TAG, "cameraIdle()");
+
+        // If the camera is zoomed too far out, don't load any shapes, as too many loaded shapes will affect performance (and user wouldn't be able to see the shapes anyway).
+        if (mMap.getCameraPosition().zoom < 12) {
+
+            return;
+        }
+
+        newCameraCoordinates = true;
+
+        Projection projection = mMap.getProjection();
+        VisibleRegion visibleRegion = projection.getVisibleRegion();
+        LatLng nearLeft = visibleRegion.nearLeft;
+        LatLng farLeft = visibleRegion.farLeft;
+        LatLng nearRight = visibleRegion.nearRight;
+        LatLng farRight = visibleRegion.farRight;
+
+        // Get a value with 1 decimal point and use it for Firebase.
+        double nearLeftPrecisionLat = Math.pow(10, 1);
+        // Can't create a firebase path with '.', so get rid of decimal.
+        double nearLeftLatTemp = (int) (nearLeftPrecisionLat * nearLeft.latitude) / nearLeftPrecisionLat;
+        nearLeftLatTemp *= 10;
+        newNearLeftLat = (int) nearLeftLatTemp;
+
+        double nearLeftPrecisionLon = Math.pow(10, 1);
+        // Can't create a firebase path with '.', so get rid of decimal.
+        double nearLeftLonTemp = (int) (nearLeftPrecisionLon * nearLeft.longitude) / nearLeftPrecisionLon;
+        nearLeftLonTemp *= 10;
+        newNearLeftLon = (int) nearLeftLonTemp;
+
+        // Get a value with 1 decimal point and use it for Firebase.
+        double farLeftPrecisionLat = Math.pow(10, 1);
+        // Can't create a firebase path with '.', so get rid of decimal.
+        double farLeftLatTemp = (int) (farLeftPrecisionLat * farLeft.latitude) / farLeftPrecisionLat;
+        farLeftLatTemp *= 10;
+        newFarLeftLat = (int) farLeftLatTemp;
+
+        double farLeftPrecisionLon = Math.pow(10, 1);
+        // Can't create a firebase path with '.', so get rid of decimal.
+        double farLeftLonTemp = (int) (farLeftPrecisionLon * farLeft.longitude) / farLeftPrecisionLon;
+        farLeftLonTemp *= 10;
+        newFarLeftLon = (int) farLeftLonTemp;
+
+        // Get a value with 1 decimal point and use it for Firebase.
+        double nearRightPrecisionLat = Math.pow(10, 1);
+        // Can't create a firebase path with '.', so get rid of decimal.
+        double nearRightLatTemp = (int) (nearRightPrecisionLat * nearRight.latitude) / nearRightPrecisionLat;
+        nearRightLatTemp *= 10;
+        newNearRightLat = (int) nearRightLatTemp;
+
+        double nearRightPrecisionLon = Math.pow(10, 1);
+        // Can't create a firebase path with '.', so get rid of decimal.
+        double nearRightLonTemp = (int) (nearRightPrecisionLon * nearRight.longitude) / nearRightPrecisionLon;
+        nearRightLonTemp *= 10;
+        newNearRightLon = (int) nearRightLonTemp;
+
+        // Get a value with 1 decimal point and use it for Firebase.
+        double farRightPrecisionLat = Math.pow(10, 1);
+        // Can't create a firebase path with '.', so get rid of decimal.
+        double farRightLatTemp = (int) (farRightPrecisionLat * farRight.latitude) / farRightPrecisionLat;
+        farRightLatTemp *= 10;
+        newFarRightLat = (int) farRightLatTemp;
+
+        double farRightPrecisionLon = Math.pow(10, 1);
+        // Can't create a firebase path with '.', so get rid of decimal.
+        double farRightLonTemp = (int) (farRightPrecisionLon * farRight.longitude) / farRightPrecisionLon;
+        farRightLonTemp *= 10;
+        newFarRightLon = (int) farRightLonTemp;
+
+        // Do not load the map if the user can see more than 7 loadable areas (e.g. they are on a tablet with a big screen).
+        if (Math.abs((newNearRightLat - newFarLeftLat) + (newNearRightLon - newFarLeftLon)) >= 4 ||
+                Math.abs((newFarRightLat - newNearLeftLat) - (newFarRightLon - newNearLeftLon)) >= 4) {
+
+            return;
+        }
+
+        newNearLeft = new Pair<>(newNearLeftLat, newNearLeftLon);
+        newFarLeft = new Pair<>(newFarLeftLat, newFarLeftLon);
+        newNearRight = new Pair<>(newNearRightLat, newNearRightLon);
+        newFarRight = new Pair<>(newFarRightLat, newFarRightLon);
+
+        // No need to continue if none of the new coordinates need to be loaded.
+        if (loadedCoordinates.contains(newNearLeft) && loadedCoordinates.contains(newFarLeft) && loadedCoordinates.contains(newNearRight) && loadedCoordinates.contains(newFarRight)) {
+
+            return;
+        }
+
+        // If the camera view has not entered a new section of the map, there's no need to load new shapes. Need to account for a 90 degree turn, so check all values against all old values.
+        if ((newNearLeft.equals(oldNearLeft) || newNearLeft.equals(oldFarLeft) || newNearLeft.equals(oldNearRight) || newNearLeft.equals(oldFarRight)) && (newFarLeft.equals(oldNearLeft) || newFarLeft.equals(oldFarLeft) || newFarLeft.equals(oldNearRight) || newFarLeft.equals(oldFarRight))
+                && (newNearRight.equals(oldNearLeft) || newNearRight.equals(oldFarLeft) || newNearRight.equals(oldNearRight) || newNearRight.equals(oldFarRight)) && (newFarRight.equals(oldNearLeft) || newFarRight.equals(oldFarLeft) || newFarRight.equals(oldNearRight) || newFarRight.equals(oldFarRight))) {
+
+            return;
+        }
+
+        if (showingEverything != null && showingLarge != null && showingMedium != null && showingSmall != null && showingPoints != null) {
+
+            if (showingEverything) {
+
+                loadAllChats();
+            } else if (showingLarge) {
+
+                loadLargeChats();
+            } else if (showingMedium) {
+
+                loadMediumChats();
+            } else if (showingSmall) {
+
+                loadSmallChats();
+            } else {
+
+                loadPoints();
+            }
+        } else {
+
+            loadAllChats();
+        }
     }
 
     protected void loadPreferences() {
@@ -7141,7 +7146,8 @@ public class Map extends FragmentActivity implements
                 });
             }
 
-            if (!loadedCoordinates.contains(newFarLeft) || mapCleared || restarted) {
+            // Without the final "&&" statement, every one of these statement groups will be called after restart, even when newNearLeft == newFarLeft == newNearRight == newFarRight.
+            if (!loadedCoordinates.contains(newFarLeft) || mapCleared || (!loadedCoordinates.contains(newFarLeft) && restarted)) {
 
                 loadedCoordinates.add(0, newFarLeft);
 
@@ -7448,7 +7454,7 @@ public class Map extends FragmentActivity implements
                 });
             }
 
-            if (!loadedCoordinates.contains(newNearRight) || mapCleared || restarted) {
+            if (!loadedCoordinates.contains(newNearRight) || mapCleared || (!loadedCoordinates.contains(newNearRight) && restarted)) {
 
                 loadedCoordinates.add(0, newNearRight);
 
@@ -7755,7 +7761,7 @@ public class Map extends FragmentActivity implements
                 });
             }
 
-            if (!loadedCoordinates.contains(newFarRight) || mapCleared || restarted) {
+            if (!loadedCoordinates.contains(newFarRight) || mapCleared || (!loadedCoordinates.contains(newFarRight) && restarted)) {
 
                 loadedCoordinates.add(0, newFarRight);
 
@@ -8420,7 +8426,8 @@ public class Map extends FragmentActivity implements
                 });
             }
 
-            if (!loadedCoordinates.contains(newFarLeft) || mapCleared || restarted) {
+            // Without the final "&&" statement, every one of these statement groups will be called after restart, even when newNearLeft == newFarLeft == newNearRight == newFarRight.
+            if (!loadedCoordinates.contains(newFarLeft) || mapCleared || (!loadedCoordinates.contains(newFarLeft) && restarted)) {
 
                 loadedCoordinates.add(0, newFarLeft);
 
@@ -8740,7 +8747,7 @@ public class Map extends FragmentActivity implements
                 });
             }
 
-            if (!loadedCoordinates.contains(newNearRight) || mapCleared || restarted) {
+            if (!loadedCoordinates.contains(newNearRight) || mapCleared || (!loadedCoordinates.contains(newNearRight) && restarted)) {
 
                 loadedCoordinates.add(0, newNearRight);
 
@@ -9060,7 +9067,7 @@ public class Map extends FragmentActivity implements
                 });
             }
 
-            if (!loadedCoordinates.contains(newFarRight) || mapCleared || restarted) {
+            if (!loadedCoordinates.contains(newFarRight) || mapCleared || (!loadedCoordinates.contains(newFarRight) && restarted)) {
 
                 loadedCoordinates.add(0, newFarRight);
 
@@ -9735,7 +9742,8 @@ public class Map extends FragmentActivity implements
                 });
             }
 
-            if (!loadedCoordinates.contains(newFarLeft) || mapCleared || restarted) {
+            // Without the final "&&" statement, every one of these statement groups will be called after restart, even when newNearLeft == newFarLeft == newNearRight == newFarRight.
+            if (!loadedCoordinates.contains(newFarLeft) || mapCleared || (!loadedCoordinates.contains(newFarLeft) && restarted)) {
 
                 loadedCoordinates.add(0, newFarLeft);
 
@@ -10055,7 +10063,7 @@ public class Map extends FragmentActivity implements
                 });
             }
 
-            if (!loadedCoordinates.contains(newNearRight) || mapCleared || restarted) {
+            if (!loadedCoordinates.contains(newNearRight) || mapCleared || (!loadedCoordinates.contains(newNearRight) && restarted)) {
 
                 loadedCoordinates.add(0, newNearRight);
 
@@ -10375,7 +10383,7 @@ public class Map extends FragmentActivity implements
                 });
             }
 
-            if (!loadedCoordinates.contains(newFarRight) || mapCleared || restarted) {
+            if (!loadedCoordinates.contains(newFarRight) || mapCleared || (!loadedCoordinates.contains(newFarRight) && restarted)) {
 
                 loadedCoordinates.add(0, newFarRight);
 
@@ -11050,7 +11058,8 @@ public class Map extends FragmentActivity implements
                 });
             }
 
-            if (!loadedCoordinates.contains(newFarLeft) || mapCleared || restarted) {
+            // Without the final "&&" statement, every one of these statement groups will be called after restart, even when newNearLeft == newFarLeft == newNearRight == newFarRight.
+            if (!loadedCoordinates.contains(newFarLeft) || mapCleared || (!loadedCoordinates.contains(newFarLeft) && restarted)) {
 
                 loadedCoordinates.add(0, newFarLeft);
 
@@ -11370,7 +11379,7 @@ public class Map extends FragmentActivity implements
                 });
             }
 
-            if (!loadedCoordinates.contains(newNearRight) || mapCleared || restarted) {
+            if (!loadedCoordinates.contains(newNearRight) || mapCleared || (!loadedCoordinates.contains(newNearRight) && restarted)) {
 
                 loadedCoordinates.add(0, newNearRight);
 
@@ -11690,7 +11699,7 @@ public class Map extends FragmentActivity implements
                 });
             }
 
-            if (!loadedCoordinates.contains(newFarRight) || mapCleared || restarted) {
+            if (!loadedCoordinates.contains(newFarRight) || mapCleared || (!loadedCoordinates.contains(newFarRight) && restarted)) {
 
                 loadedCoordinates.add(0, newFarRight);
 
@@ -12139,7 +12148,8 @@ public class Map extends FragmentActivity implements
                 });
             }
 
-            if (!loadedCoordinates.contains(newFarLeft) || mapCleared || restarted) {
+            // Without the final "&&" statement, every one of these statement groups will be called after restart, even when newNearLeft == newFarLeft == newNearRight == newFarRight.
+            if (!loadedCoordinates.contains(newFarLeft) || mapCleared || (!loadedCoordinates.contains(newFarLeft) && restarted)) {
 
                 loadedCoordinates.add(0, newFarLeft);
 
@@ -12233,7 +12243,7 @@ public class Map extends FragmentActivity implements
                 });
             }
 
-            if (!loadedCoordinates.contains(newNearRight) || mapCleared || restarted) {
+            if (!loadedCoordinates.contains(newNearRight) || mapCleared || (!loadedCoordinates.contains(newNearRight) && restarted)) {
 
                 loadedCoordinates.add(0, newNearRight);
 
@@ -12327,7 +12337,7 @@ public class Map extends FragmentActivity implements
                 });
             }
 
-            if (!loadedCoordinates.contains(newFarRight) || mapCleared || restarted) {
+            if (!loadedCoordinates.contains(newFarRight) || mapCleared || (!loadedCoordinates.contains(newFarRight) && restarted)) {
 
                 loadedCoordinates.add(0, newFarRight);
 
