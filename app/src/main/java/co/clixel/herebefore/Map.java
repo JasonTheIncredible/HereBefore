@@ -96,13 +96,13 @@ public class Map extends FragmentActivity implements
     private Polygon newPolygon, polygonTemp, mPolygon = null;
     private ChildEventListener childEventListener;
     private SeekBar chatSizeSeekBar, chatSelectorSeekBar;
-    private String preferredMapType, shapeUUID, marker0ID, marker1ID, marker2ID, marker3ID, marker4ID, marker5ID, marker6ID, marker7ID, selectedOverlappingShapeUUID, email;
+    private String shapeUUID, marker0ID, marker1ID, marker2ID, marker3ID, marker4ID, marker5ID, marker6ID, marker7ID, selectedOverlappingShapeUUID, email;
     private Button createChatButton, chatViewsButton, mapTypeButton, settingsButton;
     private PopupMenu popupMapType, popupChatViews, popupCreateChat;
-    private boolean locationProviderDisabled = false, firstLoadCamera = true, firstLoadDMs = true, firstLoadChats = true, mapChanged, cameraMoved = false, waitingForBetterLocationAccuracy = false, badAccuracy = false,
+    private boolean locationProviderDisabled = false, firstLoadCamera = true, firstLoadShapes = true, firstLoadDMs = true, mapChanged, cameraMoved = false, waitingForBetterLocationAccuracy = false, badAccuracy = false,
             waitingForClicksToProcess = false, waitingForShapeInformationToProcess = false, markerOutsidePolygon = false, usedSeekBar = false,
             userIsWithinShape, selectingShape = false, threeMarkers = false, fourMarkers = false, fiveMarkers = false, sixMarkers = false, sevenMarkers = false, eightMarkers = false,
-            showedLocationAccuracyWarning = false, restarted = false, newCameraCoordinates = false;
+            showedLocationAccuracyWarning = false, restarted = false, newCameraCoordinates = false, showEverything = true, showLarge = false, showMedium = false, showSmall = false, showPoints = false, mapCleared = false;
     private Boolean showingEverything, showingLarge, showingMedium, showingSmall, showingPoints;
     private LatLng markerPositionAtVertexOfPolygon, marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position, selectedOverlappingShapeCircleLocation;
     private Double relativeAngle = 0.0, selectedOverlappingShapeCircleRadius;
@@ -113,7 +113,7 @@ public class Map extends FragmentActivity implements
     private ArrayList<Double> overlappingShapesCircleRadius = new ArrayList<>();
     private ArrayList<java.util.List<LatLng>> overlappingShapesPolygonVertices = new ArrayList<>();
     private float x, y;
-    private int chatsSize, dmCounter = 0, newNearLeftLat, newNearLeftLon, newFarLeftLat, newFarLeftLon, newNearRightLat, newNearRightLon, newFarRightLat, newFarRightLon;
+    private int chatsSize, dmCounter = 0, newNearLeftLat, newNearLeftLon, newFarLeftLat, newFarLeftLon;
     private Toast longToast;
     private View loadingIcon;
     private FloatingActionButton generalChatButton;
@@ -123,7 +123,7 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // Compress all loadShapes into methods.
+    // Change "Chats" to "Shapes".
     // Add notes.
     // Switch existing values in Firebase.
     // Scale messageThreads, then adjust Feedback.
@@ -142,6 +142,7 @@ public class Map extends FragmentActivity implements
     // Make sure the secret stuff is secret.
 
     // Find a way to not clear and reload map every time user returns from clicking a shape.
+    // Change lines with multiple || statements into a ! statement.
     // Add some version of the random button, or allow users to click on a circle in a far away area while zoomed out on map.
     // Make situations where Firebase circles are added to the map and then polygons are added (like in chatViews) async?
     // Delete general chat after x amount of time or # of items.
@@ -2361,8 +2362,8 @@ public class Map extends FragmentActivity implements
 
         restarted = true;
         firstLoadCamera = false;
+        firstLoadShapes = true;
         firstLoadDMs = true;
-        firstLoadChats = true;
         waitingForShapeInformationToProcess = false;
         waitingForClicksToProcess = false;
         selectingShape = false;
@@ -2966,7 +2967,6 @@ public class Map extends FragmentActivity implements
 
         if (!restarted) {
 
-            loadPreferences();
             updatePreferences();
         }
 
@@ -4696,139 +4696,13 @@ public class Map extends FragmentActivity implements
         });
     }
 
-    // Used in the onCameraIdle listener and after restart (as the listener is not called after restart).
-    private void cameraIdle() {
-
-        Log.i(TAG, "cameraIdle()");
-
-        // If the camera is zoomed too far out, don't load any shapes, as too many loaded shapes will affect performance (and user wouldn't be able to see the shapes anyway).
-        if (mMap.getCameraPosition().zoom < 12) {
-
-            return;
-        }
-
-        newCameraCoordinates = true;
-
-        Projection projection = mMap.getProjection();
-        VisibleRegion visibleRegion = projection.getVisibleRegion();
-        LatLng nearLeft = visibleRegion.nearLeft;
-        LatLng farLeft = visibleRegion.farLeft;
-        LatLng nearRight = visibleRegion.nearRight;
-        LatLng farRight = visibleRegion.farRight;
-
-        // Get a value with 1 decimal point and use it for Firebase.
-        double nearLeftPrecisionLat = Math.pow(10, 1);
-        // Can't create a firebase path with '.', so get rid of decimal.
-        double nearLeftLatTemp = (int) (nearLeftPrecisionLat * nearLeft.latitude) / nearLeftPrecisionLat;
-        nearLeftLatTemp *= 10;
-        newNearLeftLat = (int) nearLeftLatTemp;
-
-        double nearLeftPrecisionLon = Math.pow(10, 1);
-        // Can't create a firebase path with '.', so get rid of decimal.
-        double nearLeftLonTemp = (int) (nearLeftPrecisionLon * nearLeft.longitude) / nearLeftPrecisionLon;
-        nearLeftLonTemp *= 10;
-        newNearLeftLon = (int) nearLeftLonTemp;
-
-        // Get a value with 1 decimal point and use it for Firebase.
-        double farLeftPrecisionLat = Math.pow(10, 1);
-        // Can't create a firebase path with '.', so get rid of decimal.
-        double farLeftLatTemp = (int) (farLeftPrecisionLat * farLeft.latitude) / farLeftPrecisionLat;
-        farLeftLatTemp *= 10;
-        newFarLeftLat = (int) farLeftLatTemp;
-
-        double farLeftPrecisionLon = Math.pow(10, 1);
-        // Can't create a firebase path with '.', so get rid of decimal.
-        double farLeftLonTemp = (int) (farLeftPrecisionLon * farLeft.longitude) / farLeftPrecisionLon;
-        farLeftLonTemp *= 10;
-        newFarLeftLon = (int) farLeftLonTemp;
-
-        // Get a value with 1 decimal point and use it for Firebase.
-        double nearRightPrecisionLat = Math.pow(10, 1);
-        // Can't create a firebase path with '.', so get rid of decimal.
-        double nearRightLatTemp = (int) (nearRightPrecisionLat * nearRight.latitude) / nearRightPrecisionLat;
-        nearRightLatTemp *= 10;
-        newNearRightLat = (int) nearRightLatTemp;
-
-        double nearRightPrecisionLon = Math.pow(10, 1);
-        // Can't create a firebase path with '.', so get rid of decimal.
-        double nearRightLonTemp = (int) (nearRightPrecisionLon * nearRight.longitude) / nearRightPrecisionLon;
-        nearRightLonTemp *= 10;
-        newNearRightLon = (int) nearRightLonTemp;
-
-        // Get a value with 1 decimal point and use it for Firebase.
-        double farRightPrecisionLat = Math.pow(10, 1);
-        // Can't create a firebase path with '.', so get rid of decimal.
-        double farRightLatTemp = (int) (farRightPrecisionLat * farRight.latitude) / farRightPrecisionLat;
-        farRightLatTemp *= 10;
-        newFarRightLat = (int) farRightLatTemp;
-
-        double farRightPrecisionLon = Math.pow(10, 1);
-        // Can't create a firebase path with '.', so get rid of decimal.
-        double farRightLonTemp = (int) (farRightPrecisionLon * farRight.longitude) / farRightPrecisionLon;
-        farRightLonTemp *= 10;
-        newFarRightLon = (int) farRightLonTemp;
-
-        // Do not load the map if the user can see more than 7 loadable areas (e.g. they are on a tablet with a big screen).
-        if (Math.abs((newNearRightLat - newFarLeftLat) + (newNearRightLon - newFarLeftLon)) >= 4 ||
-                Math.abs((newFarRightLat - newNearLeftLat) - (newFarRightLon - newNearLeftLon)) >= 4) {
-
-            return;
-        }
-
-        newNearLeft = new Pair<>(newNearLeftLat, newNearLeftLon);
-        newFarLeft = new Pair<>(newFarLeftLat, newFarLeftLon);
-        newNearRight = new Pair<>(newNearRightLat, newNearRightLon);
-        newFarRight = new Pair<>(newFarRightLat, newFarRightLon);
-
-        // No need to continue if none of the new coordinates need to be loaded.
-        if (loadedCoordinates.contains(newNearLeft) && loadedCoordinates.contains(newFarLeft) && loadedCoordinates.contains(newNearRight) && loadedCoordinates.contains(newFarRight)) {
-
-            return;
-        }
-
-        // If the camera view has not entered a new section of the map, there's no need to load new shapes. Need to account for a 90 degree turn, so check all values against all old values.
-        if ((newNearLeft.equals(oldNearLeft) || newNearLeft.equals(oldFarLeft) || newNearLeft.equals(oldNearRight) || newNearLeft.equals(oldFarRight)) && (newFarLeft.equals(oldNearLeft) || newFarLeft.equals(oldFarLeft) || newFarLeft.equals(oldNearRight) || newFarLeft.equals(oldFarRight))
-                && (newNearRight.equals(oldNearLeft) || newNearRight.equals(oldFarLeft) || newNearRight.equals(oldNearRight) || newNearRight.equals(oldFarRight)) && (newFarRight.equals(oldNearLeft) || newFarRight.equals(oldFarLeft) || newFarRight.equals(oldNearRight) || newFarRight.equals(oldFarRight))) {
-
-            return;
-        }
-
-        if (showingEverything != null && showingLarge != null && showingMedium != null && showingSmall != null && showingPoints != null) {
-
-            if (showingEverything) {
-
-                loadAllChats();
-            } else if (showingLarge) {
-
-                loadLargeChats();
-            } else if (showingMedium) {
-
-                loadMediumChats();
-            } else if (showingSmall) {
-
-                loadSmallChats();
-            } else {
-
-                loadPoints();
-            }
-        } else {
-
-            loadAllChats();
-        }
-    }
-
-    protected void loadPreferences() {
-
-        Log.i(TAG, "loadPreferences()");
-
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-
-        preferredMapType = sharedPreferences.getString(SettingsFragment.KEY_MAP_TYPE, getResources().getString(R.string.hybrid_view));
-    }
-
     protected void updatePreferences() {
 
         Log.i(TAG, "updatePreferences()");
+
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+
+        String preferredMapType = sharedPreferences.getString(SettingsFragment.KEY_MAP_TYPE, getResources().getString(R.string.hybrid_view));
 
         switch (preferredMapType) {
 
@@ -4933,6 +4807,106 @@ public class Map extends FragmentActivity implements
 
                 break;
         }
+    }
+
+    // Used in the onCameraIdle listener and after restart (as the listener is not called after restart).
+    private void cameraIdle() {
+
+        Log.i(TAG, "cameraIdle()");
+
+        // If the camera is zoomed too far out, don't load any shapes, as too many loaded shapes will affect performance (and user wouldn't be able to see the shapes anyway).
+        if (mMap.getCameraPosition().zoom < 12) {
+
+            return;
+        }
+
+        newCameraCoordinates = true;
+
+        Projection projection = mMap.getProjection();
+        VisibleRegion visibleRegion = projection.getVisibleRegion();
+        LatLng nearLeft = visibleRegion.nearLeft;
+        LatLng farLeft = visibleRegion.farLeft;
+        LatLng nearRight = visibleRegion.nearRight;
+        LatLng farRight = visibleRegion.farRight;
+
+        // Get a value with 1 decimal point and use it for Firebase.
+        double nearLeftPrecisionLat = Math.pow(10, 1);
+        // Can't create a firebase path with '.', so get rid of decimal.
+        double nearLeftLatTemp = (int) (nearLeftPrecisionLat * nearLeft.latitude) / nearLeftPrecisionLat;
+        nearLeftLatTemp *= 10;
+        newNearLeftLat = (int) nearLeftLatTemp;
+
+        double nearLeftPrecisionLon = Math.pow(10, 1);
+        // Can't create a firebase path with '.', so get rid of decimal.
+        double nearLeftLonTemp = (int) (nearLeftPrecisionLon * nearLeft.longitude) / nearLeftPrecisionLon;
+        nearLeftLonTemp *= 10;
+        newNearLeftLon = (int) nearLeftLonTemp;
+
+        // Get a value with 1 decimal point and use it for Firebase.
+        double farLeftPrecisionLat = Math.pow(10, 1);
+        // Can't create a firebase path with '.', so get rid of decimal.
+        double farLeftLatTemp = (int) (farLeftPrecisionLat * farLeft.latitude) / farLeftPrecisionLat;
+        farLeftLatTemp *= 10;
+        newFarLeftLat = (int) farLeftLatTemp;
+
+        double farLeftPrecisionLon = Math.pow(10, 1);
+        // Can't create a firebase path with '.', so get rid of decimal.
+        double farLeftLonTemp = (int) (farLeftPrecisionLon * farLeft.longitude) / farLeftPrecisionLon;
+        farLeftLonTemp *= 10;
+        newFarLeftLon = (int) farLeftLonTemp;
+
+        // Get a value with 1 decimal point and use it for Firebase.
+        double nearRightPrecisionLat = Math.pow(10, 1);
+        // Can't create a firebase path with '.', so get rid of decimal.
+        double nearRightLatTemp = (int) (nearRightPrecisionLat * nearRight.latitude) / nearRightPrecisionLat;
+        nearRightLatTemp *= 10;
+        int newNearRightLat = (int) nearRightLatTemp;
+
+        double nearRightPrecisionLon = Math.pow(10, 1);
+        // Can't create a firebase path with '.', so get rid of decimal.
+        double nearRightLonTemp = (int) (nearRightPrecisionLon * nearRight.longitude) / nearRightPrecisionLon;
+        nearRightLonTemp *= 10;
+        int newNearRightLon = (int) nearRightLonTemp;
+
+        // Get a value with 1 decimal point and use it for Firebase.
+        double farRightPrecisionLat = Math.pow(10, 1);
+        // Can't create a firebase path with '.', so get rid of decimal.
+        double farRightLatTemp = (int) (farRightPrecisionLat * farRight.latitude) / farRightPrecisionLat;
+        farRightLatTemp *= 10;
+        int newFarRightLat = (int) farRightLatTemp;
+
+        double farRightPrecisionLon = Math.pow(10, 1);
+        // Can't create a firebase path with '.', so get rid of decimal.
+        double farRightLonTemp = (int) (farRightPrecisionLon * farRight.longitude) / farRightPrecisionLon;
+        farRightLonTemp *= 10;
+        int newFarRightLon = (int) farRightLonTemp;
+
+        // Do not load the map if the user can see more than 7 loadable areas (e.g. they are on a tablet with a big screen).
+        if (Math.abs((newNearRightLat - newFarLeftLat) + (newNearRightLon - newFarLeftLon)) >= 4 ||
+                Math.abs((newFarRightLat - newNearLeftLat) - (newFarRightLon - newNearLeftLon)) >= 4) {
+
+            return;
+        }
+
+        newNearLeft = new Pair<>(newNearLeftLat, newNearLeftLon);
+        newFarLeft = new Pair<>(newFarLeftLat, newFarLeftLon);
+        newNearRight = new Pair<>(newNearRightLat, newNearRightLon);
+        newFarRight = new Pair<>(newFarRightLat, newFarRightLon);
+
+        // No need to continue if none of the new coordinates need to be loaded.
+        if (loadedCoordinates.contains(newNearLeft) && loadedCoordinates.contains(newFarLeft) && loadedCoordinates.contains(newNearRight) && loadedCoordinates.contains(newFarRight)) {
+
+            return;
+        }
+
+        // If the camera view has not entered a new section of the map, there's no need to load new shapes. Need to account for a 90 degree turn, so check all values against all old values.
+        if ((newNearLeft.equals(oldNearLeft) || newNearLeft.equals(oldFarLeft) || newNearLeft.equals(oldNearRight) || newNearLeft.equals(oldFarRight)) && (newFarLeft.equals(oldNearLeft) || newFarLeft.equals(oldFarLeft) || newFarLeft.equals(oldNearRight) || newFarLeft.equals(oldFarRight))
+                && (newNearRight.equals(oldNearLeft) || newNearRight.equals(oldFarLeft) || newNearRight.equals(oldNearRight) || newNearRight.equals(oldFarRight)) && (newFarRight.equals(oldNearLeft) || newFarRight.equals(oldFarLeft) || newFarRight.equals(oldNearRight) || newFarRight.equals(oldFarRight))) {
+
+            return;
+        }
+
+        loadShapes();
     }
 
     // Used by onMapReadyAndRestart() -> onMarkerDragListener.
@@ -5898,7 +5872,18 @@ public class Map extends FragmentActivity implements
 
                 Log.i(TAG, "onMenuItemClick() -> showEverything");
 
-                loadAllChats();
+                // Tells loadShapes which shapes to load.
+                showEverything = true;
+                showLarge = false;
+                showMedium = false;
+                showSmall = false;
+                showPoints = false;
+
+                // Prevents doing a bunch of unnecessary work.
+                if (!showingEverything) {
+
+                    loadShapes();
+                }
 
                 break;
 
@@ -5907,7 +5892,18 @@ public class Map extends FragmentActivity implements
 
                 Log.i(TAG, "onMenuItemClick() -> showLargeChats");
 
-                loadLargeChats();
+                // Tells loadShapes which shapes to load.
+                showLarge = true;
+                showEverything = false;
+                showMedium = false;
+                showSmall = false;
+                showPoints = false;
+
+                // Prevents doing a bunch of unnecessary work.
+                if (!showingLarge) {
+
+                    loadShapes();
+                }
 
                 break;
 
@@ -5916,7 +5912,18 @@ public class Map extends FragmentActivity implements
 
                 Log.i(TAG, "onMenuItemClick() -> showMediumChats");
 
-                loadMediumChats();
+                // Tells loadShapes which shapes to load.
+                showMedium = true;
+                showEverything = false;
+                showLarge = false;
+                showSmall = false;
+                showPoints = false;
+
+                // Prevents doing a bunch of unnecessary work.
+                if (!showingMedium) {
+
+                    loadShapes();
+                }
 
                 break;
 
@@ -5925,7 +5932,18 @@ public class Map extends FragmentActivity implements
 
                 Log.i(TAG, "onMenuItemClick() -> showSmallChats");
 
-                loadSmallChats();
+                // Tells loadShapes which shapes to load.
+                showSmall = true;
+                showEverything = false;
+                showLarge = false;
+                showMedium = false;
+                showPoints = false;
+
+                // Prevents doing a bunch of unnecessary work.
+                if (!showingSmall) {
+
+                    loadShapes();
+                }
 
                 break;
 
@@ -5934,7 +5952,18 @@ public class Map extends FragmentActivity implements
 
                 Log.i(TAG, "onMenuItemClick() -> showPoints");
 
-                loadPoints();
+                // Tells loadShapes which shapes to load.
+                showPoints = true;
+                showEverything = false;
+                showLarge = false;
+                showMedium = false;
+                showSmall = false;
+
+                // Prevents doing a bunch of unnecessary work.
+                if (!showingPoints) {
+
+                    loadShapes();
+                }
 
                 break;
 
@@ -6820,14 +6849,13 @@ public class Map extends FragmentActivity implements
         }
     }
 
-    private void loadAllChats() {
+    private void loadShapes() {
 
         // Prevent resetting and reloading everything if this is already the state.
-        if (firstLoadChats || restarted || !showingEverything || newCameraCoordinates || mapChanged) {
+        if (firstLoadShapes || restarted || newCameraCoordinates || mapChanged || showEverything || showLarge || showMedium || showSmall || showPoints) {
 
-            Log.i(TAG, "loadAllChats()");
+            Log.i(TAG, "loadShapes()");
 
-            boolean mapCleared = false;
             if (loadedCoordinates.size() == 7) {
 
                 mMap.clear();
@@ -6835,11 +6863,33 @@ public class Map extends FragmentActivity implements
                 mapCleared = true;
             }
 
-            showingEverything = true;
+            DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
+            DatabaseReference firebaseShapes;
+            if (showEverything) {
 
-            loadingIcon.setVisibility(View.VISIBLE);
+                firebaseShapes = rootRef.child("Shapes").child("(" + newNearLeftLat + ", " + newNearLeftLon + ")");
+            } else if (showLarge) {
 
-            if (!loadedCoordinates.contains(newNearLeft) || mapCleared || restarted) {
+                firebaseShapes = rootRef.child("Shapes").child("(" + newFarLeftLat + ", " + newFarLeftLon + ")").child("Large");
+            } else if (showMedium) {
+
+                firebaseShapes = rootRef.child("Shapes").child("(" + newFarLeftLat + ", " + newFarLeftLon + ")").child("Medium");
+            } else if (showSmall) {
+
+                firebaseShapes = rootRef.child("Shapes").child("(" + newFarLeftLat + ", " + newFarLeftLon + ")").child("Small");
+            } else if (showPoints) {
+
+                firebaseShapes = rootRef.child("Shapes").child("(" + newFarLeftLat + ", " + newFarLeftLon + ")").child("Points");
+            } else {
+
+                toastMessageLong("Oops! Something went wrong!");
+                loadingIcon.setVisibility(View.GONE);
+                return;
+            }
+
+            clearMap();
+
+            if (!loadedCoordinates.contains(newNearLeft) || mapCleared || restarted || showEverything || showLarge || showMedium || showSmall || showPoints) {
 
                 loadedCoordinates.add(0, newNearLeft);
 
@@ -6848,18 +6898,601 @@ public class Map extends FragmentActivity implements
                     loadedCoordinates.subList(7, loadedCoordinates.size()).clear();
                 }
 
-                DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-                DatabaseReference firebaseShapes = rootRef.child("Shapes").child("(" + newNearLeftLat + ", " + newNearLeftLon + ")");
                 firebaseShapes.addListenerForSingleValueEvent(new ValueEventListener() {
 
                     @Override
                     public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
 
-                        for (DataSnapshot ds : dataSnapshot.getChildren()) {
+                        if (showEverything) {
 
-                            for (DataSnapshot dss : ds.getChildren()) {
+                            loadingIcon.setVisibility(View.VISIBLE);
 
-                                if (dss.child("circleOptions").exists()) {
+                            for (DataSnapshot ds : dataSnapshot.getChildren()) {
+
+                                for (DataSnapshot dss : ds.getChildren()) {
+
+                                    if (dss.child("circleOptions").exists()) {
+
+                                        // Shape is a circle.
+
+                                        // Load different colored shapes depending on the map type.
+                                        if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
+
+                                            // Yellow circle.
+
+                                            double radius = 0;
+
+                                            LatLng center = new LatLng((double) dss.child("circleOptions/center/latitude/").getValue(), (double) dss.child("circleOptions/center/longitude/").getValue());
+                                            if ((dss.child("circleOptions/radius").getValue()) != null) {
+
+                                                radius = ((Number) (Objects.requireNonNull(dss.child("circleOptions/radius").getValue()))).doubleValue();
+                                            }
+                                            Circle circle = mMap.addCircle(
+                                                    new CircleOptions()
+                                                            .center(center)
+                                                            .clickable(true)
+                                                            .radius(radius)
+                                                            .strokeColor(Color.YELLOW)
+                                                            .strokeWidth(3f)
+                                            );
+
+                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                            circle.setTag(shapeUUID);
+                                        } else {
+
+                                            // Purple circle.
+
+                                            double radius = 0;
+
+                                            LatLng center = new LatLng((double) dss.child("circleOptions/center/latitude/").getValue(), (double) dss.child("circleOptions/center/longitude/").getValue());
+                                            if ((dss.child("circleOptions/radius").getValue()) != null) {
+
+                                                radius = ((Number) (Objects.requireNonNull(dss.child("circleOptions/radius").getValue()))).doubleValue();
+                                            }
+                                            Circle circle = mMap.addCircle(
+                                                    new CircleOptions()
+                                                            .center(center)
+                                                            .clickable(true)
+                                                            .radius(radius)
+                                                            .strokeColor(Color.rgb(255, 0, 255))
+                                                            .strokeWidth(3f)
+                                            );
+
+                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                            circle.setTag(shapeUUID);
+                                        }
+                                    } else {
+
+                                        // Shape is a polygon
+
+                                        // Load different colored shapes depending on the map type.
+                                        if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
+
+                                            // Yellow polygon.
+
+                                            LatLng marker3Position = null;
+                                            LatLng marker4Position = null;
+                                            LatLng marker5Position = null;
+                                            LatLng marker6Position = null;
+                                            Polygon polygon;
+
+                                            LatLng marker0Position = new LatLng((double) dss.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                                            LatLng marker1Position = new LatLng((double) dss.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                                            LatLng marker2Position = new LatLng((double) dss.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                            if (dss.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                marker3Position = new LatLng((double) dss.child("polygonOptions/points/3/latitude/").getValue(), (double) dss.child("polygonOptions/points/3/longitude/").getValue());
+                                            }
+                                            if (dss.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                marker4Position = new LatLng((double) dss.child("polygonOptions/points/4/latitude/").getValue(), (double) dss.child("polygonOptions/points/4/longitude/").getValue());
+                                            }
+                                            if (dss.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                marker5Position = new LatLng((double) dss.child("polygonOptions/points/5/latitude/").getValue(), (double) dss.child("polygonOptions/points/5/longitude/").getValue());
+                                            }
+                                            if (dss.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                marker6Position = new LatLng((double) dss.child("polygonOptions/points/6/latitude/").getValue(), (double) dss.child("polygonOptions/points/6/longitude/").getValue());
+                                            }
+                                            if (dss.child("polygonOptions/points/7/latitude/").getValue() != null) {
+                                                LatLng marker7Position = new LatLng((double) dss.child("polygonOptions/points/7/latitude/").getValue(), (double) dss.child("polygonOptions/points/7/longitude/").getValue());
+
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (dss.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (dss.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (dss.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (dss.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            }
+                                        } else {
+
+                                            // Purple polygon.
+
+                                            LatLng marker3Position = null;
+                                            LatLng marker4Position = null;
+                                            LatLng marker5Position = null;
+                                            LatLng marker6Position = null;
+                                            Polygon polygon;
+
+                                            LatLng marker0Position = new LatLng((double) dss.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                                            LatLng marker1Position = new LatLng((double) dss.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                                            LatLng marker2Position = new LatLng((double) dss.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                            if (dss.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                marker3Position = new LatLng((double) dss.child("polygonOptions/points/3/latitude/").getValue(), (double) dss.child("polygonOptions/points/3/longitude/").getValue());
+                                            }
+                                            if (dss.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                marker4Position = new LatLng((double) dss.child("polygonOptions/points/4/latitude/").getValue(), (double) dss.child("polygonOptions/points/4/longitude/").getValue());
+                                            }
+                                            if (dss.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                marker5Position = new LatLng((double) dss.child("polygonOptions/points/5/latitude/").getValue(), (double) dss.child("polygonOptions/points/5/longitude/").getValue());
+                                            }
+                                            if (dss.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                marker6Position = new LatLng((double) dss.child("polygonOptions/points/6/latitude/").getValue(), (double) dss.child("polygonOptions/points/6/longitude/").getValue());
+                                            }
+                                            if (dss.child("polygonOptions/points/7/latitude/").getValue() != null) {
+                                                LatLng marker7Position = new LatLng((double) dss.child("polygonOptions/points/7/latitude/").getValue(), (double) dss.child("polygonOptions/points/7/longitude/").getValue());
+
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (dss.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (dss.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (dss.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (dss.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            loadingIcon.setVisibility(View.GONE);
+                        } else if (showLarge) {
+
+                            loadingIcon.setVisibility(View.VISIBLE);
+
+                            for (DataSnapshot ds : dataSnapshot.getChildren()) {
+
+                                if (ds.child("circleOptions").exists()) {
+
+                                    // Shape is a circle.
+
+                                    // Load different colored shapes depending on the map type.
+                                    if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
+
+                                        // Only load large circles (radius > 50)
+                                        if ((double) (long) ds.child("circleOptions/radius").getValue() > 50) {
+
+                                            // Yellow circle.
+
+                                            double radius = 0;
+
+                                            LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
+                                            if ((ds.child("circleOptions/radius").getValue()) != null) {
+
+                                                radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
+                                            }
+                                            Circle circle = mMap.addCircle(
+                                                    new CircleOptions()
+                                                            .center(center)
+                                                            .clickable(true)
+                                                            .radius(radius)
+                                                            .strokeColor(Color.YELLOW)
+                                                            .strokeWidth(3f)
+                                            );
+
+                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                            circle.setTag(shapeUUID);
+                                        }
+                                    } else {
+
+                                        // Purple circle.
+
+                                        // Only load large circles (radius > 50)
+                                        if ((double) (long) ds.child("circleOptions/radius").getValue() > 50) {
+
+                                            double radius = 0;
+
+                                            LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
+                                            if ((ds.child("circleOptions/radius").getValue()) != null) {
+
+                                                radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
+                                            }
+                                            Circle circle = mMap.addCircle(
+                                                    new CircleOptions()
+                                                            .center(center)
+                                                            .clickable(true)
+                                                            .radius(radius)
+                                                            .strokeColor(Color.rgb(255, 0, 255))
+                                                            .strokeWidth(3f)
+                                            );
+
+                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                            circle.setTag(shapeUUID);
+                                        }
+                                    }
+                                } else {
+
+                                    // Shape is a polygon.
+
+                                    // Load different colored shapes depending on the map type.
+                                    if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
+
+                                        // Yellow polygon.
+
+                                        // Only load large polygons (polygonArea > pi(50^2))
+                                        if ((double) ds.child("polygonArea").getValue() > Math.PI * (Math.pow(50, 2))) {
+
+                                            LatLng marker3Position = null;
+                                            LatLng marker4Position = null;
+                                            LatLng marker5Position = null;
+                                            LatLng marker6Position = null;
+                                            Polygon polygon;
+
+                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                            if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
+                                                LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
+
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            }
+                                        }
+                                    } else {
+
+                                        // Purple polygon.
+
+                                        // Only load large polygons (polygonArea > pi(50^2))
+                                        if ((double) ds.child("polygonArea").getValue() > Math.PI * (Math.pow(50, 2))) {
+
+                                            LatLng marker3Position = null;
+                                            LatLng marker4Position = null;
+                                            LatLng marker5Position = null;
+                                            LatLng marker6Position = null;
+                                            Polygon polygon;
+
+                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                            if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
+                                                LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
+
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            loadingIcon.setVisibility(View.GONE);
+                        } else if (showMedium) {
+
+                            loadingIcon.setVisibility(View.VISIBLE);
+
+                            for (DataSnapshot ds : dataSnapshot.getChildren()) {
+
+                                if (ds.child("circleOptions").exists()) {
 
                                     // Shape is a circle.
 
@@ -6868,306 +7501,296 @@ public class Map extends FragmentActivity implements
 
                                         // Yellow circle.
 
-                                        double radius = 0;
+                                        // Only load medium circles (10 < radius <= 50)
+                                        if ((double) (long) ds.child("circleOptions/radius").getValue() > 10 && (double) (long) ds.child("circleOptions/radius").getValue() <= 50) {
 
-                                        LatLng center = new LatLng((double) dss.child("circleOptions/center/latitude/").getValue(), (double) dss.child("circleOptions/center/longitude/").getValue());
-                                        if ((dss.child("circleOptions/radius").getValue()) != null) {
+                                            double radius = 0;
 
-                                            radius = ((Number) (Objects.requireNonNull(dss.child("circleOptions/radius").getValue()))).doubleValue();
+                                            LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
+                                            if ((ds.child("circleOptions/radius").getValue()) != null) {
+
+                                                radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
+                                            }
+                                            Circle circle = mMap.addCircle(
+                                                    new CircleOptions()
+                                                            .center(center)
+                                                            .clickable(true)
+                                                            .radius(radius)
+                                                            .strokeColor(Color.YELLOW)
+                                                            .strokeWidth(3f)
+                                            );
+
+                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                            circle.setTag(shapeUUID);
                                         }
-                                        Circle circle = mMap.addCircle(
-                                                new CircleOptions()
-                                                        .center(center)
-                                                        .clickable(true)
-                                                        .radius(radius)
-                                                        .strokeColor(Color.YELLOW)
-                                                        .strokeWidth(3f)
-                                        );
-
-                                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                        shapeUUID = (String) dss.child("shapeUUID").getValue();
-
-                                        circle.setTag(shapeUUID);
                                     } else {
 
                                         // Purple circle.
 
-                                        double radius = 0;
+                                        // Only load medium circles (10 < radius <= 50)
+                                        if ((double) (long) ds.child("circleOptions/radius").getValue() > 10 && (double) (long) ds.child("circleOptions/radius").getValue() <= 50) {
 
-                                        LatLng center = new LatLng((double) dss.child("circleOptions/center/latitude/").getValue(), (double) dss.child("circleOptions/center/longitude/").getValue());
-                                        if ((dss.child("circleOptions/radius").getValue()) != null) {
+                                            double radius = 0;
 
-                                            radius = ((Number) (Objects.requireNonNull(dss.child("circleOptions/radius").getValue()))).doubleValue();
+                                            LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
+                                            if ((ds.child("circleOptions/radius").getValue()) != null) {
+
+                                                radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
+                                            }
+                                            Circle circle = mMap.addCircle(
+                                                    new CircleOptions()
+                                                            .center(center)
+                                                            .clickable(true)
+                                                            .radius(radius)
+                                                            .strokeColor(Color.rgb(255, 0, 255))
+                                                            .strokeWidth(3f)
+                                            );
+
+                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                            circle.setTag(shapeUUID);
                                         }
-                                        Circle circle = mMap.addCircle(
-                                                new CircleOptions()
-                                                        .center(center)
-                                                        .clickable(true)
-                                                        .radius(radius)
-                                                        .strokeColor(Color.rgb(255, 0, 255))
-                                                        .strokeWidth(3f)
-                                        );
-
-                                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                        shapeUUID = (String) dss.child("shapeUUID").getValue();
-
-                                        circle.setTag(shapeUUID);
                                     }
                                 } else {
 
-                                    // Shape is a polygon
+                                    // Shape is a polygon.
 
                                     // Load different colored shapes depending on the map type.
                                     if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
 
-                                        // Yellow polygon.
+                                        // Only load medium polygons pi(10^2) < polygonArea <= pi(50^2))
+                                        if ((double) ds.child("polygonArea").getValue() > Math.PI * (Math.pow(10, 2)) && (double) ds.child("polygonArea").getValue() <= Math.PI * (Math.pow(50, 2))) {
 
-                                        LatLng marker3Position = null;
-                                        LatLng marker4Position = null;
-                                        LatLng marker5Position = null;
-                                        LatLng marker6Position = null;
-                                        Polygon polygon;
+                                            // Yellow polygon.
 
-                                        LatLng marker0Position = new LatLng((double) dss.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                        LatLng marker1Position = new LatLng((double) dss.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                        LatLng marker2Position = new LatLng((double) dss.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                        if (dss.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            marker3Position = new LatLng((double) dss.child("polygonOptions/points/3/latitude/").getValue(), (double) dss.child("polygonOptions/points/3/longitude/").getValue());
-                                        }
-                                        if (dss.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            marker4Position = new LatLng((double) dss.child("polygonOptions/points/4/latitude/").getValue(), (double) dss.child("polygonOptions/points/4/longitude/").getValue());
-                                        }
-                                        if (dss.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            marker5Position = new LatLng((double) dss.child("polygonOptions/points/5/latitude/").getValue(), (double) dss.child("polygonOptions/points/5/longitude/").getValue());
-                                        }
-                                        if (dss.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            marker6Position = new LatLng((double) dss.child("polygonOptions/points/6/latitude/").getValue(), (double) dss.child("polygonOptions/points/6/longitude/").getValue());
-                                        }
-                                        if (dss.child("polygonOptions/points/7/latitude/").getValue() != null) {
-                                            LatLng marker7Position = new LatLng((double) dss.child("polygonOptions/points/7/latitude/").getValue(), (double) dss.child("polygonOptions/points/7/longitude/").getValue());
+                                            LatLng marker3Position = null;
+                                            LatLng marker4Position = null;
+                                            LatLng marker5Position = null;
+                                            LatLng marker6Position = null;
+                                            Polygon polygon;
 
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
+                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                            if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
+                                                LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
 
-                                            polygon.setTag(shapeUUID);
-                                        } else if (dss.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
 
-                                            polygon.setTag(shapeUUID);
-                                        } else if (dss.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
 
-                                            polygon.setTag(shapeUUID);
-                                        } else if (dss.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
 
-                                            polygon.setTag(shapeUUID);
-                                        } else if (dss.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
 
-                                            polygon.setTag(shapeUUID);
-                                        } else {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
+                                                polygon.setTag(shapeUUID);
+                                            } else {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
 
-                                            polygon.setTag(shapeUUID);
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            }
                                         }
                                     } else {
 
                                         // Purple polygon.
 
-                                        LatLng marker3Position = null;
-                                        LatLng marker4Position = null;
-                                        LatLng marker5Position = null;
-                                        LatLng marker6Position = null;
-                                        Polygon polygon;
+                                        // Only load medium polygons pi(10^2) < polygonArea <= pi(50^2))
+                                        if ((double) ds.child("polygonArea").getValue() > Math.PI * (Math.pow(10, 2)) && (double) ds.child("polygonArea").getValue() <= Math.PI * (Math.pow(50, 2))) {
 
-                                        LatLng marker0Position = new LatLng((double) dss.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                        LatLng marker1Position = new LatLng((double) dss.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                        LatLng marker2Position = new LatLng((double) dss.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                        if (dss.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            marker3Position = new LatLng((double) dss.child("polygonOptions/points/3/latitude/").getValue(), (double) dss.child("polygonOptions/points/3/longitude/").getValue());
-                                        }
-                                        if (dss.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            marker4Position = new LatLng((double) dss.child("polygonOptions/points/4/latitude/").getValue(), (double) dss.child("polygonOptions/points/4/longitude/").getValue());
-                                        }
-                                        if (dss.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            marker5Position = new LatLng((double) dss.child("polygonOptions/points/5/latitude/").getValue(), (double) dss.child("polygonOptions/points/5/longitude/").getValue());
-                                        }
-                                        if (dss.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            marker6Position = new LatLng((double) dss.child("polygonOptions/points/6/latitude/").getValue(), (double) dss.child("polygonOptions/points/6/longitude/").getValue());
-                                        }
-                                        if (dss.child("polygonOptions/points/7/latitude/").getValue() != null) {
-                                            LatLng marker7Position = new LatLng((double) dss.child("polygonOptions/points/7/latitude/").getValue(), (double) dss.child("polygonOptions/points/7/longitude/").getValue());
+                                            LatLng marker3Position = null;
+                                            LatLng marker4Position = null;
+                                            LatLng marker5Position = null;
+                                            LatLng marker6Position = null;
+                                            Polygon polygon;
 
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
+                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                            if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
+                                                LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
 
-                                            polygon.setTag(shapeUUID);
-                                        } else if (dss.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
 
-                                            polygon.setTag(shapeUUID);
-                                        } else if (dss.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
 
-                                            polygon.setTag(shapeUUID);
-                                        } else if (dss.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
 
-                                            polygon.setTag(shapeUUID);
-                                        } else if (dss.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
 
-                                            polygon.setTag(shapeUUID);
-                                        } else {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
+                                                polygon.setTag(shapeUUID);
+                                            } else {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
 
-                                            polygon.setTag(shapeUUID);
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            }
                                         }
                                     }
                                 }
                             }
-                        }
-                    }
 
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError databaseError) {
+                            loadingIcon.setVisibility(View.GONE);
+                        } else if (showSmall) {
 
-                        Log.e(TAG, "DatabaseError");
-                        loadingIcon.setVisibility(View.GONE);
-                        toastMessageLong(databaseError.getMessage());
-                    }
-                });
-            }
+                            loadingIcon.setVisibility(View.VISIBLE);
 
-            // Without the final "&&" statement, every one of these statement groups will be called after restart, even when newNearLeft == newFarLeft == newNearRight == newFarRight.
-            if (!loadedCoordinates.contains(newFarLeft) || mapCleared || (!loadedCoordinates.contains(newFarLeft) && restarted)) {
+                            for (DataSnapshot ds : dataSnapshot.getChildren()) {
 
-                loadedCoordinates.add(0, newFarLeft);
-
-                if (loadedCoordinates.size() > 7) {
-
-                    loadedCoordinates.subList(7, loadedCoordinates.size()).clear();
-                }
-
-                DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-                DatabaseReference firebaseShapes = rootRef.child("Shapes").child("(" + newFarLeftLat + ", " + newFarLeftLon + ")");
-                firebaseShapes.addListenerForSingleValueEvent(new ValueEventListener() {
-
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-
-                        for (DataSnapshot ds : dataSnapshot.getChildren()) {
-
-                            for (DataSnapshot dss : ds.getChildren()) {
-
-                                if (dss.child("circleOptions").exists()) {
+                                if (ds.child("circleOptions").exists()) {
 
                                     // Shape is a circle.
 
@@ -7176,305 +7799,296 @@ public class Map extends FragmentActivity implements
 
                                         // Yellow circle.
 
-                                        double radius = 0;
+                                        // Only load small circles (1 < radius <= 10)
+                                        if ((double) (long) ds.child("circleOptions/radius").getValue() > 1 && (double) (long) ds.child("circleOptions/radius").getValue() <= 10) {
 
-                                        LatLng center = new LatLng((double) dss.child("circleOptions/center/latitude/").getValue(), (double) dss.child("circleOptions/center/longitude/").getValue());
-                                        if ((dss.child("circleOptions/radius").getValue()) != null) {
+                                            double radius = 0;
 
-                                            radius = ((Number) (Objects.requireNonNull(dss.child("circleOptions/radius").getValue()))).doubleValue();
+                                            LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
+                                            if ((ds.child("circleOptions/radius").getValue()) != null) {
+
+                                                radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
+                                            }
+                                            Circle circle = mMap.addCircle(
+                                                    new CircleOptions()
+                                                            .center(center)
+                                                            .clickable(true)
+                                                            .radius(radius)
+                                                            .strokeColor(Color.YELLOW)
+                                                            .strokeWidth(3f)
+                                            );
+
+                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                            circle.setTag(shapeUUID);
                                         }
-                                        Circle circle = mMap.addCircle(
-                                                new CircleOptions()
-                                                        .center(center)
-                                                        .clickable(true)
-                                                        .radius(radius)
-                                                        .strokeColor(Color.YELLOW)
-                                                        .strokeWidth(3f)
-                                        );
-
-                                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                        shapeUUID = (String) dss.child("shapeUUID").getValue();
-
-                                        circle.setTag(shapeUUID);
                                     } else {
 
                                         // Purple circle.
 
-                                        double radius = 0;
+                                        // Only load small circles (1 < radius <= 10)
+                                        if ((double) (long) ds.child("circleOptions/radius").getValue() > 1 && (double) (long) ds.child("circleOptions/radius").getValue() <= 10) {
 
-                                        LatLng center = new LatLng((double) dss.child("circleOptions/center/latitude/").getValue(), (double) dss.child("circleOptions/center/longitude/").getValue());
-                                        if ((dss.child("circleOptions/radius").getValue()) != null) {
+                                            double radius = 0;
 
-                                            radius = ((Number) (Objects.requireNonNull(dss.child("circleOptions/radius").getValue()))).doubleValue();
+                                            LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
+                                            if ((ds.child("circleOptions/radius").getValue()) != null) {
+
+                                                radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
+                                            }
+                                            Circle circle = mMap.addCircle(
+                                                    new CircleOptions()
+                                                            .center(center)
+                                                            .clickable(true)
+                                                            .radius(radius)
+                                                            .strokeColor(Color.rgb(255, 0, 255))
+                                                            .strokeWidth(3f)
+                                            );
+
+                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                            circle.setTag(shapeUUID);
                                         }
-                                        Circle circle = mMap.addCircle(
-                                                new CircleOptions()
-                                                        .center(center)
-                                                        .clickable(true)
-                                                        .radius(radius)
-                                                        .strokeColor(Color.rgb(255, 0, 255))
-                                                        .strokeWidth(3f)
-                                        );
-
-                                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                        shapeUUID = (String) dss.child("shapeUUID").getValue();
-
-                                        circle.setTag(shapeUUID);
                                     }
                                 } else {
 
-                                    // Shape is a polygon
+                                    // Shape is a polygon.
 
                                     // Load different colored shapes depending on the map type.
                                     if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
 
-                                        // Yellow polygon.
+                                        // Only load small polygons pi < polygonArea <= pi(10^2))
+                                        if ((double) ds.child("polygonArea").getValue() > Math.PI && (double) ds.child("polygonArea").getValue() <= Math.PI * (Math.pow(10, 2))) {
 
-                                        LatLng marker3Position = null;
-                                        LatLng marker4Position = null;
-                                        LatLng marker5Position = null;
-                                        LatLng marker6Position = null;
-                                        Polygon polygon;
+                                            // Yellow polygon.
 
-                                        LatLng marker0Position = new LatLng((double) dss.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                        LatLng marker1Position = new LatLng((double) dss.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                        LatLng marker2Position = new LatLng((double) dss.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                        if (dss.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            marker3Position = new LatLng((double) dss.child("polygonOptions/points/3/latitude/").getValue(), (double) dss.child("polygonOptions/points/3/longitude/").getValue());
-                                        }
-                                        if (dss.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            marker4Position = new LatLng((double) dss.child("polygonOptions/points/4/latitude/").getValue(), (double) dss.child("polygonOptions/points/4/longitude/").getValue());
-                                        }
-                                        if (dss.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            marker5Position = new LatLng((double) dss.child("polygonOptions/points/5/latitude/").getValue(), (double) dss.child("polygonOptions/points/5/longitude/").getValue());
-                                        }
-                                        if (dss.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            marker6Position = new LatLng((double) dss.child("polygonOptions/points/6/latitude/").getValue(), (double) dss.child("polygonOptions/points/6/longitude/").getValue());
-                                        }
-                                        if (dss.child("polygonOptions/points/7/latitude/").getValue() != null) {
-                                            LatLng marker7Position = new LatLng((double) dss.child("polygonOptions/points/7/latitude/").getValue(), (double) dss.child("polygonOptions/points/7/longitude/").getValue());
+                                            LatLng marker3Position = null;
+                                            LatLng marker4Position = null;
+                                            LatLng marker5Position = null;
+                                            LatLng marker6Position = null;
+                                            Polygon polygon;
 
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
+                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                            if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
+                                                LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
 
-                                            polygon.setTag(shapeUUID);
-                                        } else if (dss.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
 
-                                            polygon.setTag(shapeUUID);
-                                        } else if (dss.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
 
-                                            polygon.setTag(shapeUUID);
-                                        } else if (dss.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
 
-                                            polygon.setTag(shapeUUID);
-                                        } else if (dss.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
 
-                                            polygon.setTag(shapeUUID);
-                                        } else {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
+                                                polygon.setTag(shapeUUID);
+                                            } else {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
 
-                                            polygon.setTag(shapeUUID);
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            }
                                         }
                                     } else {
 
                                         // Purple polygon.
 
-                                        LatLng marker3Position = null;
-                                        LatLng marker4Position = null;
-                                        LatLng marker5Position = null;
-                                        LatLng marker6Position = null;
-                                        Polygon polygon;
+                                        // Only load small polygons pi < polygonArea <= pi(10^2))
+                                        if ((double) ds.child("polygonArea").getValue() > Math.PI && (double) ds.child("polygonArea").getValue() <= Math.PI * (Math.pow(10, 2))) {
 
-                                        LatLng marker0Position = new LatLng((double) dss.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                        LatLng marker1Position = new LatLng((double) dss.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                        LatLng marker2Position = new LatLng((double) dss.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                        if (dss.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            marker3Position = new LatLng((double) dss.child("polygonOptions/points/3/latitude/").getValue(), (double) dss.child("polygonOptions/points/3/longitude/").getValue());
-                                        }
-                                        if (dss.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            marker4Position = new LatLng((double) dss.child("polygonOptions/points/4/latitude/").getValue(), (double) dss.child("polygonOptions/points/4/longitude/").getValue());
-                                        }
-                                        if (dss.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            marker5Position = new LatLng((double) dss.child("polygonOptions/points/5/latitude/").getValue(), (double) dss.child("polygonOptions/points/5/longitude/").getValue());
-                                        }
-                                        if (dss.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            marker6Position = new LatLng((double) dss.child("polygonOptions/points/6/latitude/").getValue(), (double) dss.child("polygonOptions/points/6/longitude/").getValue());
-                                        }
-                                        if (dss.child("polygonOptions/points/7/latitude/").getValue() != null) {
-                                            LatLng marker7Position = new LatLng((double) dss.child("polygonOptions/points/7/latitude/").getValue(), (double) dss.child("polygonOptions/points/7/longitude/").getValue());
+                                            LatLng marker3Position = null;
+                                            LatLng marker4Position = null;
+                                            LatLng marker5Position = null;
+                                            LatLng marker6Position = null;
+                                            Polygon polygon;
 
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
+                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                            if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
+                                                LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
 
-                                            polygon.setTag(shapeUUID);
-                                        } else if (dss.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
 
-                                            polygon.setTag(shapeUUID);
-                                        } else if (dss.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
 
-                                            polygon.setTag(shapeUUID);
-                                        } else if (dss.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
 
-                                            polygon.setTag(shapeUUID);
-                                        } else if (dss.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
 
-                                            polygon.setTag(shapeUUID);
-                                        } else {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
+                                                polygon.setTag(shapeUUID);
+                                            } else {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
 
-                                            polygon.setTag(shapeUUID);
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            }
                                         }
                                     }
                                 }
                             }
-                        }
-                    }
 
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError databaseError) {
+                            loadingIcon.setVisibility(View.GONE);
+                        } else if (showPoints) {
 
-                        Log.e(TAG, "DatabaseError");
-                        loadingIcon.setVisibility(View.GONE);
-                        toastMessageLong(databaseError.getMessage());
-                    }
-                });
-            }
+                            loadingIcon.setVisibility(View.VISIBLE);
 
-            if (!loadedCoordinates.contains(newNearRight) || mapCleared || (!loadedCoordinates.contains(newNearRight) && restarted)) {
+                            for (DataSnapshot ds : dataSnapshot.getChildren()) {
 
-                loadedCoordinates.add(0, newNearRight);
-
-                if (loadedCoordinates.size() > 7) {
-
-                    loadedCoordinates.subList(7, loadedCoordinates.size()).clear();
-                }
-
-                DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-                DatabaseReference firebaseShapes = rootRef.child("Shapes").child("(" + newNearRightLat + ", " + newNearRightLon + ")");
-                firebaseShapes.addListenerForSingleValueEvent(new ValueEventListener() {
-
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-
-                        for (DataSnapshot ds : dataSnapshot.getChildren()) {
-
-                            for (DataSnapshot dss : ds.getChildren()) {
-
-                                if (dss.child("circleOptions").exists()) {
+                                if (ds.child("circleOptions").exists()) {
 
                                     // Shape is a circle.
 
@@ -7483,271 +8097,63 @@ public class Map extends FragmentActivity implements
 
                                         // Yellow circle.
 
-                                        double radius = 0;
+                                        // Only load points (radius == 1)
+                                        if ((double) (long) ds.child("circleOptions/radius").getValue() == 1) {
 
-                                        LatLng center = new LatLng((double) dss.child("circleOptions/center/latitude/").getValue(), (double) dss.child("circleOptions/center/longitude/").getValue());
-                                        if ((dss.child("circleOptions/radius").getValue()) != null) {
+                                            double radius = 0;
 
-                                            radius = ((Number) (Objects.requireNonNull(dss.child("circleOptions/radius").getValue()))).doubleValue();
+                                            LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
+                                            if ((ds.child("circleOptions/radius").getValue()) != null) {
+
+                                                radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
+                                            }
+                                            Circle circle = mMap.addCircle(
+                                                    new CircleOptions()
+                                                            .center(center)
+                                                            .clickable(true)
+                                                            .radius(radius)
+                                                            .strokeColor(Color.YELLOW)
+                                                            .strokeWidth(3f)
+                                            );
+
+                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                            circle.setTag(shapeUUID);
                                         }
-                                        Circle circle = mMap.addCircle(
-                                                new CircleOptions()
-                                                        .center(center)
-                                                        .clickable(true)
-                                                        .radius(radius)
-                                                        .strokeColor(Color.YELLOW)
-                                                        .strokeWidth(3f)
-                                        );
-
-                                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                        shapeUUID = (String) dss.child("shapeUUID").getValue();
-
-                                        circle.setTag(shapeUUID);
                                     } else {
 
                                         // Purple circle.
 
-                                        double radius = 0;
+                                        // Only load points (radius == 1)
+                                        if ((double) (long) ds.child("circleOptions/radius").getValue() == 1) {
 
-                                        LatLng center = new LatLng((double) dss.child("circleOptions/center/latitude/").getValue(), (double) dss.child("circleOptions/center/longitude/").getValue());
-                                        if ((dss.child("circleOptions/radius").getValue()) != null) {
+                                            double radius = 0;
 
-                                            radius = ((Number) (Objects.requireNonNull(dss.child("circleOptions/radius").getValue()))).doubleValue();
-                                        }
-                                        Circle circle = mMap.addCircle(
-                                                new CircleOptions()
-                                                        .center(center)
-                                                        .clickable(true)
-                                                        .radius(radius)
-                                                        .strokeColor(Color.rgb(255, 0, 255))
-                                                        .strokeWidth(3f)
-                                        );
+                                            LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
+                                            if ((ds.child("circleOptions/radius").getValue()) != null) {
 
-                                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                        shapeUUID = (String) dss.child("shapeUUID").getValue();
-
-                                        circle.setTag(shapeUUID);
-                                    }
-                                } else {
-
-                                    // Shape is a polygon
-
-                                    // Load different colored shapes depending on the map type.
-                                    if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
-
-                                        // Yellow polygon.
-
-                                        LatLng marker3Position = null;
-                                        LatLng marker4Position = null;
-                                        LatLng marker5Position = null;
-                                        LatLng marker6Position = null;
-                                        Polygon polygon;
-
-                                        LatLng marker0Position = new LatLng((double) dss.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                        LatLng marker1Position = new LatLng((double) dss.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                        LatLng marker2Position = new LatLng((double) dss.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                        if (dss.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            marker3Position = new LatLng((double) dss.child("polygonOptions/points/3/latitude/").getValue(), (double) dss.child("polygonOptions/points/3/longitude/").getValue());
-                                        }
-                                        if (dss.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            marker4Position = new LatLng((double) dss.child("polygonOptions/points/4/latitude/").getValue(), (double) dss.child("polygonOptions/points/4/longitude/").getValue());
-                                        }
-                                        if (dss.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            marker5Position = new LatLng((double) dss.child("polygonOptions/points/5/latitude/").getValue(), (double) dss.child("polygonOptions/points/5/longitude/").getValue());
-                                        }
-                                        if (dss.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            marker6Position = new LatLng((double) dss.child("polygonOptions/points/6/latitude/").getValue(), (double) dss.child("polygonOptions/points/6/longitude/").getValue());
-                                        }
-                                        if (dss.child("polygonOptions/points/7/latitude/").getValue() != null) {
-                                            LatLng marker7Position = new LatLng((double) dss.child("polygonOptions/points/7/latitude/").getValue(), (double) dss.child("polygonOptions/points/7/longitude/").getValue());
-
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
+                                                radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
+                                            }
+                                            Circle circle = mMap.addCircle(
+                                                    new CircleOptions()
+                                                            .center(center)
                                                             .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (dss.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (dss.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (dss.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (dss.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        }
-                                    } else {
-
-                                        // Purple polygon.
-
-                                        LatLng marker3Position = null;
-                                        LatLng marker4Position = null;
-                                        LatLng marker5Position = null;
-                                        LatLng marker6Position = null;
-                                        Polygon polygon;
-
-                                        LatLng marker0Position = new LatLng((double) dss.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                        LatLng marker1Position = new LatLng((double) dss.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                        LatLng marker2Position = new LatLng((double) dss.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                        if (dss.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            marker3Position = new LatLng((double) dss.child("polygonOptions/points/3/latitude/").getValue(), (double) dss.child("polygonOptions/points/3/longitude/").getValue());
-                                        }
-                                        if (dss.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            marker4Position = new LatLng((double) dss.child("polygonOptions/points/4/latitude/").getValue(), (double) dss.child("polygonOptions/points/4/longitude/").getValue());
-                                        }
-                                        if (dss.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            marker5Position = new LatLng((double) dss.child("polygonOptions/points/5/latitude/").getValue(), (double) dss.child("polygonOptions/points/5/longitude/").getValue());
-                                        }
-                                        if (dss.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            marker6Position = new LatLng((double) dss.child("polygonOptions/points/6/latitude/").getValue(), (double) dss.child("polygonOptions/points/6/longitude/").getValue());
-                                        }
-                                        if (dss.child("polygonOptions/points/7/latitude/").getValue() != null) {
-                                            LatLng marker7Position = new LatLng((double) dss.child("polygonOptions/points/7/latitude/").getValue(), (double) dss.child("polygonOptions/points/7/longitude/").getValue());
-
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                                            .radius(radius)
                                                             .strokeColor(Color.rgb(255, 0, 255))
                                                             .strokeWidth(3f)
                                             );
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
+                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            polygon.setTag(shapeUUID);
-                                        } else if (dss.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (dss.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (dss.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (dss.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
+                                            circle.setTag(shapeUUID);
                                         }
                                     }
                                 }
                             }
+
+                            loadingIcon.setVisibility(View.GONE);
                         }
                     }
 
@@ -7761,27 +8167,613 @@ public class Map extends FragmentActivity implements
                 });
             }
 
-            if (!loadedCoordinates.contains(newFarRight) || mapCleared || (!loadedCoordinates.contains(newFarRight) && restarted)) {
+            // Without the final "&&" statements, every one of these statement groups will be called after restart, even when newNearLeft == newFarLeft == newNearRight == newFarRight.
+            if (!loadedCoordinates.contains(newFarLeft) || mapCleared || (!loadedCoordinates.contains(newFarLeft) && restarted) || (!loadedCoordinates.contains(newFarLeft) && showEverything) ||
+                    (!loadedCoordinates.contains(newFarLeft) && showLarge) || (!loadedCoordinates.contains(newFarLeft) && showMedium) ||
+                    (!loadedCoordinates.contains(newFarLeft) && showSmall) || (!loadedCoordinates.contains(newFarLeft) && showPoints)) {
 
-                loadedCoordinates.add(0, newFarRight);
+                loadedCoordinates.add(0, newFarLeft);
 
                 if (loadedCoordinates.size() > 7) {
 
                     loadedCoordinates.subList(7, loadedCoordinates.size()).clear();
                 }
 
-                DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-                DatabaseReference firebaseShapes = rootRef.child("Shapes").child("(" + newFarRightLat + ", " + newFarRightLon + ")");
                 firebaseShapes.addListenerForSingleValueEvent(new ValueEventListener() {
 
                     @Override
                     public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
 
-                        for (DataSnapshot ds : dataSnapshot.getChildren()) {
+                        if (showEverything) {
 
-                            for (DataSnapshot dss : ds.getChildren()) {
+                            loadingIcon.setVisibility(View.VISIBLE);
 
-                                if (dss.child("circleOptions").exists()) {
+                            for (DataSnapshot ds : dataSnapshot.getChildren()) {
+
+                                for (DataSnapshot dss : ds.getChildren()) {
+
+                                    if (dss.child("circleOptions").exists()) {
+
+                                        // Shape is a circle.
+
+                                        // Load different colored shapes depending on the map type.
+                                        if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
+
+                                            // Yellow circle.
+
+                                            double radius = 0;
+
+                                            LatLng center = new LatLng((double) dss.child("circleOptions/center/latitude/").getValue(), (double) dss.child("circleOptions/center/longitude/").getValue());
+                                            if ((dss.child("circleOptions/radius").getValue()) != null) {
+
+                                                radius = ((Number) (Objects.requireNonNull(dss.child("circleOptions/radius").getValue()))).doubleValue();
+                                            }
+                                            Circle circle = mMap.addCircle(
+                                                    new CircleOptions()
+                                                            .center(center)
+                                                            .clickable(true)
+                                                            .radius(radius)
+                                                            .strokeColor(Color.YELLOW)
+                                                            .strokeWidth(3f)
+                                            );
+
+                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                            circle.setTag(shapeUUID);
+                                        } else {
+
+                                            // Purple circle.
+
+                                            double radius = 0;
+
+                                            LatLng center = new LatLng((double) dss.child("circleOptions/center/latitude/").getValue(), (double) dss.child("circleOptions/center/longitude/").getValue());
+                                            if ((dss.child("circleOptions/radius").getValue()) != null) {
+
+                                                radius = ((Number) (Objects.requireNonNull(dss.child("circleOptions/radius").getValue()))).doubleValue();
+                                            }
+                                            Circle circle = mMap.addCircle(
+                                                    new CircleOptions()
+                                                            .center(center)
+                                                            .clickable(true)
+                                                            .radius(radius)
+                                                            .strokeColor(Color.rgb(255, 0, 255))
+                                                            .strokeWidth(3f)
+                                            );
+
+                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                            circle.setTag(shapeUUID);
+                                        }
+                                    } else {
+
+                                        // Shape is a polygon
+
+                                        // Load different colored shapes depending on the map type.
+                                        if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
+
+                                            // Yellow polygon.
+
+                                            LatLng marker3Position = null;
+                                            LatLng marker4Position = null;
+                                            LatLng marker5Position = null;
+                                            LatLng marker6Position = null;
+                                            Polygon polygon;
+
+                                            LatLng marker0Position = new LatLng((double) dss.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                                            LatLng marker1Position = new LatLng((double) dss.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                                            LatLng marker2Position = new LatLng((double) dss.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                            if (dss.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                marker3Position = new LatLng((double) dss.child("polygonOptions/points/3/latitude/").getValue(), (double) dss.child("polygonOptions/points/3/longitude/").getValue());
+                                            }
+                                            if (dss.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                marker4Position = new LatLng((double) dss.child("polygonOptions/points/4/latitude/").getValue(), (double) dss.child("polygonOptions/points/4/longitude/").getValue());
+                                            }
+                                            if (dss.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                marker5Position = new LatLng((double) dss.child("polygonOptions/points/5/latitude/").getValue(), (double) dss.child("polygonOptions/points/5/longitude/").getValue());
+                                            }
+                                            if (dss.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                marker6Position = new LatLng((double) dss.child("polygonOptions/points/6/latitude/").getValue(), (double) dss.child("polygonOptions/points/6/longitude/").getValue());
+                                            }
+                                            if (dss.child("polygonOptions/points/7/latitude/").getValue() != null) {
+                                                LatLng marker7Position = new LatLng((double) dss.child("polygonOptions/points/7/latitude/").getValue(), (double) dss.child("polygonOptions/points/7/longitude/").getValue());
+
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (dss.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (dss.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (dss.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (dss.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            }
+                                        } else {
+
+                                            // Purple polygon.
+
+                                            LatLng marker3Position = null;
+                                            LatLng marker4Position = null;
+                                            LatLng marker5Position = null;
+                                            LatLng marker6Position = null;
+                                            Polygon polygon;
+
+                                            LatLng marker0Position = new LatLng((double) dss.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                                            LatLng marker1Position = new LatLng((double) dss.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                                            LatLng marker2Position = new LatLng((double) dss.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                            if (dss.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                marker3Position = new LatLng((double) dss.child("polygonOptions/points/3/latitude/").getValue(), (double) dss.child("polygonOptions/points/3/longitude/").getValue());
+                                            }
+                                            if (dss.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                marker4Position = new LatLng((double) dss.child("polygonOptions/points/4/latitude/").getValue(), (double) dss.child("polygonOptions/points/4/longitude/").getValue());
+                                            }
+                                            if (dss.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                marker5Position = new LatLng((double) dss.child("polygonOptions/points/5/latitude/").getValue(), (double) dss.child("polygonOptions/points/5/longitude/").getValue());
+                                            }
+                                            if (dss.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                marker6Position = new LatLng((double) dss.child("polygonOptions/points/6/latitude/").getValue(), (double) dss.child("polygonOptions/points/6/longitude/").getValue());
+                                            }
+                                            if (dss.child("polygonOptions/points/7/latitude/").getValue() != null) {
+                                                LatLng marker7Position = new LatLng((double) dss.child("polygonOptions/points/7/latitude/").getValue(), (double) dss.child("polygonOptions/points/7/longitude/").getValue());
+
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (dss.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (dss.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (dss.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (dss.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            loadingIcon.setVisibility(View.GONE);
+                        } else if (showLarge) {
+
+                            loadingIcon.setVisibility(View.VISIBLE);
+
+                            for (DataSnapshot ds : dataSnapshot.getChildren()) {
+
+                                if (ds.child("circleOptions").exists()) {
+
+                                    // Shape is a circle.
+
+                                    // Load different colored shapes depending on the map type.
+                                    if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
+
+                                        // Only load large circles (radius > 50)
+                                        if ((double) (long) ds.child("circleOptions/radius").getValue() > 50) {
+
+                                            // Yellow circle.
+
+                                            double radius = 0;
+
+                                            LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
+                                            if ((ds.child("circleOptions/radius").getValue()) != null) {
+
+                                                radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
+                                            }
+                                            Circle circle = mMap.addCircle(
+                                                    new CircleOptions()
+                                                            .center(center)
+                                                            .clickable(true)
+                                                            .radius(radius)
+                                                            .strokeColor(Color.YELLOW)
+                                                            .strokeWidth(3f)
+                                            );
+
+                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                            circle.setTag(shapeUUID);
+                                        }
+                                    } else {
+
+                                        // Purple circle.
+
+                                        // Only load large circles (radius > 50)
+                                        if ((double) (long) ds.child("circleOptions/radius").getValue() > 50) {
+
+                                            double radius = 0;
+
+                                            LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
+                                            if ((ds.child("circleOptions/radius").getValue()) != null) {
+
+                                                radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
+                                            }
+                                            Circle circle = mMap.addCircle(
+                                                    new CircleOptions()
+                                                            .center(center)
+                                                            .clickable(true)
+                                                            .radius(radius)
+                                                            .strokeColor(Color.rgb(255, 0, 255))
+                                                            .strokeWidth(3f)
+                                            );
+
+                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                            circle.setTag(shapeUUID);
+                                        }
+                                    }
+                                } else {
+
+                                    // Shape is a polygon.
+
+                                    // Load different colored shapes depending on the map type.
+                                    if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
+
+                                        // Yellow polygon.
+
+                                        // Only load large polygons (polygonArea > pi(50^2))
+                                        if ((double) ds.child("polygonArea").getValue() > Math.PI * (Math.pow(50, 2))) {
+
+                                            LatLng marker3Position = null;
+                                            LatLng marker4Position = null;
+                                            LatLng marker5Position = null;
+                                            LatLng marker6Position = null;
+                                            Polygon polygon;
+
+                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                            if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
+                                                LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
+
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            }
+                                        }
+                                    } else {
+
+                                        // Purple polygon.
+
+                                        // Only load large polygons (polygonArea > pi(50^2))
+                                        if ((double) ds.child("polygonArea").getValue() > Math.PI * (Math.pow(50, 2))) {
+
+                                            LatLng marker3Position = null;
+                                            LatLng marker4Position = null;
+                                            LatLng marker5Position = null;
+                                            LatLng marker6Position = null;
+                                            Polygon polygon;
+
+                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                            if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
+                                                LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
+
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            loadingIcon.setVisibility(View.GONE);
+                        } else if (showMedium) {
+
+                            loadingIcon.setVisibility(View.VISIBLE);
+
+                            for (DataSnapshot ds : dataSnapshot.getChildren()) {
+
+                                if (ds.child("circleOptions").exists()) {
 
                                     // Shape is a circle.
 
@@ -7790,1270 +8782,1940 @@ public class Map extends FragmentActivity implements
 
                                         // Yellow circle.
 
-                                        double radius = 0;
+                                        // Only load medium circles (10 < radius <= 50)
+                                        if ((double) (long) ds.child("circleOptions/radius").getValue() > 10 && (double) (long) ds.child("circleOptions/radius").getValue() <= 50) {
 
-                                        LatLng center = new LatLng((double) dss.child("circleOptions/center/latitude/").getValue(), (double) dss.child("circleOptions/center/longitude/").getValue());
-                                        if ((dss.child("circleOptions/radius").getValue()) != null) {
+                                            double radius = 0;
 
-                                            radius = ((Number) (Objects.requireNonNull(dss.child("circleOptions/radius").getValue()))).doubleValue();
+                                            LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
+                                            if ((ds.child("circleOptions/radius").getValue()) != null) {
+
+                                                radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
+                                            }
+                                            Circle circle = mMap.addCircle(
+                                                    new CircleOptions()
+                                                            .center(center)
+                                                            .clickable(true)
+                                                            .radius(radius)
+                                                            .strokeColor(Color.YELLOW)
+                                                            .strokeWidth(3f)
+                                            );
+
+                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                            circle.setTag(shapeUUID);
                                         }
-                                        Circle circle = mMap.addCircle(
-                                                new CircleOptions()
-                                                        .center(center)
-                                                        .clickable(true)
-                                                        .radius(radius)
-                                                        .strokeColor(Color.YELLOW)
-                                                        .strokeWidth(3f)
-                                        );
-
-                                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                        shapeUUID = (String) dss.child("shapeUUID").getValue();
-
-                                        circle.setTag(shapeUUID);
                                     } else {
 
                                         // Purple circle.
 
-                                        double radius = 0;
+                                        // Only load medium circles (10 < radius <= 50)
+                                        if ((double) (long) ds.child("circleOptions/radius").getValue() > 10 && (double) (long) ds.child("circleOptions/radius").getValue() <= 50) {
 
-                                        LatLng center = new LatLng((double) dss.child("circleOptions/center/latitude/").getValue(), (double) dss.child("circleOptions/center/longitude/").getValue());
-                                        if ((dss.child("circleOptions/radius").getValue()) != null) {
+                                            double radius = 0;
 
-                                            radius = ((Number) (Objects.requireNonNull(dss.child("circleOptions/radius").getValue()))).doubleValue();
+                                            LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
+                                            if ((ds.child("circleOptions/radius").getValue()) != null) {
+
+                                                radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
+                                            }
+                                            Circle circle = mMap.addCircle(
+                                                    new CircleOptions()
+                                                            .center(center)
+                                                            .clickable(true)
+                                                            .radius(radius)
+                                                            .strokeColor(Color.rgb(255, 0, 255))
+                                                            .strokeWidth(3f)
+                                            );
+
+                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                            circle.setTag(shapeUUID);
                                         }
-                                        Circle circle = mMap.addCircle(
-                                                new CircleOptions()
-                                                        .center(center)
-                                                        .clickable(true)
-                                                        .radius(radius)
-                                                        .strokeColor(Color.rgb(255, 0, 255))
-                                                        .strokeWidth(3f)
-                                        );
-
-                                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                        shapeUUID = (String) dss.child("shapeUUID").getValue();
-
-                                        circle.setTag(shapeUUID);
                                     }
                                 } else {
 
-                                    // Shape is a polygon
+                                    // Shape is a polygon.
+
+                                    // Load different colored shapes depending on the map type.
+                                    if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
+
+                                        // Only load medium polygons pi(10^2) < polygonArea <= pi(50^2))
+                                        if ((double) ds.child("polygonArea").getValue() > Math.PI * (Math.pow(10, 2)) && (double) ds.child("polygonArea").getValue() <= Math.PI * (Math.pow(50, 2))) {
+
+                                            // Yellow polygon.
+
+                                            LatLng marker3Position = null;
+                                            LatLng marker4Position = null;
+                                            LatLng marker5Position = null;
+                                            LatLng marker6Position = null;
+                                            Polygon polygon;
+
+                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                            if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
+                                                LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
+
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            }
+                                        }
+                                    } else {
+
+                                        // Purple polygon.
+
+                                        // Only load medium polygons pi(10^2) < polygonArea <= pi(50^2))
+                                        if ((double) ds.child("polygonArea").getValue() > Math.PI * (Math.pow(10, 2)) && (double) ds.child("polygonArea").getValue() <= Math.PI * (Math.pow(50, 2))) {
+
+                                            LatLng marker3Position = null;
+                                            LatLng marker4Position = null;
+                                            LatLng marker5Position = null;
+                                            LatLng marker6Position = null;
+                                            Polygon polygon;
+
+                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                            if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
+                                                LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
+
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            loadingIcon.setVisibility(View.GONE);
+                        } else if (showSmall) {
+
+                            loadingIcon.setVisibility(View.VISIBLE);
+
+                            for (DataSnapshot ds : dataSnapshot.getChildren()) {
+
+                                if (ds.child("circleOptions").exists()) {
+
+                                    // Shape is a circle.
+
+                                    // Load different colored shapes depending on the map type.
+                                    if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
+
+                                        // Yellow circle.
+
+                                        // Only load small circles (1 < radius <= 10)
+                                        if ((double) (long) ds.child("circleOptions/radius").getValue() > 1 && (double) (long) ds.child("circleOptions/radius").getValue() <= 10) {
+
+                                            double radius = 0;
+
+                                            LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
+                                            if ((ds.child("circleOptions/radius").getValue()) != null) {
+
+                                                radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
+                                            }
+                                            Circle circle = mMap.addCircle(
+                                                    new CircleOptions()
+                                                            .center(center)
+                                                            .clickable(true)
+                                                            .radius(radius)
+                                                            .strokeColor(Color.YELLOW)
+                                                            .strokeWidth(3f)
+                                            );
+
+                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                            circle.setTag(shapeUUID);
+                                        }
+                                    } else {
+
+                                        // Purple circle.
+
+                                        // Only load small circles (1 < radius <= 10)
+                                        if ((double) (long) ds.child("circleOptions/radius").getValue() > 1 && (double) (long) ds.child("circleOptions/radius").getValue() <= 10) {
+
+                                            double radius = 0;
+
+                                            LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
+                                            if ((ds.child("circleOptions/radius").getValue()) != null) {
+
+                                                radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
+                                            }
+                                            Circle circle = mMap.addCircle(
+                                                    new CircleOptions()
+                                                            .center(center)
+                                                            .clickable(true)
+                                                            .radius(radius)
+                                                            .strokeColor(Color.rgb(255, 0, 255))
+                                                            .strokeWidth(3f)
+                                            );
+
+                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                            circle.setTag(shapeUUID);
+                                        }
+                                    }
+                                } else {
+
+                                    // Shape is a polygon.
+
+                                    // Load different colored shapes depending on the map type.
+                                    if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
+
+                                        // Only load small polygons pi < polygonArea <= pi(10^2))
+                                        if ((double) ds.child("polygonArea").getValue() > Math.PI && (double) ds.child("polygonArea").getValue() <= Math.PI * (Math.pow(10, 2))) {
+
+                                            // Yellow polygon.
+
+                                            LatLng marker3Position = null;
+                                            LatLng marker4Position = null;
+                                            LatLng marker5Position = null;
+                                            LatLng marker6Position = null;
+                                            Polygon polygon;
+
+                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                            if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
+                                                LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
+
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            }
+                                        }
+                                    } else {
+
+                                        // Purple polygon.
+
+                                        // Only load small polygons pi < polygonArea <= pi(10^2))
+                                        if ((double) ds.child("polygonArea").getValue() > Math.PI && (double) ds.child("polygonArea").getValue() <= Math.PI * (Math.pow(10, 2))) {
+
+                                            LatLng marker3Position = null;
+                                            LatLng marker4Position = null;
+                                            LatLng marker5Position = null;
+                                            LatLng marker6Position = null;
+                                            Polygon polygon;
+
+                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                            if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
+                                                LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
+
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            loadingIcon.setVisibility(View.GONE);
+                        } else if (showPoints) {
+
+                            loadingIcon.setVisibility(View.VISIBLE);
+
+                            for (DataSnapshot ds : dataSnapshot.getChildren()) {
+
+                                if (ds.child("circleOptions").exists()) {
+
+                                    // Shape is a circle.
+
+                                    // Load different colored shapes depending on the map type.
+                                    if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
+
+                                        // Yellow circle.
+
+                                        // Only load points (radius == 1)
+                                        if ((double) (long) ds.child("circleOptions/radius").getValue() == 1) {
+
+                                            double radius = 0;
+
+                                            LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
+                                            if ((ds.child("circleOptions/radius").getValue()) != null) {
+
+                                                radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
+                                            }
+                                            Circle circle = mMap.addCircle(
+                                                    new CircleOptions()
+                                                            .center(center)
+                                                            .clickable(true)
+                                                            .radius(radius)
+                                                            .strokeColor(Color.YELLOW)
+                                                            .strokeWidth(3f)
+                                            );
+
+                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                            circle.setTag(shapeUUID);
+                                        }
+                                    } else {
+
+                                        // Purple circle.
+
+                                        // Only load points (radius == 1)
+                                        if ((double) (long) ds.child("circleOptions/radius").getValue() == 1) {
+
+                                            double radius = 0;
+
+                                            LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
+                                            if ((ds.child("circleOptions/radius").getValue()) != null) {
+
+                                                radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
+                                            }
+                                            Circle circle = mMap.addCircle(
+                                                    new CircleOptions()
+                                                            .center(center)
+                                                            .clickable(true)
+                                                            .radius(radius)
+                                                            .strokeColor(Color.rgb(255, 0, 255))
+                                                            .strokeWidth(3f)
+                                            );
+
+                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                            circle.setTag(shapeUUID);
+                                        }
+                                    }
+                                }
+                            }
+
+                            loadingIcon.setVisibility(View.GONE);
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                        Log.e(TAG, "DatabaseError");
+                        loadingIcon.setVisibility(View.GONE);
+                        toastMessageLong(databaseError.getMessage());
+                    }
+                });
+            }
+
+            // Without the final "&&" statements, every one of these statement groups will be called after restart, even when newNearLeft == newFarLeft == newNearRight == newFarRight.
+            if (!loadedCoordinates.contains(newNearRight) || mapCleared || (!loadedCoordinates.contains(newNearRight) && restarted) || (!loadedCoordinates.contains(newNearRight) && showEverything) ||
+                    (!loadedCoordinates.contains(newNearRight) && showLarge) || (!loadedCoordinates.contains(newNearRight) && showMedium) ||
+                    (!loadedCoordinates.contains(newNearRight) && showSmall) || (!loadedCoordinates.contains(newNearRight) && showPoints)) {
+
+                loadedCoordinates.add(0, newNearRight);
+
+                if (loadedCoordinates.size() > 7) {
+
+                    loadedCoordinates.subList(7, loadedCoordinates.size()).clear();
+                }
+
+                firebaseShapes.addListenerForSingleValueEvent(new ValueEventListener() {
+
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                        if (showEverything) {
+
+                            loadingIcon.setVisibility(View.VISIBLE);
+
+                            for (DataSnapshot ds : dataSnapshot.getChildren()) {
+
+                                for (DataSnapshot dss : ds.getChildren()) {
+
+                                    if (dss.child("circleOptions").exists()) {
+
+                                        // Shape is a circle.
+
+                                        // Load different colored shapes depending on the map type.
+                                        if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
+
+                                            // Yellow circle.
+
+                                            double radius = 0;
+
+                                            LatLng center = new LatLng((double) dss.child("circleOptions/center/latitude/").getValue(), (double) dss.child("circleOptions/center/longitude/").getValue());
+                                            if ((dss.child("circleOptions/radius").getValue()) != null) {
+
+                                                radius = ((Number) (Objects.requireNonNull(dss.child("circleOptions/radius").getValue()))).doubleValue();
+                                            }
+                                            Circle circle = mMap.addCircle(
+                                                    new CircleOptions()
+                                                            .center(center)
+                                                            .clickable(true)
+                                                            .radius(radius)
+                                                            .strokeColor(Color.YELLOW)
+                                                            .strokeWidth(3f)
+                                            );
+
+                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                            circle.setTag(shapeUUID);
+                                        } else {
+
+                                            // Purple circle.
+
+                                            double radius = 0;
+
+                                            LatLng center = new LatLng((double) dss.child("circleOptions/center/latitude/").getValue(), (double) dss.child("circleOptions/center/longitude/").getValue());
+                                            if ((dss.child("circleOptions/radius").getValue()) != null) {
+
+                                                radius = ((Number) (Objects.requireNonNull(dss.child("circleOptions/radius").getValue()))).doubleValue();
+                                            }
+                                            Circle circle = mMap.addCircle(
+                                                    new CircleOptions()
+                                                            .center(center)
+                                                            .clickable(true)
+                                                            .radius(radius)
+                                                            .strokeColor(Color.rgb(255, 0, 255))
+                                                            .strokeWidth(3f)
+                                            );
+
+                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                            circle.setTag(shapeUUID);
+                                        }
+                                    } else {
+
+                                        // Shape is a polygon
+
+                                        // Load different colored shapes depending on the map type.
+                                        if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
+
+                                            // Yellow polygon.
+
+                                            LatLng marker3Position = null;
+                                            LatLng marker4Position = null;
+                                            LatLng marker5Position = null;
+                                            LatLng marker6Position = null;
+                                            Polygon polygon;
+
+                                            LatLng marker0Position = new LatLng((double) dss.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                                            LatLng marker1Position = new LatLng((double) dss.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                                            LatLng marker2Position = new LatLng((double) dss.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                            if (dss.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                marker3Position = new LatLng((double) dss.child("polygonOptions/points/3/latitude/").getValue(), (double) dss.child("polygonOptions/points/3/longitude/").getValue());
+                                            }
+                                            if (dss.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                marker4Position = new LatLng((double) dss.child("polygonOptions/points/4/latitude/").getValue(), (double) dss.child("polygonOptions/points/4/longitude/").getValue());
+                                            }
+                                            if (dss.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                marker5Position = new LatLng((double) dss.child("polygonOptions/points/5/latitude/").getValue(), (double) dss.child("polygonOptions/points/5/longitude/").getValue());
+                                            }
+                                            if (dss.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                marker6Position = new LatLng((double) dss.child("polygonOptions/points/6/latitude/").getValue(), (double) dss.child("polygonOptions/points/6/longitude/").getValue());
+                                            }
+                                            if (dss.child("polygonOptions/points/7/latitude/").getValue() != null) {
+                                                LatLng marker7Position = new LatLng((double) dss.child("polygonOptions/points/7/latitude/").getValue(), (double) dss.child("polygonOptions/points/7/longitude/").getValue());
+
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (dss.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (dss.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (dss.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (dss.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            }
+                                        } else {
+
+                                            // Purple polygon.
+
+                                            LatLng marker3Position = null;
+                                            LatLng marker4Position = null;
+                                            LatLng marker5Position = null;
+                                            LatLng marker6Position = null;
+                                            Polygon polygon;
+
+                                            LatLng marker0Position = new LatLng((double) dss.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                                            LatLng marker1Position = new LatLng((double) dss.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                                            LatLng marker2Position = new LatLng((double) dss.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                            if (dss.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                marker3Position = new LatLng((double) dss.child("polygonOptions/points/3/latitude/").getValue(), (double) dss.child("polygonOptions/points/3/longitude/").getValue());
+                                            }
+                                            if (dss.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                marker4Position = new LatLng((double) dss.child("polygonOptions/points/4/latitude/").getValue(), (double) dss.child("polygonOptions/points/4/longitude/").getValue());
+                                            }
+                                            if (dss.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                marker5Position = new LatLng((double) dss.child("polygonOptions/points/5/latitude/").getValue(), (double) dss.child("polygonOptions/points/5/longitude/").getValue());
+                                            }
+                                            if (dss.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                marker6Position = new LatLng((double) dss.child("polygonOptions/points/6/latitude/").getValue(), (double) dss.child("polygonOptions/points/6/longitude/").getValue());
+                                            }
+                                            if (dss.child("polygonOptions/points/7/latitude/").getValue() != null) {
+                                                LatLng marker7Position = new LatLng((double) dss.child("polygonOptions/points/7/latitude/").getValue(), (double) dss.child("polygonOptions/points/7/longitude/").getValue());
+
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (dss.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (dss.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (dss.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (dss.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            loadingIcon.setVisibility(View.GONE);
+                        } else if (showLarge) {
+
+                            loadingIcon.setVisibility(View.VISIBLE);
+
+                            for (DataSnapshot ds : dataSnapshot.getChildren()) {
+
+                                if (ds.child("circleOptions").exists()) {
+
+                                    // Shape is a circle.
+
+                                    // Load different colored shapes depending on the map type.
+                                    if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
+
+                                        // Only load large circles (radius > 50)
+                                        if ((double) (long) ds.child("circleOptions/radius").getValue() > 50) {
+
+                                            // Yellow circle.
+
+                                            double radius = 0;
+
+                                            LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
+                                            if ((ds.child("circleOptions/radius").getValue()) != null) {
+
+                                                radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
+                                            }
+                                            Circle circle = mMap.addCircle(
+                                                    new CircleOptions()
+                                                            .center(center)
+                                                            .clickable(true)
+                                                            .radius(radius)
+                                                            .strokeColor(Color.YELLOW)
+                                                            .strokeWidth(3f)
+                                            );
+
+                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                            circle.setTag(shapeUUID);
+                                        }
+                                    } else {
+
+                                        // Purple circle.
+
+                                        // Only load large circles (radius > 50)
+                                        if ((double) (long) ds.child("circleOptions/radius").getValue() > 50) {
+
+                                            double radius = 0;
+
+                                            LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
+                                            if ((ds.child("circleOptions/radius").getValue()) != null) {
+
+                                                radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
+                                            }
+                                            Circle circle = mMap.addCircle(
+                                                    new CircleOptions()
+                                                            .center(center)
+                                                            .clickable(true)
+                                                            .radius(radius)
+                                                            .strokeColor(Color.rgb(255, 0, 255))
+                                                            .strokeWidth(3f)
+                                            );
+
+                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                            circle.setTag(shapeUUID);
+                                        }
+                                    }
+                                } else {
+
+                                    // Shape is a polygon.
 
                                     // Load different colored shapes depending on the map type.
                                     if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
 
                                         // Yellow polygon.
 
-                                        LatLng marker3Position = null;
-                                        LatLng marker4Position = null;
-                                        LatLng marker5Position = null;
-                                        LatLng marker6Position = null;
-                                        Polygon polygon;
+                                        // Only load large polygons (polygonArea > pi(50^2))
+                                        if ((double) ds.child("polygonArea").getValue() > Math.PI * (Math.pow(50, 2))) {
 
-                                        LatLng marker0Position = new LatLng((double) dss.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                        LatLng marker1Position = new LatLng((double) dss.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                        LatLng marker2Position = new LatLng((double) dss.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                        if (dss.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            marker3Position = new LatLng((double) dss.child("polygonOptions/points/3/latitude/").getValue(), (double) dss.child("polygonOptions/points/3/longitude/").getValue());
-                                        }
-                                        if (dss.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            marker4Position = new LatLng((double) dss.child("polygonOptions/points/4/latitude/").getValue(), (double) dss.child("polygonOptions/points/4/longitude/").getValue());
-                                        }
-                                        if (dss.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            marker5Position = new LatLng((double) dss.child("polygonOptions/points/5/latitude/").getValue(), (double) dss.child("polygonOptions/points/5/longitude/").getValue());
-                                        }
-                                        if (dss.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            marker6Position = new LatLng((double) dss.child("polygonOptions/points/6/latitude/").getValue(), (double) dss.child("polygonOptions/points/6/longitude/").getValue());
-                                        }
-                                        if (dss.child("polygonOptions/points/7/latitude/").getValue() != null) {
-                                            LatLng marker7Position = new LatLng((double) dss.child("polygonOptions/points/7/latitude/").getValue(), (double) dss.child("polygonOptions/points/7/longitude/").getValue());
+                                            LatLng marker3Position = null;
+                                            LatLng marker4Position = null;
+                                            LatLng marker5Position = null;
+                                            LatLng marker6Position = null;
+                                            Polygon polygon;
 
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
+                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                            if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
+                                                LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
 
-                                            polygon.setTag(shapeUUID);
-                                        } else if (dss.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
 
-                                            polygon.setTag(shapeUUID);
-                                        } else if (dss.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
 
-                                            polygon.setTag(shapeUUID);
-                                        } else if (dss.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
 
-                                            polygon.setTag(shapeUUID);
-                                        } else if (dss.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
 
-                                            polygon.setTag(shapeUUID);
-                                        } else {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
+                                                polygon.setTag(shapeUUID);
+                                            } else {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
 
-                                            polygon.setTag(shapeUUID);
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            }
                                         }
                                     } else {
 
                                         // Purple polygon.
 
-                                        LatLng marker3Position = null;
-                                        LatLng marker4Position = null;
-                                        LatLng marker5Position = null;
-                                        LatLng marker6Position = null;
-                                        Polygon polygon;
+                                        // Only load large polygons (polygonArea > pi(50^2))
+                                        if ((double) ds.child("polygonArea").getValue() > Math.PI * (Math.pow(50, 2))) {
 
-                                        LatLng marker0Position = new LatLng((double) dss.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                        LatLng marker1Position = new LatLng((double) dss.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                        LatLng marker2Position = new LatLng((double) dss.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                        if (dss.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            marker3Position = new LatLng((double) dss.child("polygonOptions/points/3/latitude/").getValue(), (double) dss.child("polygonOptions/points/3/longitude/").getValue());
-                                        }
-                                        if (dss.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            marker4Position = new LatLng((double) dss.child("polygonOptions/points/4/latitude/").getValue(), (double) dss.child("polygonOptions/points/4/longitude/").getValue());
-                                        }
-                                        if (dss.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            marker5Position = new LatLng((double) dss.child("polygonOptions/points/5/latitude/").getValue(), (double) dss.child("polygonOptions/points/5/longitude/").getValue());
-                                        }
-                                        if (dss.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            marker6Position = new LatLng((double) dss.child("polygonOptions/points/6/latitude/").getValue(), (double) dss.child("polygonOptions/points/6/longitude/").getValue());
-                                        }
-                                        if (dss.child("polygonOptions/points/7/latitude/").getValue() != null) {
-                                            LatLng marker7Position = new LatLng((double) dss.child("polygonOptions/points/7/latitude/").getValue(), (double) dss.child("polygonOptions/points/7/longitude/").getValue());
+                                            LatLng marker3Position = null;
+                                            LatLng marker4Position = null;
+                                            LatLng marker5Position = null;
+                                            LatLng marker6Position = null;
+                                            Polygon polygon;
 
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
+                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                            if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
+                                                LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
 
-                                            polygon.setTag(shapeUUID);
-                                        } else if (dss.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
 
-                                            polygon.setTag(shapeUUID);
-                                        } else if (dss.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
 
-                                            polygon.setTag(shapeUUID);
-                                        } else if (dss.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
 
-                                            polygon.setTag(shapeUUID);
-                                        } else if (dss.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
 
-                                            polygon.setTag(shapeUUID);
-                                        } else {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
+                                                polygon.setTag(shapeUUID);
+                                            } else {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
 
-                                            polygon.setTag(shapeUUID);
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            }
                                         }
                                     }
                                 }
                             }
-                        }
-                    }
 
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError databaseError) {
+                            loadingIcon.setVisibility(View.GONE);
+                        } else if (showMedium) {
 
-                        Log.e(TAG, "DatabaseError");
-                        loadingIcon.setVisibility(View.GONE);
-                        toastMessageLong(databaseError.getMessage());
-                    }
-                });
-            }
+                            loadingIcon.setVisibility(View.VISIBLE);
 
-            loadingIcon.setVisibility(View.GONE);
+                            for (DataSnapshot ds : dataSnapshot.getChildren()) {
 
-            showingEverything = true;
-            showingLarge = false;
-            showingMedium = false;
-            showingSmall = false;
-            showingPoints = false;
+                                if (ds.child("circleOptions").exists()) {
 
-            firstLoadChats = false;
-            mapChanged = false;
+                                    // Shape is a circle.
 
-            oldNearLeft = newNearLeft;
-            oldFarLeft = newFarLeft;
-            oldNearRight = newNearRight;
-            oldFarRight = newFarRight;
-            newCameraCoordinates = false;
-        }
-    }
-
-    private void loadLargeChats() {
-
-        // Prevent resetting and reloading everything if this is already the state.
-        if (!showingLarge || restarted || newCameraCoordinates || mapChanged) {
-
-            Log.i(TAG, "loadLargeChats()");
-
-            boolean mapCleared = false;
-            if (loadedCoordinates.size() == 7) {
-
-                mMap.clear();
-                loadedCoordinates.clear();
-                mapCleared = true;
-            }
-
-            showingEverything = true;
-
-            loadingIcon.setVisibility(View.VISIBLE);
-
-            if (!loadedCoordinates.contains(newNearLeft) || mapCleared || restarted) {
-
-                loadedCoordinates.add(0, newNearLeft);
-
-                if (loadedCoordinates.size() > 7) {
-
-                    loadedCoordinates.subList(7, loadedCoordinates.size()).clear();
-                }
-
-                DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-                DatabaseReference firebaseShapes = rootRef.child("Shapes").child("(" + newNearLeftLat + ", " + newNearLeftLon + ")");
-                firebaseShapes.addListenerForSingleValueEvent(new ValueEventListener() {
-
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-
-                        for (DataSnapshot ds : dataSnapshot.getChildren()) {
-
-                            if (ds.child("circleOptions").exists()) {
-
-                                // Shape is a circle.
-
-                                // Load different colored shapes depending on the map type.
-                                if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
-
-                                    // Only load large circles (radius > 50)
-                                    if ((double) (long) ds.child("circleOptions/radius").getValue() > 50) {
+                                    // Load different colored shapes depending on the map type.
+                                    if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
 
                                         // Yellow circle.
 
-                                        double radius = 0;
+                                        // Only load medium circles (10 < radius <= 50)
+                                        if ((double) (long) ds.child("circleOptions/radius").getValue() > 10 && (double) (long) ds.child("circleOptions/radius").getValue() <= 50) {
 
-                                        LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
-                                        if ((ds.child("circleOptions/radius").getValue()) != null) {
+                                            double radius = 0;
 
-                                            radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
-                                        }
-                                        Circle circle = mMap.addCircle(
-                                                new CircleOptions()
-                                                        .center(center)
-                                                        .clickable(true)
-                                                        .radius(radius)
-                                                        .strokeColor(Color.YELLOW)
-                                                        .strokeWidth(3f)
-                                        );
+                                            LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
+                                            if ((ds.child("circleOptions/radius").getValue()) != null) {
 
-                                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                        shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                        circle.setTag(shapeUUID);
-                                    }
-                                } else {
-
-                                    // Purple circle.
-
-                                    // Only load large circles (radius > 50)
-                                    if ((double) (long) ds.child("circleOptions/radius").getValue() > 50) {
-
-                                        double radius = 0;
-
-                                        LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
-                                        if ((ds.child("circleOptions/radius").getValue()) != null) {
-
-                                            radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
-                                        }
-                                        Circle circle = mMap.addCircle(
-                                                new CircleOptions()
-                                                        .center(center)
-                                                        .clickable(true)
-                                                        .radius(radius)
-                                                        .strokeColor(Color.rgb(255, 0, 255))
-                                                        .strokeWidth(3f)
-                                        );
-
-                                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                        shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                        circle.setTag(shapeUUID);
-                                    }
-                                }
-                            } else {
-
-                                // Shape is a polygon.
-
-                                // Load different colored shapes depending on the map type.
-                                if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
-
-                                    // Yellow polygon.
-
-                                    // Only load large polygons (polygonArea > pi(50^2))
-                                    if ((double) ds.child("polygonArea").getValue() > Math.PI * (Math.pow(50, 2))) {
-
-                                        LatLng marker3Position = null;
-                                        LatLng marker4Position = null;
-                                        LatLng marker5Position = null;
-                                        LatLng marker6Position = null;
-                                        Polygon polygon;
-
-                                        LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                        LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                        LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                        if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
-                                            LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
-
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
+                                                radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
+                                            }
+                                            Circle circle = mMap.addCircle(
+                                                    new CircleOptions()
+                                                            .center(center)
                                                             .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                                            .radius(radius)
                                                             .strokeColor(Color.YELLOW)
                                                             .strokeWidth(3f)
                                             );
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
                                             shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
+                                            circle.setTag(shapeUUID);
+                                        }
+                                    } else {
+
+                                        // Purple circle.
+
+                                        // Only load medium circles (10 < radius <= 50)
+                                        if ((double) (long) ds.child("circleOptions/radius").getValue() > 10 && (double) (long) ds.child("circleOptions/radius").getValue() <= 50) {
+
+                                            double radius = 0;
+
+                                            LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
+                                            if ((ds.child("circleOptions/radius").getValue()) != null) {
+
+                                                radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
+                                            }
+                                            Circle circle = mMap.addCircle(
+                                                    new CircleOptions()
+                                                            .center(center)
                                                             .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
-                                                            .strokeColor(Color.YELLOW)
+                                                            .radius(radius)
+                                                            .strokeColor(Color.rgb(255, 0, 255))
                                                             .strokeWidth(3f)
                                             );
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
                                             shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
+                                            circle.setTag(shapeUUID);
                                         }
                                     }
                                 } else {
 
-                                    // Purple polygon.
+                                    // Shape is a polygon.
 
-                                    // Only load large polygons (polygonArea > pi(50^2))
-                                    if ((double) ds.child("polygonArea").getValue() > Math.PI * (Math.pow(50, 2))) {
+                                    // Load different colored shapes depending on the map type.
+                                    if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
 
-                                        LatLng marker3Position = null;
-                                        LatLng marker4Position = null;
-                                        LatLng marker5Position = null;
-                                        LatLng marker6Position = null;
-                                        Polygon polygon;
+                                        // Only load medium polygons pi(10^2) < polygonArea <= pi(50^2))
+                                        if ((double) ds.child("polygonArea").getValue() > Math.PI * (Math.pow(10, 2)) && (double) ds.child("polygonArea").getValue() <= Math.PI * (Math.pow(50, 2))) {
 
-                                        LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                        LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                        LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                        if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                                            // Yellow polygon.
+
+                                            LatLng marker3Position = null;
+                                            LatLng marker4Position = null;
+                                            LatLng marker5Position = null;
+                                            LatLng marker6Position = null;
+                                            Polygon polygon;
+
+                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                            if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
+                                                LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
+
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            }
                                         }
-                                        if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
-                                            LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
+                                    } else {
 
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
+                                        // Purple polygon.
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
+                                        // Only load medium polygons pi(10^2) < polygonArea <= pi(50^2))
+                                        if ((double) ds.child("polygonArea").getValue() > Math.PI * (Math.pow(10, 2)) && (double) ds.child("polygonArea").getValue() <= Math.PI * (Math.pow(50, 2))) {
 
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
+                                            LatLng marker3Position = null;
+                                            LatLng marker4Position = null;
+                                            LatLng marker5Position = null;
+                                            LatLng marker6Position = null;
+                                            Polygon polygon;
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
+                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                            if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
+                                                LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
 
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            polygon.setTag(shapeUUID);
-                                        } else {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            polygon.setTag(shapeUUID);
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            }
                                         }
                                     }
                                 }
                             }
-                        }
-                    }
 
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError databaseError) {
+                            loadingIcon.setVisibility(View.GONE);
+                        } else if (showSmall) {
 
-                        Log.e(TAG, "DatabaseError");
-                        loadingIcon.setVisibility(View.GONE);
-                        toastMessageLong(databaseError.getMessage());
-                    }
-                });
-            }
+                            loadingIcon.setVisibility(View.VISIBLE);
 
-            // Without the final "&&" statement, every one of these statement groups will be called after restart, even when newNearLeft == newFarLeft == newNearRight == newFarRight.
-            if (!loadedCoordinates.contains(newFarLeft) || mapCleared || (!loadedCoordinates.contains(newFarLeft) && restarted)) {
+                            for (DataSnapshot ds : dataSnapshot.getChildren()) {
 
-                loadedCoordinates.add(0, newFarLeft);
+                                if (ds.child("circleOptions").exists()) {
 
-                if (loadedCoordinates.size() > 7) {
+                                    // Shape is a circle.
 
-                    loadedCoordinates.subList(7, loadedCoordinates.size()).clear();
-                }
-
-                DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-                DatabaseReference firebaseShapes = rootRef.child("Shapes").child("(" + newFarLeftLat + ", " + newFarLeftLon + ")");
-                firebaseShapes.addListenerForSingleValueEvent(new ValueEventListener() {
-
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-
-                        for (DataSnapshot ds : dataSnapshot.getChildren()) {
-
-                            if (ds.child("circleOptions").exists()) {
-
-                                // Shape is a circle.
-
-                                // Load different colored shapes depending on the map type.
-                                if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
-
-                                    // Only load large circles (radius > 50)
-                                    if ((double) (long) ds.child("circleOptions/radius").getValue() > 50) {
+                                    // Load different colored shapes depending on the map type.
+                                    if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
 
                                         // Yellow circle.
 
-                                        double radius = 0;
+                                        // Only load small circles (1 < radius <= 10)
+                                        if ((double) (long) ds.child("circleOptions/radius").getValue() > 1 && (double) (long) ds.child("circleOptions/radius").getValue() <= 10) {
 
-                                        LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
-                                        if ((ds.child("circleOptions/radius").getValue()) != null) {
+                                            double radius = 0;
 
-                                            radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
-                                        }
-                                        Circle circle = mMap.addCircle(
-                                                new CircleOptions()
-                                                        .center(center)
-                                                        .clickable(true)
-                                                        .radius(radius)
-                                                        .strokeColor(Color.YELLOW)
-                                                        .strokeWidth(3f)
-                                        );
+                                            LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
+                                            if ((ds.child("circleOptions/radius").getValue()) != null) {
 
-                                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                        shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                        circle.setTag(shapeUUID);
-                                    }
-                                } else {
-
-                                    // Purple circle.
-
-                                    // Only load large circles (radius > 50)
-                                    if ((double) (long) ds.child("circleOptions/radius").getValue() > 50) {
-
-                                        double radius = 0;
-
-                                        LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
-                                        if ((ds.child("circleOptions/radius").getValue()) != null) {
-
-                                            radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
-                                        }
-                                        Circle circle = mMap.addCircle(
-                                                new CircleOptions()
-                                                        .center(center)
-                                                        .clickable(true)
-                                                        .radius(radius)
-                                                        .strokeColor(Color.rgb(255, 0, 255))
-                                                        .strokeWidth(3f)
-                                        );
-
-                                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                        shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                        circle.setTag(shapeUUID);
-                                    }
-                                }
-                            } else {
-
-                                // Shape is a polygon.
-
-                                // Load different colored shapes depending on the map type.
-                                if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
-
-                                    // Yellow polygon.
-
-                                    // Only load large polygons (polygonArea > pi(50^2))
-                                    if ((double) ds.child("polygonArea").getValue() > Math.PI * (Math.pow(50, 2))) {
-
-                                        LatLng marker3Position = null;
-                                        LatLng marker4Position = null;
-                                        LatLng marker5Position = null;
-                                        LatLng marker6Position = null;
-                                        Polygon polygon;
-
-                                        LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                        LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                        LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                        if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
-                                            LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
-
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
+                                                radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
+                                            }
+                                            Circle circle = mMap.addCircle(
+                                                    new CircleOptions()
+                                                            .center(center)
                                                             .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                                            .radius(radius)
                                                             .strokeColor(Color.YELLOW)
                                                             .strokeWidth(3f)
                                             );
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
                                             shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
+                                            circle.setTag(shapeUUID);
+                                        }
+                                    } else {
+
+                                        // Purple circle.
+
+                                        // Only load small circles (1 < radius <= 10)
+                                        if ((double) (long) ds.child("circleOptions/radius").getValue() > 1 && (double) (long) ds.child("circleOptions/radius").getValue() <= 10) {
+
+                                            double radius = 0;
+
+                                            LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
+                                            if ((ds.child("circleOptions/radius").getValue()) != null) {
+
+                                                radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
+                                            }
+                                            Circle circle = mMap.addCircle(
+                                                    new CircleOptions()
+                                                            .center(center)
                                                             .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
-                                                            .strokeColor(Color.YELLOW)
+                                                            .radius(radius)
+                                                            .strokeColor(Color.rgb(255, 0, 255))
                                                             .strokeWidth(3f)
                                             );
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
                                             shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
+                                            circle.setTag(shapeUUID);
                                         }
                                     }
                                 } else {
 
-                                    // Purple polygon.
+                                    // Shape is a polygon.
 
-                                    // Only load large polygons (polygonArea > pi(50^2))
-                                    if ((double) ds.child("polygonArea").getValue() > Math.PI * (Math.pow(50, 2))) {
+                                    // Load different colored shapes depending on the map type.
+                                    if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
 
-                                        LatLng marker3Position = null;
-                                        LatLng marker4Position = null;
-                                        LatLng marker5Position = null;
-                                        LatLng marker6Position = null;
-                                        Polygon polygon;
+                                        // Only load small polygons pi < polygonArea <= pi(10^2))
+                                        if ((double) ds.child("polygonArea").getValue() > Math.PI && (double) ds.child("polygonArea").getValue() <= Math.PI * (Math.pow(10, 2))) {
 
-                                        LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                        LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                        LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                        if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                                            // Yellow polygon.
+
+                                            LatLng marker3Position = null;
+                                            LatLng marker4Position = null;
+                                            LatLng marker5Position = null;
+                                            LatLng marker6Position = null;
+                                            Polygon polygon;
+
+                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                            if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
+                                                LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
+
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            }
                                         }
-                                        if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
-                                            LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
+                                    } else {
 
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
+                                        // Purple polygon.
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
+                                        // Only load small polygons pi < polygonArea <= pi(10^2))
+                                        if ((double) ds.child("polygonArea").getValue() > Math.PI && (double) ds.child("polygonArea").getValue() <= Math.PI * (Math.pow(10, 2))) {
 
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
+                                            LatLng marker3Position = null;
+                                            LatLng marker4Position = null;
+                                            LatLng marker5Position = null;
+                                            LatLng marker6Position = null;
+                                            Polygon polygon;
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
+                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                            if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
+                                                LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
 
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            polygon.setTag(shapeUUID);
-                                        } else {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            polygon.setTag(shapeUUID);
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            }
                                         }
                                     }
                                 }
                             }
-                        }
-                    }
 
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError databaseError) {
+                            loadingIcon.setVisibility(View.GONE);
+                        } else if (showPoints) {
 
-                        Log.e(TAG, "DatabaseError");
-                        loadingIcon.setVisibility(View.GONE);
-                        toastMessageLong(databaseError.getMessage());
-                    }
-                });
-            }
+                            loadingIcon.setVisibility(View.VISIBLE);
 
-            if (!loadedCoordinates.contains(newNearRight) || mapCleared || (!loadedCoordinates.contains(newNearRight) && restarted)) {
+                            for (DataSnapshot ds : dataSnapshot.getChildren()) {
 
-                loadedCoordinates.add(0, newNearRight);
+                                if (ds.child("circleOptions").exists()) {
 
-                if (loadedCoordinates.size() > 7) {
+                                    // Shape is a circle.
 
-                    loadedCoordinates.subList(7, loadedCoordinates.size()).clear();
-                }
-
-                DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-                DatabaseReference firebaseShapes = rootRef.child("Shapes").child("(" + newNearRightLat + ", " + newNearRightLon + ")");
-                firebaseShapes.addListenerForSingleValueEvent(new ValueEventListener() {
-
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-
-                        for (DataSnapshot ds : dataSnapshot.getChildren()) {
-
-                            if (ds.child("circleOptions").exists()) {
-
-                                // Shape is a circle.
-
-                                // Load different colored shapes depending on the map type.
-                                if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
-
-                                    // Only load large circles (radius > 50)
-                                    if ((double) (long) ds.child("circleOptions/radius").getValue() > 50) {
+                                    // Load different colored shapes depending on the map type.
+                                    if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
 
                                         // Yellow circle.
 
-                                        double radius = 0;
+                                        // Only load points (radius == 1)
+                                        if ((double) (long) ds.child("circleOptions/radius").getValue() == 1) {
 
-                                        LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
-                                        if ((ds.child("circleOptions/radius").getValue()) != null) {
+                                            double radius = 0;
 
-                                            radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
-                                        }
-                                        Circle circle = mMap.addCircle(
-                                                new CircleOptions()
-                                                        .center(center)
-                                                        .clickable(true)
-                                                        .radius(radius)
-                                                        .strokeColor(Color.YELLOW)
-                                                        .strokeWidth(3f)
-                                        );
+                                            LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
+                                            if ((ds.child("circleOptions/radius").getValue()) != null) {
 
-                                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                        shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                        circle.setTag(shapeUUID);
-                                    }
-                                } else {
-
-                                    // Purple circle.
-
-                                    // Only load large circles (radius > 50)
-                                    if ((double) (long) ds.child("circleOptions/radius").getValue() > 50) {
-
-                                        double radius = 0;
-
-                                        LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
-                                        if ((ds.child("circleOptions/radius").getValue()) != null) {
-
-                                            radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
-                                        }
-                                        Circle circle = mMap.addCircle(
-                                                new CircleOptions()
-                                                        .center(center)
-                                                        .clickable(true)
-                                                        .radius(radius)
-                                                        .strokeColor(Color.rgb(255, 0, 255))
-                                                        .strokeWidth(3f)
-                                        );
-
-                                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                        shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                        circle.setTag(shapeUUID);
-                                    }
-                                }
-                            } else {
-
-                                // Shape is a polygon.
-
-                                // Load different colored shapes depending on the map type.
-                                if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
-
-                                    // Yellow polygon.
-
-                                    // Only load large polygons (polygonArea > pi(50^2))
-                                    if ((double) ds.child("polygonArea").getValue() > Math.PI * (Math.pow(50, 2))) {
-
-                                        LatLng marker3Position = null;
-                                        LatLng marker4Position = null;
-                                        LatLng marker5Position = null;
-                                        LatLng marker6Position = null;
-                                        Polygon polygon;
-
-                                        LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                        LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                        LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                        if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
-                                            LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
-
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
+                                                radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
+                                            }
+                                            Circle circle = mMap.addCircle(
+                                                    new CircleOptions()
+                                                            .center(center)
                                                             .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                                            .radius(radius)
                                                             .strokeColor(Color.YELLOW)
                                                             .strokeWidth(3f)
                                             );
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
                                             shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
+                                            circle.setTag(shapeUUID);
                                         }
-                                    }
-                                } else {
+                                    } else {
 
-                                    // Purple polygon.
+                                        // Purple circle.
 
-                                    // Only load large polygons (polygonArea > pi(50^2))
-                                    if ((double) ds.child("polygonArea").getValue() > Math.PI * (Math.pow(50, 2))) {
+                                        // Only load points (radius == 1)
+                                        if ((double) (long) ds.child("circleOptions/radius").getValue() == 1) {
 
-                                        LatLng marker3Position = null;
-                                        LatLng marker4Position = null;
-                                        LatLng marker5Position = null;
-                                        LatLng marker6Position = null;
-                                        Polygon polygon;
+                                            double radius = 0;
 
-                                        LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                        LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                        LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                        if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
-                                            LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
+                                            LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
+                                            if ((ds.child("circleOptions/radius").getValue()) != null) {
 
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
+                                                radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
+                                            }
+                                            Circle circle = mMap.addCircle(
+                                                    new CircleOptions()
+                                                            .center(center)
                                                             .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                                            .radius(radius)
                                                             .strokeColor(Color.rgb(255, 0, 255))
                                                             .strokeWidth(3f)
                                             );
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
                                             shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
+                                            circle.setTag(shapeUUID);
                                         }
                                     }
                                 }
                             }
+
+                            loadingIcon.setVisibility(View.GONE);
                         }
                     }
 
@@ -9067,7 +10729,10 @@ public class Map extends FragmentActivity implements
                 });
             }
 
-            if (!loadedCoordinates.contains(newFarRight) || mapCleared || (!loadedCoordinates.contains(newFarRight) && restarted)) {
+            // Without the final "&&" statements, every one of these statement groups will be called after restart, even when newNearLeft == newFarLeft == newNearRight == newFarRight.
+            if (!loadedCoordinates.contains(newFarRight) || mapCleared || (!loadedCoordinates.contains(newFarRight) && restarted) || (!loadedCoordinates.contains(newFarRight) && showEverything) ||
+                    (!loadedCoordinates.contains(newFarRight) && showLarge) || (!loadedCoordinates.contains(newFarRight) && showMedium) ||
+                    (!loadedCoordinates.contains(newFarRight) && showSmall) || (!loadedCoordinates.contains(newFarRight) && showPoints)) {
 
                 loadedCoordinates.add(0, newFarRight);
 
@@ -9076,304 +10741,1262 @@ public class Map extends FragmentActivity implements
                     loadedCoordinates.subList(7, loadedCoordinates.size()).clear();
                 }
 
-                DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-                DatabaseReference firebaseShapes = rootRef.child("Shapes").child("(" + newFarRightLat + ", " + newFarRightLon + ")");
                 firebaseShapes.addListenerForSingleValueEvent(new ValueEventListener() {
 
                     @Override
                     public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
 
-                        for (DataSnapshot ds : dataSnapshot.getChildren()) {
+                        if (showEverything) {
 
-                            if (ds.child("circleOptions").exists()) {
+                            loadingIcon.setVisibility(View.VISIBLE);
 
-                                // Shape is a circle.
+                            for (DataSnapshot ds : dataSnapshot.getChildren()) {
 
-                                // Load different colored shapes depending on the map type.
-                                if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
+                                for (DataSnapshot dss : ds.getChildren()) {
 
-                                    // Only load large circles (radius > 50)
-                                    if ((double) (long) ds.child("circleOptions/radius").getValue() > 50) {
+                                    if (dss.child("circleOptions").exists()) {
+
+                                        // Shape is a circle.
+
+                                        // Load different colored shapes depending on the map type.
+                                        if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
+
+                                            // Yellow circle.
+
+                                            double radius = 0;
+
+                                            LatLng center = new LatLng((double) dss.child("circleOptions/center/latitude/").getValue(), (double) dss.child("circleOptions/center/longitude/").getValue());
+                                            if ((dss.child("circleOptions/radius").getValue()) != null) {
+
+                                                radius = ((Number) (Objects.requireNonNull(dss.child("circleOptions/radius").getValue()))).doubleValue();
+                                            }
+                                            Circle circle = mMap.addCircle(
+                                                    new CircleOptions()
+                                                            .center(center)
+                                                            .clickable(true)
+                                                            .radius(radius)
+                                                            .strokeColor(Color.YELLOW)
+                                                            .strokeWidth(3f)
+                                            );
+
+                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                            circle.setTag(shapeUUID);
+                                        } else {
+
+                                            // Purple circle.
+
+                                            double radius = 0;
+
+                                            LatLng center = new LatLng((double) dss.child("circleOptions/center/latitude/").getValue(), (double) dss.child("circleOptions/center/longitude/").getValue());
+                                            if ((dss.child("circleOptions/radius").getValue()) != null) {
+
+                                                radius = ((Number) (Objects.requireNonNull(dss.child("circleOptions/radius").getValue()))).doubleValue();
+                                            }
+                                            Circle circle = mMap.addCircle(
+                                                    new CircleOptions()
+                                                            .center(center)
+                                                            .clickable(true)
+                                                            .radius(radius)
+                                                            .strokeColor(Color.rgb(255, 0, 255))
+                                                            .strokeWidth(3f)
+                                            );
+
+                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                                            shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                            circle.setTag(shapeUUID);
+                                        }
+                                    } else {
+
+                                        // Shape is a polygon
+
+                                        // Load different colored shapes depending on the map type.
+                                        if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
+
+                                            // Yellow polygon.
+
+                                            LatLng marker3Position = null;
+                                            LatLng marker4Position = null;
+                                            LatLng marker5Position = null;
+                                            LatLng marker6Position = null;
+                                            Polygon polygon;
+
+                                            LatLng marker0Position = new LatLng((double) dss.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                                            LatLng marker1Position = new LatLng((double) dss.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                                            LatLng marker2Position = new LatLng((double) dss.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                            if (dss.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                marker3Position = new LatLng((double) dss.child("polygonOptions/points/3/latitude/").getValue(), (double) dss.child("polygonOptions/points/3/longitude/").getValue());
+                                            }
+                                            if (dss.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                marker4Position = new LatLng((double) dss.child("polygonOptions/points/4/latitude/").getValue(), (double) dss.child("polygonOptions/points/4/longitude/").getValue());
+                                            }
+                                            if (dss.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                marker5Position = new LatLng((double) dss.child("polygonOptions/points/5/latitude/").getValue(), (double) dss.child("polygonOptions/points/5/longitude/").getValue());
+                                            }
+                                            if (dss.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                marker6Position = new LatLng((double) dss.child("polygonOptions/points/6/latitude/").getValue(), (double) dss.child("polygonOptions/points/6/longitude/").getValue());
+                                            }
+                                            if (dss.child("polygonOptions/points/7/latitude/").getValue() != null) {
+                                                LatLng marker7Position = new LatLng((double) dss.child("polygonOptions/points/7/latitude/").getValue(), (double) dss.child("polygonOptions/points/7/longitude/").getValue());
+
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (dss.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (dss.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (dss.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (dss.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            }
+                                        } else {
+
+                                            // Purple polygon.
+
+                                            LatLng marker3Position = null;
+                                            LatLng marker4Position = null;
+                                            LatLng marker5Position = null;
+                                            LatLng marker6Position = null;
+                                            Polygon polygon;
+
+                                            LatLng marker0Position = new LatLng((double) dss.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                                            LatLng marker1Position = new LatLng((double) dss.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                                            LatLng marker2Position = new LatLng((double) dss.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                            if (dss.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                marker3Position = new LatLng((double) dss.child("polygonOptions/points/3/latitude/").getValue(), (double) dss.child("polygonOptions/points/3/longitude/").getValue());
+                                            }
+                                            if (dss.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                marker4Position = new LatLng((double) dss.child("polygonOptions/points/4/latitude/").getValue(), (double) dss.child("polygonOptions/points/4/longitude/").getValue());
+                                            }
+                                            if (dss.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                marker5Position = new LatLng((double) dss.child("polygonOptions/points/5/latitude/").getValue(), (double) dss.child("polygonOptions/points/5/longitude/").getValue());
+                                            }
+                                            if (dss.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                marker6Position = new LatLng((double) dss.child("polygonOptions/points/6/latitude/").getValue(), (double) dss.child("polygonOptions/points/6/longitude/").getValue());
+                                            }
+                                            if (dss.child("polygonOptions/points/7/latitude/").getValue() != null) {
+                                                LatLng marker7Position = new LatLng((double) dss.child("polygonOptions/points/7/latitude/").getValue(), (double) dss.child("polygonOptions/points/7/longitude/").getValue());
+
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (dss.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (dss.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (dss.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (dss.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) dss.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            loadingIcon.setVisibility(View.GONE);
+                        } else if (showLarge) {
+
+                            loadingIcon.setVisibility(View.VISIBLE);
+
+                            for (DataSnapshot ds : dataSnapshot.getChildren()) {
+
+                                if (ds.child("circleOptions").exists()) {
+
+                                    // Shape is a circle.
+
+                                    // Load different colored shapes depending on the map type.
+                                    if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
+
+                                        // Only load large circles (radius > 50)
+                                        if ((double) (long) ds.child("circleOptions/radius").getValue() > 50) {
+
+                                            // Yellow circle.
+
+                                            double radius = 0;
+
+                                            LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
+                                            if ((ds.child("circleOptions/radius").getValue()) != null) {
+
+                                                radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
+                                            }
+                                            Circle circle = mMap.addCircle(
+                                                    new CircleOptions()
+                                                            .center(center)
+                                                            .clickable(true)
+                                                            .radius(radius)
+                                                            .strokeColor(Color.YELLOW)
+                                                            .strokeWidth(3f)
+                                            );
+
+                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                            circle.setTag(shapeUUID);
+                                        }
+                                    } else {
+
+                                        // Purple circle.
+
+                                        // Only load large circles (radius > 50)
+                                        if ((double) (long) ds.child("circleOptions/radius").getValue() > 50) {
+
+                                            double radius = 0;
+
+                                            LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
+                                            if ((ds.child("circleOptions/radius").getValue()) != null) {
+
+                                                radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
+                                            }
+                                            Circle circle = mMap.addCircle(
+                                                    new CircleOptions()
+                                                            .center(center)
+                                                            .clickable(true)
+                                                            .radius(radius)
+                                                            .strokeColor(Color.rgb(255, 0, 255))
+                                                            .strokeWidth(3f)
+                                            );
+
+                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                            circle.setTag(shapeUUID);
+                                        }
+                                    }
+                                } else {
+
+                                    // Shape is a polygon.
+
+                                    // Load different colored shapes depending on the map type.
+                                    if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
+
+                                        // Yellow polygon.
+
+                                        // Only load large polygons (polygonArea > pi(50^2))
+                                        if ((double) ds.child("polygonArea").getValue() > Math.PI * (Math.pow(50, 2))) {
+
+                                            LatLng marker3Position = null;
+                                            LatLng marker4Position = null;
+                                            LatLng marker5Position = null;
+                                            LatLng marker6Position = null;
+                                            Polygon polygon;
+
+                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                            if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
+                                                LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
+
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            }
+                                        }
+                                    } else {
+
+                                        // Purple polygon.
+
+                                        // Only load large polygons (polygonArea > pi(50^2))
+                                        if ((double) ds.child("polygonArea").getValue() > Math.PI * (Math.pow(50, 2))) {
+
+                                            LatLng marker3Position = null;
+                                            LatLng marker4Position = null;
+                                            LatLng marker5Position = null;
+                                            LatLng marker6Position = null;
+                                            Polygon polygon;
+
+                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                            if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
+                                                LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
+
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            loadingIcon.setVisibility(View.GONE);
+                        } else if (showMedium) {
+
+                            loadingIcon.setVisibility(View.VISIBLE);
+
+                            for (DataSnapshot ds : dataSnapshot.getChildren()) {
+
+                                if (ds.child("circleOptions").exists()) {
+
+                                    // Shape is a circle.
+
+                                    // Load different colored shapes depending on the map type.
+                                    if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
 
                                         // Yellow circle.
 
-                                        double radius = 0;
+                                        // Only load medium circles (10 < radius <= 50)
+                                        if ((double) (long) ds.child("circleOptions/radius").getValue() > 10 && (double) (long) ds.child("circleOptions/radius").getValue() <= 50) {
 
-                                        LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
-                                        if ((ds.child("circleOptions/radius").getValue()) != null) {
+                                            double radius = 0;
 
-                                            radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
-                                        }
-                                        Circle circle = mMap.addCircle(
-                                                new CircleOptions()
-                                                        .center(center)
-                                                        .clickable(true)
-                                                        .radius(radius)
-                                                        .strokeColor(Color.YELLOW)
-                                                        .strokeWidth(3f)
-                                        );
+                                            LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
+                                            if ((ds.child("circleOptions/radius").getValue()) != null) {
 
-                                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                        shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                        circle.setTag(shapeUUID);
-                                    }
-                                } else {
-
-                                    // Purple circle.
-
-                                    // Only load large circles (radius > 50)
-                                    if ((double) (long) ds.child("circleOptions/radius").getValue() > 50) {
-
-                                        double radius = 0;
-
-                                        LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
-                                        if ((ds.child("circleOptions/radius").getValue()) != null) {
-
-                                            radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
-                                        }
-                                        Circle circle = mMap.addCircle(
-                                                new CircleOptions()
-                                                        .center(center)
-                                                        .clickable(true)
-                                                        .radius(radius)
-                                                        .strokeColor(Color.rgb(255, 0, 255))
-                                                        .strokeWidth(3f)
-                                        );
-
-                                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                        shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                        circle.setTag(shapeUUID);
-                                    }
-                                }
-                            } else {
-
-                                // Shape is a polygon.
-
-                                // Load different colored shapes depending on the map type.
-                                if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
-
-                                    // Yellow polygon.
-
-                                    // Only load large polygons (polygonArea > pi(50^2))
-                                    if ((double) ds.child("polygonArea").getValue() > Math.PI * (Math.pow(50, 2))) {
-
-                                        LatLng marker3Position = null;
-                                        LatLng marker4Position = null;
-                                        LatLng marker5Position = null;
-                                        LatLng marker6Position = null;
-                                        Polygon polygon;
-
-                                        LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                        LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                        LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                        if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
-                                            LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
-
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
+                                                radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
+                                            }
+                                            Circle circle = mMap.addCircle(
+                                                    new CircleOptions()
+                                                            .center(center)
                                                             .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                                            .radius(radius)
                                                             .strokeColor(Color.YELLOW)
                                                             .strokeWidth(3f)
                                             );
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
                                             shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
+                                            circle.setTag(shapeUUID);
+                                        }
+                                    } else {
+
+                                        // Purple circle.
+
+                                        // Only load medium circles (10 < radius <= 50)
+                                        if ((double) (long) ds.child("circleOptions/radius").getValue() > 10 && (double) (long) ds.child("circleOptions/radius").getValue() <= 50) {
+
+                                            double radius = 0;
+
+                                            LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
+                                            if ((ds.child("circleOptions/radius").getValue()) != null) {
+
+                                                radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
+                                            }
+                                            Circle circle = mMap.addCircle(
+                                                    new CircleOptions()
+                                                            .center(center)
                                                             .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
-                                                            .strokeColor(Color.YELLOW)
+                                                            .radius(radius)
+                                                            .strokeColor(Color.rgb(255, 0, 255))
                                                             .strokeWidth(3f)
                                             );
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
                                             shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
+                                            circle.setTag(shapeUUID);
                                         }
                                     }
                                 } else {
 
-                                    // Purple polygon.
+                                    // Shape is a polygon.
 
-                                    // Only load large polygons (polygonArea > pi(50^2))
-                                    if ((double) ds.child("polygonArea").getValue() > Math.PI * (Math.pow(50, 2))) {
+                                    // Load different colored shapes depending on the map type.
+                                    if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
 
-                                        LatLng marker3Position = null;
-                                        LatLng marker4Position = null;
-                                        LatLng marker5Position = null;
-                                        LatLng marker6Position = null;
-                                        Polygon polygon;
+                                        // Only load medium polygons pi(10^2) < polygonArea <= pi(50^2))
+                                        if ((double) ds.child("polygonArea").getValue() > Math.PI * (Math.pow(10, 2)) && (double) ds.child("polygonArea").getValue() <= Math.PI * (Math.pow(50, 2))) {
 
-                                        LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                        LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                        LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                        if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                                            // Yellow polygon.
+
+                                            LatLng marker3Position = null;
+                                            LatLng marker4Position = null;
+                                            LatLng marker5Position = null;
+                                            LatLng marker6Position = null;
+                                            Polygon polygon;
+
+                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                            if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
+                                                LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
+
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            }
                                         }
-                                        if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
-                                            LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
+                                    } else {
 
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
+                                        // Purple polygon.
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
+                                        // Only load medium polygons pi(10^2) < polygonArea <= pi(50^2))
+                                        if ((double) ds.child("polygonArea").getValue() > Math.PI * (Math.pow(10, 2)) && (double) ds.child("polygonArea").getValue() <= Math.PI * (Math.pow(50, 2))) {
 
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
+                                            LatLng marker3Position = null;
+                                            LatLng marker4Position = null;
+                                            LatLng marker5Position = null;
+                                            LatLng marker6Position = null;
+                                            Polygon polygon;
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
+                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                            if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
+                                                LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
 
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            polygon.setTag(shapeUUID);
-                                        } else {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
 
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
 
-                                            polygon.setTag(shapeUUID);
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            }
                                         }
                                     }
                                 }
                             }
+
+                            loadingIcon.setVisibility(View.GONE);
+                        } else if (showSmall) {
+
+                            loadingIcon.setVisibility(View.VISIBLE);
+
+                            for (DataSnapshot ds : dataSnapshot.getChildren()) {
+
+                                if (ds.child("circleOptions").exists()) {
+
+                                    // Shape is a circle.
+
+                                    // Load different colored shapes depending on the map type.
+                                    if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
+
+                                        // Yellow circle.
+
+                                        // Only load small circles (1 < radius <= 10)
+                                        if ((double) (long) ds.child("circleOptions/radius").getValue() > 1 && (double) (long) ds.child("circleOptions/radius").getValue() <= 10) {
+
+                                            double radius = 0;
+
+                                            LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
+                                            if ((ds.child("circleOptions/radius").getValue()) != null) {
+
+                                                radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
+                                            }
+                                            Circle circle = mMap.addCircle(
+                                                    new CircleOptions()
+                                                            .center(center)
+                                                            .clickable(true)
+                                                            .radius(radius)
+                                                            .strokeColor(Color.YELLOW)
+                                                            .strokeWidth(3f)
+                                            );
+
+                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                            circle.setTag(shapeUUID);
+                                        }
+                                    } else {
+
+                                        // Purple circle.
+
+                                        // Only load small circles (1 < radius <= 10)
+                                        if ((double) (long) ds.child("circleOptions/radius").getValue() > 1 && (double) (long) ds.child("circleOptions/radius").getValue() <= 10) {
+
+                                            double radius = 0;
+
+                                            LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
+                                            if ((ds.child("circleOptions/radius").getValue()) != null) {
+
+                                                radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
+                                            }
+                                            Circle circle = mMap.addCircle(
+                                                    new CircleOptions()
+                                                            .center(center)
+                                                            .clickable(true)
+                                                            .radius(radius)
+                                                            .strokeColor(Color.rgb(255, 0, 255))
+                                                            .strokeWidth(3f)
+                                            );
+
+                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                            circle.setTag(shapeUUID);
+                                        }
+                                    }
+                                } else {
+
+                                    // Shape is a polygon.
+
+                                    // Load different colored shapes depending on the map type.
+                                    if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
+
+                                        // Only load small polygons pi < polygonArea <= pi(10^2))
+                                        if ((double) ds.child("polygonArea").getValue() > Math.PI && (double) ds.child("polygonArea").getValue() <= Math.PI * (Math.pow(10, 2))) {
+
+                                            // Yellow polygon.
+
+                                            LatLng marker3Position = null;
+                                            LatLng marker4Position = null;
+                                            LatLng marker5Position = null;
+                                            LatLng marker6Position = null;
+                                            Polygon polygon;
+
+                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                            if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
+                                                LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
+
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position)
+                                                                .strokeColor(Color.YELLOW)
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            }
+                                        }
+                                    } else {
+
+                                        // Purple polygon.
+
+                                        // Only load small polygons pi < polygonArea <= pi(10^2))
+                                        if ((double) ds.child("polygonArea").getValue() > Math.PI && (double) ds.child("polygonArea").getValue() <= Math.PI * (Math.pow(10, 2))) {
+
+                                            LatLng marker3Position = null;
+                                            LatLng marker4Position = null;
+                                            LatLng marker5Position = null;
+                                            LatLng marker6Position = null;
+                                            Polygon polygon;
+
+                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                            if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
+                                                LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
+
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            } else {
+                                                polygon = mMap.addPolygon(
+                                                        new PolygonOptions()
+                                                                .clickable(true)
+                                                                .add(marker0Position, marker1Position, marker2Position)
+                                                                .strokeColor(Color.rgb(255, 0, 255))
+                                                                .strokeWidth(3f)
+                                                );
+
+                                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                                shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                polygon.setTag(shapeUUID);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            loadingIcon.setVisibility(View.GONE);
+                        } else if (showPoints) {
+
+                            loadingIcon.setVisibility(View.VISIBLE);
+
+                            for (DataSnapshot ds : dataSnapshot.getChildren()) {
+
+                                if (ds.child("circleOptions").exists()) {
+
+                                    // Shape is a circle.
+
+                                    // Load different colored shapes depending on the map type.
+                                    if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
+
+                                        // Yellow circle.
+
+                                        // Only load points (radius == 1)
+                                        if ((double) (long) ds.child("circleOptions/radius").getValue() == 1) {
+
+                                            double radius = 0;
+
+                                            LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
+                                            if ((ds.child("circleOptions/radius").getValue()) != null) {
+
+                                                radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
+                                            }
+                                            Circle circle = mMap.addCircle(
+                                                    new CircleOptions()
+                                                            .center(center)
+                                                            .clickable(true)
+                                                            .radius(radius)
+                                                            .strokeColor(Color.YELLOW)
+                                                            .strokeWidth(3f)
+                                            );
+
+                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                            circle.setTag(shapeUUID);
+                                        }
+                                    } else {
+
+                                        // Purple circle.
+
+                                        // Only load points (radius == 1)
+                                        if ((double) (long) ds.child("circleOptions/radius").getValue() == 1) {
+
+                                            double radius = 0;
+
+                                            LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
+                                            if ((ds.child("circleOptions/radius").getValue()) != null) {
+
+                                                radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
+                                            }
+                                            Circle circle = mMap.addCircle(
+                                                    new CircleOptions()
+                                                            .center(center)
+                                                            .clickable(true)
+                                                            .radius(radius)
+                                                            .strokeColor(Color.rgb(255, 0, 255))
+                                                            .strokeWidth(3f)
+                                            );
+
+                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                            circle.setTag(shapeUUID);
+                                        }
+                                    }
+                                }
+                            }
+
+                            loadingIcon.setVisibility(View.GONE);
                         }
                     }
 
@@ -9387,3055 +12010,42 @@ public class Map extends FragmentActivity implements
                 });
             }
 
-            showingLarge = true;
-            showingEverything = false;
-            showingMedium = false;
-            showingSmall = false;
-            showingPoints = false;
+            if (showEverything) {
 
-            mapChanged = false;
+                showingEverything = true;
+                showingLarge = false;
+                showingMedium = false;
+                showingSmall = false;
+                showingPoints = false;
+            } else if (showLarge) {
 
-            oldNearLeft = newNearLeft;
-            oldFarLeft = newFarLeft;
-            oldNearRight = newNearRight;
-            oldFarRight = newFarRight;
-            newCameraCoordinates = false;
-        }
-    }
+                showingLarge = true;
+                showingEverything = false;
+                showingMedium = false;
+                showingSmall = false;
+                showingPoints = false;
+            } else if (showMedium) {
 
-    private void loadMediumChats() {
+                showingMedium = true;
+                showingEverything = false;
+                showingLarge = false;
+                showingSmall = false;
+                showingPoints = false;
+            } else if (showSmall) {
 
-        // Prevent resetting and reloading everything if this is already the state.
-        if (!showingMedium || restarted || newCameraCoordinates || mapChanged) {
+                showingSmall = true;
+                showingEverything = false;
+                showingLarge = false;
+                showingMedium = false;
+                showingPoints = false;
+            } else if (showPoints) {
 
-            Log.i(TAG, "loadMediumChats()");
-
-            boolean mapCleared = false;
-            if (loadedCoordinates.size() == 7) {
-
-                mMap.clear();
-                loadedCoordinates.clear();
-                mapCleared = true;
+                showingPoints = true;
+                showingEverything = false;
+                showingLarge = false;
+                showingMedium = false;
+                showingSmall = false;
             }
-
-            showingMedium = true;
-
-            loadingIcon.setVisibility(View.VISIBLE);
-
-            if (!loadedCoordinates.contains(newNearLeft) || mapCleared || restarted) {
-
-                loadedCoordinates.add(0, newNearLeft);
-
-                if (loadedCoordinates.size() > 7) {
-
-                    loadedCoordinates.subList(7, loadedCoordinates.size()).clear();
-                }
-
-                DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-                DatabaseReference firebaseShapes = rootRef.child("Shapes").child("(" + newNearLeftLat + ", " + newNearLeftLon + ")");
-                firebaseShapes.addListenerForSingleValueEvent(new ValueEventListener() {
-
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-
-                        for (DataSnapshot ds : dataSnapshot.getChildren()) {
-
-                            if (ds.child("circleOptions").exists()) {
-
-                                // Shape is a circle.
-
-                                // Load different colored shapes depending on the map type.
-                                if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
-
-                                    // Yellow circle.
-
-                                    // Only load medium circles (10 < radius <= 50)
-                                    if ((double) (long) ds.child("circleOptions/radius").getValue() > 10 && (double) (long) ds.child("circleOptions/radius").getValue() <= 50) {
-
-                                        double radius = 0;
-
-                                        LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
-                                        if ((ds.child("circleOptions/radius").getValue()) != null) {
-
-                                            radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
-                                        }
-                                        Circle circle = mMap.addCircle(
-                                                new CircleOptions()
-                                                        .center(center)
-                                                        .clickable(true)
-                                                        .radius(radius)
-                                                        .strokeColor(Color.YELLOW)
-                                                        .strokeWidth(3f)
-                                        );
-
-                                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                        shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                        circle.setTag(shapeUUID);
-                                    }
-                                } else {
-
-                                    // Purple circle.
-
-                                    // Only load medium circles (10 < radius <= 50)
-                                    if ((double) (long) ds.child("circleOptions/radius").getValue() > 10 && (double) (long) ds.child("circleOptions/radius").getValue() <= 50) {
-
-                                        double radius = 0;
-
-                                        LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
-                                        if ((ds.child("circleOptions/radius").getValue()) != null) {
-
-                                            radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
-                                        }
-                                        Circle circle = mMap.addCircle(
-                                                new CircleOptions()
-                                                        .center(center)
-                                                        .clickable(true)
-                                                        .radius(radius)
-                                                        .strokeColor(Color.rgb(255, 0, 255))
-                                                        .strokeWidth(3f)
-                                        );
-
-                                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                        shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                        circle.setTag(shapeUUID);
-                                    }
-                                }
-                            } else {
-
-                                // Shape is a polygon.
-
-                                // Load different colored shapes depending on the map type.
-                                if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
-
-                                    // Only load medium polygons pi(10^2) < polygonArea <= pi(50^2))
-                                    if ((double) ds.child("polygonArea").getValue() > Math.PI * (Math.pow(10, 2)) && (double) ds.child("polygonArea").getValue() <= Math.PI * (Math.pow(50, 2))) {
-
-                                        // Yellow polygon.
-
-                                        LatLng marker3Position = null;
-                                        LatLng marker4Position = null;
-                                        LatLng marker5Position = null;
-                                        LatLng marker6Position = null;
-                                        Polygon polygon;
-
-                                        LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                        LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                        LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                        if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
-                                            LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
-
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        }
-                                    }
-                                } else {
-
-                                    // Purple polygon.
-
-                                    // Only load medium polygons pi(10^2) < polygonArea <= pi(50^2))
-                                    if ((double) ds.child("polygonArea").getValue() > Math.PI * (Math.pow(10, 2)) && (double) ds.child("polygonArea").getValue() <= Math.PI * (Math.pow(50, 2))) {
-
-                                        LatLng marker3Position = null;
-                                        LatLng marker4Position = null;
-                                        LatLng marker5Position = null;
-                                        LatLng marker6Position = null;
-                                        Polygon polygon;
-
-                                        LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                        LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                        LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                        if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
-                                            LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
-
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                        Log.e(TAG, "DatabaseError");
-                        loadingIcon.setVisibility(View.GONE);
-                        toastMessageLong(databaseError.getMessage());
-                    }
-                });
-            }
-
-            // Without the final "&&" statement, every one of these statement groups will be called after restart, even when newNearLeft == newFarLeft == newNearRight == newFarRight.
-            if (!loadedCoordinates.contains(newFarLeft) || mapCleared || (!loadedCoordinates.contains(newFarLeft) && restarted)) {
-
-                loadedCoordinates.add(0, newFarLeft);
-
-                if (loadedCoordinates.size() > 7) {
-
-                    loadedCoordinates.subList(7, loadedCoordinates.size()).clear();
-                }
-
-                DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-                DatabaseReference firebaseShapes = rootRef.child("Shapes").child("(" + newFarLeftLat + ", " + newFarLeftLon + ")");
-                firebaseShapes.addListenerForSingleValueEvent(new ValueEventListener() {
-
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-
-                        for (DataSnapshot ds : dataSnapshot.getChildren()) {
-
-                            if (ds.child("circleOptions").exists()) {
-
-                                // Shape is a circle.
-
-                                // Load different colored shapes depending on the map type.
-                                if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
-
-                                    // Yellow circle.
-
-                                    // Only load medium circles (10 < radius <= 50)
-                                    if ((double) (long) ds.child("circleOptions/radius").getValue() > 10 && (double) (long) ds.child("circleOptions/radius").getValue() <= 50) {
-
-                                        double radius = 0;
-
-                                        LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
-                                        if ((ds.child("circleOptions/radius").getValue()) != null) {
-
-                                            radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
-                                        }
-                                        Circle circle = mMap.addCircle(
-                                                new CircleOptions()
-                                                        .center(center)
-                                                        .clickable(true)
-                                                        .radius(radius)
-                                                        .strokeColor(Color.YELLOW)
-                                                        .strokeWidth(3f)
-                                        );
-
-                                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                        shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                        circle.setTag(shapeUUID);
-                                    }
-                                } else {
-
-                                    // Purple circle.
-
-                                    // Only load medium circles (10 < radius <= 50)
-                                    if ((double) (long) ds.child("circleOptions/radius").getValue() > 10 && (double) (long) ds.child("circleOptions/radius").getValue() <= 50) {
-
-                                        double radius = 0;
-
-                                        LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
-                                        if ((ds.child("circleOptions/radius").getValue()) != null) {
-
-                                            radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
-                                        }
-                                        Circle circle = mMap.addCircle(
-                                                new CircleOptions()
-                                                        .center(center)
-                                                        .clickable(true)
-                                                        .radius(radius)
-                                                        .strokeColor(Color.rgb(255, 0, 255))
-                                                        .strokeWidth(3f)
-                                        );
-
-                                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                        shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                        circle.setTag(shapeUUID);
-                                    }
-                                }
-                            } else {
-
-                                // Shape is a polygon.
-
-                                // Load different colored shapes depending on the map type.
-                                if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
-
-                                    // Only load medium polygons pi(10^2) < polygonArea <= pi(50^2))
-                                    if ((double) ds.child("polygonArea").getValue() > Math.PI * (Math.pow(10, 2)) && (double) ds.child("polygonArea").getValue() <= Math.PI * (Math.pow(50, 2))) {
-
-                                        // Yellow polygon.
-
-                                        LatLng marker3Position = null;
-                                        LatLng marker4Position = null;
-                                        LatLng marker5Position = null;
-                                        LatLng marker6Position = null;
-                                        Polygon polygon;
-
-                                        LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                        LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                        LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                        if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
-                                            LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
-
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        }
-                                    }
-                                } else {
-
-                                    // Purple polygon.
-
-                                    // Only load medium polygons pi(10^2) < polygonArea <= pi(50^2))
-                                    if ((double) ds.child("polygonArea").getValue() > Math.PI * (Math.pow(10, 2)) && (double) ds.child("polygonArea").getValue() <= Math.PI * (Math.pow(50, 2))) {
-
-                                        LatLng marker3Position = null;
-                                        LatLng marker4Position = null;
-                                        LatLng marker5Position = null;
-                                        LatLng marker6Position = null;
-                                        Polygon polygon;
-
-                                        LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                        LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                        LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                        if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
-                                            LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
-
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                        Log.e(TAG, "DatabaseError");
-                        loadingIcon.setVisibility(View.GONE);
-                        toastMessageLong(databaseError.getMessage());
-                    }
-                });
-            }
-
-            if (!loadedCoordinates.contains(newNearRight) || mapCleared || (!loadedCoordinates.contains(newNearRight) && restarted)) {
-
-                loadedCoordinates.add(0, newNearRight);
-
-                if (loadedCoordinates.size() > 7) {
-
-                    loadedCoordinates.subList(7, loadedCoordinates.size()).clear();
-                }
-
-                DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-                DatabaseReference firebaseShapes = rootRef.child("Shapes").child("(" + newNearRightLat + ", " + newNearRightLon + ")");
-                firebaseShapes.addListenerForSingleValueEvent(new ValueEventListener() {
-
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-
-                        for (DataSnapshot ds : dataSnapshot.getChildren()) {
-
-                            if (ds.child("circleOptions").exists()) {
-
-                                // Shape is a circle.
-
-                                // Load different colored shapes depending on the map type.
-                                if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
-
-                                    // Yellow circle.
-
-                                    // Only load medium circles (10 < radius <= 50)
-                                    if ((double) (long) ds.child("circleOptions/radius").getValue() > 10 && (double) (long) ds.child("circleOptions/radius").getValue() <= 50) {
-
-                                        double radius = 0;
-
-                                        LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
-                                        if ((ds.child("circleOptions/radius").getValue()) != null) {
-
-                                            radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
-                                        }
-                                        Circle circle = mMap.addCircle(
-                                                new CircleOptions()
-                                                        .center(center)
-                                                        .clickable(true)
-                                                        .radius(radius)
-                                                        .strokeColor(Color.YELLOW)
-                                                        .strokeWidth(3f)
-                                        );
-
-                                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                        shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                        circle.setTag(shapeUUID);
-                                    }
-                                } else {
-
-                                    // Purple circle.
-
-                                    // Only load medium circles (10 < radius <= 50)
-                                    if ((double) (long) ds.child("circleOptions/radius").getValue() > 10 && (double) (long) ds.child("circleOptions/radius").getValue() <= 50) {
-
-                                        double radius = 0;
-
-                                        LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
-                                        if ((ds.child("circleOptions/radius").getValue()) != null) {
-
-                                            radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
-                                        }
-                                        Circle circle = mMap.addCircle(
-                                                new CircleOptions()
-                                                        .center(center)
-                                                        .clickable(true)
-                                                        .radius(radius)
-                                                        .strokeColor(Color.rgb(255, 0, 255))
-                                                        .strokeWidth(3f)
-                                        );
-
-                                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                        shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                        circle.setTag(shapeUUID);
-                                    }
-                                }
-                            } else {
-
-                                // Shape is a polygon.
-
-                                // Load different colored shapes depending on the map type.
-                                if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
-
-                                    // Only load medium polygons pi(10^2) < polygonArea <= pi(50^2))
-                                    if ((double) ds.child("polygonArea").getValue() > Math.PI * (Math.pow(10, 2)) && (double) ds.child("polygonArea").getValue() <= Math.PI * (Math.pow(50, 2))) {
-
-                                        // Yellow polygon.
-
-                                        LatLng marker3Position = null;
-                                        LatLng marker4Position = null;
-                                        LatLng marker5Position = null;
-                                        LatLng marker6Position = null;
-                                        Polygon polygon;
-
-                                        LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                        LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                        LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                        if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
-                                            LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
-
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        }
-                                    }
-                                } else {
-
-                                    // Purple polygon.
-
-                                    // Only load medium polygons pi(10^2) < polygonArea <= pi(50^2))
-                                    if ((double) ds.child("polygonArea").getValue() > Math.PI * (Math.pow(10, 2)) && (double) ds.child("polygonArea").getValue() <= Math.PI * (Math.pow(50, 2))) {
-
-                                        LatLng marker3Position = null;
-                                        LatLng marker4Position = null;
-                                        LatLng marker5Position = null;
-                                        LatLng marker6Position = null;
-                                        Polygon polygon;
-
-                                        LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                        LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                        LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                        if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
-                                            LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
-
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                        Log.e(TAG, "DatabaseError");
-                        loadingIcon.setVisibility(View.GONE);
-                        toastMessageLong(databaseError.getMessage());
-                    }
-                });
-            }
-
-            if (!loadedCoordinates.contains(newFarRight) || mapCleared || (!loadedCoordinates.contains(newFarRight) && restarted)) {
-
-                loadedCoordinates.add(0, newFarRight);
-
-                if (loadedCoordinates.size() > 7) {
-
-                    loadedCoordinates.subList(7, loadedCoordinates.size()).clear();
-                }
-
-                DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-                DatabaseReference firebaseShapes = rootRef.child("Shapes").child("(" + newFarRightLat + ", " + newFarRightLon + ")");
-                firebaseShapes.addListenerForSingleValueEvent(new ValueEventListener() {
-
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-
-                        for (DataSnapshot ds : dataSnapshot.getChildren()) {
-
-                            if (ds.child("circleOptions").exists()) {
-
-                                // Shape is a circle.
-
-                                // Load different colored shapes depending on the map type.
-                                if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
-
-                                    // Yellow circle.
-
-                                    // Only load medium circles (10 < radius <= 50)
-                                    if ((double) (long) ds.child("circleOptions/radius").getValue() > 10 && (double) (long) ds.child("circleOptions/radius").getValue() <= 50) {
-
-                                        double radius = 0;
-
-                                        LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
-                                        if ((ds.child("circleOptions/radius").getValue()) != null) {
-
-                                            radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
-                                        }
-                                        Circle circle = mMap.addCircle(
-                                                new CircleOptions()
-                                                        .center(center)
-                                                        .clickable(true)
-                                                        .radius(radius)
-                                                        .strokeColor(Color.YELLOW)
-                                                        .strokeWidth(3f)
-                                        );
-
-                                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                        shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                        circle.setTag(shapeUUID);
-                                    }
-                                } else {
-
-                                    // Purple circle.
-
-                                    // Only load medium circles (10 < radius <= 50)
-                                    if ((double) (long) ds.child("circleOptions/radius").getValue() > 10 && (double) (long) ds.child("circleOptions/radius").getValue() <= 50) {
-
-                                        double radius = 0;
-
-                                        LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
-                                        if ((ds.child("circleOptions/radius").getValue()) != null) {
-
-                                            radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
-                                        }
-                                        Circle circle = mMap.addCircle(
-                                                new CircleOptions()
-                                                        .center(center)
-                                                        .clickable(true)
-                                                        .radius(radius)
-                                                        .strokeColor(Color.rgb(255, 0, 255))
-                                                        .strokeWidth(3f)
-                                        );
-
-                                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                        shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                        circle.setTag(shapeUUID);
-                                    }
-                                }
-                            } else {
-
-                                // Shape is a polygon.
-
-                                // Load different colored shapes depending on the map type.
-                                if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
-
-                                    // Only load medium polygons pi(10^2) < polygonArea <= pi(50^2))
-                                    if ((double) ds.child("polygonArea").getValue() > Math.PI * (Math.pow(10, 2)) && (double) ds.child("polygonArea").getValue() <= Math.PI * (Math.pow(50, 2))) {
-
-                                        // Yellow polygon.
-
-                                        LatLng marker3Position = null;
-                                        LatLng marker4Position = null;
-                                        LatLng marker5Position = null;
-                                        LatLng marker6Position = null;
-                                        Polygon polygon;
-
-                                        LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                        LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                        LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                        if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
-                                            LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
-
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        }
-                                    }
-                                } else {
-
-                                    // Purple polygon.
-
-                                    // Only load medium polygons pi(10^2) < polygonArea <= pi(50^2))
-                                    if ((double) ds.child("polygonArea").getValue() > Math.PI * (Math.pow(10, 2)) && (double) ds.child("polygonArea").getValue() <= Math.PI * (Math.pow(50, 2))) {
-
-                                        LatLng marker3Position = null;
-                                        LatLng marker4Position = null;
-                                        LatLng marker5Position = null;
-                                        LatLng marker6Position = null;
-                                        Polygon polygon;
-
-                                        LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                        LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                        LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                        if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
-                                            LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
-
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                        Log.e(TAG, "DatabaseError");
-                        loadingIcon.setVisibility(View.GONE);
-                        toastMessageLong(databaseError.getMessage());
-                    }
-                });
-            }
-
-            showingMedium = true;
-            showingEverything = false;
-            showingLarge = false;
-            showingSmall = false;
-            showingPoints = false;
-
-            mapChanged = false;
-
-            oldNearLeft = newNearLeft;
-            oldFarLeft = newFarLeft;
-            oldNearRight = newNearRight;
-            oldFarRight = newFarRight;
-            newCameraCoordinates = false;
-        }
-    }
-
-    private void loadSmallChats() {
-
-        // Prevent resetting and reloading everything if this is already the state.
-        if (!showingSmall || restarted || newCameraCoordinates || mapChanged) {
-
-            Log.i(TAG, "loadSmallChats()");
-
-            boolean mapCleared = false;
-            if (loadedCoordinates.size() == 7) {
-
-                mMap.clear();
-                loadedCoordinates.clear();
-                mapCleared = true;
-            }
-
-            showingSmall = true;
-
-            loadingIcon.setVisibility(View.VISIBLE);
-
-            if (!loadedCoordinates.contains(newNearLeft) || mapCleared || restarted) {
-
-                loadedCoordinates.add(0, newNearLeft);
-
-                if (loadedCoordinates.size() > 7) {
-
-                    loadedCoordinates.subList(7, loadedCoordinates.size()).clear();
-                }
-
-                DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-                DatabaseReference firebaseShapes = rootRef.child("Shapes").child("(" + newNearLeftLat + ", " + newNearLeftLon + ")");
-                firebaseShapes.addListenerForSingleValueEvent(new ValueEventListener() {
-
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-
-                        for (DataSnapshot ds : dataSnapshot.getChildren()) {
-
-                            if (ds.child("circleOptions").exists()) {
-
-                                // Shape is a circle.
-
-                                // Load different colored shapes depending on the map type.
-                                if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
-
-                                    // Yellow circle.
-
-                                    // Only load small circles (1 < radius <= 10)
-                                    if ((double) (long) ds.child("circleOptions/radius").getValue() > 1 && (double) (long) ds.child("circleOptions/radius").getValue() <= 10) {
-
-                                        double radius = 0;
-
-                                        LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
-                                        if ((ds.child("circleOptions/radius").getValue()) != null) {
-
-                                            radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
-                                        }
-                                        Circle circle = mMap.addCircle(
-                                                new CircleOptions()
-                                                        .center(center)
-                                                        .clickable(true)
-                                                        .radius(radius)
-                                                        .strokeColor(Color.YELLOW)
-                                                        .strokeWidth(3f)
-                                        );
-
-                                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                        shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                        circle.setTag(shapeUUID);
-                                    }
-                                } else {
-
-                                    // Purple circle.
-
-                                    // Only load small circles (1 < radius <= 10)
-                                    if ((double) (long) ds.child("circleOptions/radius").getValue() > 1 && (double) (long) ds.child("circleOptions/radius").getValue() <= 10) {
-
-                                        double radius = 0;
-
-                                        LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
-                                        if ((ds.child("circleOptions/radius").getValue()) != null) {
-
-                                            radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
-                                        }
-                                        Circle circle = mMap.addCircle(
-                                                new CircleOptions()
-                                                        .center(center)
-                                                        .clickable(true)
-                                                        .radius(radius)
-                                                        .strokeColor(Color.rgb(255, 0, 255))
-                                                        .strokeWidth(3f)
-                                        );
-
-                                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                        shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                        circle.setTag(shapeUUID);
-                                    }
-                                }
-                            } else {
-
-                                // Shape is a polygon.
-
-                                // Load different colored shapes depending on the map type.
-                                if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
-
-                                    // Only load small polygons pi < polygonArea <= pi(10^2))
-                                    if ((double) ds.child("polygonArea").getValue() > Math.PI && (double) ds.child("polygonArea").getValue() <= Math.PI * (Math.pow(10, 2))) {
-
-                                        // Yellow polygon.
-
-                                        LatLng marker3Position = null;
-                                        LatLng marker4Position = null;
-                                        LatLng marker5Position = null;
-                                        LatLng marker6Position = null;
-                                        Polygon polygon;
-
-                                        LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                        LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                        LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                        if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
-                                            LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
-
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        }
-                                    }
-                                } else {
-
-                                    // Purple polygon.
-
-                                    // Only load small polygons pi < polygonArea <= pi(10^2))
-                                    if ((double) ds.child("polygonArea").getValue() > Math.PI && (double) ds.child("polygonArea").getValue() <= Math.PI * (Math.pow(10, 2))) {
-
-                                        LatLng marker3Position = null;
-                                        LatLng marker4Position = null;
-                                        LatLng marker5Position = null;
-                                        LatLng marker6Position = null;
-                                        Polygon polygon;
-
-                                        LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                        LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                        LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                        if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
-                                            LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
-
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                        Log.e(TAG, "DatabaseError");
-                        loadingIcon.setVisibility(View.GONE);
-                        toastMessageLong(databaseError.getMessage());
-                    }
-                });
-            }
-
-            // Without the final "&&" statement, every one of these statement groups will be called after restart, even when newNearLeft == newFarLeft == newNearRight == newFarRight.
-            if (!loadedCoordinates.contains(newFarLeft) || mapCleared || (!loadedCoordinates.contains(newFarLeft) && restarted)) {
-
-                loadedCoordinates.add(0, newFarLeft);
-
-                if (loadedCoordinates.size() > 7) {
-
-                    loadedCoordinates.subList(7, loadedCoordinates.size()).clear();
-                }
-
-                DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-                DatabaseReference firebaseShapes = rootRef.child("Shapes").child("(" + newFarLeftLat + ", " + newFarLeftLon + ")");
-                firebaseShapes.addListenerForSingleValueEvent(new ValueEventListener() {
-
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-
-                        for (DataSnapshot ds : dataSnapshot.getChildren()) {
-
-                            if (ds.child("circleOptions").exists()) {
-
-                                // Shape is a circle.
-
-                                // Load different colored shapes depending on the map type.
-                                if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
-
-                                    // Yellow circle.
-
-                                    // Only load small circles (1 < radius <= 10)
-                                    if ((double) (long) ds.child("circleOptions/radius").getValue() > 1 && (double) (long) ds.child("circleOptions/radius").getValue() <= 10) {
-
-                                        double radius = 0;
-
-                                        LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
-                                        if ((ds.child("circleOptions/radius").getValue()) != null) {
-
-                                            radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
-                                        }
-                                        Circle circle = mMap.addCircle(
-                                                new CircleOptions()
-                                                        .center(center)
-                                                        .clickable(true)
-                                                        .radius(radius)
-                                                        .strokeColor(Color.YELLOW)
-                                                        .strokeWidth(3f)
-                                        );
-
-                                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                        shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                        circle.setTag(shapeUUID);
-                                    }
-                                } else {
-
-                                    // Purple circle.
-
-                                    // Only load small circles (1 < radius <= 10)
-                                    if ((double) (long) ds.child("circleOptions/radius").getValue() > 1 && (double) (long) ds.child("circleOptions/radius").getValue() <= 10) {
-
-                                        double radius = 0;
-
-                                        LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
-                                        if ((ds.child("circleOptions/radius").getValue()) != null) {
-
-                                            radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
-                                        }
-                                        Circle circle = mMap.addCircle(
-                                                new CircleOptions()
-                                                        .center(center)
-                                                        .clickable(true)
-                                                        .radius(radius)
-                                                        .strokeColor(Color.rgb(255, 0, 255))
-                                                        .strokeWidth(3f)
-                                        );
-
-                                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                        shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                        circle.setTag(shapeUUID);
-                                    }
-                                }
-                            } else {
-
-                                // Shape is a polygon.
-
-                                // Load different colored shapes depending on the map type.
-                                if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
-
-                                    // Only load small polygons pi < polygonArea <= pi(10^2))
-                                    if ((double) ds.child("polygonArea").getValue() > Math.PI && (double) ds.child("polygonArea").getValue() <= Math.PI * (Math.pow(10, 2))) {
-
-                                        // Yellow polygon.
-
-                                        LatLng marker3Position = null;
-                                        LatLng marker4Position = null;
-                                        LatLng marker5Position = null;
-                                        LatLng marker6Position = null;
-                                        Polygon polygon;
-
-                                        LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                        LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                        LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                        if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
-                                            LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
-
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        }
-                                    }
-                                } else {
-
-                                    // Purple polygon.
-
-                                    // Only load small polygons pi < polygonArea <= pi(10^2))
-                                    if ((double) ds.child("polygonArea").getValue() > Math.PI && (double) ds.child("polygonArea").getValue() <= Math.PI * (Math.pow(10, 2))) {
-
-                                        LatLng marker3Position = null;
-                                        LatLng marker4Position = null;
-                                        LatLng marker5Position = null;
-                                        LatLng marker6Position = null;
-                                        Polygon polygon;
-
-                                        LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                        LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                        LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                        if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
-                                            LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
-
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                        Log.e(TAG, "DatabaseError");
-                        loadingIcon.setVisibility(View.GONE);
-                        toastMessageLong(databaseError.getMessage());
-                    }
-                });
-            }
-
-            if (!loadedCoordinates.contains(newNearRight) || mapCleared || (!loadedCoordinates.contains(newNearRight) && restarted)) {
-
-                loadedCoordinates.add(0, newNearRight);
-
-                if (loadedCoordinates.size() > 7) {
-
-                    loadedCoordinates.subList(7, loadedCoordinates.size()).clear();
-                }
-
-                DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-                DatabaseReference firebaseShapes = rootRef.child("Shapes").child("(" + newNearRightLat + ", " + newNearRightLon + ")");
-                firebaseShapes.addListenerForSingleValueEvent(new ValueEventListener() {
-
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-
-                        for (DataSnapshot ds : dataSnapshot.getChildren()) {
-
-                            if (ds.child("circleOptions").exists()) {
-
-                                // Shape is a circle.
-
-                                // Load different colored shapes depending on the map type.
-                                if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
-
-                                    // Yellow circle.
-
-                                    // Only load small circles (1 < radius <= 10)
-                                    if ((double) (long) ds.child("circleOptions/radius").getValue() > 1 && (double) (long) ds.child("circleOptions/radius").getValue() <= 10) {
-
-                                        double radius = 0;
-
-                                        LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
-                                        if ((ds.child("circleOptions/radius").getValue()) != null) {
-
-                                            radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
-                                        }
-                                        Circle circle = mMap.addCircle(
-                                                new CircleOptions()
-                                                        .center(center)
-                                                        .clickable(true)
-                                                        .radius(radius)
-                                                        .strokeColor(Color.YELLOW)
-                                                        .strokeWidth(3f)
-                                        );
-
-                                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                        shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                        circle.setTag(shapeUUID);
-                                    }
-                                } else {
-
-                                    // Purple circle.
-
-                                    // Only load small circles (1 < radius <= 10)
-                                    if ((double) (long) ds.child("circleOptions/radius").getValue() > 1 && (double) (long) ds.child("circleOptions/radius").getValue() <= 10) {
-
-                                        double radius = 0;
-
-                                        LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
-                                        if ((ds.child("circleOptions/radius").getValue()) != null) {
-
-                                            radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
-                                        }
-                                        Circle circle = mMap.addCircle(
-                                                new CircleOptions()
-                                                        .center(center)
-                                                        .clickable(true)
-                                                        .radius(radius)
-                                                        .strokeColor(Color.rgb(255, 0, 255))
-                                                        .strokeWidth(3f)
-                                        );
-
-                                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                        shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                        circle.setTag(shapeUUID);
-                                    }
-                                }
-                            } else {
-
-                                // Shape is a polygon.
-
-                                // Load different colored shapes depending on the map type.
-                                if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
-
-                                    // Only load small polygons pi < polygonArea <= pi(10^2))
-                                    if ((double) ds.child("polygonArea").getValue() > Math.PI && (double) ds.child("polygonArea").getValue() <= Math.PI * (Math.pow(10, 2))) {
-
-                                        // Yellow polygon.
-
-                                        LatLng marker3Position = null;
-                                        LatLng marker4Position = null;
-                                        LatLng marker5Position = null;
-                                        LatLng marker6Position = null;
-                                        Polygon polygon;
-
-                                        LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                        LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                        LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                        if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
-                                            LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
-
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        }
-                                    }
-                                } else {
-
-                                    // Purple polygon.
-
-                                    // Only load small polygons pi < polygonArea <= pi(10^2))
-                                    if ((double) ds.child("polygonArea").getValue() > Math.PI && (double) ds.child("polygonArea").getValue() <= Math.PI * (Math.pow(10, 2))) {
-
-                                        LatLng marker3Position = null;
-                                        LatLng marker4Position = null;
-                                        LatLng marker5Position = null;
-                                        LatLng marker6Position = null;
-                                        Polygon polygon;
-
-                                        LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                        LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                        LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                        if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
-                                            LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
-
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                        Log.e(TAG, "DatabaseError");
-                        loadingIcon.setVisibility(View.GONE);
-                        toastMessageLong(databaseError.getMessage());
-                    }
-                });
-            }
-
-            if (!loadedCoordinates.contains(newFarRight) || mapCleared || (!loadedCoordinates.contains(newFarRight) && restarted)) {
-
-                loadedCoordinates.add(0, newFarRight);
-
-                if (loadedCoordinates.size() > 7) {
-
-                    loadedCoordinates.subList(7, loadedCoordinates.size()).clear();
-                }
-
-                DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-                DatabaseReference firebaseShapes = rootRef.child("Shapes").child("(" + newFarRightLat + ", " + newFarRightLon + ")");
-                firebaseShapes.addListenerForSingleValueEvent(new ValueEventListener() {
-
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-
-                        for (DataSnapshot ds : dataSnapshot.getChildren()) {
-
-                            if (ds.child("circleOptions").exists()) {
-
-                                // Shape is a circle.
-
-                                // Load different colored shapes depending on the map type.
-                                if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
-
-                                    // Yellow circle.
-
-                                    // Only load small circles (1 < radius <= 10)
-                                    if ((double) (long) ds.child("circleOptions/radius").getValue() > 1 && (double) (long) ds.child("circleOptions/radius").getValue() <= 10) {
-
-                                        double radius = 0;
-
-                                        LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
-                                        if ((ds.child("circleOptions/radius").getValue()) != null) {
-
-                                            radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
-                                        }
-                                        Circle circle = mMap.addCircle(
-                                                new CircleOptions()
-                                                        .center(center)
-                                                        .clickable(true)
-                                                        .radius(radius)
-                                                        .strokeColor(Color.YELLOW)
-                                                        .strokeWidth(3f)
-                                        );
-
-                                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                        shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                        circle.setTag(shapeUUID);
-                                    }
-                                } else {
-
-                                    // Purple circle.
-
-                                    // Only load small circles (1 < radius <= 10)
-                                    if ((double) (long) ds.child("circleOptions/radius").getValue() > 1 && (double) (long) ds.child("circleOptions/radius").getValue() <= 10) {
-
-                                        double radius = 0;
-
-                                        LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
-                                        if ((ds.child("circleOptions/radius").getValue()) != null) {
-
-                                            radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
-                                        }
-                                        Circle circle = mMap.addCircle(
-                                                new CircleOptions()
-                                                        .center(center)
-                                                        .clickable(true)
-                                                        .radius(radius)
-                                                        .strokeColor(Color.rgb(255, 0, 255))
-                                                        .strokeWidth(3f)
-                                        );
-
-                                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                        shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                        circle.setTag(shapeUUID);
-                                    }
-                                }
-                            } else {
-
-                                // Shape is a polygon.
-
-                                // Load different colored shapes depending on the map type.
-                                if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
-
-                                    // Only load small polygons pi < polygonArea <= pi(10^2))
-                                    if ((double) ds.child("polygonArea").getValue() > Math.PI && (double) ds.child("polygonArea").getValue() <= Math.PI * (Math.pow(10, 2))) {
-
-                                        // Yellow polygon.
-
-                                        LatLng marker3Position = null;
-                                        LatLng marker4Position = null;
-                                        LatLng marker5Position = null;
-                                        LatLng marker6Position = null;
-                                        Polygon polygon;
-
-                                        LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                        LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                        LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                        if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
-                                            LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
-
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        }
-                                    }
-                                } else {
-
-                                    // Purple polygon.
-
-                                    // Only load small polygons pi < polygonArea <= pi(10^2))
-                                    if ((double) ds.child("polygonArea").getValue() > Math.PI && (double) ds.child("polygonArea").getValue() <= Math.PI * (Math.pow(10, 2))) {
-
-                                        LatLng marker3Position = null;
-                                        LatLng marker4Position = null;
-                                        LatLng marker5Position = null;
-                                        LatLng marker6Position = null;
-                                        Polygon polygon;
-
-                                        LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                        LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                        LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                        if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
-                                        }
-                                        if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
-                                            LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
-
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        } else {
-                                            polygon = mMap.addPolygon(
-                                                    new PolygonOptions()
-                                                            .clickable(true)
-                                                            .add(marker0Position, marker1Position, marker2Position)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                            );
-
-                                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
-                                            shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                            polygon.setTag(shapeUUID);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                        Log.e(TAG, "DatabaseError");
-                        loadingIcon.setVisibility(View.GONE);
-                        toastMessageLong(databaseError.getMessage());
-                    }
-                });
-            }
-
-            showingSmall = true;
-            showingEverything = false;
-            showingLarge = false;
-            showingMedium = false;
-            showingPoints = false;
-
-            mapChanged = false;
-
-            oldNearLeft = newNearLeft;
-            oldFarLeft = newFarLeft;
-            oldNearRight = newNearRight;
-            oldFarRight = newFarRight;
-            newCameraCoordinates = false;
-        }
-    }
-
-    private void loadPoints() {
-
-        // Prevent resetting and reloading everything if this is already the state.
-        if (!showingPoints || restarted || newCameraCoordinates || mapChanged) {
-
-            Log.i(TAG, "loadPoints");
-
-            boolean mapCleared = false;
-            if (loadedCoordinates.size() == 7) {
-
-                mMap.clear();
-                loadedCoordinates.clear();
-                mapCleared = true;
-            }
-
-            showingSmall = true;
-
-            loadingIcon.setVisibility(View.VISIBLE);
-
-            if (!loadedCoordinates.contains(newNearLeft) || mapCleared || restarted) {
-
-                loadedCoordinates.add(0, newNearLeft);
-
-                if (loadedCoordinates.size() > 7) {
-
-                    loadedCoordinates.subList(7, loadedCoordinates.size()).clear();
-                }
-
-                DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-                DatabaseReference firebaseShapes = rootRef.child("Shapes").child("(" + newNearLeftLat + ", " + newNearLeftLon + ")");
-                firebaseShapes.addListenerForSingleValueEvent(new ValueEventListener() {
-
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-
-                        for (DataSnapshot ds : dataSnapshot.getChildren()) {
-
-                            if (ds.child("circleOptions").exists()) {
-
-                                // Shape is a circle.
-
-                                // Load different colored shapes depending on the map type.
-                                if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
-
-                                    // Yellow circle.
-
-                                    // Only load points (radius == 1)
-                                    if ((double) (long) ds.child("circleOptions/radius").getValue() == 1) {
-
-                                        double radius = 0;
-
-                                        LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
-                                        if ((ds.child("circleOptions/radius").getValue()) != null) {
-
-                                            radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
-                                        }
-                                        Circle circle = mMap.addCircle(
-                                                new CircleOptions()
-                                                        .center(center)
-                                                        .clickable(true)
-                                                        .radius(radius)
-                                                        .strokeColor(Color.YELLOW)
-                                                        .strokeWidth(3f)
-                                        );
-
-                                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                        shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                        circle.setTag(shapeUUID);
-                                    }
-                                } else {
-
-                                    // Purple circle.
-
-                                    // Only load points (radius == 1)
-                                    if ((double) (long) ds.child("circleOptions/radius").getValue() == 1) {
-
-                                        double radius = 0;
-
-                                        LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
-                                        if ((ds.child("circleOptions/radius").getValue()) != null) {
-
-                                            radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
-                                        }
-                                        Circle circle = mMap.addCircle(
-                                                new CircleOptions()
-                                                        .center(center)
-                                                        .clickable(true)
-                                                        .radius(radius)
-                                                        .strokeColor(Color.rgb(255, 0, 255))
-                                                        .strokeWidth(3f)
-                                        );
-
-                                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                        shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                        circle.setTag(shapeUUID);
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                        Log.e(TAG, "DatabaseError");
-                        loadingIcon.setVisibility(View.GONE);
-                        toastMessageLong(databaseError.getMessage());
-                    }
-                });
-            }
-
-            // Without the final "&&" statement, every one of these statement groups will be called after restart, even when newNearLeft == newFarLeft == newNearRight == newFarRight.
-            if (!loadedCoordinates.contains(newFarLeft) || mapCleared || (!loadedCoordinates.contains(newFarLeft) && restarted)) {
-
-                loadedCoordinates.add(0, newFarLeft);
-
-                if (loadedCoordinates.size() > 7) {
-
-                    loadedCoordinates.subList(7, loadedCoordinates.size()).clear();
-                }
-
-                DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-                DatabaseReference firebaseShapes = rootRef.child("Shapes").child("(" + newFarLeftLat + ", " + newFarLeftLon + ")");
-                firebaseShapes.addListenerForSingleValueEvent(new ValueEventListener() {
-
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-
-                        for (DataSnapshot ds : dataSnapshot.getChildren()) {
-
-                            if (ds.child("circleOptions").exists()) {
-
-                                // Shape is a circle.
-
-                                // Load different colored shapes depending on the map type.
-                                if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
-
-                                    // Yellow circle.
-
-                                    // Only load points (radius == 1)
-                                    if ((double) (long) ds.child("circleOptions/radius").getValue() == 1) {
-
-                                        double radius = 0;
-
-                                        LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
-                                        if ((ds.child("circleOptions/radius").getValue()) != null) {
-
-                                            radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
-                                        }
-                                        Circle circle = mMap.addCircle(
-                                                new CircleOptions()
-                                                        .center(center)
-                                                        .clickable(true)
-                                                        .radius(radius)
-                                                        .strokeColor(Color.YELLOW)
-                                                        .strokeWidth(3f)
-                                        );
-
-                                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                        shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                        circle.setTag(shapeUUID);
-                                    }
-                                } else {
-
-                                    // Purple circle.
-
-                                    // Only load points (radius == 1)
-                                    if ((double) (long) ds.child("circleOptions/radius").getValue() == 1) {
-
-                                        double radius = 0;
-
-                                        LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
-                                        if ((ds.child("circleOptions/radius").getValue()) != null) {
-
-                                            radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
-                                        }
-                                        Circle circle = mMap.addCircle(
-                                                new CircleOptions()
-                                                        .center(center)
-                                                        .clickable(true)
-                                                        .radius(radius)
-                                                        .strokeColor(Color.rgb(255, 0, 255))
-                                                        .strokeWidth(3f)
-                                        );
-
-                                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                        shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                        circle.setTag(shapeUUID);
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                        Log.e(TAG, "DatabaseError");
-                        loadingIcon.setVisibility(View.GONE);
-                        toastMessageLong(databaseError.getMessage());
-                    }
-                });
-            }
-
-            if (!loadedCoordinates.contains(newNearRight) || mapCleared || (!loadedCoordinates.contains(newNearRight) && restarted)) {
-
-                loadedCoordinates.add(0, newNearRight);
-
-                if (loadedCoordinates.size() > 7) {
-
-                    loadedCoordinates.subList(7, loadedCoordinates.size()).clear();
-                }
-
-                DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-                DatabaseReference firebaseShapes = rootRef.child("Shapes").child("(" + newNearRightLat + ", " + newNearRightLon + ")");
-                firebaseShapes.addListenerForSingleValueEvent(new ValueEventListener() {
-
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-
-                        for (DataSnapshot ds : dataSnapshot.getChildren()) {
-
-                            if (ds.child("circleOptions").exists()) {
-
-                                // Shape is a circle.
-
-                                // Load different colored shapes depending on the map type.
-                                if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
-
-                                    // Yellow circle.
-
-                                    // Only load points (radius == 1)
-                                    if ((double) (long) ds.child("circleOptions/radius").getValue() == 1) {
-
-                                        double radius = 0;
-
-                                        LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
-                                        if ((ds.child("circleOptions/radius").getValue()) != null) {
-
-                                            radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
-                                        }
-                                        Circle circle = mMap.addCircle(
-                                                new CircleOptions()
-                                                        .center(center)
-                                                        .clickable(true)
-                                                        .radius(radius)
-                                                        .strokeColor(Color.YELLOW)
-                                                        .strokeWidth(3f)
-                                        );
-
-                                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                        shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                        circle.setTag(shapeUUID);
-                                    }
-                                } else {
-
-                                    // Purple circle.
-
-                                    // Only load points (radius == 1)
-                                    if ((double) (long) ds.child("circleOptions/radius").getValue() == 1) {
-
-                                        double radius = 0;
-
-                                        LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
-                                        if ((ds.child("circleOptions/radius").getValue()) != null) {
-
-                                            radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
-                                        }
-                                        Circle circle = mMap.addCircle(
-                                                new CircleOptions()
-                                                        .center(center)
-                                                        .clickable(true)
-                                                        .radius(radius)
-                                                        .strokeColor(Color.rgb(255, 0, 255))
-                                                        .strokeWidth(3f)
-                                        );
-
-                                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                        shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                        circle.setTag(shapeUUID);
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                        Log.e(TAG, "DatabaseError");
-                        loadingIcon.setVisibility(View.GONE);
-                        toastMessageLong(databaseError.getMessage());
-                    }
-                });
-            }
-
-            if (!loadedCoordinates.contains(newFarRight) || mapCleared || (!loadedCoordinates.contains(newFarRight) && restarted)) {
-
-                loadedCoordinates.add(0, newFarRight);
-
-                if (loadedCoordinates.size() > 7) {
-
-                    loadedCoordinates.subList(7, loadedCoordinates.size()).clear();
-                }
-
-                DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-                DatabaseReference firebaseShapes = rootRef.child("Shapes").child("(" + newFarRightLat + ", " + newFarRightLon + ")");
-                firebaseShapes.addListenerForSingleValueEvent(new ValueEventListener() {
-
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-
-                        for (DataSnapshot ds : dataSnapshot.getChildren()) {
-
-                            if (ds.child("circleOptions").exists()) {
-
-                                // Shape is a circle.
-
-                                // Load different colored shapes depending on the map type.
-                                if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
-
-                                    // Yellow circle.
-
-                                    // Only load points (radius == 1)
-                                    if ((double) (long) ds.child("circleOptions/radius").getValue() == 1) {
-
-                                        double radius = 0;
-
-                                        LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
-                                        if ((ds.child("circleOptions/radius").getValue()) != null) {
-
-                                            radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
-                                        }
-                                        Circle circle = mMap.addCircle(
-                                                new CircleOptions()
-                                                        .center(center)
-                                                        .clickable(true)
-                                                        .radius(radius)
-                                                        .strokeColor(Color.YELLOW)
-                                                        .strokeWidth(3f)
-                                        );
-
-                                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                        shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                        circle.setTag(shapeUUID);
-                                    }
-                                } else {
-
-                                    // Purple circle.
-
-                                    // Only load points (radius == 1)
-                                    if ((double) (long) ds.child("circleOptions/radius").getValue() == 1) {
-
-                                        double radius = 0;
-
-                                        LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
-                                        if ((ds.child("circleOptions/radius").getValue()) != null) {
-
-                                            radius = ((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue();
-                                        }
-                                        Circle circle = mMap.addCircle(
-                                                new CircleOptions()
-                                                        .center(center)
-                                                        .clickable(true)
-                                                        .radius(radius)
-                                                        .strokeColor(Color.rgb(255, 0, 255))
-                                                        .strokeWidth(3f)
-                                        );
-
-                                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
-                                        shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                                        circle.setTag(shapeUUID);
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                        Log.e(TAG, "DatabaseError");
-                        loadingIcon.setVisibility(View.GONE);
-                        toastMessageLong(databaseError.getMessage());
-                    }
-                });
-            }
-
-            showingPoints = true;
-            showingEverything = false;
-            showingLarge = false;
-            showingMedium = false;
-            showingSmall = false;
 
             mapChanged = false;
 
