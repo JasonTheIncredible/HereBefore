@@ -15,11 +15,16 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         multiDexEnabled true
     }
+    // Fixed issue where Firebase-perf could not be updated from 19.0.7 to 19.0.8 due to duplicate class error (fixed with info from https://github.com/googleapis/google-cloud-java/issues/5608#issuecomment-510651054)
+    configurations {
+        implementation.exclude module: 'protobuf-java'
+        implementation.exclude module: 'protobuf-javalite'
+    }
     dexOptions {
         javaMaxHeapSize "8G"
     }
     aboutLibraries {
-        configPath = "C:\\Users\\Jason\\AndroidStudioProjects\\HereBefore\\app\\src\\main\\res\\values\\aboutLibrariesCustom.xml" // the path to the directory containing configuration files
+        configPath = "C:\\Users\\Jason\\AndroidStudioProjects\\HereBefore\\app\\src\\main\\res\\values\\aboutLibrariesCustom.xml"
     }
     compileOptions {
         targetCompatibility JavaVersion.VERSION_1_8
@@ -48,36 +53,29 @@ dependencies {
     implementation 'com.google.android.gms:play-services-maps:17.0.0'
     implementation 'com.google.android.gms:play-services-location:17.0.0'
     implementation 'com.google.android.gms:play-services-auth:18.1.0'
-    implementation 'com.google.firebase:firebase-storage:19.2.0'
     implementation 'com.google.android.gms:play-services-ads-lite:19.4.0'
+    implementation 'com.google.android.material:material:1.2.1'
+    implementation 'com.google.android.exoplayer:exoplayer:2.11.3'
+    implementation 'com.google.maps.android:android-maps-utils:2.0.3'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
+    implementation 'androidx.preference:preference:1.1.1'
+    implementation 'androidx.recyclerview:recyclerview:1.1.0'
+    implementation 'com.android.support:multidex:1.0.3'
+
     testImplementation 'junit:junit:4.13'
     androidTestImplementation 'androidx.test:runner:1.3.0'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
 
-    implementation 'com.google.maps.android:android-maps-utils:2.0.3'
-
     implementation 'com.google.firebase:firebase-core:17.5.0'
-    implementation 'com.google.firebase:firebase-auth:19.3.2'
+    implementation 'com.google.firebase:firebase-auth:19.4.0'
+    implementation 'com.firebaseui:firebase-ui:4.3.2'
     implementation 'com.firebaseui:firebase-ui-auth:4.3.2'
     implementation 'com.google.firebase:firebase-messaging:20.2.4'
     implementation 'com.google.firebase:firebase-analytics:17.5.0'
     implementation 'com.google.firebase:firebase-crashlytics:17.2.1'
-    implementation 'com.google.firebase:firebase-messaging:20.2.4'
-
-    // Performance Monitoring library
-    implementation 'com.google.firebase:firebase-perf:19.0.7'
-
-    implementation 'androidx.appcompat:appcompat:1.2.0'
-    implementation 'androidx.preference:preference:1.1.1'
+    implementation 'com.google.firebase:firebase-perf:19.0.8'
     implementation 'com.google.firebase:firebase-database:19.4.0'
-
-    implementation 'com.google.android.material:material:1.2.1'
-    implementation 'com.firebaseui:firebase-ui:4.3.2'
-
-    implementation 'androidx.recyclerview:recyclerview:1.1.0'
-
-    implementation 'com.android.support:multidex:1.0.3'
+    implementation 'com.google.firebase:firebase-storage:19.2.0'
 
     implementation 'com.squareup.picasso:picasso:2.71828'
 
@@ -86,8 +84,6 @@ dependencies {
     implementation 'id.zelory:compressor:2.1.0'
 
     implementation 'com.iceteck.silicompressorr:silicompressor:2.1'
-
-    implementation 'com.google.android.exoplayer:exoplayer:2.11.3'
 
     implementation 'com.mikepenz:aboutlibraries:8.2.0'
 

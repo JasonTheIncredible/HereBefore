@@ -123,14 +123,9 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // Change "Chats" to "Shapes".
-    // Add notes.
-    // Switch existing values in Firebase.
-    // Scale messageThreads, then adjust Feedback.
-    // Only download shapes in Map when necessary to cut down on database usage. Check out how this affects other activities. Also, 10,000 shapes causes the map to get very laggy.
-    // Location is sometimes not being paused when app is in background.
-    // Deal with overlapping points (and shapes in general). Maybe a warning message?
     // Create a "general chat" where everyone can chat anonymously, maybe with more specific location rooms too.
+    // Scale messageThreads, then adjust Feedback.
+    // Deal with overlapping points (and shapes in general). Maybe a warning message?
     // Decrease app size / Check on accumulation of size over time.
     // Adjust Firebase security rules - bookmark.
     // Finish setting up Google ads, then add more ads.
@@ -141,6 +136,7 @@ public class Map extends FragmentActivity implements
     // Adjust AppIntro.
     // Make sure the secret stuff is secret.
 
+    // Switch existing values in Firebase.
     // Find a way to not clear and reload map every time user returns from clicking a shape.
     // Change lines with multiple || statements into a ! statement.
     // Add some version of the random button, or allow users to click on a circle in a far away area while zoomed out on map.
@@ -6856,6 +6852,7 @@ public class Map extends FragmentActivity implements
 
             Log.i(TAG, "loadShapes()");
 
+            // Don't load more than 7 areas at a time.
             if (loadedCoordinates.size() == 7) {
 
                 mMap.clear();
