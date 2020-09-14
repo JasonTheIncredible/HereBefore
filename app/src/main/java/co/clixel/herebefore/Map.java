@@ -116,16 +116,13 @@ public class Map extends FragmentActivity implements
     private int chatsSize, dmCounter = 0, newNearLeftLat, newNearLeftLon, newFarLeftLat, newFarLeftLon;
     private Toast longToast;
     private View loadingIcon;
-    private FloatingActionButton generalChatButton;
     private CounterFab dmButton;
     private LocationManager locationManager;
     private Query query;
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // Create a "general chat" where everyone can chat anonymously, maybe with more specific location rooms too.
     // Scale messageThreads, then adjust Feedback.
-    // Deal with overlapping points (and shapes in general). Maybe a warning message?
     // Decrease app size / Check on accumulation of size over time.
     // Adjust Firebase security rules - bookmark.
     // Finish setting up Google ads, then add more ads.
@@ -139,6 +136,8 @@ public class Map extends FragmentActivity implements
     // Switch existing values in Firebase.
     // Find a way to not clear and reload map every time user returns from clicking a shape.
     // Change lines with multiple || statements into a ! statement.
+    // Create a "general chat" where everyone can chat anonymously, maybe with more specific location rooms too?
+    // Deal with overlapping points (and shapes in general). Maybe a warning message?
     // Add some version of the random button, or allow users to click on a circle in a far away area while zoomed out on map.
     // Make situations where Firebase circles are added to the map and then polygons are added (like in chatViews) async?
     // Delete general chat after x amount of time or # of items.
@@ -185,7 +184,6 @@ public class Map extends FragmentActivity implements
         settingsButton = findViewById(R.id.settingsButton);
         chatViewsButton = findViewById(R.id.chatViewsButton);
         dmButton = findViewById(R.id.dmButton);
-        generalChatButton = findViewById(R.id.generalChat);
         createChatButton = findViewById(R.id.createChatButton);
         chatSizeSeekBar = findViewById(R.id.chatSizeSeekBar);
         chatSelectorSeekBar = findViewById(R.id.chatSelectorSeekBar);
@@ -389,16 +387,6 @@ public class Map extends FragmentActivity implements
 
                     checkLocationPermissions();
                 }
-            }
-        });
-
-        // Go to the general chat.
-        generalChatButton.setOnClickListener(new View.OnClickListener() {
-
-            @Override
-            public void onClick(View v) {
-
-                Log.i(TAG, "onStart() -> generalChat -> onClick");
             }
         });
 
@@ -6760,8 +6748,6 @@ public class Map extends FragmentActivity implements
             settingsButton.setBackgroundResource(R.drawable.ic_more_vert_yellow_24dp);
 
             dmButton.setBackgroundTintList(ContextCompat.getColorStateList(this, R.color.yellow));
-
-            generalChatButton.setBackgroundTintList(ContextCompat.getColorStateList(this, R.color.yellow));
         } else {
 
             chatViewsButton.setBackgroundResource(R.drawable.chatviews_button_purple);
@@ -6771,8 +6757,6 @@ public class Map extends FragmentActivity implements
             settingsButton.setBackgroundResource(R.drawable.ic_more_vert_purple_24dp);
 
             dmButton.setBackgroundTintList(ContextCompat.getColorStateList(this, R.color.purple));
-
-            generalChatButton.setBackgroundTintList(ContextCompat.getColorStateList(this, R.color.purple));
         }
 
         mMap.clear();

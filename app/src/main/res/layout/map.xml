@@ -55,19 +55,6 @@
         app:badgeBackgroundColor="@color/red"
         app:fabSize="mini" />
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/generalChat"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentEnd="true"
-        android:layout_alignParentBottom="true"
-        android:layout_marginEnd="8dp"
-        android:layout_marginBottom="60dp"
-        android:clickable="true"
-        android:focusable="true"
-        android:src="@drawable/ic_random_shape"
-        app:fabSize="mini" />
-
     <Button
         android:id="@+id/createChatButton"
         android:layout_width="30dp"
