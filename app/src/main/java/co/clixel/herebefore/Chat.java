@@ -150,6 +150,7 @@ public class Chat extends Fragment implements
     private AdView bannerAd;
     private Query query;
     private Drawable imageDrawable, videoDrawable;
+    private int latFirebaseValue, lonFirebaseValue;
     private WordTokenizerConfig tokenizerConfig = new WordTokenizerConfig
             .Builder()
             .setWordBreakChars(", ")
@@ -209,6 +210,35 @@ public class Chat extends Fragment implements
                 marker6Longitude = extras.getDouble("marker6Longitude");
                 marker7Latitude = extras.getDouble("marker7Latitude");
                 marker7Longitude = extras.getDouble("marker7Longitude");
+
+                if (circleLatitude != null && circleLongitude != null) {
+                    // Get a value with 1 decimal point and use it for Firebase.
+                    double nearLeftPrecisionLat = Math.pow(10, 1);
+                    // Can't create a firebase path with '.', so get rid of decimal.
+                    double nearLeftLatTemp = (int) (nearLeftPrecisionLat * circleLatitude) / nearLeftPrecisionLat;
+                    nearLeftLatTemp *= 10;
+                    latFirebaseValue = (int) nearLeftLatTemp;
+
+                    double nearLeftPrecisionLon = Math.pow(10, 1);
+                    // Can't create a firebase path with '.', so get rid of decimal.
+                    double nearLeftLonTemp = (int) (nearLeftPrecisionLon * circleLongitude) / nearLeftPrecisionLon;
+                    nearLeftLonTemp *= 10;
+                    lonFirebaseValue = (int) nearLeftLonTemp;
+                } else if (marker0Latitude != null && marker0Longitude != null) {
+
+                    // Get a value with 1 decimal point and use it for Firebase.
+                    double nearLeftPrecisionLat = Math.pow(10, 1);
+                    // Can't create a firebase path with '.', so get rid of decimal.
+                    double nearLeftLatTemp = (int) (nearLeftPrecisionLat * marker0Latitude) / nearLeftPrecisionLat;
+                    nearLeftLatTemp *= 10;
+                    latFirebaseValue = (int) nearLeftLatTemp;
+
+                    double nearLeftPrecisionLon = Math.pow(10, 1);
+                    // Can't create a firebase path with '.', so get rid of decimal.
+                    double nearLeftLonTemp = (int) (nearLeftPrecisionLon * marker0Longitude) / nearLeftPrecisionLon;
+                    nearLeftLonTemp *= 10;
+                    lonFirebaseValue = (int) nearLeftLonTemp;
+                }
             } else {
 
                 Log.e(TAG, "onCreateView() -> extras == null");
@@ -320,124 +350,228 @@ public class Chat extends Fragment implements
         }
 
         // Add the Firebase listener.
-        DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-        DatabaseReference firebaseMessages = rootRef.child("MessageThreads");
-        firebaseMessages.addListenerForSingleValueEvent(new ValueEventListener() {
+        final DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
+        if (circleLatitude != null && circleLongitude != null) {
 
-            @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+            DatabaseReference firebaseMessages = rootRef.child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID);
+            firebaseMessages.addListenerForSingleValueEvent(new ValueEventListener() {
 
-                // Use this dataSnapshot in DirectMentions to cut down on data usage.
-                int directMentionsLayout = mContext.getResources().getIdentifier("directMentions", "directMentions", mContext.getPackageName());
-                if (directMentionsLayout != 0) {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
 
-                    DirectMentions directMentions = new DirectMentions();
-                    directMentions.addEventListener(dataSnapshot);
-                }
+                    // Use this dataSnapshot in DirectMentions to cut down on data usage.
+                    int directMentionsLayout = mContext.getResources().getIdentifier("directMentions", "directMentions", mContext.getPackageName());
+                    if (directMentionsLayout != 0) {
 
-                for (DataSnapshot ds : dataSnapshot.getChildren()) {
-
-                    // If the uuid brought from Map.java equals the uuid attached to the recyclerviewlayout in Firebase, load it into the RecyclerView.
-                    String mShapeUUID = (String) ds.child("shapeUUID").getValue();
-                    if (mShapeUUID != null) {
-
-                        if (mShapeUUID.equals(shapeUUID)) {
-
-                            Long serverDate = (Long) ds.child("date").getValue();
-                            String user = (String) ds.child("userUUID").getValue();
-                            // Used when a user mentions another user with "@".
-                            mSuggestions.add(user);
-                            String imageURL = (String) ds.child("imageURL").getValue();
-                            String videoURL = (String) ds.child("videoURL").getValue();
-                            String messageText = (String) ds.child("message").getValue();
-                            Boolean userIsWithinShape = (Boolean) ds.child("userIsWithinShape").getValue();
-                            DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
-                            // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                            // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                            if (serverDate != null) {
-
-                                Date netDate = (new Date(serverDate));
-                                String messageTime = dateFormat.format(netDate);
-                                mTime.add(messageTime);
-                            } else {
-
-                                Log.e(TAG, "onStart() -> serverDate == null");
-                            }
-                            mUser.add(user);
-                            mImage.add(imageURL);
-                            mVideo.add(videoURL);
-                            mText.add(messageText);
-                            mUserIsWithinShape.add(userIsWithinShape);
-                        }
+                        DirectMentions directMentions = new DirectMentions();
+                        directMentions.addEventListener(snapshot);
                     }
-                }
 
-                // Read RecyclerView scroll position (for use in initChatAdapter).
-                if (chatRecyclerViewLinearLayoutManager != null && chatRecyclerView != null) {
+                    for (DataSnapshot ds : snapshot.getChildren()) {
 
-                    index = chatRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
-                    last = chatRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
-                    View v = chatRecyclerView.getChildAt(0);
-                    top = (v == null) ? 0 : (v.getTop() - chatRecyclerView.getPaddingTop());
-                }
+                        Long serverDate = (Long) ds.child("date").getValue();
+                        String user = (String) ds.child("userUUID").getValue();
+                        // Used when a user mentions another user with "@".
+                        mSuggestions.add(user);
+                        String imageURL = (String) ds.child("imageURL").getValue();
+                        String videoURL = (String) ds.child("videoURL").getValue();
+                        String messageText = (String) ds.child("message").getValue();
+                        Boolean userIsWithinShape = (Boolean) ds.child("userIsWithinShape").getValue();
+                        DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
+                        // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+                        // This will cause onDataChange to fire twice; optimizations could be made in the future.
+                        if (serverDate != null) {
 
-                addQuery();
+                            Date netDate = (new Date(serverDate));
+                            String messageTime = dateFormat.format(netDate);
+                            mTime.add(messageTime);
+                        } else {
 
-                // Check RecyclerView scroll state (to allow the layout to move up when keyboard appears).
-                if (chatRecyclerView != null) {
-
-                    chatRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
-
-                        @Override
-                        public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
-
-                            super.onScrollStateChanged(recyclerView, newState);
-
-                            // If RecyclerView can't be scrolled down, reachedEndOfRecyclerView = true.
-                            reachedEndOfRecyclerView = !recyclerView.canScrollVertically(1);
-
-                            // Used to detect if user has just entered the recyclerviewlayout (so layout needs to move up when keyboard appears).
-                            recyclerViewHasScrolled = true;
+                            Log.e(TAG, "onStart() -> serverDate == null");
                         }
-                    });
+                        mUser.add(user);
+                        mImage.add(imageURL);
+                        mVideo.add(videoURL);
+                        mText.add(messageText);
+                        mUserIsWithinShape.add(userIsWithinShape);
+                    }
 
-                    // If RecyclerView is scrolled to the bottom, move the layout up when the keyboard appears.
-                    chatRecyclerView.addOnLayoutChangeListener(onLayoutChangeListener = new View.OnLayoutChangeListener() {
+                    // Read RecyclerView scroll position (for use in initChatAdapter).
+                    if (chatRecyclerViewLinearLayoutManager != null && chatRecyclerView != null) {
 
-                        @Override
-                        public void onLayoutChange(View v,
-                                                   int left, int top, int right, int bottom,
-                                                   int oldLeft, int oldTop, int oldRight, int oldBottom) {
+                        index = chatRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
+                        last = chatRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
+                        View v = chatRecyclerView.getChildAt(0);
+                        top = (v == null) ? 0 : (v.getTop() - chatRecyclerView.getPaddingTop());
+                    }
 
-                            if (reachedEndOfRecyclerView || !recyclerViewHasScrolled) {
+                    addQuery();
 
-                                if (bottom < oldBottom) {
+                    // Check RecyclerView scroll state (to allow the layout to move up when keyboard appears).
+                    if (chatRecyclerView != null) {
 
-                                    if (chatRecyclerView.getAdapter() != null && chatRecyclerView.getAdapter().getItemCount() > 0) {
+                        chatRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
 
-                                        chatRecyclerView.postDelayed(new Runnable() {
+                            @Override
+                            public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
 
-                                            @Override
-                                            public void run() {
+                                super.onScrollStateChanged(recyclerView, newState);
 
-                                                chatRecyclerView.smoothScrollToPosition(
+                                // If RecyclerView can't be scrolled down, reachedEndOfRecyclerView = true.
+                                reachedEndOfRecyclerView = !recyclerView.canScrollVertically(1);
 
-                                                        chatRecyclerView.getAdapter().getItemCount() - 1);
-                                            }
-                                        }, 100);
+                                // Used to detect if user has just entered the recyclerviewlayout (so layout needs to move up when keyboard appears).
+                                recyclerViewHasScrolled = true;
+                            }
+                        });
+
+                        // If RecyclerView is scrolled to the bottom, move the layout up when the keyboard appears.
+                        chatRecyclerView.addOnLayoutChangeListener(onLayoutChangeListener = new View.OnLayoutChangeListener() {
+
+                            @Override
+                            public void onLayoutChange(View v,
+                                                       int left, int top, int right, int bottom,
+                                                       int oldLeft, int oldTop, int oldRight, int oldBottom) {
+
+                                if (reachedEndOfRecyclerView || !recyclerViewHasScrolled) {
+
+                                    if (bottom < oldBottom) {
+
+                                        if (chatRecyclerView.getAdapter() != null && chatRecyclerView.getAdapter().getItemCount() > 0) {
+
+                                            chatRecyclerView.postDelayed(new Runnable() {
+
+                                                @Override
+                                                public void run() {
+
+                                                    chatRecyclerView.smoothScrollToPosition(
+
+                                                            chatRecyclerView.getAdapter().getItemCount() - 1);
+                                                }
+                                            }, 100);
+                                        }
                                     }
                                 }
                             }
-                        }
-                    });
+                        });
+                    }
                 }
-            }
 
-            public void onCancelled(@NonNull DatabaseError databaseError) {
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
+                }
+            });
+        } else if (marker0Latitude != null && marker0Longitude != null) {
 
-                toastMessageLong(databaseError.getMessage());
-            }
-        });
+            DatabaseReference firebaseMessages = rootRef.child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID);
+            firebaseMessages.addListenerForSingleValueEvent(new ValueEventListener() {
+
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+
+                    // Use this dataSnapshot in DirectMentions to cut down on data usage.
+                    int directMentionsLayout = mContext.getResources().getIdentifier("directMentions", "directMentions", mContext.getPackageName());
+                    if (directMentionsLayout != 0) {
+
+                        DirectMentions directMentions = new DirectMentions();
+                        directMentions.addEventListener(snapshot);
+                    }
+
+                    for (DataSnapshot ds : snapshot.getChildren()) {
+
+                        Long serverDate = (Long) ds.child("date").getValue();
+                        String user = (String) ds.child("userUUID").getValue();
+                        // Used when a user mentions another user with "@".
+                        mSuggestions.add(user);
+                        String imageURL = (String) ds.child("imageURL").getValue();
+                        String videoURL = (String) ds.child("videoURL").getValue();
+                        String messageText = (String) ds.child("message").getValue();
+                        Boolean userIsWithinShape = (Boolean) ds.child("userIsWithinShape").getValue();
+                        DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
+                        // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+                        // This will cause onDataChange to fire twice; optimizations could be made in the future.
+                        if (serverDate != null) {
+
+                            Date netDate = (new Date(serverDate));
+                            String messageTime = dateFormat.format(netDate);
+                            mTime.add(messageTime);
+                        } else {
+
+                            Log.e(TAG, "onStart() -> serverDate == null");
+                        }
+                        mUser.add(user);
+                        mImage.add(imageURL);
+                        mVideo.add(videoURL);
+                        mText.add(messageText);
+                        mUserIsWithinShape.add(userIsWithinShape);
+                    }
+
+                    // Read RecyclerView scroll position (for use in initChatAdapter).
+                    if (chatRecyclerViewLinearLayoutManager != null && chatRecyclerView != null) {
+
+                        index = chatRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
+                        last = chatRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
+                        View v = chatRecyclerView.getChildAt(0);
+                        top = (v == null) ? 0 : (v.getTop() - chatRecyclerView.getPaddingTop());
+                    }
+
+                    addQuery();
+
+                    // Check RecyclerView scroll state (to allow the layout to move up when keyboard appears).
+                    if (chatRecyclerView != null) {
+
+                        chatRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+
+                            @Override
+                            public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
+
+                                super.onScrollStateChanged(recyclerView, newState);
+
+                                // If RecyclerView can't be scrolled down, reachedEndOfRecyclerView = true.
+                                reachedEndOfRecyclerView = !recyclerView.canScrollVertically(1);
+
+                                // Used to detect if user has just entered the recyclerviewlayout (so layout needs to move up when keyboard appears).
+                                recyclerViewHasScrolled = true;
+                            }
+                        });
+
+                        // If RecyclerView is scrolled to the bottom, move the layout up when the keyboard appears.
+                        chatRecyclerView.addOnLayoutChangeListener(onLayoutChangeListener = new View.OnLayoutChangeListener() {
+
+                            @Override
+                            public void onLayoutChange(View v,
+                                                       int left, int top, int right, int bottom,
+                                                       int oldLeft, int oldTop, int oldRight, int oldBottom) {
+
+                                if (reachedEndOfRecyclerView || !recyclerViewHasScrolled) {
+
+                                    if (bottom < oldBottom) {
+
+                                        if (chatRecyclerView.getAdapter() != null && chatRecyclerView.getAdapter().getItemCount() > 0) {
+
+                                            chatRecyclerView.postDelayed(new Runnable() {
+
+                                                @Override
+                                                public void run() {
+
+                                                    chatRecyclerView.smoothScrollToPosition(
+
+                                                            chatRecyclerView.getAdapter().getItemCount() - 1);
+                                                }
+                                            }, 100);
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
+                }
+            });
+        }
 
         // Hide the imageView or videoImageView if user presses the delete button.
         mInput.setOnKeyListener(new View.OnKeyListener() {
@@ -548,7 +682,7 @@ public class Chat extends Fragment implements
                             messageSent = true;
 
                             DatabaseReference newFirebaseShape = null;
-                            if (radius != null) {
+                            if (circleLatitude != null && circleLongitude != null) {
 
                                 // Shape is a circle.
 
@@ -560,30 +694,19 @@ public class Chat extends Fragment implements
                                 CircleInformation circleInformation = new CircleInformation();
                                 circleInformation.setCircleOptions(circleOptions);
                                 circleInformation.setShapeUUID(shapeUUID);
-                                // Get a value with 1 decimal point and use it for Firebase.
-                                double precisionLat = Math.pow(10, 1);
-                                // Can't create a firebase path with '.', so get rid of decimal.
-                                double latPushValueTemp = (int) (precisionLat * circleLatitude) / precisionLat;
-                                latPushValueTemp *= 10;
-                                int latPushValue = (int) latPushValueTemp;
-                                double precisionLon = Math.pow(10, 1);
-                                // Can't create a firebase path with '.', so get rid of decimal.
-                                double lonPushValueTemp = (int) (precisionLon * circleLongitude) / precisionLon;
-                                lonPushValueTemp *= 10;
-                                int lonPushValue = (int) lonPushValueTemp;
 
                                 if (radius == 1) {
 
-                                    newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latPushValue + ", " + lonPushValue + ")").child("Point").push();
+                                    newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Point").push();
                                 } else if (1 < radius && radius <= 10) {
 
-                                    newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latPushValue + ", " + lonPushValue + ")").child("Small").push();
+                                    newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Small").push();
                                 } else if (10 < radius && radius <= 50) {
 
-                                    newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latPushValue + ", " + lonPushValue + ")").child("Medium").push();
+                                    newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Medium").push();
                                 } else if (50 < radius) {
 
-                                    newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latPushValue + ", " + lonPushValue + ")").child("Large").push();
+                                    newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Large").push();
                                 }
 
                                 if (newFirebaseShape != null) {
@@ -644,27 +767,15 @@ public class Chat extends Fragment implements
                                 polygonInformation.setArea(polygonArea);
                                 polygonInformation.setShapeUUID(shapeUUID);
 
-                                // Get a value with 1 decimal point and use it for Firebase.
-                                double precisionLat = Math.pow(10, 1);
-                                // Can't create a firebase path with '.', so get rid of decimal.
-                                double latPushValueTemp = ((int) precisionLat * marker0Latitude) / precisionLat;
-                                latPushValueTemp *= 10;
-                                int latPushValue = (int) latPushValueTemp;
-                                double precisionLon = Math.pow(10, 1);
-                                // Can't create a firebase path with '.', so get rid of decimal.
-                                double lonPushValueTemp = ((int) precisionLon * marker0Longitude) / precisionLon;
-                                lonPushValueTemp *= 10;
-                                int lonPushValue = (int) lonPushValueTemp;
-
                                 if (polygonArea <= Math.PI * (Math.pow(10, 2))) {
 
-                                    newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latPushValue + ", " + lonPushValue + ")").child("Small").push();
+                                    newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Small").push();
                                 } else if (Math.PI * (Math.pow(10, 2)) < polygonArea && polygonArea <= Math.PI * (Math.pow(50, 2))) {
 
-                                    newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latPushValue + ", " + lonPushValue + ")").child("Medium").push();
+                                    newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Medium").push();
                                 } else if (Math.PI * (Math.pow(50, 2)) < polygonArea) {
 
-                                    newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latPushValue + ", " + lonPushValue + ")").child("Large").push();
+                                    newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Large").push();
                                 }
 
                                 if (newFirebaseShape != null) {
@@ -703,7 +814,7 @@ public class Chat extends Fragment implements
                             String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
                             messageInformation.setToken(token);
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
-                            DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
+                            DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID).push();
                             newMessage.setValue(messageInformation);
 
                             mInput.getText().clear();
@@ -761,7 +872,7 @@ public class Chat extends Fragment implements
                                 messageInformation.setSeenByUser(false);
                             }
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
-                            DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
+                            DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID).push();
                             newMessage.setValue(messageInformation);
 
                             mInput.getText().clear();
@@ -812,91 +923,176 @@ public class Chat extends Fragment implements
             query.removeEventListener(childEventListener);
         }
 
-        DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-        query = rootRef.child("MessageThreads").limitToLast(1);
-        childEventListener = new ChildEventListener() {
+        final DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
+        if (circleLatitude != null && circleLongitude != null) {
 
-            @Override
-            public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-
-                Log.i(TAG, "addQuery()");
-
-                // If this is the first time calling this eventListener, prevent double posts (as onStart() already added the last item).
-                if (firstLoad) {
-
-                    initChatAdapter();
-                    return;
-                }
-
-                // If the uuid brought from Map.java equals the uuid attached to the recyclerviewlayout in Firebase, load it into the RecyclerView.
-                String mShapeUUID = (String) snapshot.child("shapeUUID").getValue();
-                if (mShapeUUID != null) {
-
-                    if (mShapeUUID.equals(shapeUUID)) {
-
-                        Long serverDate = (Long) snapshot.child("date").getValue();
-                        String user = (String) snapshot.child("userUUID").getValue();
-                        // Used when a user mentions another user with "@".
-                        mSuggestions.add(user);
-                        String imageURL = (String) snapshot.child("imageURL").getValue();
-                        String videoURL = (String) snapshot.child("videoURL").getValue();
-                        String messageText = (String) snapshot.child("message").getValue();
-                        Boolean userIsWithinShape = (Boolean) snapshot.child("userIsWithinShape").getValue();
-                        DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
-                        // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                        // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                        if (serverDate != null) {
-
-                            Date netDate = (new Date(serverDate));
-                            String messageTime = dateFormat.format(netDate);
-                            mTime.add(messageTime);
-                        } else {
-
-                            Log.e(TAG, "addQuery() -> serverDate == null");
-                        }
-                        mUser.add(user);
-                        mImage.add(imageURL);
-                        mVideo.add(videoURL);
-                        mText.add(messageText);
-                        mUserIsWithinShape.add(userIsWithinShape);
-                    }
-                }
-
-                // Read RecyclerView scroll position (for use in initChatAdapter).
-                if (chatRecyclerViewLinearLayoutManager != null) {
-
-                    index = chatRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
-                    last = chatRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
-                    View v = chatRecyclerView.getChildAt(0);
-                    top = (v == null) ? 0 : (v.getTop() - chatRecyclerView.getPaddingTop());
-                }
-
-                if (removedMentionDuplicates != null) {
-
-                    removedMentionDuplicates.clear();
-                }
+            // If this is the first time calling this eventListener and it's a new shape, initialize the adapter (but don't return, as the childEventListener should still be added), as onChildAdded won't be called the first time.
+            if (firstLoad && newShape) {
 
                 initChatAdapter();
             }
 
-            @Override
-            public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+            query = rootRef.child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID).limitToLast(1);
+            childEventListener = new ChildEventListener() {
+
+                @Override
+                public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+
+                    Log.i(TAG, "addQuery()");
+
+                    // If this is the first time calling this eventListener, prevent double posts (as onStart() already added the last item).
+                    if (firstLoad) {
+
+                        initChatAdapter();
+                        return;
+                    }
+
+                    Long serverDate = (Long) snapshot.child("date").getValue();
+                    String user = (String) snapshot.child("userUUID").getValue();
+                    // Used when a user mentions another user with "@".
+                    mSuggestions.add(user);
+                    String imageURL = (String) snapshot.child("imageURL").getValue();
+                    String videoURL = (String) snapshot.child("videoURL").getValue();
+                    String messageText = (String) snapshot.child("message").getValue();
+                    Boolean userIsWithinShape = (Boolean) snapshot.child("userIsWithinShape").getValue();
+                    DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
+                    // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+                    // This will cause onDataChange to fire twice; optimizations could be made in the future.
+                    if (serverDate != null) {
+
+                        Date netDate = (new Date(serverDate));
+                        String messageTime = dateFormat.format(netDate);
+                        mTime.add(messageTime);
+                    } else {
+
+                        Log.e(TAG, "onStart() -> serverDate == null");
+                    }
+                    mUser.add(user);
+                    mImage.add(imageURL);
+                    mVideo.add(videoURL);
+                    mText.add(messageText);
+                    mUserIsWithinShape.add(userIsWithinShape);
+
+                    // Read RecyclerView scroll position (for use in initChatAdapter).
+                    if (chatRecyclerViewLinearLayoutManager != null) {
+
+                        index = chatRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
+                        last = chatRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
+                        View v = chatRecyclerView.getChildAt(0);
+                        top = (v == null) ? 0 : (v.getTop() - chatRecyclerView.getPaddingTop());
+                    }
+
+                    if (removedMentionDuplicates != null) {
+
+                        removedMentionDuplicates.clear();
+                    }
+
+                    initChatAdapter();
+                }
+
+                @Override
+                public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+                }
+
+                @Override
+                public void onChildRemoved(@NonNull DataSnapshot snapshot) {
+                }
+
+                @Override
+                public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
+
+                    toastMessageLong(error.getMessage());
+                }
+            };
+        } else if (marker0Latitude != null && marker0Longitude != null) {
+
+            // If this is the first time calling this eventListener and it's a new shape, initialize the adapter (but don't return, as the childEventListener should still be added), as onChildAdded won't be called the first time.
+            if (firstLoad && newShape) {
+
+                initChatAdapter();
             }
 
-            @Override
-            public void onChildRemoved(@NonNull DataSnapshot snapshot) {
-            }
+            query = rootRef.child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID).limitToLast(1);
+            childEventListener = new ChildEventListener() {
 
-            @Override
-            public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-            }
+                @Override
+                public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
 
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
+                    Log.i(TAG, "addQuery()");
 
-                toastMessageLong(error.getMessage());
-            }
-        };
+                    // If this is the first time calling this eventListener, prevent double posts (as onStart() already added the last item).
+                    if (firstLoad) {
+
+                        initChatAdapter();
+                        return;
+                    }
+
+                    Long serverDate = (Long) snapshot.child("date").getValue();
+                    String user = (String) snapshot.child("userUUID").getValue();
+                    // Used when a user mentions another user with "@".
+                    mSuggestions.add(user);
+                    String imageURL = (String) snapshot.child("imageURL").getValue();
+                    String videoURL = (String) snapshot.child("videoURL").getValue();
+                    String messageText = (String) snapshot.child("message").getValue();
+                    Boolean userIsWithinShape = (Boolean) snapshot.child("userIsWithinShape").getValue();
+                    DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
+                    // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+                    // This will cause onDataChange to fire twice; optimizations could be made in the future.
+                    if (serverDate != null) {
+
+                        Date netDate = (new Date(serverDate));
+                        String messageTime = dateFormat.format(netDate);
+                        mTime.add(messageTime);
+                    } else {
+
+                        Log.e(TAG, "onStart() -> serverDate == null");
+                    }
+                    mUser.add(user);
+                    mImage.add(imageURL);
+                    mVideo.add(videoURL);
+                    mText.add(messageText);
+                    mUserIsWithinShape.add(userIsWithinShape);
+
+                    // Read RecyclerView scroll position (for use in initChatAdapter).
+                    if (chatRecyclerViewLinearLayoutManager != null) {
+
+                        index = chatRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
+                        last = chatRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
+                        View v = chatRecyclerView.getChildAt(0);
+                        top = (v == null) ? 0 : (v.getTop() - chatRecyclerView.getPaddingTop());
+                    }
+
+                    if (removedMentionDuplicates != null) {
+
+                        removedMentionDuplicates.clear();
+                    }
+
+                    initChatAdapter();
+                }
+
+                @Override
+                public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+                }
+
+                @Override
+                public void onChildRemoved(@NonNull DataSnapshot snapshot) {
+                }
+
+                @Override
+                public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
+
+                    toastMessageLong(error.getMessage());
+                }
+            };
+        }
 
         query.addChildEventListener(childEventListener);
     }
@@ -2565,32 +2761,18 @@ public class Chat extends Fragment implements
                                     circleInformation.setCircleOptions(circleOptions);
                                     circleInformation.setShapeUUID(shapeUUID);
 
-                                    // Get a value with 1 decimal point and use it for Firebase.
-                                    double precisionLat = Math.pow(10, 1);
-                                    // Can't create a firebase path with '.', so get rid of decimal.
-                                    double latPushValueTemp = ((int) precisionLat * circleLatitude) / precisionLat;
-                                    latPushValueTemp *= 10;
-                                    int latPushValue = (int) latPushValueTemp;
-
-                                    // Get a value with 1 decimal point and use it for Firebase.
-                                    double precisionLon = Math.pow(10, 1);
-                                    // Can't create a firebase path with '.', so get rid of decimal.
-                                    double lonPushValueTemp = ((int) precisionLon * circleLongitude) / precisionLon;
-                                    lonPushValueTemp *= 10;
-                                    int lonPushValue = (int) lonPushValueTemp;
-
                                     if (radius == 1) {
 
-                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latPushValue + ", " + lonPushValue + ")").child("Point").push();
+                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Point").push();
                                     } else if (1 < radius && radius <= 10) {
 
-                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latPushValue + ", " + lonPushValue + ")").child("Small").push();
-                                    } else if (10 < radius && radius <= 50) {
+                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Small").push();
+                                } else if (10 < radius && radius <= 50) {
 
-                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latPushValue + ", " + lonPushValue + ")").child("Medium").push();
+                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Medium").push();
                                     } else if (50 < radius) {
 
-                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latPushValue + ", " + lonPushValue + ")").child("Large").push();
+                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Large").push();
                                     }
 
                                     if (newFirebaseShape != null) {
@@ -2651,27 +2833,15 @@ public class Chat extends Fragment implements
                                     polygonInformation.setArea(polygonArea);
                                     polygonInformation.setShapeUUID(shapeUUID);
 
-                                    // Get a value with 1 decimal point and use it for Firebase.
-                                    double precisionLat = Math.pow(10, 1);
-                                    // Can't create a firebase path with '.', so get rid of decimal.
-                                    double latPushValueTemp = ((int) precisionLat * marker0Latitude) / precisionLat;
-                                    latPushValueTemp *= 10;
-                                    int latPushValue = (int) latPushValueTemp;
-                                    double precisionLon = Math.pow(10, 1);
-                                    // Can't create a firebase path with '.', so get rid of decimal.
-                                    double lonPushValueTemp = ((int) precisionLon * marker0Longitude) / precisionLon;
-                                    lonPushValueTemp *= 10;
-                                    int lonPushValue = (int) lonPushValueTemp;
-
                                     if (polygonArea <= Math.PI * (Math.pow(10, 2))) {
 
-                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latPushValue + ", " + lonPushValue + ")").child("Small").push();
+                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Small").push();
                                     } else if (Math.PI * (Math.pow(10, 2)) < polygonArea && polygonArea <= Math.PI * (Math.pow(50, 2))) {
 
-                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latPushValue + ", " + lonPushValue + ")").child("Medium").push();
+                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Medium").push();
                                     } else if (Math.PI * (Math.pow(50, 2)) < polygonArea) {
 
-                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latPushValue + ", " + lonPushValue + ")").child("Large").push();
+                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Large").push();
                                     }
 
                                     if (newFirebaseShape != null) {
@@ -2791,30 +2961,19 @@ public class Chat extends Fragment implements
                                     CircleInformation circleInformation = new CircleInformation();
                                     circleInformation.setCircleOptions(circleOptions);
                                     circleInformation.setShapeUUID(shapeUUID);
-                                    // Get a value with 1 decimal point and use it for Firebase.
-                                    double precisionLat = Math.pow(10, 1);
-                                    // Can't create a firebase path with '.', so get rid of decimal.
-                                    double latPushValueTemp = ((int) precisionLat * circleLatitude) / precisionLat;
-                                    latPushValueTemp *= 10;
-                                    int latPushValue = (int) latPushValueTemp;
-                                    double precisionLon = Math.pow(10, 1);
-                                    // Can't create a firebase path with '.', so get rid of decimal.
-                                    double lonPushValueTemp = ((int) precisionLon * circleLongitude) / precisionLon;
-                                    lonPushValueTemp *= 10;
-                                    int lonPushValue = (int) lonPushValueTemp;
 
                                     if (radius == 1) {
 
-                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latPushValue + ", " + lonPushValue + ")").child("Point").push();
+                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Point").push();
                                     } else if (1 < radius && radius <= 10) {
 
-                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latPushValue + ", " + lonPushValue + ")").child("Small").push();
+                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Small").push();
                                     } else if (10 < radius && radius <= 50) {
 
-                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latPushValue + ", " + lonPushValue + ")").child("Medium").push();
+                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Medium").push();
                                     } else if (50 < radius) {
 
-                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latPushValue + ", " + lonPushValue + ")").child("Large").push();
+                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Large").push();
                                     }
 
                                     if (newFirebaseShape != null) {
@@ -2875,27 +3034,15 @@ public class Chat extends Fragment implements
                                     polygonInformation.setArea(polygonArea);
                                     polygonInformation.setShapeUUID(shapeUUID);
 
-                                    // Get a value with 1 decimal point and use it for Firebase.
-                                    double precisionLat = Math.pow(10, 1);
-                                    // Can't create a firebase path with '.', so get rid of decimal.
-                                    double latPushValueTemp = ((int) precisionLat * marker0Latitude) / precisionLat;
-                                    latPushValueTemp *= 10;
-                                    int latPushValue = (int) latPushValueTemp;
-                                    double precisionLon = Math.pow(10, 1);
-                                    // Can't create a firebase path with '.', so get rid of decimal.
-                                    double lonPushValueTemp = ((int) precisionLon * marker0Longitude) / precisionLon;
-                                    lonPushValueTemp *= 10;
-                                    int lonPushValue = (int) lonPushValueTemp;
-
                                     if (polygonArea <= Math.PI * (Math.pow(10, 2))) {
 
-                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latPushValue + ", " + lonPushValue + ")").child("Small").push();
+                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Small").push();
                                     } else if (Math.PI * (Math.pow(10, 2)) < polygonArea && polygonArea <= Math.PI * (Math.pow(50, 2))) {
 
-                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latPushValue + ", " + lonPushValue + ")").child("Medium").push();
+                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Medium").push();
                                     } else if (Math.PI * (Math.pow(50, 2)) < polygonArea) {
 
-                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latPushValue + ", " + lonPushValue + ")").child("Large").push();
+                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Large").push();
                                     }
 
                                     if (newFirebaseShape != null) {

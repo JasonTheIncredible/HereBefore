@@ -122,6 +122,8 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
+    // Scale DirectMentions.
+    // Get rid of shapeUUID in message (and possibly other information), as shapeUUID is already listed in branch above?
     // Scale messageThreads, then adjust Feedback.
     // Decrease app size / Check on accumulation of size over time.
     // Adjust Firebase security rules - bookmark.
@@ -5492,6 +5494,9 @@ public class Map extends FragmentActivity implements
 
                                     cancelToasts();
 
+                                    // Pass this boolean value Chat.java.
+                                    Activity.putExtra("newShape", newShape);
+
                                     if (threeMarkers) {
 
                                         Log.i(TAG, "goToNextActivityPolygon() -> threeMarkers");
@@ -5611,12 +5616,6 @@ public class Map extends FragmentActivity implements
                                         Activity.putExtra("marker7Latitude", marker7Position.latitude);
                                         Activity.putExtra("marker7Longitude", marker7Position.longitude);
                                     }
-
-                                    Activity.putExtra("userLatitude", location.getLatitude());
-                                    Activity.putExtra("userLongitude", location.getLongitude());
-                                    Activity.putExtra("shapeIsCircle", false);
-                                    // Pass this boolean value Chat.java.
-                                    Activity.putExtra("newShape", newShape);
                                     // Pass this value to Chat.java to identify the shape.
                                     Activity.putExtra("shapeUUID", shapeUUID);
                                     // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
@@ -5669,22 +5668,15 @@ public class Map extends FragmentActivity implements
 
                                     cancelToasts();
 
-                                    Activity.putExtra("userLatitude", location.getLatitude());
-                                    Activity.putExtra("userLongitude", location.getLongitude());
-                                    Activity.putExtra("shapeIsCircle", true);
                                     // Pass this boolean value to Chat.java.
                                     Activity.putExtra("newShape", newShape);
                                     // Pass this value to Chat.java to identify the shape.
                                     Activity.putExtra("shapeUUID", shapeUUID);
                                     // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
                                     Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                    // Pass this information to Chat.java to create a new circle in Firebase after someone writes a recyclerviewlayout.
-                                    if (newShape) {
-
-                                        Activity.putExtra("circleLatitude", circle.getCenter().latitude);
-                                        Activity.putExtra("circleLongitude", circle.getCenter().longitude);
-                                        Activity.putExtra("radius", circle.getRadius());
-                                    }
+                                    Activity.putExtra("circleLatitude", circle.getCenter().latitude);
+                                    Activity.putExtra("circleLongitude", circle.getCenter().longitude);
+                                    Activity.putExtra("radius", circle.getRadius());
 
                                     clearMap();
 
