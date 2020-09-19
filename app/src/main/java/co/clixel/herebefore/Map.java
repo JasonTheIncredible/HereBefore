@@ -125,6 +125,7 @@ public class Map extends FragmentActivity implements
     // Scale DirectMentions.
     // Get rid of shapeUUID in message (and possibly other information), as shapeUUID is already listed in branch above?
     // Scale messageThreads, then adjust Feedback.
+    // Allow some shapes when zoomed out? User should be able to see an overview and click places while zoomed out.
     // Decrease app size / Check on accumulation of size over time.
     // Adjust Firebase security rules - bookmark.
     // Finish setting up Google ads, then add more ads.
@@ -133,10 +134,11 @@ public class Map extends FragmentActivity implements
     // Check warning messages.
     // Make sure aboutLibraries includes all libraries.
     // Adjust AppIntro.
+    // Switch existing values in Firebase.
     // Make sure the secret stuff is secret.
 
-    // Switch existing values in Firebase.
     // Find a way to not clear and reload map every time user returns from clicking a shape.
+    // Users should be given a view of an area when clicking on a circle. Like they've been sent to that area.
     // Change lines with multiple || statements into a ! statement.
     // Create a "general chat" where everyone can chat anonymously, maybe with more specific location rooms too?
     // Deal with overlapping points (and shapes in general). Maybe a warning message?

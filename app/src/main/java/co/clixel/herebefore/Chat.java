@@ -2895,7 +2895,7 @@ public class Chat extends Fragment implements
                                 messageInformation.setSeenByUser(false);
                             }
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
-                            DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
+                            DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID).push();
                             newMessage.setValue(messageInformation);
 
                             mInput.getText().clear();
@@ -3096,7 +3096,7 @@ public class Chat extends Fragment implements
                                 messageInformation.setSeenByUser(false);
                             }
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
-                            DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").push();
+                            DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID).push();
                             newMessage.setValue(messageInformation);
 
                             mInput.getText().clear();
