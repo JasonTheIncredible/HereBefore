@@ -59,7 +59,6 @@ import com.google.android.gms.maps.model.Polygon;
 import com.google.android.gms.maps.model.PolygonOptions;
 import com.google.android.gms.maps.model.VisibleRegion;
 import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
@@ -122,11 +121,15 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // Scale DirectMentions.
-    // Get rid of shapeUUID in message (and possibly other information), as shapeUUID is already listed in branch above?
+    // DirectMentions onclick.
+    // Scale DirectMentions, and update MyFirebaseMessagingService to use the new token placement.
+    // Get rid of shapeUUID and seenByUser in messageThreads (and possibly other information), as shapeUUID is already listed in branch above.
+    // Fix jQuery.
+    // Check behavior of break statements inside nested loops.
+    // Compress "If mentions exist, add to the user's DMs." in Chat into method.
     // Scale messageThreads, then adjust Feedback.
     // Allow some shapes when zoomed out? User should be able to see an overview and click places while zoomed out.
-    // Decrease app size / Check on accumulation of size over time.
+    // Decrease app size (compress repeating code into methods) / Check on accumulation of size over time.
     // Adjust Firebase security rules - bookmark.
     // Finish setting up Google ads, then add more ads.
     // Make sure Firebase has enough bandwidth.
@@ -137,7 +140,11 @@ public class Map extends FragmentActivity implements
     // Switch existing values in Firebase.
     // Make sure the secret stuff is secret.
 
+    // Load parts of messages at a time to cut down on data and loading time.
     // Find a way to not clear and reload map every time user returns from clicking a shape.
+    // Don't set "seenByUser" to true until the user clicks on the DMs tab.
+    // Add user to database once an account has been created.
+    // After clicking on a DM and going to that Chat, allow user to find that same shape on the map.
     // Users should be given a view of an area when clicking on a circle. Like they've been sent to that area.
     // Change lines with multiple || statements into a ! statement.
     // Create a "general chat" where everyone can chat anonymously, maybe with more specific location rooms too?

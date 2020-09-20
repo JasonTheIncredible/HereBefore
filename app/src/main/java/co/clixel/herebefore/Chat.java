@@ -118,7 +118,7 @@ public class Chat extends Fragment implements
     private static final String TAG = "Chat";
     private static final int Request_ID_Take_Photo = 1700, Request_ID_Record_Video = 1800;
     private MentionsEditText mInput;
-    private ArrayList<String> mTime, mUser, mImage, mVideo, mText, mSuggestions, allMentions;
+    private ArrayList<String> mTime, mUser, mImage, mVideo, mText, mSuggestions, allMentions, userUUIDAL, userEmailAL;
     private ArrayList<Boolean> mUserIsWithinShape;
     private ArrayList<String> removedMentionDuplicates;
     private RecyclerView chatRecyclerView, mentionsRecyclerView;
@@ -212,6 +212,7 @@ public class Chat extends Fragment implements
                 marker7Longitude = extras.getDouble("marker7Longitude");
 
                 if (circleLatitude != null && circleLongitude != null) {
+
                     // Get a value with 1 decimal point and use it for Firebase.
                     double nearLeftPrecisionLat = Math.pow(10, 1);
                     // Can't create a firebase path with '.', so get rid of decimal.
@@ -290,6 +291,9 @@ public class Chat extends Fragment implements
         mUserIsWithinShape = new ArrayList<>();
         removedMentionDuplicates = new ArrayList<>();
 
+        userUUIDAL = new ArrayList<>();
+        userEmailAL = new ArrayList<>();
+
         // Set to true to scroll to the bottom of chatRecyclerView.
         firstLoad = true;
 
@@ -349,229 +353,22 @@ public class Chat extends Fragment implements
             mentionsRecyclerView.setVisibility(View.GONE);
         }
 
-        // Add the Firebase listener.
-        final DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-        if (circleLatitude != null && circleLongitude != null) {
+        DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
+        DatabaseReference firebaseMessages = rootRef.child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID);
+        firebaseMessages.addListenerForSingleValueEvent(new ValueEventListener() {
 
-            DatabaseReference firebaseMessages = rootRef.child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID);
-            firebaseMessages.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
 
-                @Override
-                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                fillArrayLists(snapshot);
 
-                    // Use this dataSnapshot in DirectMentions to cut down on data usage.
-                    int directMentionsLayout = mContext.getResources().getIdentifier("directMentions", "directMentions", mContext.getPackageName());
-                    if (directMentionsLayout != 0) {
+                fillRecyclerView(snapshot);
+            }
 
-                        DirectMentions directMentions = new DirectMentions();
-                        directMentions.addEventListener(snapshot);
-                    }
-
-                    for (DataSnapshot ds : snapshot.getChildren()) {
-
-                        Long serverDate = (Long) ds.child("date").getValue();
-                        String user = (String) ds.child("userUUID").getValue();
-                        // Used when a user mentions another user with "@".
-                        mSuggestions.add(user);
-                        String imageURL = (String) ds.child("imageURL").getValue();
-                        String videoURL = (String) ds.child("videoURL").getValue();
-                        String messageText = (String) ds.child("message").getValue();
-                        Boolean userIsWithinShape = (Boolean) ds.child("userIsWithinShape").getValue();
-                        DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
-                        // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                        // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                        if (serverDate != null) {
-
-                            Date netDate = (new Date(serverDate));
-                            String messageTime = dateFormat.format(netDate);
-                            mTime.add(messageTime);
-                        } else {
-
-                            Log.e(TAG, "onStart() -> serverDate == null");
-                        }
-                        mUser.add(user);
-                        mImage.add(imageURL);
-                        mVideo.add(videoURL);
-                        mText.add(messageText);
-                        mUserIsWithinShape.add(userIsWithinShape);
-                    }
-
-                    // Read RecyclerView scroll position (for use in initChatAdapter).
-                    if (chatRecyclerViewLinearLayoutManager != null && chatRecyclerView != null) {
-
-                        index = chatRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
-                        last = chatRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
-                        View v = chatRecyclerView.getChildAt(0);
-                        top = (v == null) ? 0 : (v.getTop() - chatRecyclerView.getPaddingTop());
-                    }
-
-                    addQuery();
-
-                    // Check RecyclerView scroll state (to allow the layout to move up when keyboard appears).
-                    if (chatRecyclerView != null) {
-
-                        chatRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
-
-                            @Override
-                            public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
-
-                                super.onScrollStateChanged(recyclerView, newState);
-
-                                // If RecyclerView can't be scrolled down, reachedEndOfRecyclerView = true.
-                                reachedEndOfRecyclerView = !recyclerView.canScrollVertically(1);
-
-                                // Used to detect if user has just entered the recyclerviewlayout (so layout needs to move up when keyboard appears).
-                                recyclerViewHasScrolled = true;
-                            }
-                        });
-
-                        // If RecyclerView is scrolled to the bottom, move the layout up when the keyboard appears.
-                        chatRecyclerView.addOnLayoutChangeListener(onLayoutChangeListener = new View.OnLayoutChangeListener() {
-
-                            @Override
-                            public void onLayoutChange(View v,
-                                                       int left, int top, int right, int bottom,
-                                                       int oldLeft, int oldTop, int oldRight, int oldBottom) {
-
-                                if (reachedEndOfRecyclerView || !recyclerViewHasScrolled) {
-
-                                    if (bottom < oldBottom) {
-
-                                        if (chatRecyclerView.getAdapter() != null && chatRecyclerView.getAdapter().getItemCount() > 0) {
-
-                                            chatRecyclerView.postDelayed(new Runnable() {
-
-                                                @Override
-                                                public void run() {
-
-                                                    chatRecyclerView.smoothScrollToPosition(
-
-                                                            chatRecyclerView.getAdapter().getItemCount() - 1);
-                                                }
-                                            }, 100);
-                                        }
-                                    }
-                                }
-                            }
-                        });
-                    }
-                }
-
-                @Override
-                public void onCancelled(@NonNull DatabaseError error) {
-                }
-            });
-        } else if (marker0Latitude != null && marker0Longitude != null) {
-
-            DatabaseReference firebaseMessages = rootRef.child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID);
-            firebaseMessages.addListenerForSingleValueEvent(new ValueEventListener() {
-
-                @Override
-                public void onDataChange(@NonNull DataSnapshot snapshot) {
-
-                    // Use this dataSnapshot in DirectMentions to cut down on data usage.
-                    int directMentionsLayout = mContext.getResources().getIdentifier("directMentions", "directMentions", mContext.getPackageName());
-                    if (directMentionsLayout != 0) {
-
-                        DirectMentions directMentions = new DirectMentions();
-                        directMentions.addEventListener(snapshot);
-                    }
-
-                    for (DataSnapshot ds : snapshot.getChildren()) {
-
-                        Long serverDate = (Long) ds.child("date").getValue();
-                        String user = (String) ds.child("userUUID").getValue();
-                        // Used when a user mentions another user with "@".
-                        mSuggestions.add(user);
-                        String imageURL = (String) ds.child("imageURL").getValue();
-                        String videoURL = (String) ds.child("videoURL").getValue();
-                        String messageText = (String) ds.child("message").getValue();
-                        Boolean userIsWithinShape = (Boolean) ds.child("userIsWithinShape").getValue();
-                        DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
-                        // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                        // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                        if (serverDate != null) {
-
-                            Date netDate = (new Date(serverDate));
-                            String messageTime = dateFormat.format(netDate);
-                            mTime.add(messageTime);
-                        } else {
-
-                            Log.e(TAG, "onStart() -> serverDate == null");
-                        }
-                        mUser.add(user);
-                        mImage.add(imageURL);
-                        mVideo.add(videoURL);
-                        mText.add(messageText);
-                        mUserIsWithinShape.add(userIsWithinShape);
-                    }
-
-                    // Read RecyclerView scroll position (for use in initChatAdapter).
-                    if (chatRecyclerViewLinearLayoutManager != null && chatRecyclerView != null) {
-
-                        index = chatRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
-                        last = chatRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
-                        View v = chatRecyclerView.getChildAt(0);
-                        top = (v == null) ? 0 : (v.getTop() - chatRecyclerView.getPaddingTop());
-                    }
-
-                    addQuery();
-
-                    // Check RecyclerView scroll state (to allow the layout to move up when keyboard appears).
-                    if (chatRecyclerView != null) {
-
-                        chatRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
-
-                            @Override
-                            public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
-
-                                super.onScrollStateChanged(recyclerView, newState);
-
-                                // If RecyclerView can't be scrolled down, reachedEndOfRecyclerView = true.
-                                reachedEndOfRecyclerView = !recyclerView.canScrollVertically(1);
-
-                                // Used to detect if user has just entered the recyclerviewlayout (so layout needs to move up when keyboard appears).
-                                recyclerViewHasScrolled = true;
-                            }
-                        });
-
-                        // If RecyclerView is scrolled to the bottom, move the layout up when the keyboard appears.
-                        chatRecyclerView.addOnLayoutChangeListener(onLayoutChangeListener = new View.OnLayoutChangeListener() {
-
-                            @Override
-                            public void onLayoutChange(View v,
-                                                       int left, int top, int right, int bottom,
-                                                       int oldLeft, int oldTop, int oldRight, int oldBottom) {
-
-                                if (reachedEndOfRecyclerView || !recyclerViewHasScrolled) {
-
-                                    if (bottom < oldBottom) {
-
-                                        if (chatRecyclerView.getAdapter() != null && chatRecyclerView.getAdapter().getItemCount() > 0) {
-
-                                            chatRecyclerView.postDelayed(new Runnable() {
-
-                                                @Override
-                                                public void run() {
-
-                                                    chatRecyclerView.smoothScrollToPosition(
-
-                                                            chatRecyclerView.getAdapter().getItemCount() - 1);
-                                                }
-                                            }, 100);
-                                        }
-                                    }
-                                }
-                            }
-                        });
-                    }
-                }
-
-                @Override
-                public void onCancelled(@NonNull DatabaseError error) {
-                }
-            });
-        }
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+            }
+        });
 
         // Hide the imageView or videoImageView if user presses the delete button.
         mInput.setOnKeyListener(new View.OnKeyListener() {
@@ -789,15 +586,48 @@ public class Chat extends Fragment implements
                                 return;
                             }
 
+                            String userUUID = UUID.randomUUID().toString();
+
+                            // If mentions exist, add to the user's DMs.
+                            if (removedMentionDuplicates != null) {
+
+                                for (String mention : removedMentionDuplicates) {
+
+                                    for (int i = 0; i < userUUIDAL.size(); i++) {
+
+                                        if (userUUIDAL.get(i).equals(mention)) {
+
+                                            String email = userEmailAL.get(i);
+
+                                            MessageInformation messageInformation = new MessageInformation();
+                                            messageInformation.setMessage(input);
+                                            // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+                                            // This will cause onDataChange to fire twice; optimizations could be made in the future.
+                                            Object date = ServerValue.TIMESTAMP;
+                                            messageInformation.setDate(date);
+                                            messageInformation.setUserUUID(userUUID);
+                                            messageInformation.setShapeUUID(shapeUUID);
+                                            messageInformation.setPosition(mUser.size());
+                                            messageInformation.setSeenByUser(false);
+                                            messageInformation.setUserIsWithinShape(userIsWithinShape);
+
+                                            // Firebase does not allow ".", so replace them with ",".
+                                            String emailFirebase = email.replace(".", ",");
+                                            DatabaseReference newDM = FirebaseDatabase.getInstance().getReference().child("Users").child(emailFirebase).child("ReceivedDMs").push();
+                                            newDM.setValue(messageInformation);
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+
                             MessageInformation messageInformation = new MessageInformation();
                             messageInformation.setMessage(input);
                             // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
                             // This will cause onDataChange to fire twice; optimizations could be made in the future.
                             Object date = ServerValue.TIMESTAMP;
                             messageInformation.setDate(date);
-                            String userUUID = UUID.randomUUID().toString();
                             messageInformation.setUserUUID(userUUID);
-                            messageInformation.setPosition(mUser.size());
                             // If user has a Google account, get email one way. Else, get email another way.
                             GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
                             String email;
@@ -816,6 +646,11 @@ public class Chat extends Fragment implements
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID).push();
                             newMessage.setValue(messageInformation);
+
+                            if (removedMentionDuplicates != null) {
+
+                                removedMentionDuplicates.clear();
+                            }
 
                             mInput.getText().clear();
                             newShape = false;
@@ -842,13 +677,47 @@ public class Chat extends Fragment implements
                             // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter()).
                             messageSent = true;
 
+                            String userUUID = UUID.randomUUID().toString();
+
+                            // If mentions exist, add to the user's DMs.
+                            if (removedMentionDuplicates != null) {
+
+                                for (String mention : removedMentionDuplicates) {
+
+                                    for (int i = 0; i < userUUIDAL.size(); i++) {
+
+                                        if (userUUIDAL.get(i).equals(mention)) {
+
+                                            String email = userEmailAL.get(i);
+
+                                            MessageInformation messageInformation = new MessageInformation();
+                                            messageInformation.setMessage(input);
+                                            // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+                                            // This will cause onDataChange to fire twice; optimizations could be made in the future.
+                                            Object date = ServerValue.TIMESTAMP;
+                                            messageInformation.setDate(date);
+                                            messageInformation.setUserUUID(userUUID);
+                                            messageInformation.setShapeUUID(shapeUUID);
+                                            messageInformation.setPosition(mUser.size());
+                                            messageInformation.setSeenByUser(false);
+                                            messageInformation.setUserIsWithinShape(userIsWithinShape);
+
+                                            // Firebase does not allow ".", so replace them with ",".
+                                            String emailFirebase = email.replace(".", ",");
+                                            DatabaseReference newDM = FirebaseDatabase.getInstance().getReference().child("Users").child(emailFirebase).child("ReceivedDMs").push();
+                                            newDM.setValue(messageInformation);
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+
                             MessageInformation messageInformation = new MessageInformation();
                             messageInformation.setMessage(input);
                             // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
                             // This will cause onDataChange to fire twice; optimizations could be made in the future.
                             Object date = ServerValue.TIMESTAMP;
                             messageInformation.setDate(date);
-                            String userUUID = UUID.randomUUID().toString();
                             messageInformation.setUserUUID(userUUID);
                             messageInformation.setPosition(mUser.size());
                             messageInformation.setShapeUUID(shapeUUID);
@@ -874,6 +743,11 @@ public class Chat extends Fragment implements
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID).push();
                             newMessage.setValue(messageInformation);
+
+                            if (removedMentionDuplicates != null) {
+
+                                removedMentionDuplicates.clear();
+                            }
 
                             mInput.getText().clear();
                             sendButtonClicked = false;
@@ -914,6 +788,111 @@ public class Chat extends Fragment implements
         });
     }
 
+    private void fillArrayLists(DataSnapshot snapshot) {
+
+        Log.i(TAG, "fillArrayLists()");
+
+        for (DataSnapshot ds : snapshot.getChildren()) {
+
+            userUUIDAL.add((String) ds.child("userUUID").getValue());
+            userEmailAL.add((String) ds.child("email").getValue());
+        }
+    }
+
+    private void fillRecyclerView(DataSnapshot snapshot) {
+
+        Log.i(TAG, "fillRecyclerView()");
+
+        for (DataSnapshot ds : snapshot.getChildren()) {
+
+            Long serverDate = (Long) ds.child("date").getValue();
+            String user = (String) ds.child("userUUID").getValue();
+            // Used when a user mentions another user with "@".
+            mSuggestions.add(user);
+            String imageURL = (String) ds.child("imageURL").getValue();
+            String videoURL = (String) ds.child("videoURL").getValue();
+            String messageText = (String) ds.child("message").getValue();
+            Boolean userIsWithinShape = (Boolean) ds.child("userIsWithinShape").getValue();
+            DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
+            // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+            // This will cause onDataChange to fire twice; optimizations could be made in the future.
+            if (serverDate != null) {
+
+                Date netDate = (new Date(serverDate));
+                String messageTime = dateFormat.format(netDate);
+                mTime.add(messageTime);
+            } else {
+
+                Log.e(TAG, "onStart() -> serverDate == null");
+            }
+            mUser.add(user);
+            mImage.add(imageURL);
+            mVideo.add(videoURL);
+            mText.add(messageText);
+            mUserIsWithinShape.add(userIsWithinShape);
+        }
+
+        // Read RecyclerView scroll position (for use in initChatAdapter).
+        if (chatRecyclerViewLinearLayoutManager != null && chatRecyclerView != null) {
+
+            index = chatRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
+            last = chatRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
+            View v = chatRecyclerView.getChildAt(0);
+            top = (v == null) ? 0 : (v.getTop() - chatRecyclerView.getPaddingTop());
+        }
+
+        addQuery();
+
+        // Check RecyclerView scroll state (to allow the layout to move up when keyboard appears).
+        if (chatRecyclerView != null) {
+
+            chatRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+
+                @Override
+                public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
+
+                    super.onScrollStateChanged(recyclerView, newState);
+
+                    // If RecyclerView can't be scrolled down, reachedEndOfRecyclerView = true.
+                    reachedEndOfRecyclerView = !recyclerView.canScrollVertically(1);
+
+                    // Used to detect if user has just entered the recyclerviewlayout (so layout needs to move up when keyboard appears).
+                    recyclerViewHasScrolled = true;
+                }
+            });
+
+            // If RecyclerView is scrolled to the bottom, move the layout up when the keyboard appears.
+            chatRecyclerView.addOnLayoutChangeListener(onLayoutChangeListener = new View.OnLayoutChangeListener() {
+
+                @Override
+                public void onLayoutChange(View v,
+                                           int left, int top, int right, int bottom,
+                                           int oldLeft, int oldTop, int oldRight, int oldBottom) {
+
+                    if (reachedEndOfRecyclerView || !recyclerViewHasScrolled) {
+
+                        if (bottom < oldBottom) {
+
+                            if (chatRecyclerView.getAdapter() != null && chatRecyclerView.getAdapter().getItemCount() > 0) {
+
+                                chatRecyclerView.postDelayed(new Runnable() {
+
+                                    @Override
+                                    public void run() {
+
+                                        chatRecyclerView.smoothScrollToPosition(
+
+                                                chatRecyclerView.getAdapter().getItemCount() - 1);
+                                    }
+                                }, 100);
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    }
+
     // Change to .limitToLast(1) to cut down on data usage. Otherwise, EVERY child at this node will be downloaded every time the child is updated.
     private void addQuery() {
 
@@ -923,176 +902,87 @@ public class Chat extends Fragment implements
             query.removeEventListener(childEventListener);
         }
 
-        final DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-        if (circleLatitude != null && circleLongitude != null) {
+        // If this is the first time calling this eventListener and it's a new shape, initialize the adapter (but don't return, as the childEventListener should still be added), as onChildAdded won't be called the first time.
+        if (firstLoad && newShape) {
 
-            // If this is the first time calling this eventListener and it's a new shape, initialize the adapter (but don't return, as the childEventListener should still be added), as onChildAdded won't be called the first time.
-            if (firstLoad && newShape) {
-
-                initChatAdapter();
-            }
-
-            query = rootRef.child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID).limitToLast(1);
-            childEventListener = new ChildEventListener() {
-
-                @Override
-                public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-
-                    Log.i(TAG, "addQuery()");
-
-                    // If this is the first time calling this eventListener, prevent double posts (as onStart() already added the last item).
-                    if (firstLoad) {
-
-                        initChatAdapter();
-                        return;
-                    }
-
-                    Long serverDate = (Long) snapshot.child("date").getValue();
-                    String user = (String) snapshot.child("userUUID").getValue();
-                    // Used when a user mentions another user with "@".
-                    mSuggestions.add(user);
-                    String imageURL = (String) snapshot.child("imageURL").getValue();
-                    String videoURL = (String) snapshot.child("videoURL").getValue();
-                    String messageText = (String) snapshot.child("message").getValue();
-                    Boolean userIsWithinShape = (Boolean) snapshot.child("userIsWithinShape").getValue();
-                    DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
-                    // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                    // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                    if (serverDate != null) {
-
-                        Date netDate = (new Date(serverDate));
-                        String messageTime = dateFormat.format(netDate);
-                        mTime.add(messageTime);
-                    } else {
-
-                        Log.e(TAG, "onStart() -> serverDate == null");
-                    }
-                    mUser.add(user);
-                    mImage.add(imageURL);
-                    mVideo.add(videoURL);
-                    mText.add(messageText);
-                    mUserIsWithinShape.add(userIsWithinShape);
-
-                    // Read RecyclerView scroll position (for use in initChatAdapter).
-                    if (chatRecyclerViewLinearLayoutManager != null) {
-
-                        index = chatRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
-                        last = chatRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
-                        View v = chatRecyclerView.getChildAt(0);
-                        top = (v == null) ? 0 : (v.getTop() - chatRecyclerView.getPaddingTop());
-                    }
-
-                    if (removedMentionDuplicates != null) {
-
-                        removedMentionDuplicates.clear();
-                    }
-
-                    initChatAdapter();
-                }
-
-                @Override
-                public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-                }
-
-                @Override
-                public void onChildRemoved(@NonNull DataSnapshot snapshot) {
-                }
-
-                @Override
-                public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-                }
-
-                @Override
-                public void onCancelled(@NonNull DatabaseError error) {
-
-                    toastMessageLong(error.getMessage());
-                }
-            };
-        } else if (marker0Latitude != null && marker0Longitude != null) {
-
-            // If this is the first time calling this eventListener and it's a new shape, initialize the adapter (but don't return, as the childEventListener should still be added), as onChildAdded won't be called the first time.
-            if (firstLoad && newShape) {
-
-                initChatAdapter();
-            }
-
-            query = rootRef.child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID).limitToLast(1);
-            childEventListener = new ChildEventListener() {
-
-                @Override
-                public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-
-                    Log.i(TAG, "addQuery()");
-
-                    // If this is the first time calling this eventListener, prevent double posts (as onStart() already added the last item).
-                    if (firstLoad) {
-
-                        initChatAdapter();
-                        return;
-                    }
-
-                    Long serverDate = (Long) snapshot.child("date").getValue();
-                    String user = (String) snapshot.child("userUUID").getValue();
-                    // Used when a user mentions another user with "@".
-                    mSuggestions.add(user);
-                    String imageURL = (String) snapshot.child("imageURL").getValue();
-                    String videoURL = (String) snapshot.child("videoURL").getValue();
-                    String messageText = (String) snapshot.child("message").getValue();
-                    Boolean userIsWithinShape = (Boolean) snapshot.child("userIsWithinShape").getValue();
-                    DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
-                    // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                    // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                    if (serverDate != null) {
-
-                        Date netDate = (new Date(serverDate));
-                        String messageTime = dateFormat.format(netDate);
-                        mTime.add(messageTime);
-                    } else {
-
-                        Log.e(TAG, "onStart() -> serverDate == null");
-                    }
-                    mUser.add(user);
-                    mImage.add(imageURL);
-                    mVideo.add(videoURL);
-                    mText.add(messageText);
-                    mUserIsWithinShape.add(userIsWithinShape);
-
-                    // Read RecyclerView scroll position (for use in initChatAdapter).
-                    if (chatRecyclerViewLinearLayoutManager != null) {
-
-                        index = chatRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
-                        last = chatRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
-                        View v = chatRecyclerView.getChildAt(0);
-                        top = (v == null) ? 0 : (v.getTop() - chatRecyclerView.getPaddingTop());
-                    }
-
-                    if (removedMentionDuplicates != null) {
-
-                        removedMentionDuplicates.clear();
-                    }
-
-                    initChatAdapter();
-                }
-
-                @Override
-                public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-                }
-
-                @Override
-                public void onChildRemoved(@NonNull DataSnapshot snapshot) {
-                }
-
-                @Override
-                public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-                }
-
-                @Override
-                public void onCancelled(@NonNull DatabaseError error) {
-
-                    toastMessageLong(error.getMessage());
-                }
-            };
+            initChatAdapter();
         }
+
+        DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
+        query = rootRef.child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID).limitToLast(1);
+        childEventListener = new ChildEventListener() {
+
+            @Override
+            public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+
+                Log.i(TAG, "addQuery()");
+
+                // If this is the first time calling this eventListener, prevent double posts (as onStart() already added the last item).
+                if (firstLoad) {
+
+                    initChatAdapter();
+                    return;
+                }
+
+                Long serverDate = (Long) snapshot.child("date").getValue();
+                String user = (String) snapshot.child("userUUID").getValue();
+                // Used when a user mentions another user with "@".
+                mSuggestions.add(user);
+                String imageURL = (String) snapshot.child("imageURL").getValue();
+                String videoURL = (String) snapshot.child("videoURL").getValue();
+                String messageText = (String) snapshot.child("message").getValue();
+                Boolean userIsWithinShape = (Boolean) snapshot.child("userIsWithinShape").getValue();
+                DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
+                // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+                // This will cause onDataChange to fire twice; optimizations could be made in the future.
+                if (serverDate != null) {
+
+                    Date netDate = (new Date(serverDate));
+                    String messageTime = dateFormat.format(netDate);
+                    mTime.add(messageTime);
+                } else {
+
+                    Log.e(TAG, "onStart() -> serverDate == null");
+                }
+                mUser.add(user);
+                mImage.add(imageURL);
+                mVideo.add(videoURL);
+                mText.add(messageText);
+                mUserIsWithinShape.add(userIsWithinShape);
+
+                // Read RecyclerView scroll position (for use in initChatAdapter).
+                if (chatRecyclerViewLinearLayoutManager != null) {
+
+                    index = chatRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
+                    last = chatRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
+                    View v = chatRecyclerView.getChildAt(0);
+                    top = (v == null) ? 0 : (v.getTop() - chatRecyclerView.getPaddingTop());
+                }
+
+                userUUIDAL.add((String) snapshot.child("userUUID").getValue());
+                userEmailAL.add((String) snapshot.child("email").getValue());
+
+                initChatAdapter();
+            }
+
+            @Override
+            public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+            }
+
+            @Override
+            public void onChildRemoved(@NonNull DataSnapshot snapshot) {
+            }
+
+            @Override
+            public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+
+                toastMessageLong(error.getMessage());
+            }
+        };
 
         query.addChildEventListener(childEventListener);
     }
@@ -2767,7 +2657,7 @@ public class Chat extends Fragment implements
                                     } else if (1 < radius && radius <= 10) {
 
                                         newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Small").push();
-                                } else if (10 < radius && radius <= 50) {
+                                    } else if (10 < radius && radius <= 50) {
 
                                         newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Medium").push();
                                     } else if (50 < radius) {
@@ -2861,6 +2751,44 @@ public class Chat extends Fragment implements
                             // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter()).
                             messageSent = true;
 
+                            String userUUID = UUID.randomUUID().toString();
+
+                            // If mentions exist, add to the user's DMs.
+                            if (removedMentionDuplicates != null) {
+
+                                for (String mention : removedMentionDuplicates) {
+
+                                    for (int i = 0; i < userUUIDAL.size(); i++) {
+
+                                        if (userUUIDAL.get(i).equals(mention)) {
+
+                                            String email = userEmailAL.get(i);
+
+                                            MessageInformation messageInformation = new MessageInformation();
+                                            messageInformation.setVideoURL(uri.toString());
+                                            if (mInput.getText().toString().trim().length() != 0) {
+
+                                                messageInformation.setMessage(mInput.getText().toString());
+                                            }
+                                            // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+                                            // This will cause onDataChange to fire twice; optimizations could be made in the future.
+                                            Object date = ServerValue.TIMESTAMP;
+                                            messageInformation.setDate(date);
+                                            userUUID = UUID.randomUUID().toString();
+                                            messageInformation.setUserUUID(userUUID);
+                                            messageInformation.setShapeUUID(shapeUUID);
+                                            messageInformation.setPosition(mUser.size());
+                                            messageInformation.setSeenByUser(false);
+                                            messageInformation.setUserIsWithinShape(userIsWithinShape);
+
+                                            DatabaseReference newDM = FirebaseDatabase.getInstance().getReference().child("Users").child(email).child("ReceivedDMs").push();
+                                            newDM.setValue(messageInformation);
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+
                             MessageInformation messageInformation = new MessageInformation();
                             messageInformation.setVideoURL(uri.toString());
                             if (mInput.getText().toString().trim().length() != 0) {
@@ -2871,7 +2799,6 @@ public class Chat extends Fragment implements
                             // This will cause onDataChange to fire twice; optimizations could be made in the future.
                             Object date = ServerValue.TIMESTAMP;
                             messageInformation.setDate(date);
-                            String userUUID = UUID.randomUUID().toString();
                             messageInformation.setUserUUID(userUUID);
                             messageInformation.setPosition(mUser.size());
                             // If user has a Google account, get email one way. Else, get email another way.
@@ -3062,6 +2989,43 @@ public class Chat extends Fragment implements
                             // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter()).
                             messageSent = true;
 
+                            String userUUID = UUID.randomUUID().toString();
+
+                            // If mentions exist, add to the user's DMs.
+                            if (removedMentionDuplicates != null) {
+
+                                for (String mention : removedMentionDuplicates) {
+
+                                    for (int i = 0; i < userUUIDAL.size(); i++) {
+
+                                        if (userUUIDAL.get(i).equals(mention)) {
+
+                                            String email = userEmailAL.get(i);
+
+                                            MessageInformation messageInformation = new MessageInformation();
+                                            messageInformation.setImageURL(uri.toString());
+                                            if (mInput.getText().toString().trim().length() != 0) {
+
+                                                messageInformation.setMessage(mInput.getText().toString());
+                                            }
+                                            // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+                                            // This will cause onDataChange to fire twice; optimizations could be made in the future.
+                                            Object date = ServerValue.TIMESTAMP;
+                                            messageInformation.setDate(date);
+                                            messageInformation.setUserUUID(userUUID);
+                                            messageInformation.setShapeUUID(shapeUUID);
+                                            messageInformation.setPosition(mUser.size());
+                                            messageInformation.setSeenByUser(false);
+                                            messageInformation.setUserIsWithinShape(userIsWithinShape);
+
+                                            DatabaseReference newDM = FirebaseDatabase.getInstance().getReference().child("Users").child(email).child("ReceivedDMs").push();
+                                            newDM.setValue(messageInformation);
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+
                             MessageInformation messageInformation = new MessageInformation();
                             messageInformation.setImageURL(uri.toString());
                             if (mInput.getText().toString().trim().length() != 0) {
@@ -3072,7 +3036,6 @@ public class Chat extends Fragment implements
                             // This will cause onDataChange to fire twice; optimizations could be made in the future.
                             Object date = ServerValue.TIMESTAMP;
                             messageInformation.setDate(date);
-                            String userUUID = UUID.randomUUID().toString();
                             messageInformation.setUserUUID(userUUID);
                             messageInformation.setPosition(mUser.size());
                             // If user has a Google account, get email one way. Else, get email another way.

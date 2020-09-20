@@ -52,9 +52,9 @@ public class DirectMentions extends Fragment {
 
     private static final String TAG = "DirectMentions";
     private String email;
-    private ArrayList<String> mTime, mUser, mImage, mVideo, mText, mShapeUUID, userAL, imageURLAL, videoURLAL, messageTextAL, shapeUUIDAL, userUUIDAL, userEmailAL, timeAL;
-    private ArrayList<Boolean> mUserIsWithinShape, mShapeIsCircle, mSeenByUser, userIsWithinShapeAL, shapeIsCircleAL, seenByUserAL;
-    private ArrayList<Long> mPosition, notSeenByUserList, positionAL;
+    private ArrayList<String> mTime, mUser, mImage, mVideo, mText, mShapeUUID;
+    private ArrayList<Boolean> mUserIsWithinShape, mShapeIsCircle;
+    private ArrayList<Long> mPosition, notSeenByUserList;
     private RecyclerView directMentionsRecyclerView;
     private static int index = -1, top = -1, last;
     private ChildEventListener childEventListener;
@@ -101,22 +101,8 @@ public class DirectMentions extends Fragment {
         mShapeUUID = new ArrayList<>();
         mUserIsWithinShape = new ArrayList<>();
         mShapeIsCircle = new ArrayList<>();
-        mSeenByUser = new ArrayList<>();
         mPosition = new ArrayList<>();
         notSeenByUserList = new ArrayList<>();
-
-        userAL = new ArrayList<>();
-        imageURLAL = new ArrayList<>();
-        timeAL = new ArrayList<>();
-        videoURLAL = new ArrayList<>();
-        messageTextAL = new ArrayList<>();
-        shapeUUIDAL = new ArrayList<>();
-        userUUIDAL = new ArrayList<>();
-        userEmailAL = new ArrayList<>();
-        userIsWithinShapeAL = new ArrayList<>();
-        shapeIsCircleAL = new ArrayList<>();
-        seenByUserAL = new ArrayList<>();
-        positionAL = new ArrayList<>();
 
         // Set to true to scroll to the bottom of directMentionsRecyclerView.
         firstLoad = true;
@@ -163,182 +149,99 @@ public class DirectMentions extends Fragment {
             email = sharedPreferences.getString("userToken", "null");
         }
 
-        // Search Firebase for DirectMentions.
-        // If Chat doesn't exist, use the listeners here. Otherwise, use the snapShot from Chat.
-        int chatLayout = mContext.getResources().getIdentifier("chat", "chat", mContext.getPackageName());
-        if (chatLayout == 0) {
+        // Firebase does not allow ".", so replace them with ",".
+        String emailFirebase = email.replace(".", ",");
+        DatabaseReference DMs = FirebaseDatabase.getInstance().getReference().child("Users").child(emailFirebase).child("ReceivedDMs");
+        DMs.addListenerForSingleValueEvent(new ValueEventListener() {
 
-            DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-            DatabaseReference firebaseMessages = rootRef.child("MessageThreads");
-            firebaseMessages.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
 
-                @Override
-                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                // Clear the RecyclerView before adding new entries to prevent duplicates,
+                // and read RecyclerView scroll position (for use in initDirectMentionsAdapter())
+                if (directMentionsRecyclerViewLinearLayoutManager != null) {
 
-                    addEventListener(dataSnapshot);
+                    index = directMentionsRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
+                    last = directMentionsRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
+                    View v = directMentionsRecyclerView.getChildAt(0);
+                    top = (v == null) ? 0 : (v.getTop() - directMentionsRecyclerView.getPaddingTop());
                 }
 
-                @Override
-                public void onCancelled(@NonNull DatabaseError databaseError) {
+                for (DataSnapshot ds : snapshot.getChildren()) {
 
-                    toastMessageLong(databaseError.getMessage());
-                }
-            });
-        }
-    }
+                    Long serverDate = (Long) ds.child("date").getValue();
+                    DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
+                    if (serverDate != null) {
 
-    // Search Firebase for DirectMentions. As these calls are asynchronous, add them one at a time.
-    public void addEventListener(DataSnapshot dataSnapshot) {
+                        Date netDate = (new Date(serverDate));
+                        String messageTime = dateFormat.format(netDate);
+                        mTime.add(messageTime);
+                    } else {
 
-        Log.i(TAG, "addEventListener()");
+                        Log.e(TAG, "fillRecyclerView() -> serverDate == null");
+                    }
+                    mUser.add((String) ds.child("userUUID").getValue());
+                    mImage.add((String) ds.child("imageURL").getValue());
+                    mVideo.add((String) ds.child("videoURL").getValue());
+                    mText.add((String) ds.child("message").getValue());
+                    mShapeUUID.add((String) ds.child("shapeUUID").getValue());
+                    mUserIsWithinShape.add((Boolean) ds.child("userIsWithinShape").getValue());
+                    mShapeIsCircle.add((Boolean) ds.child("shapeIsCircle").getValue());
+                    mPosition.add((Long) ds.child("position").getValue());
 
-        // First, fill the arrayLists. Then, use the arrayLists to fill out recyclerView.
-        // Using the same dataSnapshot cuts down on data usage.
-        if (email != null) {
+                    if (!(Boolean) ds.child("seenByUser").getValue()) {
 
-            fillArrayLists(dataSnapshot);
-
-            fillRecyclerView(dataSnapshot);
-        }
-    }
-
-    private void fillArrayLists(@NonNull DataSnapshot dataSnapshot) {
-
-        Log.i(TAG, "fillArrayLists()");
-
-        for (DataSnapshot ds : dataSnapshot.getChildren()) {
-
-            // Only add necessary items to arrayLists.
-            if (ds.child("email").getValue() != null) {
-
-                if (ds.child("removedMentionDuplicates").getValue() == null && !ds.child("email").getValue().equals(email)) {
-
-                    continue;
-                }
-            }
-
-            userUUIDAL.add((String) ds.child("userUUID").getValue());
-            userEmailAL.add((String) ds.child("email").getValue());
-
-            Long serverDate = (Long) ds.child("date").getValue();
-            DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
-            if (serverDate != null) {
-
-                Date netDate = (new Date(serverDate));
-                String messageTime = dateFormat.format(netDate);
-                timeAL.add(messageTime);
-            } else {
-
-                Log.e(TAG, "fillArrayList() -> serverDate == null");
-            }
-            userAL.add((String) ds.child("userUUID").getValue());
-            imageURLAL.add((String) ds.child("imageURL").getValue());
-            videoURLAL.add((String) ds.child("videoURL").getValue());
-            messageTextAL.add((String) ds.child("message").getValue());
-            shapeUUIDAL.add((String) ds.child("shapeUUID").getValue());
-            userIsWithinShapeAL.add((Boolean) ds.child("userIsWithinShape").getValue());
-            shapeIsCircleAL.add((Boolean) ds.child("shapeIsCircle").getValue());
-            positionAL.add((Long) ds.child("position").getValue());
-            seenByUserAL.add((Boolean) ds.child("seenByUser").getValue());
-        }
-    }
-
-    private void fillRecyclerView(@NonNull DataSnapshot dataSnapshot) {
-
-        Log.i(TAG, "fillRecyclerView()");
-
-        // Clear the RecyclerView before adding new entries to prevent duplicates,
-        // and read RecyclerView scroll position (for use in initDirectMentionsAdapter())
-        if (directMentionsRecyclerViewLinearLayoutManager != null) {
-
-            index = directMentionsRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
-            last = directMentionsRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
-            View v = directMentionsRecyclerView.getChildAt(0);
-            top = (v == null) ? 0 : (v.getTop() - directMentionsRecyclerView.getPaddingTop());
-        }
-
-        for (DataSnapshot ds : dataSnapshot.getChildren()) {
-
-            if (ds.child("removedMentionDuplicates").getValue() != null) {
-
-                for (DataSnapshot mention : ds.child("removedMentionDuplicates").getChildren()) {
-
-                    for (int i = 0; i < userUUIDAL.size(); i++) {
-
-                        if (mention.getValue() != null) {
-
-                            if (mention.getValue().toString().equals(userUUIDAL.get(i))) {
-
-                                if (userEmailAL.get(i).equals(email)) {
-
-                                    Long serverDate = (Long) ds.child("date").getValue();
-                                    DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
-                                    if (serverDate != null) {
-
-                                        Date netDate = (new Date(serverDate));
-                                        String messageTime = dateFormat.format(netDate);
-                                        mTime.add(messageTime);
-                                    } else {
-
-                                        Log.e(TAG, "fillRecyclerView() -> serverDate == null");
-                                    }
-                                    mUser.add((String) ds.child("userUUID").getValue());
-                                    mImage.add((String) ds.child("imageURL").getValue());
-                                    mVideo.add((String) ds.child("videoURL").getValue());
-                                    mText.add((String) ds.child("message").getValue());
-                                    mShapeUUID.add((String) ds.child("shapeUUID").getValue());
-                                    mUserIsWithinShape.add((Boolean) ds.child("userIsWithinShape").getValue());
-                                    mShapeIsCircle.add((Boolean) ds.child("shapeIsCircle").getValue());
-                                    mPosition.add((Long) ds.child("position").getValue());
-                                    mSeenByUser.add((Boolean) ds.child("seenByUser").getValue());
-
-                                    if (!(Boolean) ds.child("seenByUser").getValue()) {
-
-                                        notSeenByUserList.add((Long) ds.child("position").getValue());
-                                        ds.child("seenByUser").getRef().setValue(true);
-                                    }
-                                }
-                            }
-                        }
+                        notSeenByUserList.add((Long) ds.child("position").getValue());
+                        ds.child("seenByUser").getRef().setValue(true);
                     }
                 }
-            }
-        }
 
-        addQueryPartOne();
+                addQuery();
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                toastMessageLong(databaseError.getMessage());
+            }
+        });
     }
 
     // Change to .limitToLast(1) to cut down on data usage. Otherwise, EVERY child at this node will be downloaded every time the child is updated.
-    private void addQueryPartOne() {
+    private void addQuery() {
+
+        // If this is the first time calling this eventListener and it's a new shape, initialize the adapter (but don't return, as the childEventListener should still be added), as onChildAdded won't be called the first time.
+        if (firstLoad && mUser.size() == 0) {
+
+            initDirectMentionsAdapter();
+        }
 
         // Add new values to arrayLists one at a time. This prevents the need to download the whole dataSnapshot every time this information is needed in eventListenerThree.
-        DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-        query = rootRef.child("MessageThreads").limitToLast(1);
+        // Firebase does not allow ".", so replace them with ",".
+        String emailFirebase = email.replace(".", ",");
+        query = FirebaseDatabase.getInstance().getReference().child("Users").child(emailFirebase).child("ReceivedDMs").limitToLast(1);
         childEventListener = new ChildEventListener() {
 
             @Override
             public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
 
-                Log.i(TAG, "addQueryPartOne()");
+                Log.i(TAG, "addQuery()");
 
                 // If this is the first time calling this eventListener, prevent double posts (as onStart() already added the last item).
                 if (firstLoad) {
 
-                    addQueryPartTwo(snapshot);
+                    initDirectMentionsAdapter();
                     return;
                 }
 
-                // Only add necessary items to arrayLists.
-                if (snapshot.child("email").getValue() != null) {
+                // Read RecyclerView scroll position (for use in initDirectMentionsAdapter()).
+                if (directMentionsRecyclerViewLinearLayoutManager != null) {
 
-                    if (snapshot.child("removedMentionDuplicates").getValue() == null && !snapshot.child("email").getValue().equals(email)) {
-
-                        return;
-                    }
+                    index = directMentionsRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
+                    last = directMentionsRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
+                    View v = directMentionsRecyclerView.getChildAt(0);
+                    top = (v == null) ? 0 : (v.getTop() - directMentionsRecyclerView.getPaddingTop());
                 }
-
-                userUUIDAL.add((String) snapshot.child("userUUID").getValue());
-                userEmailAL.add((String) snapshot.child("email").getValue());
 
                 Long serverDate = (Long) snapshot.child("date").getValue();
                 DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
@@ -346,22 +249,27 @@ public class DirectMentions extends Fragment {
 
                     Date netDate = (new Date(serverDate));
                     String messageTime = dateFormat.format(netDate);
-                    timeAL.add(messageTime);
+                    mTime.add(messageTime);
                 } else {
 
-                    Log.e(TAG, "addQueryPartOne() -> serverDate == null");
+                    Log.e(TAG, "fillRecyclerView() -> serverDate == null");
                 }
-                userAL.add((String) snapshot.child("userUUID").getValue());
-                imageURLAL.add((String) snapshot.child("imageURL").getValue());
-                videoURLAL.add((String) snapshot.child("videoURL").getValue());
-                messageTextAL.add((String) snapshot.child("message").getValue());
-                shapeUUIDAL.add((String) snapshot.child("shapeUUID").getValue());
-                userIsWithinShapeAL.add((Boolean) snapshot.child("userIsWithinShape").getValue());
-                shapeIsCircleAL.add((Boolean) snapshot.child("shapeIsCircle").getValue());
-                positionAL.add((Long) snapshot.child("position").getValue());
-                seenByUserAL.add((Boolean) snapshot.child("seenByUser").getValue());
+                mUser.add((String) snapshot.child("userUUID").getValue());
+                mImage.add((String) snapshot.child("imageURL").getValue());
+                mVideo.add((String) snapshot.child("videoURL").getValue());
+                mText.add((String) snapshot.child("message").getValue());
+                mShapeUUID.add((String) snapshot.child("shapeUUID").getValue());
+                mUserIsWithinShape.add((Boolean) snapshot.child("userIsWithinShape").getValue());
+                mShapeIsCircle.add((Boolean) snapshot.child("shapeIsCircle").getValue());
+                mPosition.add((Long) snapshot.child("position").getValue());
 
-                addQueryPartTwo(snapshot);
+                if (!(Boolean) snapshot.child("seenByUser").getValue()) {
+
+                    notSeenByUserList.add((Long) snapshot.child("position").getValue());
+                    snapshot.child("seenByUser").getRef().setValue(true);
+                }
+
+                initDirectMentionsAdapter();
             }
 
             @Override
@@ -386,70 +294,12 @@ public class DirectMentions extends Fragment {
         query.addChildEventListener(childEventListener);
     }
 
-    private void addQueryPartTwo(@NonNull DataSnapshot snapshot) {
-
-        Log.i(TAG, "addQueryPartTwo()");
-
-        // If this is the first time calling this eventListener, prevent double posts (as onStart() already added the last item).
-        if (firstLoad) {
-
-            firstLoad = false;
-            initDirectMentionsAdapter();
-            return;
-        }
-
-        // Read RecyclerView scroll position (for use in initDirectMentionsAdapter()).
-        if (directMentionsRecyclerViewLinearLayoutManager != null) {
-
-            index = directMentionsRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
-            last = directMentionsRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
-            View v = directMentionsRecyclerView.getChildAt(0);
-            top = (v == null) ? 0 : (v.getTop() - directMentionsRecyclerView.getPaddingTop());
-        }
-
-        if (snapshot.child("removedMentionDuplicates").getValue() != null) {
-
-            for (DataSnapshot mention : snapshot.child("removedMentionDuplicates").getChildren()) {
-
-                if (mention.getValue() != null) {
-
-                    for (int i = 0; i < userUUIDAL.size(); i++) {
-
-                        if (mention.getValue().toString().equals(userUUIDAL.get(i))) {
-
-                            if (userEmailAL.get(i).equals(email)) {
-
-                                mTime.add(timeAL.get(userUUIDAL.size() - 1));
-                                mUser.add(userAL.get(userUUIDAL.size() - 1));
-                                mImage.add(imageURLAL.get(userUUIDAL.size() - 1));
-                                mVideo.add(videoURLAL.get(userUUIDAL.size() - 1));
-                                mText.add(messageTextAL.get(userUUIDAL.size() - 1));
-                                mShapeUUID.add(shapeUUIDAL.get(userUUIDAL.size() - 1));
-                                mUserIsWithinShape.add(userIsWithinShapeAL.get(userUUIDAL.size() - 1));
-                                mShapeIsCircle.add(shapeIsCircleAL.get(userUUIDAL.size() - 1));
-                                mPosition.add(positionAL.get(userUUIDAL.size() - 1));
-                                mSeenByUser.add(seenByUserAL.get(userUUIDAL.size() - 1));
-                                // All DMs will be "new", so add them to notSeenByUserList and update their value in Firebase.
-                                notSeenByUserList.add(positionAL.get(userUUIDAL.size() - 1));
-                                snapshot.child("seenByUser").getRef().setValue(true);
-
-                                initDirectMentionsAdapter();
-                                // Only updating one value, so return.
-                                return;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
     private void initDirectMentionsAdapter() {
 
         // Initialize the RecyclerView.
         Log.i(TAG, "initDirectMentionsAdapter()");
 
-        DirectMentionsAdapter adapter = new DirectMentionsAdapter(mContext, mTime, mUser, mImage, mVideo, mText, mShapeUUID, mUserIsWithinShape, mShapeIsCircle, mPosition, mSeenByUser);
+        DirectMentionsAdapter adapter = new DirectMentionsAdapter(mContext, mTime, mUser, mImage, mVideo, mText, mShapeUUID, mUserIsWithinShape, mShapeIsCircle, mPosition);
         directMentionsRecyclerView.setAdapter(adapter);
         directMentionsRecyclerView.setLayoutManager(directMentionsRecyclerViewLinearLayoutManager);
 
@@ -476,6 +326,8 @@ public class DirectMentions extends Fragment {
 
             noDMsTextView.setVisibility(View.GONE);
         }
+
+        firstLoad = false;
     }
 
     @Override
@@ -1344,7 +1196,7 @@ public class DirectMentions extends Fragment {
             }
         }
 
-        DirectMentionsAdapter(Context context, ArrayList<String> mMessageTime, ArrayList<String> mMessageUser, ArrayList<String> mMessageImage, ArrayList<String> mMessageImageVideo, ArrayList<String> mMessageText, ArrayList<String> mShapeUUID, ArrayList<Boolean> mUserIsWithinShape, ArrayList<Boolean> mShapeIsCircle, ArrayList<Long> mPosition, ArrayList<Boolean> mSeenByUser) {
+        DirectMentionsAdapter(Context context, ArrayList<String> mMessageTime, ArrayList<String> mMessageUser, ArrayList<String> mMessageImage, ArrayList<String> mMessageImageVideo, ArrayList<String> mMessageText, ArrayList<String> mShapeUUID, ArrayList<Boolean> mUserIsWithinShape, ArrayList<Boolean> mShapeIsCircle, ArrayList<Long> mPosition) {
 
             this.mContext = context;
             this.mMessageTime = mMessageTime;
