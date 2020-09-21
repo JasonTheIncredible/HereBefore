@@ -131,7 +131,7 @@ public class Chat extends Fragment implements
     private Boolean userIsWithinShape;
     private View.OnLayoutChangeListener onLayoutChangeListener;
     private String shapeUUID, reportedUser;
-    private Double polygonArea, circleLatitude, circleLongitude, radius,
+    private double polygonArea, circleLatitude, circleLongitude, radius,
             marker0Latitude, marker0Longitude, marker1Latitude, marker1Longitude, marker2Latitude, marker2Longitude, marker3Latitude, marker3Longitude, marker4Latitude, marker4Longitude, marker5Latitude, marker5Longitude, marker6Latitude, marker6Longitude, marker7Latitude, marker7Longitude;
     private PopupMenu mediaButtonMenu;
     private ImageView imageView, videoImageView;
@@ -182,6 +182,8 @@ public class Chat extends Fragment implements
                 newShape = extras.getBoolean("newShape");
                 shapeUUID = extras.getString("shapeUUID");
                 userIsWithinShape = extras.getBoolean("userIsWithinShape");
+                double shapeLat = extras.getLong("shapeLat");
+                double shapeLon = extras.getLong("shapeLon");
                 // circleLatitude, circleLongitude, and radius will be null if the circle is not new (as a new circle is not being created).
                 circleLatitude = extras.getDouble("circleLatitude");
                 circleLongitude = extras.getDouble("circleLongitude");
@@ -211,7 +213,7 @@ public class Chat extends Fragment implements
                 marker7Latitude = extras.getDouble("marker7Latitude");
                 marker7Longitude = extras.getDouble("marker7Longitude");
 
-                if (circleLatitude != null && circleLongitude != null) {
+                if (circleLatitude != 0 && circleLongitude != 0) {
 
                     // Get a value with 1 decimal point and use it for Firebase.
                     double nearLeftPrecisionLat = Math.pow(10, 1);
@@ -225,7 +227,7 @@ public class Chat extends Fragment implements
                     double nearLeftLonTemp = (int) (nearLeftPrecisionLon * circleLongitude) / nearLeftPrecisionLon;
                     nearLeftLonTemp *= 10;
                     lonFirebaseValue = (int) nearLeftLonTemp;
-                } else if (marker0Latitude != null && marker0Longitude != null) {
+                } else if (marker0Latitude != 0 && marker0Longitude != 0) {
 
                     // Get a value with 1 decimal point and use it for Firebase.
                     double nearLeftPrecisionLat = Math.pow(10, 1);
@@ -239,6 +241,10 @@ public class Chat extends Fragment implements
                     double nearLeftLonTemp = (int) (nearLeftPrecisionLon * marker0Longitude) / nearLeftPrecisionLon;
                     nearLeftLonTemp *= 10;
                     lonFirebaseValue = (int) nearLeftLonTemp;
+                } else if (shapeLat != 0 && shapeLon != 0) {
+
+                    latFirebaseValue = (int) shapeLat;
+                    lonFirebaseValue = (int) shapeLon;
                 }
             } else {
 
@@ -479,7 +485,7 @@ public class Chat extends Fragment implements
                             messageSent = true;
 
                             DatabaseReference newFirebaseShape = null;
-                            if (circleLatitude != null && circleLongitude != null) {
+                            if (circleLatitude != 0 && circleLongitude != 0) {
 
                                 // Shape is a circle.
 
@@ -510,7 +516,7 @@ public class Chat extends Fragment implements
 
                                     newFirebaseShape.setValue(circleInformation);
                                 }
-                            } else if (polygonArea != null) {
+                            } else if (polygonArea != 0) {
 
                                 // Shape is a polygon.
 
@@ -610,10 +616,19 @@ public class Chat extends Fragment implements
                                             messageInformation.setPosition(mUser.size());
                                             messageInformation.setSeenByUser(false);
                                             messageInformation.setUserIsWithinShape(userIsWithinShape);
+                                            if (circleLatitude != 0) {
+                                                messageInformation.setShapeIsCircle(true);
+                                                messageInformation.setSize(radius);
+                                            } else {
+                                                messageInformation.setShapeIsCircle(false);
+                                                messageInformation.setSize(polygonArea);
+                                            }
+                                            messageInformation.setLat(latFirebaseValue);
+                                            messageInformation.setLon(lonFirebaseValue);
 
                                             // Firebase does not allow ".", so replace them with ",".
-                                            String emailFirebase = email.replace(".", ",");
-                                            DatabaseReference newDM = FirebaseDatabase.getInstance().getReference().child("Users").child(emailFirebase).child("ReceivedDMs").push();
+                                            String receiverEmailFirebase = email.replace(".", ",");
+                                            DatabaseReference newDM = FirebaseDatabase.getInstance().getReference().child("Users").child(receiverEmailFirebase).child("ReceivedDMs").push();
                                             newDM.setValue(messageInformation);
                                             break;
                                         }
@@ -644,6 +659,13 @@ public class Chat extends Fragment implements
                             String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
                             messageInformation.setToken(token);
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
+                            if (circleLatitude != 0) {
+                                messageInformation.setShapeIsCircle(true);
+                                messageInformation.setSize(radius);
+                            } else {
+                                messageInformation.setShapeIsCircle(false);
+                                messageInformation.setSize(polygonArea);
+                            }
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID).push();
                             newMessage.setValue(messageInformation);
 
@@ -701,10 +723,19 @@ public class Chat extends Fragment implements
                                             messageInformation.setPosition(mUser.size());
                                             messageInformation.setSeenByUser(false);
                                             messageInformation.setUserIsWithinShape(userIsWithinShape);
+                                            if (circleLatitude != 0) {
+                                                messageInformation.setShapeIsCircle(true);
+                                                messageInformation.setSize(radius);
+                                            } else {
+                                                messageInformation.setShapeIsCircle(false);
+                                                messageInformation.setSize(polygonArea);
+                                            }
+                                            messageInformation.setLat(latFirebaseValue);
+                                            messageInformation.setLon(lonFirebaseValue);
 
                                             // Firebase does not allow ".", so replace them with ",".
-                                            String emailFirebase = email.replace(".", ",");
-                                            DatabaseReference newDM = FirebaseDatabase.getInstance().getReference().child("Users").child(emailFirebase).child("ReceivedDMs").push();
+                                            String receiverEmailFirebase = email.replace(".", ",");
+                                            DatabaseReference newDM = FirebaseDatabase.getInstance().getReference().child("Users").child(receiverEmailFirebase).child("ReceivedDMs").push();
                                             newDM.setValue(messageInformation);
                                             break;
                                         }
@@ -741,6 +772,13 @@ public class Chat extends Fragment implements
                                 messageInformation.setSeenByUser(false);
                             }
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
+                            if (circleLatitude != 0) {
+                                messageInformation.setShapeIsCircle(true);
+                                messageInformation.setSize(radius);
+                            } else {
+                                messageInformation.setShapeIsCircle(false);
+                                messageInformation.setSize(polygonArea);
+                            }
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID).push();
                             newMessage.setValue(messageInformation);
 
@@ -2638,7 +2676,7 @@ public class Chat extends Fragment implements
                                 messageSent = true;
 
                                 DatabaseReference newFirebaseShape = null;
-                                if (radius != null) {
+                                if (radius != 0) {
 
                                     // Shape is a circle.
 
@@ -2669,7 +2707,7 @@ public class Chat extends Fragment implements
 
                                         newFirebaseShape.setValue(circleInformation);
                                     }
-                                } else if (polygonArea != null) {
+                                } else if (polygonArea != 0) {
 
                                     // Shape is a polygon.
 
@@ -2780,8 +2818,19 @@ public class Chat extends Fragment implements
                                             messageInformation.setPosition(mUser.size());
                                             messageInformation.setSeenByUser(false);
                                             messageInformation.setUserIsWithinShape(userIsWithinShape);
+                                            if (circleLatitude != 0) {
+                                                messageInformation.setShapeIsCircle(true);
+                                                messageInformation.setSize(radius);
+                                            } else {
+                                                messageInformation.setShapeIsCircle(false);
+                                                messageInformation.setSize(polygonArea);
+                                            }
+                                            messageInformation.setLat(latFirebaseValue);
+                                            messageInformation.setLon(lonFirebaseValue);
 
-                                            DatabaseReference newDM = FirebaseDatabase.getInstance().getReference().child("Users").child(email).child("ReceivedDMs").push();
+                                            // Firebase does not allow ".", so replace them with ",".
+                                            String receiverEmailFirebase = email.replace(".", ",");
+                                            DatabaseReference newDM = FirebaseDatabase.getInstance().getReference().child("Users").child(receiverEmailFirebase).child("ReceivedDMs").push();
                                             newDM.setValue(messageInformation);
                                             break;
                                         }
@@ -2822,6 +2871,13 @@ public class Chat extends Fragment implements
                                 messageInformation.setSeenByUser(false);
                             }
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
+                            if (circleLatitude != 0) {
+                                messageInformation.setShapeIsCircle(true);
+                                messageInformation.setSize(radius);
+                            } else {
+                                messageInformation.setShapeIsCircle(false);
+                                messageInformation.setSize(polygonArea);
+                            }
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID).push();
                             newMessage.setValue(messageInformation);
 
@@ -2876,7 +2932,7 @@ public class Chat extends Fragment implements
                                 messageSent = true;
 
                                 DatabaseReference newFirebaseShape = null;
-                                if (radius != null) {
+                                if (radius != 0) {
 
                                     // Shape is a circle.
 
@@ -2907,7 +2963,7 @@ public class Chat extends Fragment implements
 
                                         newFirebaseShape.setValue(circleInformation);
                                     }
-                                } else if (polygonArea != null) {
+                                } else if (polygonArea != 0) {
 
                                     // Shape is a polygon.
 
@@ -3017,8 +3073,19 @@ public class Chat extends Fragment implements
                                             messageInformation.setPosition(mUser.size());
                                             messageInformation.setSeenByUser(false);
                                             messageInformation.setUserIsWithinShape(userIsWithinShape);
+                                            if (circleLatitude != 0) {
+                                                messageInformation.setShapeIsCircle(true);
+                                                messageInformation.setSize(radius);
+                                            } else {
+                                                messageInformation.setShapeIsCircle(false);
+                                                messageInformation.setSize(polygonArea);
+                                            }
+                                            messageInformation.setLat(latFirebaseValue);
+                                            messageInformation.setLon(lonFirebaseValue);
 
-                                            DatabaseReference newDM = FirebaseDatabase.getInstance().getReference().child("Users").child(email).child("ReceivedDMs").push();
+                                            // Firebase does not allow ".", so replace them with ",".
+                                            String receiverEmailFirebase = email.replace(".", ",");
+                                            DatabaseReference newDM = FirebaseDatabase.getInstance().getReference().child("Users").child(receiverEmailFirebase).child("ReceivedDMs").push();
                                             newDM.setValue(messageInformation);
                                             break;
                                         }
@@ -3059,6 +3126,13 @@ public class Chat extends Fragment implements
                                 messageInformation.setSeenByUser(false);
                             }
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
+                            if (circleLatitude != 0) {
+                                messageInformation.setShapeIsCircle(true);
+                                messageInformation.setSize(radius);
+                            } else {
+                                messageInformation.setShapeIsCircle(false);
+                                messageInformation.setSize(polygonArea);
+                            }
                             DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID).push();
                             newMessage.setValue(messageInformation);
 

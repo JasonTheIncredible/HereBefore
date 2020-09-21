@@ -121,7 +121,11 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
+    // Fix issue where every DM is getting highlighted - make "DMPosition" and "MessageThreadsPosition".
+    // In Chat, don't break from removedMentionDuplicates until all mentions have been sent.
     // DirectMentions onclick.
+    // Add shapeUUID before push value in Shapes.
+    // Combine "rootRef" into one line if possible.
     // Scale DirectMentions, and update MyFirebaseMessagingService to use the new token placement.
     // Get rid of shapeUUID and seenByUser in messageThreads (and possibly other information), as shapeUUID is already listed in branch above.
     // Fix jQuery.
@@ -141,6 +145,7 @@ public class Map extends FragmentActivity implements
     // Make sure the secret stuff is secret.
 
     // Load parts of messages at a time to cut down on data and loading time.
+    // Uploading a picture takes a long time.
     // Find a way to not clear and reload map every time user returns from clicking a shape.
     // Don't set "seenByUser" to true until the user clicks on the DMs tab.
     // Add user to database once an account has been created.
@@ -5505,6 +5510,8 @@ public class Map extends FragmentActivity implements
 
                                     // Pass this boolean value Chat.java.
                                     Activity.putExtra("newShape", newShape);
+                                    Activity.putExtra("userLatitude", location.getLatitude());
+                                    Activity.putExtra("userLongitude", location.getLongitude());
 
                                     if (threeMarkers) {
 
@@ -5679,6 +5686,8 @@ public class Map extends FragmentActivity implements
 
                                     // Pass this boolean value to Chat.java.
                                     Activity.putExtra("newShape", newShape);
+                                    Activity.putExtra("userLatitude", location.getLatitude());
+                                    Activity.putExtra("userLongitude", location.getLongitude());
                                     // Pass this value to Chat.java to identify the shape.
                                     Activity.putExtra("shapeUUID", shapeUUID);
                                     // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
@@ -6682,7 +6691,6 @@ public class Map extends FragmentActivity implements
 
                                             // Carry the extras all the way to Chat.java.
                                             Intent Activity = new Intent(Map.this, Navigation.class);
-                                            Activity.putExtra("shapeIsCircle", true);
                                             // Pass this boolean value to Chat.java.
                                             Activity.putExtra("newShape", true);
                                             // Pass this value to Chat.java to identify the shape.
@@ -6702,7 +6710,6 @@ public class Map extends FragmentActivity implements
 
                                             // Carry the extras all the way to Chat.java.
                                             Intent Activity = new Intent(Map.this, SignIn.class);
-                                            Activity.putExtra("shapeIsCircle", true);
                                             // Pass this boolean value to Chat.java.
                                             Activity.putExtra("newShape", true);
                                             // Pass this value to Chat.java to identify the shape.

@@ -51,15 +51,16 @@ import static java.text.DateFormat.getDateTimeInstance;
 public class DirectMentions extends Fragment {
 
     private static final String TAG = "DirectMentions";
-    private String email;
+    private String userEmailFirebase;
     private ArrayList<String> mTime, mUser, mImage, mVideo, mText, mShapeUUID;
     private ArrayList<Boolean> mUserIsWithinShape, mShapeIsCircle;
-    private ArrayList<Long> mPosition, notSeenByUserList;
+    private ArrayList<Long> mPosition, notSeenByUserList, mShapeSize, mShapeLat, mShapeLon;
     private RecyclerView directMentionsRecyclerView;
     private static int index = -1, top = -1, last;
     private ChildEventListener childEventListener;
     private LinearLayoutManager directMentionsRecyclerViewLinearLayoutManager;
     private boolean firstLoad, userIsWithinShape;
+    private int latUser, lonUser;
     private View loadingIcon;
     private Toast longToast;
     private Double userLatitude, userLongitude;
@@ -101,6 +102,9 @@ public class DirectMentions extends Fragment {
         mShapeUUID = new ArrayList<>();
         mUserIsWithinShape = new ArrayList<>();
         mShapeIsCircle = new ArrayList<>();
+        mShapeSize = new ArrayList<>();
+        mShapeLat = new ArrayList<>();
+        mShapeLon = new ArrayList<>();
         mPosition = new ArrayList<>();
         notSeenByUserList = new ArrayList<>();
 
@@ -114,6 +118,19 @@ public class DirectMentions extends Fragment {
 
                 userLatitude = extras.getDouble("userLatitude");
                 userLongitude = extras.getDouble("userLongitude");
+
+                // Get a value with 1 decimal point and use it for Firebase.
+                double nearLeftPrecisionLat = Math.pow(10, 1);
+                // Can't create a firebase path with '.', so get rid of decimal.
+                double nearLeftLatTemp = (int) (nearLeftPrecisionLat * userLatitude) / nearLeftPrecisionLat;
+                nearLeftLatTemp *= 10;
+                latUser = (int) nearLeftLatTemp;
+
+                double nearLeftPrecisionLon = Math.pow(10, 1);
+                // Can't create a firebase path with '.', so get rid of decimal.
+                double nearLeftLonTemp = (int) (nearLeftPrecisionLon * userLongitude) / nearLeftPrecisionLon;
+                nearLeftLonTemp *= 10;
+                lonUser = (int) nearLeftLonTemp;
             } else {
 
                 Log.e(TAG, "onCreateView() -> extras == null");
@@ -140,6 +157,7 @@ public class DirectMentions extends Fragment {
 
         // If user has a Google account, get email one way. Else, get email another way.
         GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
+        String email;
         if (acct != null) {
 
             email = acct.getEmail();
@@ -148,10 +166,10 @@ public class DirectMentions extends Fragment {
             SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
             email = sharedPreferences.getString("userToken", "null");
         }
-
         // Firebase does not allow ".", so replace them with ",".
-        String emailFirebase = email.replace(".", ",");
-        DatabaseReference DMs = FirebaseDatabase.getInstance().getReference().child("Users").child(emailFirebase).child("ReceivedDMs");
+        userEmailFirebase = email.replace(".", ",");
+
+        DatabaseReference DMs = FirebaseDatabase.getInstance().getReference().child("Users").child(userEmailFirebase).child("ReceivedDMs");
         DMs.addListenerForSingleValueEvent(new ValueEventListener() {
 
             @Override
@@ -187,6 +205,9 @@ public class DirectMentions extends Fragment {
                     mShapeUUID.add((String) ds.child("shapeUUID").getValue());
                     mUserIsWithinShape.add((Boolean) ds.child("userIsWithinShape").getValue());
                     mShapeIsCircle.add((Boolean) ds.child("shapeIsCircle").getValue());
+                    mShapeSize.add((Long) ds.child("size").getValue());
+                    mShapeLat.add((Long) ds.child("lat").getValue());
+                    mShapeLon.add((Long) ds.child("lon").getValue());
                     mPosition.add((Long) ds.child("position").getValue());
 
                     if (!(Boolean) ds.child("seenByUser").getValue()) {
@@ -217,9 +238,7 @@ public class DirectMentions extends Fragment {
         }
 
         // Add new values to arrayLists one at a time. This prevents the need to download the whole dataSnapshot every time this information is needed in eventListenerThree.
-        // Firebase does not allow ".", so replace them with ",".
-        String emailFirebase = email.replace(".", ",");
-        query = FirebaseDatabase.getInstance().getReference().child("Users").child(emailFirebase).child("ReceivedDMs").limitToLast(1);
+        query = FirebaseDatabase.getInstance().getReference().child("Users").child(userEmailFirebase).child("ReceivedDMs").limitToLast(1);
         childEventListener = new ChildEventListener() {
 
             @Override
@@ -261,6 +280,9 @@ public class DirectMentions extends Fragment {
                 mShapeUUID.add((String) snapshot.child("shapeUUID").getValue());
                 mUserIsWithinShape.add((Boolean) snapshot.child("userIsWithinShape").getValue());
                 mShapeIsCircle.add((Boolean) snapshot.child("shapeIsCircle").getValue());
+                mShapeSize.add((Long) snapshot.child("size").getValue());
+                mShapeLat.add((Long) snapshot.child("lat").getValue());
+                mShapeLon.add((Long) snapshot.child("lon").getValue());
                 mPosition.add((Long) snapshot.child("position").getValue());
 
                 if (!(Boolean) snapshot.child("seenByUser").getValue()) {
@@ -299,7 +321,7 @@ public class DirectMentions extends Fragment {
         // Initialize the RecyclerView.
         Log.i(TAG, "initDirectMentionsAdapter()");
 
-        DirectMentionsAdapter adapter = new DirectMentionsAdapter(mContext, mTime, mUser, mImage, mVideo, mText, mShapeUUID, mUserIsWithinShape, mShapeIsCircle, mPosition);
+        DirectMentionsAdapter adapter = new DirectMentionsAdapter(mContext, mTime, mUser, mImage, mVideo, mText, mShapeUUID, mUserIsWithinShape, mShapeIsCircle, mShapeSize, mShapeLat, mShapeLon, mPosition);
         directMentionsRecyclerView.setAdapter(adapter);
         directMentionsRecyclerView.setLayoutManager(directMentionsRecyclerViewLinearLayoutManager);
 
@@ -407,7 +429,7 @@ public class DirectMentions extends Fragment {
         private Context mContext;
         private ArrayList<String> mMessageTime, mMessageUser, mMessageImage, mMessageImageVideo, mMessageText, mShapeUUID;
         private ArrayList<Boolean> mUserIsWithinShape, mShapeIsCircle;
-        private ArrayList<Long> mPosition;
+        private ArrayList<Long> mPosition, mShapeSize, mShapeLat, mShapeLon;
         private boolean theme;
 
         class ViewHolder extends RecyclerView.ViewHolder {
@@ -443,11 +465,26 @@ public class DirectMentions extends Fragment {
 
                         loadingIcon.setVisibility(View.VISIBLE);
 
+                        DatabaseReference shape = null;
+                        double shapeSize = mShapeSize.get(getAdapterPosition());
+
                         if (mShapeIsCircle.get(getAdapterPosition())) {
 
-                            DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-                            DatabaseReference firebaseCircles = rootRef.child("Circles");
-                            firebaseCircles.addListenerForSingleValueEvent(new ValueEventListener() {
+                            if (shapeSize == 1) {
+
+                                shape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latUser + ", " + lonUser + ")").child("Point");
+                            } else if (1 < shapeSize && shapeSize <= 10) {
+
+                                shape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latUser + ", " + lonUser + ")").child("Small");
+                            } else if (10 < shapeSize && shapeSize <= 50) {
+
+                                shape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latUser + ", " + lonUser + ")").child("Medium");
+                            } else if (50 < shapeSize) {
+
+                                shape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latUser + ", " + lonUser + ")").child("Large");
+                            }
+
+                            shape.addListenerForSingleValueEvent(new ValueEventListener() {
 
                                 @Override
                                 public void onDataChange(@NonNull DataSnapshot snapshot) {
@@ -480,18 +517,36 @@ public class DirectMentions extends Fragment {
                                                         Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
                                                         Activity.putExtra("directMentionsPosition", mMessageUser.get(getAdapterPosition()) + mMessageText.get(getAdapterPosition()));
                                                         Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                        Activity.putExtra("shapeIsCircle", true);
+                                                        Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()));
+                                                        Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()));
 
                                                         loadingIcon.setVisibility(View.GONE);
 
                                                         mContext.startActivity(Activity);
 
                                                         mActivity.finish();
+                                                        return;
                                                     }
                                                 }
                                             }
                                         }
                                     }
+
+                                    // If this part is reached, the user is not within the shape because the user's location is not in the same loadable map area as the shape.
+                                    cancelToasts();
+
+                                    Intent Activity = new Intent(mContext, Navigation.class);
+                                    Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
+                                    Activity.putExtra("directMentionsPosition", mMessageUser.get(getAdapterPosition()) + mMessageText.get(getAdapterPosition()));
+                                    Activity.putExtra("userIsWithinShape", false);
+                                    Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()));
+                                    Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()));
+
+                                    loadingIcon.setVisibility(View.GONE);
+
+                                    mContext.startActivity(Activity);
+
+                                    mActivity.finish();
                                 }
 
                                 @Override
@@ -503,9 +558,20 @@ public class DirectMentions extends Fragment {
                             });
                         } else {
 
-                            DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-                            DatabaseReference firebasePolygons = rootRef.child("Polygons");
-                            firebasePolygons.addListenerForSingleValueEvent(new ValueEventListener() {
+                            // Shape is not a circle.
+
+                            if (shapeSize <= Math.PI * (Math.pow(10, 2))) {
+
+                                shape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latUser + ", " + lonUser + ")").child("Small");
+                            } else if (Math.PI * (Math.pow(10, 2)) < shapeSize && shapeSize <= Math.PI * (Math.pow(50, 2))) {
+
+                                shape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latUser + ", " + lonUser + ")").child("Medium");
+                            } else if (Math.PI * (Math.pow(50, 2)) < shapeSize) {
+
+                                shape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latUser + ", " + lonUser + ")").child("Large");
+                            }
+
+                            shape.addListenerForSingleValueEvent(new ValueEventListener() {
 
                                 @Override
                                 public void onDataChange(@NonNull DataSnapshot snapshot) {
@@ -559,12 +625,15 @@ public class DirectMentions extends Fragment {
                                                     Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
                                                     Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
                                                     Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                                    Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()));
+                                                    Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()));
 
                                                     loadingIcon.setVisibility(View.GONE);
 
                                                     mContext.startActivity(Activity);
 
                                                     mActivity.finish();
+                                                    return;
                                                 } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
                                                     polygon.add(marker6Position);
                                                     polygon.add(marker5Position);
@@ -582,12 +651,15 @@ public class DirectMentions extends Fragment {
                                                     Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
                                                     Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
                                                     Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                                    Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()));
+                                                    Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()));
 
                                                     loadingIcon.setVisibility(View.GONE);
 
                                                     mContext.startActivity(Activity);
 
                                                     mActivity.finish();
+                                                    return;
                                                 } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
                                                     polygon.add(marker5Position);
                                                     polygon.add(marker4Position);
@@ -604,12 +676,15 @@ public class DirectMentions extends Fragment {
                                                     Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
                                                     Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
                                                     Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                                    Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()));
+                                                    Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()));
 
                                                     loadingIcon.setVisibility(View.GONE);
 
                                                     mContext.startActivity(Activity);
 
                                                     mActivity.finish();
+                                                    return;
                                                 } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
                                                     polygon.add(marker4Position);
                                                     polygon.add(marker3Position);
@@ -625,12 +700,15 @@ public class DirectMentions extends Fragment {
                                                     Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
                                                     Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
                                                     Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                                    Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()));
+                                                    Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()));
 
                                                     loadingIcon.setVisibility(View.GONE);
 
                                                     mContext.startActivity(Activity);
 
                                                     mActivity.finish();
+                                                    return;
                                                 } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
                                                     polygon.add(marker3Position);
                                                     polygon.add(marker2Position);
@@ -645,12 +723,15 @@ public class DirectMentions extends Fragment {
                                                     Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
                                                     Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
                                                     Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                                    Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()));
+                                                    Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()));
 
                                                     loadingIcon.setVisibility(View.GONE);
 
                                                     mContext.startActivity(Activity);
 
                                                     mActivity.finish();
+                                                    return;
                                                 } else {
                                                     polygon.add(marker2Position);
                                                     polygon.add(marker1Position);
@@ -664,17 +745,35 @@ public class DirectMentions extends Fragment {
                                                     Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
                                                     Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
                                                     Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                    Activity.putExtra("shapeIsCircle", false);
+                                                    Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()));
+                                                    Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()));
 
                                                     loadingIcon.setVisibility(View.GONE);
 
                                                     mContext.startActivity(Activity);
 
                                                     mActivity.finish();
+                                                    return;
                                                 }
                                             }
                                         }
                                     }
+
+                                    // If this part is reached, the user is not within the shape because the user's location is not in the same loadable map area as the shape.
+                                    cancelToasts();
+
+                                    Intent Activity = new Intent(mContext, Navigation.class);
+                                    Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
+                                    Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
+                                    Activity.putExtra("userIsWithinShape", false);
+                                    Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()));
+                                    Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()));
+
+                                    loadingIcon.setVisibility(View.GONE);
+
+                                    mContext.startActivity(Activity);
+
+                                    mActivity.finish();
                                 }
 
                                 @Override
@@ -688,6 +787,40 @@ public class DirectMentions extends Fragment {
                     }
                 });
 
+                if (messageImageInside != null) {
+
+                    messageImageInside.setOnClickListener(new View.OnClickListener() {
+
+                        @Override
+                        public void onClick(View view) {
+
+                            cancelToasts();
+
+                            Intent Activity = new Intent(mContext, PhotoView.class);
+                            Activity.putExtra("imgURL", mImage.get(getAdapterPosition()));
+
+                            mContext.startActivity(Activity);
+                        }
+                    });
+                }
+
+                if (messageImageOutside != null) {
+
+                    messageImageOutside.setOnClickListener(new View.OnClickListener() {
+
+                        @Override
+                        public void onClick(View view) {
+
+                            cancelToasts();
+
+                            Intent Activity = new Intent(mContext, PhotoView.class);
+                            Activity.putExtra("imgURL", mImage.get(getAdapterPosition()));
+
+                            mContext.startActivity(Activity);
+                        }
+                    });
+                }
+
                 if (playButtonInside != null) {
 
                     playButtonInside.setOnClickListener(new View.OnClickListener() {
@@ -695,248 +828,12 @@ public class DirectMentions extends Fragment {
                         @Override
                         public void onClick(View v) {
 
-                            loadingIcon.setVisibility(View.VISIBLE);
+                            cancelToasts();
 
-                            if (mShapeIsCircle.get(getAdapterPosition())) {
+                            Intent Activity = new Intent(mContext, VideoView.class);
+                            Activity.putExtra("videoURL", mVideo.get(getAdapterPosition()));
 
-                                DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-                                DatabaseReference firebaseCircles = rootRef.child("Circles");
-                                firebaseCircles.addListenerForSingleValueEvent(new ValueEventListener() {
-
-                                    @Override
-                                    public void onDataChange(@NonNull DataSnapshot snapshot) {
-
-                                        for (DataSnapshot ds : snapshot.getChildren()) {
-
-                                            String shapeUUID = (String) ds.child("shapeUUID").getValue();
-                                            if (shapeUUID != null) {
-
-                                                if (shapeUUID.equals(mShapeUUID.get(getAdapterPosition()))) {
-
-                                                    Double mLatitude = (Double) ds.child("circleOptions").child("center").child("latitude").getValue();
-                                                    Double mLongitude = (Double) ds.child("circleOptions").child("center").child("longitude").getValue();
-                                                    if (mLatitude != null && mLongitude != null) {
-
-                                                        double mRadius = (double) (long) ds.child("circleOptions").child("radius").getValue();
-                                                        if (mRadius != 0) {
-
-                                                            float[] distance = new float[2];
-
-                                                            Location.distanceBetween(mLatitude, mLongitude,
-                                                                    userLatitude, userLongitude, distance);
-
-                                                            // Boolean; will be true if user is within the circle upon circle click.
-                                                            userIsWithinShape = !(distance[0] > mRadius);
-
-                                                            cancelToasts();
-
-                                                            Intent Activity = new Intent(mContext, Navigation.class);
-                                                            Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
-                                                            Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
-                                                            Activity.putExtra("userIsWithinShape", userIsWithinShape);
-
-                                                            loadingIcon.setVisibility(View.GONE);
-
-                                                            mContext.startActivity(Activity);
-
-                                                            mActivity.finish();
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    @Override
-                                    public void onCancelled(@NonNull DatabaseError error) {
-
-                                        loadingIcon.setVisibility(View.GONE);
-                                        toastMessageLong(error.getMessage());
-                                    }
-                                });
-                            } else {
-
-                                DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-                                DatabaseReference firebasePolygons = rootRef.child("Polygons");
-                                firebasePolygons.addListenerForSingleValueEvent(new ValueEventListener() {
-
-                                    @Override
-                                    public void onDataChange(@NonNull DataSnapshot snapshot) {
-
-                                        for (DataSnapshot ds : snapshot.getChildren()) {
-
-                                            String shapeUUID = (String) ds.child("shapeUUID").getValue();
-                                            if (shapeUUID != null) {
-
-                                                if (shapeUUID.equals(mShapeUUID.get(getAdapterPosition()))) {
-
-                                                    LatLng marker3Position = null;
-                                                    LatLng marker4Position = null;
-                                                    LatLng marker5Position = null;
-                                                    LatLng marker6Position = null;
-                                                    LatLng marker7Position;
-                                                    List<LatLng> polygon = new ArrayList<>();
-
-                                                    LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                                    LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                                    LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                                    if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                                        marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                                    }
-                                                    if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                                        marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                                    }
-                                                    if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                                        marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                                    }
-                                                    if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                                        marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
-                                                    }
-                                                    if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
-                                                        marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
-
-                                                        polygon.add(marker7Position);
-                                                        polygon.add(marker6Position);
-                                                        polygon.add(marker5Position);
-                                                        polygon.add(marker4Position);
-                                                        polygon.add(marker3Position);
-                                                        polygon.add(marker2Position);
-                                                        polygon.add(marker1Position);
-                                                        polygon.add(marker0Position);
-
-                                                        userIsWithinShape = PolyUtil.containsLocation(userLatitude, userLongitude, polygon, false);
-
-                                                        cancelToasts();
-
-                                                        Intent Activity = new Intent(mContext, Navigation.class);
-                                                        Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
-                                                        Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
-                                                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
-
-                                                        loadingIcon.setVisibility(View.GONE);
-
-                                                        mContext.startActivity(Activity);
-
-                                                        mActivity.finish();
-                                                    } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                                        polygon.add(marker6Position);
-                                                        polygon.add(marker5Position);
-                                                        polygon.add(marker4Position);
-                                                        polygon.add(marker3Position);
-                                                        polygon.add(marker2Position);
-                                                        polygon.add(marker1Position);
-                                                        polygon.add(marker0Position);
-
-                                                        userIsWithinShape = PolyUtil.containsLocation(userLatitude, userLongitude, polygon, false);
-
-                                                        cancelToasts();
-
-                                                        Intent Activity = new Intent(mContext, Navigation.class);
-                                                        Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
-                                                        Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
-                                                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
-
-                                                        loadingIcon.setVisibility(View.GONE);
-
-                                                        mContext.startActivity(Activity);
-
-                                                        mActivity.finish();
-                                                    } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                                        polygon.add(marker5Position);
-                                                        polygon.add(marker4Position);
-                                                        polygon.add(marker3Position);
-                                                        polygon.add(marker2Position);
-                                                        polygon.add(marker1Position);
-                                                        polygon.add(marker0Position);
-
-                                                        userIsWithinShape = PolyUtil.containsLocation(userLatitude, userLongitude, polygon, false);
-
-                                                        cancelToasts();
-
-                                                        Intent Activity = new Intent(mContext, Navigation.class);
-                                                        Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
-                                                        Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
-                                                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
-
-                                                        loadingIcon.setVisibility(View.GONE);
-
-                                                        mContext.startActivity(Activity);
-
-                                                        mActivity.finish();
-                                                    } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                                        polygon.add(marker4Position);
-                                                        polygon.add(marker3Position);
-                                                        polygon.add(marker2Position);
-                                                        polygon.add(marker1Position);
-                                                        polygon.add(marker0Position);
-
-                                                        userIsWithinShape = PolyUtil.containsLocation(userLatitude, userLongitude, polygon, false);
-
-                                                        cancelToasts();
-
-                                                        Intent Activity = new Intent(mContext, Navigation.class);
-                                                        Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
-                                                        Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
-                                                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
-
-                                                        loadingIcon.setVisibility(View.GONE);
-
-                                                        mContext.startActivity(Activity);
-
-                                                        mActivity.finish();
-                                                    } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                                        polygon.add(marker3Position);
-                                                        polygon.add(marker2Position);
-                                                        polygon.add(marker1Position);
-                                                        polygon.add(marker0Position);
-
-                                                        userIsWithinShape = PolyUtil.containsLocation(userLatitude, userLongitude, polygon, false);
-
-                                                        cancelToasts();
-
-                                                        Intent Activity = new Intent(mContext, Navigation.class);
-                                                        Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
-                                                        Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
-                                                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
-
-                                                        loadingIcon.setVisibility(View.GONE);
-
-                                                        mContext.startActivity(Activity);
-
-                                                        mActivity.finish();
-                                                    } else {
-                                                        polygon.add(marker2Position);
-                                                        polygon.add(marker1Position);
-                                                        polygon.add(marker0Position);
-
-                                                        userIsWithinShape = PolyUtil.containsLocation(userLatitude, userLongitude, polygon, false);
-
-                                                        cancelToasts();
-
-                                                        Intent Activity = new Intent(mContext, Navigation.class);
-                                                        Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
-                                                        Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
-                                                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
-
-                                                        loadingIcon.setVisibility(View.GONE);
-
-                                                        mContext.startActivity(Activity);
-
-                                                        mActivity.finish();
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    @Override
-                                    public void onCancelled(@NonNull DatabaseError error) {
-
-                                        loadingIcon.setVisibility(View.GONE);
-                                        toastMessageLong(error.getMessage());
-                                    }
-                                });
-                            }
+                            mContext.startActivity(Activity);
                         }
                     });
                 }
@@ -948,255 +845,19 @@ public class DirectMentions extends Fragment {
                         @Override
                         public void onClick(View v) {
 
-                            loadingIcon.setVisibility(View.VISIBLE);
+                            cancelToasts();
 
-                            if (mShapeIsCircle.get(getAdapterPosition())) {
+                            Intent Activity = new Intent(mContext, VideoView.class);
+                            Activity.putExtra("videoURL", mVideo.get(getAdapterPosition()));
 
-                                DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-                                DatabaseReference firebaseCircles = rootRef.child("Circles");
-                                firebaseCircles.addListenerForSingleValueEvent(new ValueEventListener() {
-
-                                    @Override
-                                    public void onDataChange(@NonNull DataSnapshot snapshot) {
-
-                                        for (DataSnapshot ds : snapshot.getChildren()) {
-
-                                            String shapeUUID = (String) ds.child("shapeUUID").getValue();
-                                            if (shapeUUID != null) {
-
-                                                if (shapeUUID.equals(mShapeUUID.get(getAdapterPosition()))) {
-
-                                                    Double mLatitude = (Double) ds.child("circleOptions").child("center").child("latitude").getValue();
-                                                    Double mLongitude = (Double) ds.child("circleOptions").child("center").child("longitude").getValue();
-                                                    if (mLatitude != null && mLongitude != null) {
-
-                                                        double mRadius = (double) (long) ds.child("circleOptions").child("radius").getValue();
-                                                        if (mRadius != 0) {
-
-                                                            float[] distance = new float[2];
-
-                                                            Location.distanceBetween(mLatitude, mLongitude,
-                                                                    userLatitude, userLongitude, distance);
-
-                                                            // Boolean; will be true if user is within the circle upon circle click.
-                                                            userIsWithinShape = !(distance[0] > mRadius);
-
-                                                            cancelToasts();
-
-                                                            Intent Activity = new Intent(mContext, Navigation.class);
-                                                            Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
-                                                            Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
-                                                            Activity.putExtra("userIsWithinShape", userIsWithinShape);
-
-                                                            loadingIcon.setVisibility(View.GONE);
-
-                                                            mContext.startActivity(Activity);
-
-                                                            mActivity.finish();
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    @Override
-                                    public void onCancelled(@NonNull DatabaseError error) {
-
-                                        loadingIcon.setVisibility(View.GONE);
-                                        toastMessageLong(error.getMessage());
-                                    }
-                                });
-                            } else {
-
-                                DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-                                DatabaseReference firebasePolygons = rootRef.child("Polygons");
-                                firebasePolygons.addListenerForSingleValueEvent(new ValueEventListener() {
-
-                                    @Override
-                                    public void onDataChange(@NonNull DataSnapshot snapshot) {
-
-                                        for (DataSnapshot ds : snapshot.getChildren()) {
-
-                                            String shapeUUID = (String) ds.child("shapeUUID").getValue();
-                                            if (shapeUUID != null) {
-
-                                                if (shapeUUID.equals(mShapeUUID.get(getAdapterPosition()))) {
-
-                                                    LatLng marker3Position = null;
-                                                    LatLng marker4Position = null;
-                                                    LatLng marker5Position = null;
-                                                    LatLng marker6Position = null;
-                                                    LatLng marker7Position;
-                                                    List<LatLng> polygon = new ArrayList<>();
-
-                                                    LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                                    LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                                    LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                                    if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                                        marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                                    }
-                                                    if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                                        marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                                    }
-                                                    if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                                        marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                                    }
-                                                    if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                                        marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
-                                                    }
-                                                    if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
-                                                        marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
-
-                                                        polygon.add(marker7Position);
-                                                        polygon.add(marker6Position);
-                                                        polygon.add(marker5Position);
-                                                        polygon.add(marker4Position);
-                                                        polygon.add(marker3Position);
-                                                        polygon.add(marker2Position);
-                                                        polygon.add(marker1Position);
-                                                        polygon.add(marker0Position);
-
-                                                        userIsWithinShape = PolyUtil.containsLocation(userLatitude, userLongitude, polygon, false);
-
-                                                        cancelToasts();
-
-                                                        Intent Activity = new Intent(mContext, Navigation.class);
-                                                        Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
-                                                        Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
-                                                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
-
-                                                        loadingIcon.setVisibility(View.GONE);
-
-                                                        mContext.startActivity(Activity);
-
-                                                        mActivity.finish();
-                                                    } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                                        polygon.add(marker6Position);
-                                                        polygon.add(marker5Position);
-                                                        polygon.add(marker4Position);
-                                                        polygon.add(marker3Position);
-                                                        polygon.add(marker2Position);
-                                                        polygon.add(marker1Position);
-                                                        polygon.add(marker0Position);
-
-                                                        userIsWithinShape = PolyUtil.containsLocation(userLatitude, userLongitude, polygon, false);
-
-                                                        cancelToasts();
-
-                                                        Intent Activity = new Intent(mContext, Navigation.class);
-                                                        Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
-                                                        Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
-                                                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
-
-                                                        loadingIcon.setVisibility(View.GONE);
-
-                                                        mContext.startActivity(Activity);
-
-                                                        mActivity.finish();
-                                                    } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                                        polygon.add(marker5Position);
-                                                        polygon.add(marker4Position);
-                                                        polygon.add(marker3Position);
-                                                        polygon.add(marker2Position);
-                                                        polygon.add(marker1Position);
-                                                        polygon.add(marker0Position);
-
-                                                        userIsWithinShape = PolyUtil.containsLocation(userLatitude, userLongitude, polygon, false);
-
-                                                        cancelToasts();
-
-                                                        Intent Activity = new Intent(mContext, Navigation.class);
-                                                        Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
-                                                        Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
-                                                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
-
-                                                        loadingIcon.setVisibility(View.GONE);
-
-                                                        mContext.startActivity(Activity);
-
-                                                        mActivity.finish();
-                                                    } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                                        polygon.add(marker4Position);
-                                                        polygon.add(marker3Position);
-                                                        polygon.add(marker2Position);
-                                                        polygon.add(marker1Position);
-                                                        polygon.add(marker0Position);
-
-                                                        userIsWithinShape = PolyUtil.containsLocation(userLatitude, userLongitude, polygon, false);
-
-                                                        cancelToasts();
-
-                                                        Intent Activity = new Intent(mContext, Navigation.class);
-                                                        Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
-                                                        Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
-                                                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
-
-                                                        loadingIcon.setVisibility(View.GONE);
-
-                                                        mContext.startActivity(Activity);
-
-                                                        mActivity.finish();
-                                                    } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                                        polygon.add(marker3Position);
-                                                        polygon.add(marker2Position);
-                                                        polygon.add(marker1Position);
-                                                        polygon.add(marker0Position);
-
-                                                        userIsWithinShape = PolyUtil.containsLocation(userLatitude, userLongitude, polygon, false);
-
-                                                        cancelToasts();
-
-                                                        Intent Activity = new Intent(mContext, Navigation.class);
-                                                        Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
-                                                        Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
-                                                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
-
-                                                        loadingIcon.setVisibility(View.GONE);
-
-                                                        mContext.startActivity(Activity);
-
-                                                        mActivity.finish();
-                                                    } else {
-                                                        polygon.add(marker2Position);
-                                                        polygon.add(marker1Position);
-                                                        polygon.add(marker0Position);
-
-                                                        userIsWithinShape = PolyUtil.containsLocation(userLatitude, userLongitude, polygon, false);
-
-                                                        cancelToasts();
-
-                                                        Intent Activity = new Intent(mContext, Navigation.class);
-                                                        Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
-                                                        Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
-                                                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
-
-                                                        loadingIcon.setVisibility(View.GONE);
-
-                                                        mContext.startActivity(Activity);
-
-                                                        mActivity.finish();
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    @Override
-                                    public void onCancelled(@NonNull DatabaseError error) {
-
-                                        loadingIcon.setVisibility(View.GONE);
-                                        toastMessageLong(error.getMessage());
-                                    }
-                                });
-                            }
+                            mContext.startActivity(Activity);
                         }
                     });
                 }
             }
         }
 
-        DirectMentionsAdapter(Context context, ArrayList<String> mMessageTime, ArrayList<String> mMessageUser, ArrayList<String> mMessageImage, ArrayList<String> mMessageImageVideo, ArrayList<String> mMessageText, ArrayList<String> mShapeUUID, ArrayList<Boolean> mUserIsWithinShape, ArrayList<Boolean> mShapeIsCircle, ArrayList<Long> mPosition) {
+        DirectMentionsAdapter(Context context, ArrayList<String> mMessageTime, ArrayList<String> mMessageUser, ArrayList<String> mMessageImage, ArrayList<String> mMessageImageVideo, ArrayList<String> mMessageText, ArrayList<String> mShapeUUID, ArrayList<Boolean> mUserIsWithinShape, ArrayList<Boolean> mShapeIsCircle, ArrayList<Long> mShapeSize, ArrayList<Long> mShapeLat, ArrayList<Long> mShapeLon, ArrayList<Long> mPosition) {
 
             this.mContext = context;
             this.mMessageTime = mMessageTime;
@@ -1207,6 +868,9 @@ public class DirectMentions extends Fragment {
             this.mShapeUUID = mShapeUUID;
             this.mUserIsWithinShape = mUserIsWithinShape;
             this.mShapeIsCircle = mShapeIsCircle;
+            this.mShapeSize = mShapeSize;
+            this.mShapeLat = mShapeLat;
+            this.mShapeLon = mShapeLon;
             this.mPosition = mPosition;
         }
 

@@ -10,8 +10,11 @@ class MessageInformation {
     public ArrayList<String> removedMentionDuplicates;
     public String userUUID, message, shapeUUID, token, imageURL, videoURL, email;
     public Object date;
-    public Boolean userIsWithinShape, seenByUser;
+    public Boolean userIsWithinShape, seenByUser, shapeIsCircle;
     public int position;
+    public double size;
+    // Should be Double instead of double so that it can be null and won't take up space in Firebase.
+    public Double lat, lon;
 
     @Keep
     MessageInformation() {
@@ -63,5 +66,21 @@ class MessageInformation {
 
     public void setSeenByUser(Boolean seenByUser) {
         this.seenByUser = seenByUser;
+    }
+
+    public void setShapeIsCircle(Boolean shapeIsCircle) {
+        this.shapeIsCircle = shapeIsCircle;
+    }
+
+    public void setSize(double size) {
+        this.size = size;
+    }
+
+    public void setLat(double lat) {
+        this.lat = lat;
+    }
+
+    public void setLon(double lon) {
+        this.lon = lon;
     }
 }
