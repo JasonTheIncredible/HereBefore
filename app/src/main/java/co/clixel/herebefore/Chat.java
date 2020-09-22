@@ -123,7 +123,6 @@ public class Chat extends Fragment implements
     private ArrayList<String> removedMentionDuplicates;
     private RecyclerView chatRecyclerView, mentionsRecyclerView;
     private static int index = -1, top = -1, last;
-    private Integer directMentionsPosition = null;
     private ChildEventListener childEventListener;
     private FloatingActionButton sendButton, mediaButton;
     private boolean firstLoad, needLoadingIcon = false, reachedEndOfRecyclerView = false, recyclerViewHasScrolled = false, messageSent = false, sendButtonClicked = false, mediaButtonMenuIsOpen, fileIsImage, checkPermissionsPicture,
@@ -131,7 +130,7 @@ public class Chat extends Fragment implements
     private Boolean userIsWithinShape;
     private View.OnLayoutChangeListener onLayoutChangeListener;
     private String shapeUUID, reportedUser;
-    private double polygonArea, circleLatitude, circleLongitude, radius,
+    private double directMentionsPosition, polygonArea, circleLatitude, circleLongitude, radius,
             marker0Latitude, marker0Longitude, marker1Latitude, marker1Longitude, marker2Latitude, marker2Longitude, marker3Latitude, marker3Longitude, marker4Latitude, marker4Longitude, marker5Latitude, marker5Longitude, marker6Latitude, marker6Longitude, marker7Latitude, marker7Longitude;
     private PopupMenu mediaButtonMenu;
     private ImageView imageView, videoImageView;
@@ -173,12 +172,7 @@ public class Chat extends Fragment implements
             Bundle extras = mActivity.getIntent().getExtras();
             if (extras != null) {
 
-                directMentionsPosition = extras.getInt("directMentionsPosition");
-                // The default value is zero. So if the above line receives nothing, it will default to 0 and the first line will be highlighted.
-                // Prevent this by checking if it is zero. The highlighted text will never be 0.
-                if (directMentionsPosition == 0) {
-                    directMentionsPosition = null;
-                }
+                directMentionsPosition = extras.getLong("directMentionsPosition");
                 newShape = extras.getBoolean("newShape");
                 shapeUUID = extras.getString("shapeUUID");
                 userIsWithinShape = extras.getBoolean("userIsWithinShape");
@@ -359,8 +353,7 @@ public class Chat extends Fragment implements
             mentionsRecyclerView.setVisibility(View.GONE);
         }
 
-        DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-        DatabaseReference firebaseMessages = rootRef.child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID);
+        DatabaseReference firebaseMessages = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID);
         firebaseMessages.addListenerForSingleValueEvent(new ValueEventListener() {
 
             @Override
@@ -630,7 +623,6 @@ public class Chat extends Fragment implements
                                             String receiverEmailFirebase = email.replace(".", ",");
                                             DatabaseReference newDM = FirebaseDatabase.getInstance().getReference().child("Users").child(receiverEmailFirebase).child("ReceivedDMs").push();
                                             newDM.setValue(messageInformation);
-                                            break;
                                         }
                                     }
                                 }
@@ -737,7 +729,6 @@ public class Chat extends Fragment implements
                                             String receiverEmailFirebase = email.replace(".", ",");
                                             DatabaseReference newDM = FirebaseDatabase.getInstance().getReference().child("Users").child(receiverEmailFirebase).child("ReceivedDMs").push();
                                             newDM.setValue(messageInformation);
-                                            break;
                                         }
                                     }
                                 }
@@ -946,8 +937,7 @@ public class Chat extends Fragment implements
             initChatAdapter();
         }
 
-        DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-        query = rootRef.child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID).limitToLast(1);
+        query = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID).limitToLast(1);
         childEventListener = new ChildEventListener() {
 
             @Override
@@ -1166,10 +1156,9 @@ public class Chat extends Fragment implements
             chatRecyclerView.setAdapter(adapter);
             chatRecyclerView.setLayoutManager(chatRecyclerViewLinearLayoutManager);
 
-            if (directMentionsPosition != null && !firstLoad) {
+            if (directMentionsPosition != 0 && !firstLoad) {
 
-                chatRecyclerView.scrollToPosition(directMentionsPosition);
-                directMentionsPosition = null;
+                chatRecyclerView.scrollToPosition((int) directMentionsPosition);
             } else if (last == (mUser.size() - 2) || firstLoad || messageSent) {
 
                 // Scroll to bottom of recyclerviewlayout after first initialization and after sending a recyclerviewlayout.
@@ -1342,13 +1331,7 @@ public class Chat extends Fragment implements
             Bundle extras = mActivity.getIntent().getExtras();
             if (extras != null) {
 
-                directMentionsPosition = extras.getInt("directMentionsPosition");
-                // The default value is zero. So if the above line receives nothing, it will default to 0 and the first line will be highlighted.
-                // Prevent this by checking if it is zero. The highlighted text will never be 0.
-                if (directMentionsPosition == 0) {
-
-                    directMentionsPosition = null;
-                }
+                directMentionsPosition = extras.getLong("directMentionsPosition");
             } else {
 
                 Log.e(TAG, "ChatAdapter -> extras == null");
@@ -1491,7 +1474,7 @@ public class Chat extends Fragment implements
             }
 
             // "Highlight" the directMention message.
-            if (directMentionsPosition != null) {
+            if (directMentionsPosition != 0) {
 
                 if (position == directMentionsPosition) {
 
@@ -1753,8 +1736,7 @@ public class Chat extends Fragment implements
 
             loadingIcon.setVisibility(View.VISIBLE);
 
-            DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-            DatabaseReference firebaseMessages = rootRef.child("MessageThreads");
+            DatabaseReference firebaseMessages = FirebaseDatabase.getInstance().getReference().child("MessageThreads");
             firebaseMessages.addListenerForSingleValueEvent(new ValueEventListener() {
 
                 @Override
@@ -2832,7 +2814,6 @@ public class Chat extends Fragment implements
                                             String receiverEmailFirebase = email.replace(".", ",");
                                             DatabaseReference newDM = FirebaseDatabase.getInstance().getReference().child("Users").child(receiverEmailFirebase).child("ReceivedDMs").push();
                                             newDM.setValue(messageInformation);
-                                            break;
                                         }
                                     }
                                 }
@@ -3087,7 +3068,6 @@ public class Chat extends Fragment implements
                                             String receiverEmailFirebase = email.replace(".", ",");
                                             DatabaseReference newDM = FirebaseDatabase.getInstance().getReference().child("Users").child(receiverEmailFirebase).child("ReceivedDMs").push();
                                             newDM.setValue(messageInformation);
-                                            break;
                                         }
                                     }
                                 }

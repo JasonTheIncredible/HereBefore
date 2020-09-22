@@ -119,9 +119,7 @@ public class Feedback extends AppCompatActivity {
                     }
                 }
 
-                DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-
-                DatabaseReference Feedback = rootRef.child("Feedback");
+                DatabaseReference Feedback = FirebaseDatabase.getInstance().getReference().child("Feedback");
                 Feedback.addListenerForSingleValueEvent(new ValueEventListener() {
 
                     @Override

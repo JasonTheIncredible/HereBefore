@@ -52,8 +52,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             email = sharedPreferences.getString("userToken", "null");
         }
 
-        final DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-        DatabaseReference databaseReferenceOne = rootRef.child("MessageThreads");
+        DatabaseReference databaseReferenceOne = FirebaseDatabase.getInstance().getReference().child("MessageThreads");
         ValueEventListener eventListenerOne = new ValueEventListener() {
 
             @Override

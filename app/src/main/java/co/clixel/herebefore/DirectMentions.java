@@ -53,8 +53,8 @@ public class DirectMentions extends Fragment {
     private static final String TAG = "DirectMentions";
     private String userEmailFirebase;
     private ArrayList<String> mTime, mUser, mImage, mVideo, mText, mShapeUUID;
-    private ArrayList<Boolean> mUserIsWithinShape, mShapeIsCircle;
-    private ArrayList<Long> mPosition, notSeenByUserList, mShapeSize, mShapeLat, mShapeLon;
+    private ArrayList<Boolean> mUserIsWithinShape, mShapeIsCircle, mSeenByUser;
+    private ArrayList<Long> mPosition, mShapeSize, mShapeLat, mShapeLon;
     private RecyclerView directMentionsRecyclerView;
     private static int index = -1, top = -1, last;
     private ChildEventListener childEventListener;
@@ -106,7 +106,7 @@ public class DirectMentions extends Fragment {
         mShapeLat = new ArrayList<>();
         mShapeLon = new ArrayList<>();
         mPosition = new ArrayList<>();
-        notSeenByUserList = new ArrayList<>();
+        mSeenByUser = new ArrayList<>();
 
         // Set to true to scroll to the bottom of directMentionsRecyclerView.
         firstLoad = true;
@@ -209,10 +209,10 @@ public class DirectMentions extends Fragment {
                     mShapeLat.add((Long) ds.child("lat").getValue());
                     mShapeLon.add((Long) ds.child("lon").getValue());
                     mPosition.add((Long) ds.child("position").getValue());
+                    mSeenByUser.add((Boolean) ds.child("seenByUser").getValue());
 
                     if (!(Boolean) ds.child("seenByUser").getValue()) {
 
-                        notSeenByUserList.add((Long) ds.child("position").getValue());
                         ds.child("seenByUser").getRef().setValue(true);
                     }
                 }
@@ -284,10 +284,10 @@ public class DirectMentions extends Fragment {
                 mShapeLat.add((Long) snapshot.child("lat").getValue());
                 mShapeLon.add((Long) snapshot.child("lon").getValue());
                 mPosition.add((Long) snapshot.child("position").getValue());
+                mSeenByUser.add((Boolean) snapshot.child("seenByUser").getValue());
 
                 if (!(Boolean) snapshot.child("seenByUser").getValue()) {
 
-                    notSeenByUserList.add((Long) snapshot.child("position").getValue());
                     snapshot.child("seenByUser").getRef().setValue(true);
                 }
 
@@ -321,7 +321,7 @@ public class DirectMentions extends Fragment {
         // Initialize the RecyclerView.
         Log.i(TAG, "initDirectMentionsAdapter()");
 
-        DirectMentionsAdapter adapter = new DirectMentionsAdapter(mContext, mTime, mUser, mImage, mVideo, mText, mShapeUUID, mUserIsWithinShape, mShapeIsCircle, mShapeSize, mShapeLat, mShapeLon, mPosition);
+        DirectMentionsAdapter adapter = new DirectMentionsAdapter(mContext, mTime, mUser, mImage, mVideo, mText, mShapeUUID, mUserIsWithinShape, mShapeIsCircle, mShapeSize, mShapeLat, mShapeLon, mPosition, mSeenByUser);
         directMentionsRecyclerView.setAdapter(adapter);
         directMentionsRecyclerView.setLayoutManager(directMentionsRecyclerViewLinearLayoutManager);
 
@@ -428,7 +428,7 @@ public class DirectMentions extends Fragment {
 
         private Context mContext;
         private ArrayList<String> mMessageTime, mMessageUser, mMessageImage, mMessageImageVideo, mMessageText, mShapeUUID;
-        private ArrayList<Boolean> mUserIsWithinShape, mShapeIsCircle;
+        private ArrayList<Boolean> mUserIsWithinShape, mShapeIsCircle, mSeenByUser;
         private ArrayList<Long> mPosition, mShapeSize, mShapeLat, mShapeLon;
         private boolean theme;
 
@@ -515,7 +515,7 @@ public class DirectMentions extends Fragment {
 
                                                         Intent Activity = new Intent(mContext, Navigation.class);
                                                         Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
-                                                        Activity.putExtra("directMentionsPosition", mMessageUser.get(getAdapterPosition()) + mMessageText.get(getAdapterPosition()));
+                                                        Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
                                                         Activity.putExtra("userIsWithinShape", userIsWithinShape);
                                                         Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()));
                                                         Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()));
@@ -537,7 +537,7 @@ public class DirectMentions extends Fragment {
 
                                     Intent Activity = new Intent(mContext, Navigation.class);
                                     Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
-                                    Activity.putExtra("directMentionsPosition", mMessageUser.get(getAdapterPosition()) + mMessageText.get(getAdapterPosition()));
+                                    Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
                                     Activity.putExtra("userIsWithinShape", false);
                                     Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()));
                                     Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()));
@@ -857,7 +857,7 @@ public class DirectMentions extends Fragment {
             }
         }
 
-        DirectMentionsAdapter(Context context, ArrayList<String> mMessageTime, ArrayList<String> mMessageUser, ArrayList<String> mMessageImage, ArrayList<String> mMessageImageVideo, ArrayList<String> mMessageText, ArrayList<String> mShapeUUID, ArrayList<Boolean> mUserIsWithinShape, ArrayList<Boolean> mShapeIsCircle, ArrayList<Long> mShapeSize, ArrayList<Long> mShapeLat, ArrayList<Long> mShapeLon, ArrayList<Long> mPosition) {
+        DirectMentionsAdapter(Context context, ArrayList<String> mMessageTime, ArrayList<String> mMessageUser, ArrayList<String> mMessageImage, ArrayList<String> mMessageImageVideo, ArrayList<String> mMessageText, ArrayList<String> mShapeUUID, ArrayList<Boolean> mUserIsWithinShape, ArrayList<Boolean> mShapeIsCircle, ArrayList<Long> mShapeSize, ArrayList<Long> mShapeLat, ArrayList<Long> mShapeLon, ArrayList<Long> mPosition, ArrayList<Boolean> mSeenByUser) {
 
             this.mContext = context;
             this.mMessageTime = mMessageTime;
@@ -872,6 +872,7 @@ public class DirectMentions extends Fragment {
             this.mShapeLat = mShapeLat;
             this.mShapeLon = mShapeLon;
             this.mPosition = mPosition;
+            this.mSeenByUser = mSeenByUser;
         }
 
         @NonNull
@@ -1028,7 +1029,7 @@ public class DirectMentions extends Fragment {
                 }
             }
 
-            if (notSeenByUserList.contains(mPosition.get(position))) {
+            if (!mSeenByUser.get(position)) {
 
                 if (theme) {
 

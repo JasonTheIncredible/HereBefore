@@ -121,15 +121,12 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // Fix issue where every DM is getting highlighted - make "DMPosition" and "MessageThreadsPosition".
-    // In Chat, don't break from removedMentionDuplicates until all mentions have been sent.
-    // DirectMentions onclick.
     // Add shapeUUID before push value in Shapes.
-    // Combine "rootRef" into one line if possible.
     // Scale DirectMentions, and update MyFirebaseMessagingService to use the new token placement.
     // Get rid of shapeUUID and seenByUser in messageThreads (and possibly other information), as shapeUUID is already listed in branch above.
     // Fix jQuery.
-    // Check behavior of break statements inside nested loops.
+    // Add DM counter to DM button on Map.
+    // Don't clear DMs until user clicks on the DMs tab. Also, add notification to DM tab.
     // Compress "If mentions exist, add to the user's DMs." in Chat into method.
     // Scale messageThreads, then adjust Feedback.
     // Allow some shapes when zoomed out? User should be able to see an overview and click places while zoomed out.
@@ -152,6 +149,7 @@ public class Map extends FragmentActivity implements
     // After clicking on a DM and going to that Chat, allow user to find that same shape on the map.
     // Users should be given a view of an area when clicking on a circle. Like they've been sent to that area.
     // Change lines with multiple || statements into a ! statement.
+    // Increase viral potential - make it easier to share?
     // Create a "general chat" where everyone can chat anonymously, maybe with more specific location rooms too?
     // Deal with overlapping points (and shapes in general). Maybe a warning message?
     // Add some version of the random button, or allow users to click on a circle in a far away area while zoomed out on map.
@@ -318,8 +316,7 @@ public class Map extends FragmentActivity implements
         // If new DMs, update dmButton badge.
         if (email != null) {
 
-            DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-            DatabaseReference firebaseMessages = rootRef.child("MessageThreads");
+            DatabaseReference firebaseMessages = FirebaseDatabase.getInstance().getReference().child("MessageThreads");
             firebaseMessages.addListenerForSingleValueEvent(new ValueEventListener() {
 
                 @Override
@@ -2266,8 +2263,7 @@ public class Map extends FragmentActivity implements
     private void addQueryPartOne() {
 
         // Add new values to arrayLists one at a time. This prevents the need to download the whole dataSnapshot every time this information is needed in eventListenerThree.
-        DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-        query = rootRef.child("MessageThreads").limitToLast(1);
+        query = FirebaseDatabase.getInstance().getReference().child("MessageThreads").limitToLast(1);
         childEventListener = new ChildEventListener() {
 
             @Override
@@ -6852,23 +6848,22 @@ public class Map extends FragmentActivity implements
                 mapCleared = true;
             }
 
-            DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
             DatabaseReference firebaseShapes;
             if (showEverything) {
 
-                firebaseShapes = rootRef.child("Shapes").child("(" + newNearLeftLat + ", " + newNearLeftLon + ")");
+                firebaseShapes = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + newNearLeftLat + ", " + newNearLeftLon + ")");
             } else if (showLarge) {
 
-                firebaseShapes = rootRef.child("Shapes").child("(" + newFarLeftLat + ", " + newFarLeftLon + ")").child("Large");
+                firebaseShapes = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + newFarLeftLat + ", " + newFarLeftLon + ")").child("Large");
             } else if (showMedium) {
 
-                firebaseShapes = rootRef.child("Shapes").child("(" + newFarLeftLat + ", " + newFarLeftLon + ")").child("Medium");
+                firebaseShapes = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + newFarLeftLat + ", " + newFarLeftLon + ")").child("Medium");
             } else if (showSmall) {
 
-                firebaseShapes = rootRef.child("Shapes").child("(" + newFarLeftLat + ", " + newFarLeftLon + ")").child("Small");
+                firebaseShapes = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + newFarLeftLat + ", " + newFarLeftLon + ")").child("Small");
             } else if (showPoints) {
 
-                firebaseShapes = rootRef.child("Shapes").child("(" + newFarLeftLat + ", " + newFarLeftLon + ")").child("Points");
+                firebaseShapes = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + newFarLeftLat + ", " + newFarLeftLon + ")").child("Points");
             } else {
 
                 toastMessageLong("Oops! Something went wrong!");
