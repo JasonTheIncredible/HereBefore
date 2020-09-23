@@ -95,7 +95,7 @@ public class Map extends FragmentActivity implements
     private Polygon newPolygon, polygonTemp, mPolygon = null;
     private ChildEventListener childEventListener;
     private SeekBar chatSizeSeekBar, chatSelectorSeekBar;
-    private String shapeUUID, marker0ID, marker1ID, marker2ID, marker3ID, marker4ID, marker5ID, marker6ID, marker7ID, selectedOverlappingShapeUUID, email;
+    private String userEmailFirebase, shapeUUID, marker0ID, marker1ID, marker2ID, marker3ID, marker4ID, marker5ID, marker6ID, marker7ID, selectedOverlappingShapeUUID;
     private Button createChatButton, chatViewsButton, mapTypeButton, settingsButton;
     private PopupMenu popupMapType, popupChatViews, popupCreateChat;
     private boolean locationProviderDisabled = false, firstLoadCamera = true, firstLoadShapes = true, firstLoadDMs = true, mapChanged, cameraMoved = false, waitingForBetterLocationAccuracy = false, badAccuracy = false,
@@ -107,7 +107,7 @@ public class Map extends FragmentActivity implements
     private Double relativeAngle = 0.0, selectedOverlappingShapeCircleRadius;
     private Location mlocation;
     private List<LatLng> polygonPointsList, selectedOverlappingShapePolygonVertices;
-    private ArrayList<String> overlappingShapesUUID = new ArrayList<>(), overlappingShapesCircleUUID = new ArrayList<>(), overlappingShapesPolygonUUID = new ArrayList<>(), userUUIDAL = new ArrayList<>(), userEmailAL = new ArrayList<>();
+    private ArrayList<String> overlappingShapesUUID = new ArrayList<>(), overlappingShapesCircleUUID = new ArrayList<>(), overlappingShapesPolygonUUID = new ArrayList<>();
     private ArrayList<LatLng> overlappingShapesCircleLocation = new ArrayList<>();
     private ArrayList<Double> overlappingShapesCircleRadius = new ArrayList<>();
     private ArrayList<java.util.List<LatLng>> overlappingShapesPolygonVertices = new ArrayList<>();
@@ -121,11 +121,9 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // Add shapeUUID before push value in Shapes.
     // Scale DirectMentions, and update MyFirebaseMessagingService to use the new token placement.
     // Get rid of shapeUUID and seenByUser in messageThreads (and possibly other information), as shapeUUID is already listed in branch above.
     // Fix jQuery.
-    // Add DM counter to DM button on Map.
     // Don't clear DMs until user clicks on the DMs tab. Also, add notification to DM tab.
     // Compress "If mentions exist, add to the user's DMs." in Chat into method.
     // Scale messageThreads, then adjust Feedback.
@@ -141,11 +139,13 @@ public class Map extends FragmentActivity implements
     // Switch existing values in Firebase.
     // Make sure the secret stuff is secret.
 
+    // Add query to Map for new shapes.
     // Load parts of messages at a time to cut down on data and loading time.
     // Uploading a picture takes a long time.
     // Find a way to not clear and reload map every time user returns from clicking a shape.
     // Don't set "seenByUser" to true until the user clicks on the DMs tab.
     // Add user to database once an account has been created.
+    // Find a way to add to existing snapshot - then send that snapshot to DirectMentions from Map.
     // After clicking on a DM and going to that Chat, allow user to find that same shape on the map.
     // Users should be given a view of an area when clicking on a circle. Like they've been sent to that area.
     // Change lines with multiple || statements into a ! statement.
@@ -216,18 +216,6 @@ public class Map extends FragmentActivity implements
                 == PackageManager.PERMISSION_GRANTED)) {
 
             checkLocationPermissions();
-        }
-
-        // Used to set dmButton badge number.
-        // If user has a Google account, get email one way. Else, get email another way.
-        GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(this);
-        if (acct != null) {
-
-            email = acct.getEmail();
-        } else {
-
-            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-            email = sharedPreferences.getString("userToken", "null");
         }
 
         // Check if the user is logged in. If true, make the settings button visible.
@@ -310,27 +298,47 @@ public class Map extends FragmentActivity implements
             }
         });
 
-        userUUIDAL = new ArrayList<>();
-        userEmailAL = new ArrayList<>();
+        // Used to set dmButton badge number.
+        // If user has a Google account, get email one way. Else, get email another way.
+        GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(this);
+        String email;
+        if (acct != null) {
+
+            email = acct.getEmail();
+        } else {
+
+            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+            email = sharedPreferences.getString("userToken", "null");
+        }
 
         // If new DMs, update dmButton badge.
         if (email != null) {
 
-            DatabaseReference firebaseMessages = FirebaseDatabase.getInstance().getReference().child("MessageThreads");
-            firebaseMessages.addListenerForSingleValueEvent(new ValueEventListener() {
+            // Firebase does not allow ".", so replace them with ",".
+            userEmailFirebase = email.replace(".", ",");
+
+            DatabaseReference DMs = FirebaseDatabase.getInstance().getReference().child("Users").child(userEmailFirebase).child("ReceivedDMs");
+            DMs.addListenerForSingleValueEvent(new ValueEventListener() {
 
                 @Override
-                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
 
-                    fillArrayLists(dataSnapshot);
+                    for (DataSnapshot ds : snapshot.getChildren()) {
 
-                    dmCounterIncrease(dataSnapshot);
+                        if (!(Boolean) ds.child("seenByUser").getValue()) {
+
+                            dmCounter++;
+                        }
+                    }
+
+                    dmButton.setCount(dmCounter);
+                    addQuery();
                 }
 
                 @Override
-                public void onCancelled(@NonNull DatabaseError databaseError) {
+                public void onCancelled(@NonNull DatabaseError error) {
 
-                    toastMessageLong(databaseError.getMessage());
+                    toastMessageLong(error.getMessage());
                 }
             });
         }
@@ -2205,92 +2213,27 @@ public class Map extends FragmentActivity implements
         deleteDirectory(this.getCacheDir());
     }
 
-    private void fillArrayLists(@NonNull DataSnapshot dataSnapshot) {
-
-        Log.i(TAG, "fillArrayLists()");
-
-        for (DataSnapshot ds : dataSnapshot.getChildren()) {
-
-            // Only add necessary items to arrayLists.
-            if (ds.child("email").getValue() != null) {
-
-                if (ds.child("removedMentionDuplicates").getValue() == null && !ds.child("email").getValue().equals(email)) {
-
-                    continue;
-                }
-            }
-
-            userUUIDAL.add((String) ds.child("userUUID").getValue());
-            userEmailAL.add((String) ds.child("email").getValue());
-        }
-    }
-
-    private void dmCounterIncrease(@NonNull DataSnapshot dataSnapshot) {
-
-        Log.i(TAG, "dmCounterIncrease()");
-
-        for (DataSnapshot ds : dataSnapshot.getChildren()) {
-
-            if (ds.child("removedMentionDuplicates").getValue() != null) {
-
-                for (DataSnapshot mention : ds.child("removedMentionDuplicates").getChildren()) {
-
-                    for (int i = 0; i < userUUIDAL.size(); i++) {
-
-                        if (mention.getValue() != null) {
-
-                            if (mention.getValue().toString().equals(userUUIDAL.get(i))) {
-
-                                if (userEmailAL.get(i).equals(email)) {
-
-                                    if (!(Boolean) ds.child("seenByUser").getValue()) {
-
-                                        dmCounter++;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        dmButton.setCount(dmCounter);
-        addQueryPartOne();
-    }
-
     // Change to .limitToLast(1) to cut down on data usage. Otherwise, EVERY child at this node will be downloaded every time the child is updated.
-    private void addQueryPartOne() {
+    private void addQuery() {
 
         // Add new values to arrayLists one at a time. This prevents the need to download the whole dataSnapshot every time this information is needed in eventListenerThree.
-        query = FirebaseDatabase.getInstance().getReference().child("MessageThreads").limitToLast(1);
+        query = FirebaseDatabase.getInstance().getReference().child("Users").child(userEmailFirebase).child("ReceivedDMs").limitToLast(1);
         childEventListener = new ChildEventListener() {
 
             @Override
             public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
 
-                Log.i(TAG, "addQueryPartOne()");
+                Log.i(TAG, "addQuery()");
 
                 // If this is the first time calling this eventListener, prevent double posts (as onStart() already added the last item).
                 if (firstLoadDMs) {
 
-                    addQueryPartTwo(snapshot);
+                    firstLoadDMs = false;
                     return;
                 }
 
-                // Only add necessary items to arrayLists.
-                if (snapshot.child("email").getValue() != null) {
-
-                    if (snapshot.child("removedMentionDuplicates").getValue() == null && !snapshot.child("email").getValue().equals(email)) {
-
-                        return;
-                    }
-                }
-
-                userUUIDAL.add((String) snapshot.child("userUUID").getValue());
-                userEmailAL.add((String) snapshot.child("email").getValue());
-
-                addQueryPartTwo(snapshot);
+                dmCounter++;
+                dmButton.setCount(dmCounter);
             }
 
             @Override
@@ -2313,41 +2256,6 @@ public class Map extends FragmentActivity implements
         };
 
         query.addChildEventListener(childEventListener);
-    }
-
-    private void addQueryPartTwo(@NonNull DataSnapshot snapshot) {
-
-        Log.i(TAG, "addQueryPartTwo()");
-
-        // If this is the first time calling this eventListener, prevent double posts (as onStart() already added the last item).
-        if (firstLoadDMs) {
-
-            firstLoadDMs = false;
-            return;
-        }
-
-        if (snapshot.child("removedMentionDuplicates").getValue() != null) {
-
-            for (DataSnapshot mention : snapshot.child("removedMentionDuplicates").getChildren()) {
-
-                if (mention.getValue() != null) {
-
-                    for (int i = 0; i < userUUIDAL.size(); i++) {
-
-                        if (mention.getValue().toString().equals(userUUIDAL.get(i))) {
-
-                            if (userEmailAL.get(i).equals(email)) {
-
-                                dmCounter++;
-                                dmButton.setCount(dmCounter);
-                                // Only updating one value, so return.
-                                return;
-                            }
-                        }
-                    }
-                }
-            }
-        }
     }
 
     @Override
@@ -2655,9 +2563,6 @@ public class Map extends FragmentActivity implements
 
             childEventListener = null;
         }
-
-        userUUIDAL = null;
-        userEmailAL = null;
 
         if (createChatButton != null) {
 
