@@ -31,6 +31,7 @@ import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.GoogleAuthProvider;
+import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.firebase.iid.InstanceIdResult;
 
@@ -197,7 +198,7 @@ public class SignIn extends AppCompatActivity {
                             Toast signedInToast = Toast.makeText(SignIn.this, "Signed in", Toast.LENGTH_SHORT);
                             signedInToast.show();
 
-                            // Get Firebase FCM token and save it to preferences.
+                            // Get Firebase FCM token and save it to preferences and Firebase.
                             FirebaseInstanceId.getInstance().getInstanceId().addOnSuccessListener(SignIn.this, new OnSuccessListener<InstanceIdResult>() {
 
                                 @Override
@@ -212,6 +213,11 @@ public class SignIn extends AppCompatActivity {
                                             .putString("passToken", pass)
                                             .putString("FIREBASE_TOKEN", token);
                                     editor.apply();
+
+                                    // Firebase does not allow ".", so replace them with ",".
+                                    String userEmailFirebase = email.replace(".", ",");
+
+                                    FirebaseDatabase.getInstance().getReference().child("Users").child(userEmailFirebase).child("Token").setValue(token);
 
                                     Intent Activity = new Intent(SignIn.this, Navigation.class);
                                     Activity.putExtra("newShape", newShape);
@@ -454,7 +460,7 @@ public class SignIn extends AppCompatActivity {
 
                         if (task.isSuccessful()) {
 
-                            // Get Firebase FCM token and save it to preferences.
+                            // Get Firebase FCM token and save it to preferences and Firebase.
                             FirebaseInstanceId.getInstance().getInstanceId().addOnSuccessListener(SignIn.this, new OnSuccessListener<InstanceIdResult>() {
 
                                 @Override
@@ -472,6 +478,11 @@ public class SignIn extends AppCompatActivity {
                                             .putString("googleIdToken", googleAccount.getIdToken())
                                             .putString("FIREBASE_TOKEN", token);
                                     editor.apply();
+
+                                    // Firebase does not allow ".", so replace them with ",".
+                                    String userEmailFirebase = googleAccount.getEmail().replace(".", ",");
+
+                                    FirebaseDatabase.getInstance().getReference().child("Users").child(userEmailFirebase).child("Token").setValue(token);
 
                                     // Go to Chat.java with the extras.
                                     toastMessageShort("Signed in");

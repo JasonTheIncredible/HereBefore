@@ -8,7 +8,7 @@ import java.util.ArrayList;
 class MessageInformation {
 
     public ArrayList<String> removedMentionDuplicates;
-    public String userUUID, message, shapeUUID, token, imageURL, videoURL, email;
+    public String userUUID, message, shapeUUID, imageURL, videoURL, email;
     public Object date;
     public Boolean userIsWithinShape, seenByUser, shapeIsCircle;
     public int position;
@@ -50,10 +50,6 @@ class MessageInformation {
 
     public void setPosition(int position) {
         this.position = position;
-    }
-
-    public void setToken(String token) {
-        this.token = token;
     }
 
     public void setRemovedMentionDuplicates(ArrayList<String> removedMentionDuplicates) {

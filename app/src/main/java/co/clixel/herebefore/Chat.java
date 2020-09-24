@@ -647,9 +647,6 @@ public class Chat extends Fragment implements
                             messageInformation.setEmail(email);
                             messageInformation.setShapeUUID(shapeUUID);
                             messageInformation.setPosition(mUser.size());
-                            // Get the token assigned by Firebase when the user signed up / signed in.
-                            String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
-                            messageInformation.setToken(token);
                             messageInformation.setUserIsWithinShape(userIsWithinShape);
                             if (circleLatitude != 0) {
                                 messageInformation.setShapeIsCircle(true);
@@ -753,9 +750,6 @@ public class Chat extends Fragment implements
                                 email = sharedPreferences.getString("userToken", "null");
                             }
                             messageInformation.setEmail(email);
-                            // Get the token assigned by Firebase when the user signed up / signed in.
-                            String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
-                            messageInformation.setToken(token);
                             if (removedMentionDuplicates.isEmpty()) {
                                 messageInformation.setSeenByUser(true);
                             } else {
@@ -2842,9 +2836,6 @@ public class Chat extends Fragment implements
                             }
                             messageInformation.setEmail(email);
                             messageInformation.setShapeUUID(shapeUUID);
-                            // Get the token assigned by Firebase when the user signed up / signed in.
-                            String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
-                            messageInformation.setToken(token);
                             if (removedMentionDuplicates.isEmpty()) {
                                 messageInformation.setSeenByUser(true);
                             } else {
@@ -3096,9 +3087,6 @@ public class Chat extends Fragment implements
                             }
                             messageInformation.setEmail(email);
                             messageInformation.setShapeUUID(shapeUUID);
-                            // Get the token assigned by Firebase when the user signed up / signed in.
-                            String token = sharedPreferences.getString("FIREBASE_TOKEN", "null");
-                            messageInformation.setToken(token);
                             if (removedMentionDuplicates.isEmpty()) {
                                 messageInformation.setSeenByUser(true);
                             } else {

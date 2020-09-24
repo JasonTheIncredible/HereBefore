@@ -121,10 +121,9 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // Scale DirectMentions, and update MyFirebaseMessagingService to use the new token placement.
-    // Get rid of shapeUUID and seenByUser in messageThreads (and possibly other information), as shapeUUID is already listed in branch above.
-    // Fix jQuery.
-    // Don't clear DMs until user clicks on the DMs tab. Also, add notification to DM tab.
+    // Switch from "push" to "child" or "setValue" - see bookmarks.
+    // Get rid of shapeUUID, seenByUser... in messageThreads, as shapeUUID is already listed in branch above.
+    // Don't clear highlighted DMs until user clicks on the DMs tab. Also, add notification to DM tab.
     // Compress "If mentions exist, add to the user's DMs." in Chat into method.
     // Scale messageThreads, then adjust Feedback.
     // Allow some shapes when zoomed out? User should be able to see an overview and click places while zoomed out.
@@ -140,11 +139,13 @@ public class Map extends FragmentActivity implements
     // Make sure the secret stuff is secret.
 
     // Add query to Map for new shapes.
+    // Investigate why, occasionally, location icon does not disappear from notification bar.
     // Load parts of messages at a time to cut down on data and loading time.
     // Uploading a picture takes a long time.
     // Find a way to not clear and reload map every time user returns from clicking a shape.
     // Don't set "seenByUser" to true until the user clicks on the DMs tab.
     // Add user to database once an account has been created.
+    // Update general look of app.
     // Find a way to add to existing snapshot - then send that snapshot to DirectMentions from Map.
     // After clicking on a DM and going to that Chat, allow user to find that same shape on the map.
     // Users should be given a view of an area when clicking on a circle. Like they've been sent to that area.

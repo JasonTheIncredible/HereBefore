@@ -27,6 +27,7 @@ android {
         configPath = "C:\\Users\\Jason\\AndroidStudioProjects\\HereBefore\\app\\src\\main\\res\\values\\aboutLibrariesCustom.xml"
     }
     compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
     buildTypes {
