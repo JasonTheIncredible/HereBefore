@@ -5,7 +5,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.preference.PreferenceManager;
@@ -24,16 +23,12 @@ import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.SignInButton;
 import com.google.android.gms.common.api.ApiException;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthCredential;
-import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.GoogleAuthProvider;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.iid.FirebaseInstanceId;
-import com.google.firebase.iid.InstanceIdResult;
 
 public class SignUp extends AppCompatActivity {
 
@@ -135,151 +130,135 @@ public class SignUp extends AppCompatActivity {
         Log.i(TAG, "onStart()");
 
         // Give feedback about email and password.
-        createAccountButton.setOnClickListener(new View.OnClickListener() {
+        createAccountButton.setOnClickListener(view -> {
 
-            @Override
-            public void onClick(View view) {
+            Log.i(TAG, "onStart() -> createAccountButton -> onClick");
 
-                Log.i(TAG, "onStart() -> createAccountButton -> onClick");
+            email = mEmail.getText().toString().toLowerCase().trim();
+            pass = mPassword.getText().toString();
 
-                email = mEmail.getText().toString().toLowerCase().trim();
-                pass = mPassword.getText().toString();
+            if (email.equals("") && !pass.equals("")) {
 
-                if (email.equals("") && !pass.equals("")) {
-
-                    toastMessageShort("Email address required");
-                    mEmail.requestFocus();
-                    return;
-                }
-                if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-
-                    toastMessageShort("Please enter a valid email address");
-                    mEmail.requestFocus();
-                    return;
-                }
-                if (pass.equals("") && !email.equals("")) {
-
-                    toastMessageShort("Password required");
-                    mPassword.requestFocus();
-                    return;
-                }
-                if (pass.length() < 6) {
-
-                    toastMessageShort("Password must be at least 6 characters long");
-                    mPassword.requestFocus();
-                    return;
-                }
-
-                // Close the keyboard.
-                if (SignUp.this.getCurrentFocus() != null) {
-
-                    InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-                    if (imm != null) {
-
-                        imm.hideSoftInputFromWindow(SignUp.this.getCurrentFocus().getWindowToken(), 0);
-                    }
-                }
-
-                loadingIcon.bringToFront();
-                loadingIcon.setVisibility(View.VISIBLE);
-
-                // Try adding the new account to Firebase.
-                FirebaseAuth.getInstance().createUserWithEmailAndPassword(email, pass).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
-
-                    @Override
-                    public void onComplete(@NonNull Task<AuthResult> task) {
-
-                        if (task.isSuccessful()) {
-
-                            // Get Firebase FCM token and save it to preferences and Firebase.
-                            FirebaseInstanceId.getInstance().getInstanceId().addOnSuccessListener(SignUp.this, new OnSuccessListener<InstanceIdResult>() {
-
-                                @Override
-                                public void onSuccess(InstanceIdResult instanceIdResult) {
-
-                                    SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(SignUp.this);
-
-                                    String token = instanceIdResult.getToken();
-
-                                    SharedPreferences.Editor editor = sharedPreferences.edit()
-                                            .putString("userToken", email)
-                                            .putString("passToken", pass)
-                                            .putString("FIREBASE_TOKEN", token);
-                                    editor.apply();
-
-                                    // Firebase does not allow ".", so replace them with ",".
-                                    String userEmailFirebase = email.replace(".", ",");
-
-                                    FirebaseDatabase.getInstance().getReference().child("Users").child(userEmailFirebase).child("Token").setValue(token);
-
-                                    // Go to Chat.java with the extras.
-                                    Toast signedUpToast = Toast.makeText(SignUp.this, "Signed up", Toast.LENGTH_SHORT);
-                                    signedUpToast.show();
-                                    Intent Activity = new Intent(SignUp.this, Navigation.class);
-                                    Activity.putExtra("newShape", newShape);
-                                    Activity.putExtra("shapeUUID", shapeUUID);
-                                    Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                    Activity.putExtra("circleLatitude", circleLatitude);
-                                    Activity.putExtra("circleLongitude", circleLongitude);
-                                    Activity.putExtra("fillColor", fillColor);
-                                    Activity.putExtra("polygonArea", polygonArea);
-                                    Activity.putExtra("radius", radius);
-                                    Activity.putExtra("shapeIsCircle", shapeIsCircle);
-                                    Activity.putExtra("threeMarkers", threeMarkers);
-                                    Activity.putExtra("fourMarkers", fourMarkers);
-                                    Activity.putExtra("fiveMarkers", fiveMarkers);
-                                    Activity.putExtra("sixMarkers", sixMarkers);
-                                    Activity.putExtra("sevenMarkers", sevenMarkers);
-                                    Activity.putExtra("eightMarkers", eightMarkers);
-                                    Activity.putExtra("marker0Latitude", marker0Latitude);
-                                    Activity.putExtra("marker0Longitude", marker0Longitude);
-                                    Activity.putExtra("marker1Latitude", marker1Latitude);
-                                    Activity.putExtra("marker1Longitude", marker1Longitude);
-                                    Activity.putExtra("marker2Latitude", marker2Latitude);
-                                    Activity.putExtra("marker2Longitude", marker2Longitude);
-                                    Activity.putExtra("marker3Latitude", marker3Latitude);
-                                    Activity.putExtra("marker3Longitude", marker3Longitude);
-                                    Activity.putExtra("marker4Latitude", marker4Latitude);
-                                    Activity.putExtra("marker4Longitude", marker4Longitude);
-                                    Activity.putExtra("marker5Latitude", marker5Latitude);
-                                    Activity.putExtra("marker5Longitude", marker5Longitude);
-                                    Activity.putExtra("marker6Latitude", marker6Latitude);
-                                    Activity.putExtra("marker6Longitude", marker6Longitude);
-                                    Activity.putExtra("marker7Latitude", marker7Latitude);
-                                    Activity.putExtra("marker7Longitude", marker7Longitude);
-                                    loadingIcon.setVisibility(View.GONE);
-                                    startActivity(Activity);
-                                    finish();
-                                }
-                            });
-                        }
-
-                        if (!task.isSuccessful() && task.getException() != null) {
-
-                            // Tell the user what happened.
-                            loadingIcon.setVisibility(View.GONE);
-                            toastMessageLong("Account Creation Failed: " + task.getException().getMessage());
-                        } else if (!task.isSuccessful() && task.getException() == null) {
-
-                            // Tell the user something happened.
-                            loadingIcon.setVisibility(View.GONE);
-                            toastMessageLong("An unknown error occurred. Please try again.");
-                            Log.e(TAG, "onStart() -> createAccountButton -> OnClick -> FirebaseAuth -> task.getException == null");
-                        }
-                    }
-                });
+                toastMessageShort("Email address required");
+                mEmail.requestFocus();
+                return;
             }
+            if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+
+                toastMessageShort("Please enter a valid email address");
+                mEmail.requestFocus();
+                return;
+            }
+            if (pass.equals("") && !email.equals("")) {
+
+                toastMessageShort("Password required");
+                mPassword.requestFocus();
+                return;
+            }
+            if (pass.length() < 6) {
+
+                toastMessageShort("Password must be at least 6 characters long");
+                mPassword.requestFocus();
+                return;
+            }
+
+            // Close the keyboard.
+            if (SignUp.this.getCurrentFocus() != null) {
+
+                InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                if (imm != null) {
+
+                    imm.hideSoftInputFromWindow(SignUp.this.getCurrentFocus().getWindowToken(), 0);
+                }
+            }
+
+            loadingIcon.bringToFront();
+            loadingIcon.setVisibility(View.VISIBLE);
+
+            // Try adding the new account to Firebase.
+            FirebaseAuth.getInstance().createUserWithEmailAndPassword(email, pass).addOnCompleteListener(task -> {
+
+                if (task.isSuccessful()) {
+
+                    // Get Firebase FCM token and save it to preferences and Firebase.
+                    FirebaseInstanceId.getInstance().getInstanceId().addOnSuccessListener(SignUp.this, instanceIdResult -> {
+
+                        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(SignUp.this);
+
+                        String token = instanceIdResult.getToken();
+
+                        SharedPreferences.Editor editor = sharedPreferences.edit()
+                                .putString("userToken", email)
+                                .putString("passToken", pass)
+                                .putString("FIREBASE_TOKEN", token);
+                        editor.apply();
+
+                        // Firebase does not allow ".", so replace them with ",".
+                        String userEmailFirebase = email.replace(".", ",");
+
+                        FirebaseDatabase.getInstance().getReference().child("Users").child(userEmailFirebase).child("Token").setValue(token);
+
+                        // Go to Chat.java with the extras.
+                        Toast signedUpToast = Toast.makeText(SignUp.this, "Signed up", Toast.LENGTH_SHORT);
+                        signedUpToast.show();
+                        Intent Activity = new Intent(SignUp.this, Navigation.class);
+                        Activity.putExtra("newShape", newShape);
+                        Activity.putExtra("shapeUUID", shapeUUID);
+                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                        Activity.putExtra("circleLatitude", circleLatitude);
+                        Activity.putExtra("circleLongitude", circleLongitude);
+                        Activity.putExtra("fillColor", fillColor);
+                        Activity.putExtra("polygonArea", polygonArea);
+                        Activity.putExtra("radius", radius);
+                        Activity.putExtra("shapeIsCircle", shapeIsCircle);
+                        Activity.putExtra("threeMarkers", threeMarkers);
+                        Activity.putExtra("fourMarkers", fourMarkers);
+                        Activity.putExtra("fiveMarkers", fiveMarkers);
+                        Activity.putExtra("sixMarkers", sixMarkers);
+                        Activity.putExtra("sevenMarkers", sevenMarkers);
+                        Activity.putExtra("eightMarkers", eightMarkers);
+                        Activity.putExtra("marker0Latitude", marker0Latitude);
+                        Activity.putExtra("marker0Longitude", marker0Longitude);
+                        Activity.putExtra("marker1Latitude", marker1Latitude);
+                        Activity.putExtra("marker1Longitude", marker1Longitude);
+                        Activity.putExtra("marker2Latitude", marker2Latitude);
+                        Activity.putExtra("marker2Longitude", marker2Longitude);
+                        Activity.putExtra("marker3Latitude", marker3Latitude);
+                        Activity.putExtra("marker3Longitude", marker3Longitude);
+                        Activity.putExtra("marker4Latitude", marker4Latitude);
+                        Activity.putExtra("marker4Longitude", marker4Longitude);
+                        Activity.putExtra("marker5Latitude", marker5Latitude);
+                        Activity.putExtra("marker5Longitude", marker5Longitude);
+                        Activity.putExtra("marker6Latitude", marker6Latitude);
+                        Activity.putExtra("marker6Longitude", marker6Longitude);
+                        Activity.putExtra("marker7Latitude", marker7Latitude);
+                        Activity.putExtra("marker7Longitude", marker7Longitude);
+                        loadingIcon.setVisibility(View.GONE);
+                        startActivity(Activity);
+                        finish();
+                    });
+                }
+
+                if (!task.isSuccessful() && task.getException() != null) {
+
+                    // Tell the user what happened.
+                    loadingIcon.setVisibility(View.GONE);
+                    toastMessageLong("Account Creation Failed: " + task.getException().getMessage());
+                } else if (!task.isSuccessful() && task.getException() == null) {
+
+                    // Tell the user something happened.
+                    loadingIcon.setVisibility(View.GONE);
+                    toastMessageLong("An unknown error occurred. Please try again.");
+                    Log.e(TAG, "onStart() -> createAccountButton -> OnClick -> FirebaseAuth -> task.getException == null");
+                }
+            });
         });
 
         // Sign in using Google.
-        googleSignInButton.setOnClickListener(new View.OnClickListener() {
+        googleSignInButton.setOnClickListener(view -> {
 
-            @Override
-            public void onClick(View view) {
-
-                Intent signInIntent = mGoogleSignInClient.getSignInIntent();
-                startActivityForResult(signInIntent, RC_SIGN_IN);
-            }
+            Intent signInIntent = mGoogleSignInClient.getSignInIntent();
+            startActivityForResult(signInIntent, RC_SIGN_IN);
         });
     }
 
@@ -354,83 +333,75 @@ public class SignUp extends AppCompatActivity {
 
         AuthCredential credential = GoogleAuthProvider.getCredential(acct.getIdToken(), null);
         mAuth.signInWithCredential(credential)
-                .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
+                .addOnCompleteListener(this, task -> {
 
-                    @Override
-                    public void onComplete(@NonNull Task<AuthResult> task) {
+                    if (task.isSuccessful()) {
 
-                        if (task.isSuccessful()) {
+                        // Get Firebase FCM token and save it to preferences and Firebase.
+                        FirebaseInstanceId.getInstance().getInstanceId().addOnSuccessListener(SignUp.this, instanceIdResult -> {
 
-                            // Get Firebase FCM token and save it to preferences and Firebase.
-                            FirebaseInstanceId.getInstance().getInstanceId().addOnSuccessListener(SignUp.this, new OnSuccessListener<InstanceIdResult>() {
+                            // Sign-in success, update UI with the signed-in user's information
+                            Log.d(TAG, "signInWithCredential:success");
 
-                                @Override
-                                public void onSuccess(InstanceIdResult instanceIdResult) {
+                            // Save token to sharedPreferences.
+                            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(SignUp.this);
 
-                                    // Sign-in success, update UI with the signed-in user's information
-                                    Log.d(TAG, "signInWithCredential:success");
+                            String token = instanceIdResult.getToken();
 
-                                    // Save token to sharedPreferences.
-                                    SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(SignUp.this);
+                            SharedPreferences.Editor editor = sharedPreferences.edit()
+                                    .putString("googleIdToken", googleAccount.getIdToken())
+                                    .putString("FIREBASE_TOKEN", token);
+                            editor.apply();
 
-                                    String token = instanceIdResult.getToken();
+                            // Firebase does not allow ".", so replace them with ",".
+                            String userEmailFirebase = email.replace(".", ",");
 
-                                    SharedPreferences.Editor editor = sharedPreferences.edit()
-                                            .putString("googleIdToken", googleAccount.getIdToken())
-                                            .putString("FIREBASE_TOKEN", token);
-                                    editor.apply();
+                            FirebaseDatabase.getInstance().getReference().child("Users").child(userEmailFirebase).child("Token").setValue(token);
 
-                                    // Firebase does not allow ".", so replace them with ",".
-                                    String userEmailFirebase = email.replace(".", ",");
-
-                                    FirebaseDatabase.getInstance().getReference().child("Users").child(userEmailFirebase).child("Token").setValue(token);
-
-                                    // Go to Chat.java with the extras.
-                                    toastMessageShort("Signed in");
-                                    Intent Activity = new Intent(SignUp.this, Navigation.class);
-                                    Activity.putExtra("newShape", newShape);
-                                    Activity.putExtra("shapeUUID", shapeUUID);
-                                    Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                    Activity.putExtra("circleLatitude", circleLatitude);
-                                    Activity.putExtra("circleLongitude", circleLongitude);
-                                    Activity.putExtra("fillColor", fillColor);
-                                    Activity.putExtra("polygonArea", polygonArea);
-                                    Activity.putExtra("radius", radius);
-                                    Activity.putExtra("shapeIsCircle", shapeIsCircle);
-                                    Activity.putExtra("threeMarkers", threeMarkers);
-                                    Activity.putExtra("fourMarkers", fourMarkers);
-                                    Activity.putExtra("fiveMarkers", fiveMarkers);
-                                    Activity.putExtra("sixMarkers", sixMarkers);
-                                    Activity.putExtra("sevenMarkers", sevenMarkers);
-                                    Activity.putExtra("eightMarkers", eightMarkers);
-                                    Activity.putExtra("marker0Latitude", marker0Latitude);
-                                    Activity.putExtra("marker0Longitude", marker0Longitude);
-                                    Activity.putExtra("marker1Latitude", marker1Latitude);
-                                    Activity.putExtra("marker1Longitude", marker1Longitude);
-                                    Activity.putExtra("marker2Latitude", marker2Latitude);
-                                    Activity.putExtra("marker2Longitude", marker2Longitude);
-                                    Activity.putExtra("marker3Latitude", marker3Latitude);
-                                    Activity.putExtra("marker3Longitude", marker3Longitude);
-                                    Activity.putExtra("marker4Latitude", marker4Latitude);
-                                    Activity.putExtra("marker4Longitude", marker4Longitude);
-                                    Activity.putExtra("marker5Latitude", marker5Latitude);
-                                    Activity.putExtra("marker5Longitude", marker5Longitude);
-                                    Activity.putExtra("marker6Latitude", marker6Latitude);
-                                    Activity.putExtra("marker6Longitude", marker6Longitude);
-                                    Activity.putExtra("marker7Latitude", marker7Latitude);
-                                    Activity.putExtra("marker7Longitude", marker7Longitude);
-                                    loadingIcon.setVisibility(View.GONE);
-                                    startActivity(Activity);
-                                    finish();
-                                }
-                            });
-                        } else {
-
-                            // If sign in fails, display a recyclerviewlayout to the user.
+                            // Go to Chat.java with the extras.
+                            toastMessageShort("Signed in");
+                            Intent Activity = new Intent(SignUp.this, Navigation.class);
+                            Activity.putExtra("newShape", newShape);
+                            Activity.putExtra("shapeUUID", shapeUUID);
+                            Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                            Activity.putExtra("circleLatitude", circleLatitude);
+                            Activity.putExtra("circleLongitude", circleLongitude);
+                            Activity.putExtra("fillColor", fillColor);
+                            Activity.putExtra("polygonArea", polygonArea);
+                            Activity.putExtra("radius", radius);
+                            Activity.putExtra("shapeIsCircle", shapeIsCircle);
+                            Activity.putExtra("threeMarkers", threeMarkers);
+                            Activity.putExtra("fourMarkers", fourMarkers);
+                            Activity.putExtra("fiveMarkers", fiveMarkers);
+                            Activity.putExtra("sixMarkers", sixMarkers);
+                            Activity.putExtra("sevenMarkers", sevenMarkers);
+                            Activity.putExtra("eightMarkers", eightMarkers);
+                            Activity.putExtra("marker0Latitude", marker0Latitude);
+                            Activity.putExtra("marker0Longitude", marker0Longitude);
+                            Activity.putExtra("marker1Latitude", marker1Latitude);
+                            Activity.putExtra("marker1Longitude", marker1Longitude);
+                            Activity.putExtra("marker2Latitude", marker2Latitude);
+                            Activity.putExtra("marker2Longitude", marker2Longitude);
+                            Activity.putExtra("marker3Latitude", marker3Latitude);
+                            Activity.putExtra("marker3Longitude", marker3Longitude);
+                            Activity.putExtra("marker4Latitude", marker4Latitude);
+                            Activity.putExtra("marker4Longitude", marker4Longitude);
+                            Activity.putExtra("marker5Latitude", marker5Latitude);
+                            Activity.putExtra("marker5Longitude", marker5Longitude);
+                            Activity.putExtra("marker6Latitude", marker6Latitude);
+                            Activity.putExtra("marker6Longitude", marker6Longitude);
+                            Activity.putExtra("marker7Latitude", marker7Latitude);
+                            Activity.putExtra("marker7Longitude", marker7Longitude);
                             loadingIcon.setVisibility(View.GONE);
-                            Log.w(TAG, "firebaseAuthWithGoogle() -> failed: " + task.getException());
-                            toastMessageLong("Authentication failed. Try again later.");
-                        }
+                            startActivity(Activity);
+                            finish();
+                        });
+                    } else {
+
+                        // If sign in fails, display a recyclerviewlayout to the user.
+                        loadingIcon.setVisibility(View.GONE);
+                        Log.w(TAG, "firebaseAuthWithGoogle() -> failed: " + task.getException());
+                        toastMessageLong("Authentication failed. Try again later.");
                     }
                 });
     }

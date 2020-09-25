@@ -3,7 +3,6 @@ package co.clixel.herebefore;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 
 import androidx.annotation.NonNull;
@@ -114,15 +113,11 @@ public class Navigation extends AppCompatActivity {
 
         viewPager.addOnPageChangeListener(pagerListener);
 
-        BubbleNavigationChangeListener bubbleListener = new BubbleNavigationChangeListener() {
+        BubbleNavigationChangeListener bubbleListener = (view, position) -> {
 
-            @Override
-            public void onNavigationChanged(View view, int position) {
+            viewPager.setCurrentItem(position, true);
 
-                viewPager.setCurrentItem(position, true);
-
-                currentItem = viewPager.getCurrentItem();
-            }
+            currentItem = viewPager.getCurrentItem();
         };
 
         bubbleNavigationConstraintView.setNavigationChangeListener(bubbleListener);

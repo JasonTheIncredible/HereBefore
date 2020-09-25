@@ -4,7 +4,6 @@ import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -58,7 +57,6 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polygon;
 import com.google.android.gms.maps.model.PolygonOptions;
 import com.google.android.gms.maps.model.VisibleRegion;
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
@@ -121,11 +119,9 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // Switch from "push" to "child" or "setValue" - see bookmarks.
-    // Get rid of shapeUUID, seenByUser... in messageThreads, as shapeUUID is already listed in branch above.
-    // Don't clear highlighted DMs until user clicks on the DMs tab. Also, add notification to DM tab.
     // Compress "If mentions exist, add to the user's DMs." in Chat into method.
     // Scale messageThreads, then adjust Feedback.
+    // Don't clear highlighted DMs until user clicks on the DMs tab. Also, add notification to DM tab.
     // Allow some shapes when zoomed out? User should be able to see an overview and click places while zoomed out.
     // Decrease app size (compress repeating code into methods) / Check on accumulation of size over time.
     // Adjust Firebase security rules - bookmark.
@@ -233,69 +229,57 @@ public class Map extends FragmentActivity implements
         }
 
         // Shows a menu to change the map type.
-        mapTypeButton.setOnClickListener(new View.OnClickListener() {
+        mapTypeButton.setOnClickListener(view -> {
 
-            @Override
-            public void onClick(View view) {
+            Log.i(TAG, "onStart() -> mapTypeButton -> onClick");
 
-                Log.i(TAG, "onStart() -> mapTypeButton -> onClick");
-
-                popupMapType = new PopupMenu(Map.this, mapTypeButton);
-                popupMapType.setOnMenuItemClickListener(Map.this);
-                popupMapType.inflate(R.menu.maptype_menu);
-                popupMapType.show();
-            }
+            popupMapType = new PopupMenu(Map.this, mapTypeButton);
+            popupMapType.setOnMenuItemClickListener(Map.this);
+            popupMapType.inflate(R.menu.maptype_menu);
+            popupMapType.show();
         });
 
         // Go to settings.
-        settingsButton.setOnClickListener(new View.OnClickListener() {
+        settingsButton.setOnClickListener(v -> {
 
-            @Override
-            public void onClick(View v) {
+            Log.i(TAG, "onStart() -> settingsButton -> onClick");
 
-                Log.i(TAG, "onStart() -> settingsButton -> onClick");
+            // Check location permissions.
+            if (ContextCompat.checkSelfPermission(getBaseContext(),
+                    Manifest.permission.ACCESS_FINE_LOCATION)
+                    == PackageManager.PERMISSION_GRANTED) {
 
-                // Check location permissions.
-                if (ContextCompat.checkSelfPermission(getBaseContext(),
-                        Manifest.permission.ACCESS_FINE_LOCATION)
-                        == PackageManager.PERMISSION_GRANTED) {
+                loadingIcon.setVisibility(View.VISIBLE);
 
-                    loadingIcon.setVisibility(View.VISIBLE);
+                FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
 
-                    FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
+                mFusedLocationClient.getLastLocation()
+                        .addOnSuccessListener(Map.this, location -> {
 
-                    mFusedLocationClient.getLastLocation()
-                            .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
+                            if (location != null) {
 
-                                @Override
-                                public void onSuccess(Location location) {
+                                cancelToasts();
 
-                                    if (location != null) {
+                                Intent Activity = new Intent(Map.this, Navigation.class);
 
-                                        cancelToasts();
+                                Activity.putExtra("userLatitude", location.getLatitude());
+                                Activity.putExtra("userLongitude", location.getLongitude());
 
-                                        Intent Activity = new Intent(Map.this, Navigation.class);
+                                Activity.putExtra("noChat", true);
 
-                                        Activity.putExtra("userLatitude", location.getLatitude());
-                                        Activity.putExtra("userLongitude", location.getLongitude());
+                                loadingIcon.setVisibility(View.GONE);
 
-                                        Activity.putExtra("noChat", true);
+                                startActivity(Activity);
+                            } else {
 
-                                        loadingIcon.setVisibility(View.GONE);
+                                loadingIcon.setVisibility(View.GONE);
+                                Log.e(TAG, "onStart() -> settingsButton -> location == null");
+                                toastMessageLong("An error occurred: your location is null");
+                            }
+                        });
+            } else {
 
-                                        startActivity(Activity);
-                                    } else {
-
-                                        loadingIcon.setVisibility(View.GONE);
-                                        Log.e(TAG, "onStart() -> settingsButton -> location == null");
-                                        toastMessageLong("An error occurred: your location is null");
-                                    }
-                                }
-                            });
-                } else {
-
-                    checkLocationPermissions();
-                }
+                checkLocationPermissions();
             }
         });
 
@@ -345,96 +329,80 @@ public class Map extends FragmentActivity implements
         }
 
         // Shows a menu to filter circle views.
-        chatViewsButton.setOnClickListener(new View.OnClickListener() {
+        chatViewsButton.setOnClickListener(view -> {
 
-            @Override
-            public void onClick(View view) {
+            Log.i(TAG, "onStart() -> chatViewsButton -> onClick");
 
-                Log.i(TAG, "onStart() -> chatViewsButton -> onClick");
-
-                popupChatViews = new PopupMenu(Map.this, chatViewsButton);
-                popupChatViews.setOnMenuItemClickListener(Map.this);
-                popupChatViews.inflate(R.menu.chatviews_menu);
-                popupChatViews.show();
-            }
+            popupChatViews = new PopupMenu(Map.this, chatViewsButton);
+            popupChatViews.setOnMenuItemClickListener(Map.this);
+            popupChatViews.inflate(R.menu.chatviews_menu);
+            popupChatViews.show();
         });
 
         // Go to DMs.
-        dmButton.setOnClickListener(new View.OnClickListener() {
+        dmButton.setOnClickListener(v -> {
 
-            @Override
-            public void onClick(View v) {
+            Log.i(TAG, "onStart() -> dmButton -> onClick");
 
-                Log.i(TAG, "onStart() -> dmButton -> onClick");
+            // Check location permissions.
+            if (ContextCompat.checkSelfPermission(getBaseContext(),
+                    Manifest.permission.ACCESS_FINE_LOCATION)
+                    == PackageManager.PERMISSION_GRANTED) {
 
-                // Check location permissions.
-                if (ContextCompat.checkSelfPermission(getBaseContext(),
-                        Manifest.permission.ACCESS_FINE_LOCATION)
-                        == PackageManager.PERMISSION_GRANTED) {
+                loadingIcon.setVisibility(View.VISIBLE);
 
-                    loadingIcon.setVisibility(View.VISIBLE);
+                FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
 
-                    FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
+                mFusedLocationClient.getLastLocation()
+                        .addOnSuccessListener(Map.this, location -> {
 
-                    mFusedLocationClient.getLastLocation()
-                            .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
+                            if (location != null) {
 
-                                @Override
-                                public void onSuccess(Location location) {
+                                cancelToasts();
 
-                                    if (location != null) {
+                                Intent Activity = new Intent(Map.this, Navigation.class);
 
-                                        cancelToasts();
+                                Activity.putExtra("userLatitude", location.getLatitude());
+                                Activity.putExtra("userLongitude", location.getLongitude());
 
-                                        Intent Activity = new Intent(Map.this, Navigation.class);
+                                Activity.putExtra("noChat", true);
+                                Activity.putExtra("fromDMs", true);
 
-                                        Activity.putExtra("userLatitude", location.getLatitude());
-                                        Activity.putExtra("userLongitude", location.getLongitude());
+                                loadingIcon.setVisibility(View.GONE);
 
-                                        Activity.putExtra("noChat", true);
-                                        Activity.putExtra("fromDMs", true);
+                                startActivity(Activity);
+                            } else {
 
-                                        loadingIcon.setVisibility(View.GONE);
+                                loadingIcon.setVisibility(View.GONE);
+                                Log.e(TAG, "onStart() -> dmButton -> location == null");
+                                toastMessageLong("An error occurred: your location is null");
+                            }
+                        });
+            } else {
 
-                                        startActivity(Activity);
-                                    } else {
-
-                                        loadingIcon.setVisibility(View.GONE);
-                                        Log.e(TAG, "onStart() -> dmButton -> location == null");
-                                        toastMessageLong("An error occurred: your location is null");
-                                    }
-                                }
-                            });
-                } else {
-
-                    checkLocationPermissions();
-                }
+                checkLocationPermissions();
             }
         });
 
         // Shows a menu for creating chats.
-        createChatButton.setOnClickListener(new View.OnClickListener() {
+        createChatButton.setOnClickListener(view -> {
 
-            @Override
-            public void onClick(View view) {
+            Log.i(TAG, "onStart() -> createChatButton -> onClick");
 
-                Log.i(TAG, "onStart() -> createChatButton -> onClick");
+            popupCreateChat = new PopupMenu(Map.this, createChatButton);
+            popupCreateChat.setOnMenuItemClickListener(Map.this);
+            popupCreateChat.inflate(R.menu.createchat_menu);
+            // Check if the circle exists and adjust the menu items accordingly.
+            if (newCircle != null || newPolygon != null) {
 
-                popupCreateChat = new PopupMenu(Map.this, createChatButton);
-                popupCreateChat.setOnMenuItemClickListener(Map.this);
-                popupCreateChat.inflate(R.menu.createchat_menu);
-                // Check if the circle exists and adjust the menu items accordingly.
-                if (newCircle != null || newPolygon != null) {
+                popupCreateChat.getMenu().findItem(R.id.createPolygon).setVisible(false);
+                popupCreateChat.getMenu().findItem(R.id.createCircle).setVisible(false);
+            } else {
 
-                    popupCreateChat.getMenu().findItem(R.id.createPolygon).setVisible(false);
-                    popupCreateChat.getMenu().findItem(R.id.createCircle).setVisible(false);
-                } else {
-
-                    popupCreateChat.getMenu().findItem(R.id.removeShape).setVisible(false);
-                }
-
-                popupCreateChat.show();
+                popupCreateChat.getMenu().findItem(R.id.removeShape).setVisible(false);
             }
+
+            popupCreateChat.show();
         });
 
         chatSizeSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
@@ -458,95 +426,91 @@ public class Map extends FragmentActivity implements
                         FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
 
                         mFusedLocationClient.getLastLocation()
-                                .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
+                                .addOnSuccessListener(Map.this, location -> {
 
-                                    @Override
-                                    public void onSuccess(Location location) {
+                                    // Get last known location. In some rare situations, this can be null.
+                                    if (location != null) {
 
-                                        // Get last known location. In some rare situations, this can be null.
-                                        if (location != null) {
+                                        // Change shape color depending on the map type.
+                                        if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
 
-                                            // Change shape color depending on the map type.
-                                            if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
+                                            Log.i(TAG, "onStart() -> chatSizeSeekBar -> onStartTrackingTouch -> yellow circle");
 
-                                                Log.i(TAG, "onStart() -> chatSizeSeekBar -> onStartTrackingTouch -> yellow circle");
+                                            // Make circle the size set by the seekBar.
+                                            float circleSize = chatSizeSeekBar.getProgress();
 
-                                                // Make circle the size set by the seekBar.
-                                                float circleSize = chatSizeSeekBar.getProgress();
+                                            LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
+                                            marker1Position = new LatLng(latLng.latitude + (circleSize / 6371000) * (180 / Math.PI), latLng.longitude + (circleSize / 6371000) * (180 / Math.PI) / cos(latLng.latitude * Math.PI / 180));
+                                            CircleOptions circleOptions =
+                                                    new CircleOptions()
+                                                            .center(latLng)
+                                                            .clickable(true)
+                                                            .radius(circleSize)
+                                                            .strokeColor(Color.YELLOW)
+                                                            .strokeWidth(3f);
 
-                                                LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-                                                marker1Position = new LatLng(latLng.latitude + (circleSize / 6371000) * (180 / Math.PI), latLng.longitude + (circleSize / 6371000) * (180 / Math.PI) / cos(latLng.latitude * Math.PI / 180));
-                                                CircleOptions circleOptions =
-                                                        new CircleOptions()
-                                                                .center(latLng)
-                                                                .clickable(true)
-                                                                .radius(circleSize)
-                                                                .strokeColor(Color.YELLOW)
-                                                                .strokeWidth(3f);
+                                            // Create a marker in the center of the circle to allow for dragging.
+                                            MarkerOptions markerOptionsCenter = new MarkerOptions()
+                                                    .position(latLng)
+                                                    .draggable(true);
 
-                                                // Create a marker in the center of the circle to allow for dragging.
-                                                MarkerOptions markerOptionsCenter = new MarkerOptions()
-                                                        .position(latLng)
-                                                        .draggable(true);
+                                            // Create marker at the edge of the circle to allow for changing of the circle's radius.
+                                            MarkerOptions markerOptionsEdge = new MarkerOptions()
+                                                    .position(marker1Position)
+                                                    .draggable(true);
 
-                                                // Create marker at the edge of the circle to allow for changing of the circle's radius.
-                                                MarkerOptions markerOptionsEdge = new MarkerOptions()
-                                                        .position(marker1Position)
-                                                        .draggable(true);
+                                            marker0 = mMap.addMarker(markerOptionsCenter);
+                                            marker1 = mMap.addMarker(markerOptionsEdge);
 
-                                                marker0 = mMap.addMarker(markerOptionsCenter);
-                                                marker1 = mMap.addMarker(markerOptionsEdge);
+                                            // Update the global variable to compare with the marker the user clicks on during the dragging process.
+                                            marker0ID = marker0.getId();
+                                            marker1ID = marker1.getId();
 
-                                                // Update the global variable to compare with the marker the user clicks on during the dragging process.
-                                                marker0ID = marker0.getId();
-                                                marker1ID = marker1.getId();
+                                            marker1.setVisible(false);
 
-                                                marker1.setVisible(false);
-
-                                                newCircle = mMap.addCircle(circleOptions);
-                                            } else {
-
-                                                Log.i(TAG, "onStart() -> chatSizeSeekBar -> onStartTrackingTouch -> purple circle");
-
-                                                // Make circle the size set by the seekBar.
-                                                float circleSize = chatSizeSeekBar.getProgress();
-
-                                                LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-                                                marker1Position = new LatLng(latLng.latitude + (circleSize / 6371000) * (180 / Math.PI), latLng.longitude + (circleSize / 6371000) * (180 / Math.PI) / cos(latLng.latitude * Math.PI / 180));
-                                                CircleOptions circleOptions =
-                                                        new CircleOptions()
-                                                                .center(latLng)
-                                                                .clickable(true)
-                                                                .radius(circleSize)
-                                                                .strokeColor(Color.rgb(255, 0, 255))
-                                                                .strokeWidth(3f);
-
-                                                // Create a marker in the center of the circle to allow for dragging.
-                                                MarkerOptions markerOptionsCenter = new MarkerOptions()
-                                                        .position(latLng)
-                                                        .draggable(true);
-
-                                                // Create marker at the edge of the circle to allow for changing of the circle's radius.
-                                                MarkerOptions markerOptionsEdge = new MarkerOptions()
-                                                        .position(marker1Position)
-                                                        .draggable(true);
-
-                                                marker0 = mMap.addMarker(markerOptionsCenter);
-                                                marker1 = mMap.addMarker(markerOptionsEdge);
-
-                                                // Update the global variable to compare with the marker the user clicks on during the dragging process.
-                                                marker0ID = marker0.getId();
-                                                marker1ID = marker1.getId();
-
-                                                marker1.setVisible(false);
-
-                                                newCircle = mMap.addCircle(circleOptions);
-                                            }
+                                            newCircle = mMap.addCircle(circleOptions);
                                         } else {
 
-                                            Log.e(TAG, "onStart() -> chatSizeSeekBar -> location == null");
-                                            toastMessageLong("An error occurred: your location is null");
+                                            Log.i(TAG, "onStart() -> chatSizeSeekBar -> onStartTrackingTouch -> purple circle");
+
+                                            // Make circle the size set by the seekBar.
+                                            float circleSize = chatSizeSeekBar.getProgress();
+
+                                            LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
+                                            marker1Position = new LatLng(latLng.latitude + (circleSize / 6371000) * (180 / Math.PI), latLng.longitude + (circleSize / 6371000) * (180 / Math.PI) / cos(latLng.latitude * Math.PI / 180));
+                                            CircleOptions circleOptions =
+                                                    new CircleOptions()
+                                                            .center(latLng)
+                                                            .clickable(true)
+                                                            .radius(circleSize)
+                                                            .strokeColor(Color.rgb(255, 0, 255))
+                                                            .strokeWidth(3f);
+
+                                            // Create a marker in the center of the circle to allow for dragging.
+                                            MarkerOptions markerOptionsCenter = new MarkerOptions()
+                                                    .position(latLng)
+                                                    .draggable(true);
+
+                                            // Create marker at the edge of the circle to allow for changing of the circle's radius.
+                                            MarkerOptions markerOptionsEdge = new MarkerOptions()
+                                                    .position(marker1Position)
+                                                    .draggable(true);
+
+                                            marker0 = mMap.addMarker(markerOptionsCenter);
+                                            marker1 = mMap.addMarker(markerOptionsEdge);
+
+                                            // Update the global variable to compare with the marker the user clicks on during the dragging process.
+                                            marker0ID = marker0.getId();
+                                            marker1ID = marker1.getId();
+
+                                            marker1.setVisible(false);
+
+                                            newCircle = mMap.addCircle(circleOptions);
                                         }
+                                    } else {
+
+                                        Log.e(TAG, "onStart() -> chatSizeSeekBar -> location == null");
+                                        toastMessageLong("An error occurred: your location is null");
                                     }
                                 });
                     } else {
@@ -2480,14 +2444,11 @@ public class Map extends FragmentActivity implements
                 builder.setCancelable(false)
                         .setTitle("GPS Disabled")
                         .setMessage("Please enable your location services on the following screen.")
-                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                        .setPositiveButton("OK", (dialog, i) -> {
 
-                            public void onClick(DialogInterface dialog, int i) {
+                            Activity activity = activityWeakRef.get();
 
-                                Activity activity = activityWeakRef.get();
-
-                                activity.startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS));
-                            }
+                            activity.startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS));
                         })
                         .create()
                         .show();
@@ -2707,15 +2668,12 @@ public class Map extends FragmentActivity implements
                 builder.setCancelable(false)
                         .setTitle("Device Location Required")
                         .setMessage("Here Before needs permission to use your location to find chat areas around you.")
-                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialogInterface, int i) {
+                        .setPositiveButton("OK", (dialogInterface, i) -> {
 
-                                //Prompt the user once explanation has been shown
-                                ActivityCompat.requestPermissions(activityWeakRef.get(),
-                                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                                        Request_User_Location_Code);
-                            }
+                            //Prompt the user once explanation has been shown
+                            ActivityCompat.requestPermissions(activityWeakRef.get(),
+                                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                                    Request_User_Location_Code);
                         })
                         .create()
                         .show();
@@ -2991,1501 +2949,196 @@ public class Map extends FragmentActivity implements
         });
 
         // Go to Chat.java after clicking on a circle's middle marker.
-        mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
+        mMap.setOnMarkerClickListener(marker -> {
 
-            @Override
-            public boolean onMarkerClick(Marker marker) {
+            if (newCircle != null) {
 
-                if (newCircle != null) {
+                if (marker.getId().equals(marker0ID)) {
 
-                    if (marker.getId().equals(marker0ID)) {
-
-                        Log.i(TAG, "onMapReadyAndRestart() -> onMarkerClick -> circle -> marker0");
-
-                        // End this method if the method is already being processed from another shape clicking event.
-                        if (waitingForShapeInformationToProcess) {
-
-                            return false;
-                        }
-
-                        // Update boolean to prevent double clicking a shape.
-                        waitingForShapeInformationToProcess = true;
-
-                        // Inform the user is the circle is too small.
-                        if (newCircle.getRadius() < 1) {
-
-                            toastMessageLong("Please make the shape larger");
-                            return false;
-                        }
-
-                        // Generate a uuid, as the shape is new.
-                        shapeUUID = UUID.randomUUID().toString();
-
-                        // Check if user is within the circle before going to the recyclerviewlayout.
-                        FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
-
-                        // Check location permissions.
-                        if (ContextCompat.checkSelfPermission(getBaseContext(),
-                                Manifest.permission.ACCESS_FINE_LOCATION)
-                                == PackageManager.PERMISSION_GRANTED) {
-
-                            mFusedLocationClient.getLastLocation()
-                                    .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
-                                        @Override
-                                        public void onSuccess(Location location) {
-
-                                            if (location != null) {
-
-                                                float[] distance = new float[2];
-
-                                                Location.distanceBetween(location.getLatitude(), location.getLongitude(),
-                                                        newCircle.getCenter().latitude, newCircle.getCenter().longitude, distance);
-
-                                                // Boolean; will be true if user is within the circle upon circle click.
-                                                userIsWithinShape = !(distance[0] > newCircle.getRadius());
-                                            } else {
-
-                                                Log.e(TAG, "onMapReadyAndRestart() -> onMarkerClick -> location == null");
-                                                mMap.getUiSettings().setScrollGesturesEnabled(true);
-                                                loadingIcon.setVisibility(View.GONE);
-                                                toastMessageLong("An error occurred: your location is null");
-                                            }
-                                        }
-                                    });
-
-                            // Check if the user is already signed in.
-                            if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) instanceof GoogleSignInAccount) {
-
-                                // User signed in.
-
-                                Log.i(TAG, "onMapReadyAndRestart() -> onMarkerClick -> user signed in -> circle -> marker0");
-
-                                // uuid does not already exist in Firebase. Go to Chat.java with the uuid.
-
-                                // Carry the extras all the way to Chat.java.
-                                Intent Activity = new Intent(Map.this, Navigation.class);
-                                goToNextActivityCircle(Activity, newCircle, true);
-                            } else {
-
-                                // User NOT signed in.
-
-                                Log.i(TAG, "onMapReadyAndRestart() -> onMarkerClick -> user NOT signed in -> circle -> marker0");
-
-                                // Carry the extras all the way to Chat.java.
-                                Intent Activity = new Intent(Map.this, SignIn.class);
-                                goToNextActivityCircle(Activity, newCircle, true);
-                            }
-                        } else {
-
-                            checkLocationPermissions();
-                        }
-                    }
-                }
-
-                return true;
-            }
-        });
-
-        // Go to Chat.java when clicking on a polygon.
-        mMap.setOnPolygonClickListener(new GoogleMap.OnPolygonClickListener() {
-
-            @Override
-            public void onPolygonClick(final Polygon polygon) {
-
-                // If the user tries to click on a polygon that is not a polygonTemp while polygonTemp exists, return.
-                if (chatSelectorSeekBar.getVisibility() == View.VISIBLE && (polygon.getTag() != selectedOverlappingShapeUUID)) {
-
-                    Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> Selected polygon is not a polygonTemp. Returning");
-
-                    if (circleTemp != null) {
-
-                        circleTemp.remove();
-                    }
-
-                    if (polygonTemp != null) {
-
-                        polygonTemp.remove();
-                    }
-
-                    selectingShape = false;
-
-                    // Change the circle color depending on the map type.
-                    if (mMap.getMapType() == 2 || mMap.getMapType() == 4) {
-
-                        for (int i = 0; i < overlappingShapesCircleLocation.size(); i++) {
-
-                            Circle circle0 = mMap.addCircle(
-                                    new CircleOptions()
-                                            .center(overlappingShapesCircleLocation.get(i))
-                                            .clickable(true)
-                                            .radius(overlappingShapesCircleRadius.get(i))
-                                            .strokeColor(Color.rgb(255, 255, 0))
-                                            .strokeWidth(3f)
-                                            .zIndex(0)
-                            );
-
-                            circle0.setTag(overlappingShapesCircleUUID.get(i));
-                        }
-
-                        for (int i = 0; i < overlappingShapesPolygonVertices.size(); i++) {
-
-                            Polygon polygon0 = mMap.addPolygon(
-                                    new PolygonOptions()
-                                            .clickable(true)
-                                            .addAll(overlappingShapesPolygonVertices.get(i))
-                                            .strokeColor(Color.rgb(255, 255, 0))
-                                            .strokeWidth(3f)
-                                            .zIndex(0)
-                            );
-
-                            polygon0.setTag(overlappingShapesPolygonUUID.get(i));
-                        }
-                    } else {
-
-                        for (int i = 0; i < overlappingShapesCircleLocation.size(); i++) {
-
-                            Circle circle0 = mMap.addCircle(
-                                    new CircleOptions()
-                                            .center(overlappingShapesCircleLocation.get(i))
-                                            .clickable(true)
-                                            .radius(overlappingShapesCircleRadius.get(i))
-                                            .strokeColor(Color.rgb(255, 0, 255))
-                                            .strokeWidth(3f)
-                                            .zIndex(0)
-                            );
-
-                            circle0.setTag(overlappingShapesCircleUUID.get(i));
-                        }
-
-                        for (int i = 0; i < overlappingShapesPolygonVertices.size(); i++) {
-
-                            Polygon polygon0 = mMap.addPolygon(
-                                    new PolygonOptions()
-                                            .clickable(true)
-                                            .addAll(overlappingShapesPolygonVertices.get(i))
-                                            .strokeColor(Color.rgb(255, 0, 255))
-                                            .strokeWidth(3f)
-                                            .zIndex(0)
-                            );
-
-                            polygon0.setTag(overlappingShapesPolygonUUID.get(i));
-                        }
-                    }
-
-                    overlappingShapesUUID = new ArrayList<>();
-                    overlappingShapesCircleUUID = new ArrayList<>();
-                    overlappingShapesPolygonUUID = new ArrayList<>();
-                    overlappingShapesCircleLocation = new ArrayList<>();
-                    overlappingShapesCircleRadius = new ArrayList<>();
-                    overlappingShapesPolygonVertices = new ArrayList<>();
-
-                    chatSelectorSeekBar.setVisibility(View.INVISIBLE);
-                    chatSizeSeekBar.setVisibility(View.VISIBLE);
-                    chatSizeSeekBar.setProgress(0);
-                    chatSelectorSeekBar.setProgress(0);
-
-                    chatsSize = 0;
-
-                    // Get rid of new shapes if the user clicks away from them.
-                    if (newCircle != null) {
-
-                        newCircle.remove();
-
-                        if (marker0 != null) {
-
-                            marker0.remove();
-                        }
-
-                        if (marker1 != null) {
-
-                            marker1.remove();
-                        }
-
-                        newCircle = null;
-                        marker0 = null;
-                        marker1 = null;
-                        marker0Position = null;
-                        marker1Position = null;
-                        marker0ID = null;
-                        marker1ID = null;
-
-                        chatSizeSeekBar.setProgress(0);
-                        relativeAngle = 0.0;
-                        usedSeekBar = false;
-                    }
-
-                    if (newPolygon != null) {
-
-                        newPolygon.remove();
-                        marker0.remove();
-                        marker1.remove();
-                        marker2.remove();
-                        newPolygon = null;
-                        marker0 = null;
-                        marker1 = null;
-                        marker2 = null;
-                        marker0Position = null;
-                        marker1Position = null;
-                        marker2Position = null;
-                        marker0ID = null;
-                        marker1ID = null;
-                        marker2ID = null;
-
-                        if (marker3 != null) {
-
-                            marker3.remove();
-                            marker3 = null;
-                            marker3Position = null;
-                            marker3ID = null;
-                        }
-
-                        if (marker4 != null) {
-
-                            marker4.remove();
-                            marker4 = null;
-                            marker4Position = null;
-                            marker4ID = null;
-                        }
-
-                        if (marker5 != null) {
-
-                            marker5.remove();
-                            marker5 = null;
-                            marker5Position = null;
-                            marker5ID = null;
-                        }
-
-                        if (marker6 != null) {
-
-                            marker6.remove();
-                            marker6 = null;
-                            marker6Position = null;
-                            marker6ID = null;
-                        }
-
-                        if (marker7 != null) {
-
-                            marker7.remove();
-                            marker7 = null;
-                            marker7Position = null;
-                            marker7ID = null;
-                        }
-
-                        chatSizeSeekBar.setProgress(0);
-                        usedSeekBar = false;
-                    }
-
-                    return;
-                }
-
-                // Change boolean value so the x and y values in touchAgain() from dispatchTouchEvent() do not change.
-                waitingForClicksToProcess = true;
-
-                // While clicking through the circles, if a circle does not have a tag, it is new. Therefore, go directly to the recyclerviewlayout, as this is probably the recyclerviewlayout the user wants to enter.
-                if (polygon.getTag() == null) {
-
-                    Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> User clicked on a new polygon");
+                    Log.i(TAG, "onMapReadyAndRestart() -> onMarkerClick -> circle -> marker0");
 
                     // End this method if the method is already being processed from another shape clicking event.
                     if (waitingForShapeInformationToProcess) {
 
-                        return;
+                        return false;
                     }
 
                     // Update boolean to prevent double clicking a shape.
                     waitingForShapeInformationToProcess = true;
 
                     // Inform the user is the circle is too small.
-                    if (SphericalUtil.computeArea(polygonPointsList) < Math.PI) {
+                    if (newCircle.getRadius() < 1) {
 
                         toastMessageLong("Please make the shape larger");
-                        return;
+                        return false;
                     }
 
                     // Generate a uuid, as the shape is new.
                     shapeUUID = UUID.randomUUID().toString();
-
-                    // Check location permissions.
-                    if (ContextCompat.checkSelfPermission(getBaseContext(),
-                            Manifest.permission.ACCESS_FINE_LOCATION)
-                            == PackageManager.PERMISSION_GRANTED) {
-
-                        // Check if user is within the circle before going to the recyclerviewlayout.
-                        FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
-
-                        mFusedLocationClient.getLastLocation()
-                                .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
-
-                                    @Override
-                                    public void onSuccess(Location location) {
-
-                                        if (location != null) {
-
-                                            // Boolean; will be true if user is within the shape upon shape click.
-                                            userIsWithinShape = PolyUtil.containsLocation(location.getLatitude(), location.getLongitude(), polygon.getPoints(), false);
-
-                                            // Check if the user is already signed in.
-                                            if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) instanceof GoogleSignInAccount) {
-
-                                                // User signed in.
-
-                                                Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> New polygon -> User signed in");
-
-                                                // Carry the extras all the way to Chat.java.
-                                                Intent Activity = new Intent(Map.this, Navigation.class);
-                                                goToNextActivityPolygon(Activity, true);
-                                            } else {
-
-                                                // User NOT signed in.
-
-                                                Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> New polygon -> User NOT signed in");
-
-                                                // Carry the extras all the way to Chat.java.
-                                                Intent Activity = new Intent(Map.this, SignIn.class);
-                                                goToNextActivityPolygon(Activity, true);
-                                            }
-                                        } else {
-
-                                            Log.e(TAG, "onMapReadyAndRestart() -> onPolygonClick -> polygon.getTag() == null -> location == null");
-                                            mMap.getUiSettings().setScrollGesturesEnabled(true);
-                                            loadingIcon.setVisibility(View.GONE);
-                                            toastMessageLong("An error occurred: your location is null");
-                                        }
-                                    }
-                                });
-                    } else {
-
-                        checkLocationPermissions();
-                    }
-
-                    // As getFusedLocationProviderClient is asynchronous, this return statement will prevent executing the rest of the code.
-                    return;
-                }
-
-                // Click through all shapes, using the z-index to figure out which ones have not been cycled through. All the information to the arrayLists to be used by chatSelectorSeekBar.
-                if (polygon.getZIndex() == 0 && polygon.getTag() != null) {
-
-                    Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> Lowering z-index of a polygon");
-
-                    // Prevent the map from scrolling so the same spot will be clicked again in touchAgain().
-                    if (mMap.getUiSettings().isScrollGesturesEnabled()) {
-
-                        mMap.getUiSettings().setScrollGesturesEnabled(false);
-                    }
-
-                    loadingIcon.setVisibility(View.VISIBLE);
-
-                    // Drop the z-index to metaphorically check it off the "to click" list.
-                    polygon.setZIndex(-1);
-
-                    // Add the information to arrayLists to be used by chatSelectorSeekBar.
-                    overlappingShapesUUID.add(polygon.getTag().toString());
-                    overlappingShapesPolygonUUID.add(polygon.getTag().toString());
-                    overlappingShapesPolygonVertices.add(polygon.getPoints());
-
-                    // If the user zooms out and a shape is too small, touchAgain() will not touch the shape again (I'm not sure why).
-                    // Therefore, save an instance of the shape so that if onMapClick is called, it will just go to the last shape.
-                    mPolygon = polygon;
-
-                    // Programmatically click the same spot again.
-                    touchAgain();
-
-                    return;
-                }
-
-                waitingForClicksToProcess = false;
-
-                // This will get called after the last shape is programmatically clicked.
-                chatsSize = overlappingShapesUUID.size();
-
-                // If none of the clicked shapes are new, get rid of any new shapes.
-                if (!overlappingShapesUUID.contains("new")) {
-
-                    // Remove the polygon and markers.
-                    if (newPolygon != null) {
-
-                        newPolygon.remove();
-                        marker0.remove();
-                        marker1.remove();
-                        marker2.remove();
-                        newPolygon = null;
-                        marker0 = null;
-                        marker1 = null;
-                        marker2 = null;
-                        marker0Position = null;
-                        marker1Position = null;
-                        marker2Position = null;
-                        marker0ID = null;
-                        marker1ID = null;
-                        marker2ID = null;
-
-                        if (marker3 != null) {
-
-                            marker3.remove();
-                            marker3 = null;
-                            marker3Position = null;
-                            marker3ID = null;
-                        }
-
-                        if (marker4 != null) {
-
-                            marker4.remove();
-                            marker4 = null;
-                            marker4Position = null;
-                            marker4ID = null;
-                        }
-
-                        if (marker5 != null) {
-
-                            marker5.remove();
-                            marker5 = null;
-                            marker5Position = null;
-                            marker5ID = null;
-                        }
-
-                        if (marker6 != null) {
-
-                            marker6.remove();
-                            marker6 = null;
-                            marker6Position = null;
-                            marker6ID = null;
-                        }
-
-                        if (marker7 != null) {
-
-                            marker7.remove();
-                            marker7 = null;
-                            marker7Position = null;
-                            marker7ID = null;
-                        }
-                    }
-
-                    // Remove the circle and markers.
-                    if (newCircle != null) {
-
-                        newCircle.remove();
-
-                        if (marker0 != null) {
-
-                            marker0.remove();
-                        }
-
-                        if (marker1 != null) {
-                            marker1.remove();
-                        }
-
-                        newCircle = null;
-                        marker0 = null;
-                        marker1 = null;
-                        marker0Position = null;
-                        marker1Position = null;
-                        marker0ID = null;
-                        marker1ID = null;
-                    }
-                }
-
-                // If selectingShape, user has selected a highlighted shape. Similar logic applies to originally only clicking on one circle.
-                if (selectingShape || (chatsSize == 1 && polygon.getTag() != null)) {
-
-                    Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> User selected a polygon");
-
-                    // End this method if the method is already being processed from another shape clicking event.
-                    if (waitingForShapeInformationToProcess) {
-
-                        return;
-                    }
-
-                    // Update boolean to prevent double clicking a shape.
-                    waitingForShapeInformationToProcess = true;
-
-                    // "New" shapes are automatically clicked. Therefore, get the ID set by Firebase to identify which circle the user clicked on.
-                    if (chatsSize == 1) {
-
-                        shapeUUID = (String) polygon.getTag();
-                    } else {
-
-                        shapeUUID = selectedOverlappingShapeUUID;
-                    }
-
-                    // Check if user is within the shape before going to the recyclerviewlayout.
-                    FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
-
-                    mFusedLocationClient.getLastLocation()
-                            .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
-
-                                @Override
-                                public void onSuccess(Location location) {
-
-                                    if (location != null) {
-
-                                        // Boolean; will be true if user is within the shape upon shape click.
-                                        userIsWithinShape = PolyUtil.containsLocation(location.getLatitude(), location.getLongitude(), polygon.getPoints(), false);
-
-                                        // Check if the user is already signed in.
-                                        if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) instanceof GoogleSignInAccount) {
-
-                                            Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> User selected a polygon -> User signed in");
-
-                                            // User is signed in.
-
-                                            Intent Activity = new Intent(Map.this, Navigation.class);
-                                            goToNextActivityPolygon(Activity, false);
-                                        } else {
-
-                                            Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> User selected a polygon -> No user signed in");
-
-                                            // No user is signed in.
-
-                                            Intent Activity = new Intent(Map.this, SignIn.class);
-                                            goToNextActivityPolygon(Activity, false);
-                                        }
-                                    } else {
-
-                                        Log.e(TAG, "onMapReadyAndRestart() -> onPolygonClick -> User selected a polygon -> location == null");
-                                        mMap.getUiSettings().setScrollGesturesEnabled(true);
-                                        loadingIcon.setVisibility(View.GONE);
-                                        toastMessageLong("An error occurred: your location is null");
-                                    }
-                                }
-                            });
-
-                    return;
-                }
-
-                selectingShape = true;
-
-                // The following shows a shape consistent with the location of the seekBar.
-                selectedOverlappingShapeUUID = overlappingShapesUUID.get(0);
-
-                if (selectedOverlappingShapeUUID != null) {
-
-                    if (circleTemp != null) {
-
-                        circleTemp.remove();
-                    }
-
-                    if (polygonTemp != null) {
-
-                        polygonTemp.remove();
-                    }
-
-                    if ((overlappingShapesPolygonVertices.size() > overlappingShapesCircleLocation.size() || overlappingShapesPolygonVertices.size() == overlappingShapesCircleLocation.size()) && overlappingShapesCircleLocation.size() > 0) {
-
-                        selectedOverlappingShapeCircleLocation = overlappingShapesCircleLocation.get(0);
-                        selectedOverlappingShapeCircleRadius = overlappingShapesCircleRadius.get(0);
-
-                        if (mMap.getMapType() == 2 || mMap.getMapType() == 4) {
-
-                            circleTemp = mMap.addCircle(
-                                    new CircleOptions()
-                                            .center(selectedOverlappingShapeCircleLocation)
-                                            .clickable(true)
-                                            .fillColor(Color.argb(100, 255, 255, 0))
-                                            .radius(selectedOverlappingShapeCircleRadius)
-                                            .strokeColor(Color.rgb(255, 255, 0))
-                                            .strokeWidth(3f)
-                                            .zIndex(2)
-                            );
-                        } else {
-
-                            circleTemp = mMap.addCircle(
-                                    new CircleOptions()
-                                            .center(selectedOverlappingShapeCircleLocation)
-                                            .clickable(true)
-                                            .fillColor(Color.argb(100, 255, 0, 255))
-                                            .radius(selectedOverlappingShapeCircleRadius)
-                                            .strokeColor(Color.rgb(255, 0, 255))
-                                            .strokeWidth(3f)
-                                            .zIndex(2)
-                            );
-                        }
-
-                        // Used when getting rid of the shapes in onMapClick.
-                        circleTemp.setTag(selectedOverlappingShapeUUID);
-                        circleTemp.setCenter(selectedOverlappingShapeCircleLocation);
-                        circleTemp.setRadius(selectedOverlappingShapeCircleRadius);
-                    } else {
-
-                        selectedOverlappingShapePolygonVertices = overlappingShapesPolygonVertices.get(0);
-
-                        if (mMap.getMapType() == 2 || mMap.getMapType() == 4) {
-
-                            polygonTemp = mMap.addPolygon(
-                                    new PolygonOptions()
-                                            .clickable(true)
-                                            .fillColor(Color.argb(100, 255, 255, 0))
-                                            .strokeColor(Color.rgb(255, 255, 0))
-                                            .strokeWidth(3f)
-                                            .addAll(selectedOverlappingShapePolygonVertices)
-                                            .zIndex(2)
-                            );
-                        } else {
-
-                            polygonTemp = mMap.addPolygon(
-                                    new PolygonOptions()
-                                            .clickable(true)
-                                            .fillColor(Color.argb(100, 255, 0, 255))
-                                            .strokeColor(Color.rgb(255, 0, 255))
-                                            .strokeWidth(3f)
-                                            .addAll(selectedOverlappingShapePolygonVertices)
-                                            .zIndex(2)
-                            );
-                        }
-
-                        // Used when getting rid of the shapes in onMapClick.
-                        polygonTemp.setTag(selectedOverlappingShapeUUID);
-                    }
-                } else {
-
-                    Log.e(TAG, "onMapReadyAndRestart() -> onPolygonClick -> selectedOverlappingShapeUUID == null");
-                    mMap.getUiSettings().setScrollGesturesEnabled(true);
-                    loadingIcon.setVisibility(View.GONE);
-                    toastMessageLong("An error occurred");
-                }
-
-                // At this point, chatsSize > 1 so set the chatSelectorSeekBar to VISIBLE.
-                chatSelectorSeekBar.setMax(chatsSize - 1);
-                chatSelectorSeekBar.setProgress(0);
-                chatSizeSeekBar.setVisibility(View.GONE);
-                chatSelectorSeekBar.setVisibility(View.VISIBLE);
-                mMap.getUiSettings().setScrollGesturesEnabled(true);
-                loadingIcon.setVisibility(View.GONE);
-                toastMessageLong("Highlight and select a shape using the SeekBar below");
-            }
-        });
-
-        // Go to Chat.java when clicking on a circle.
-        mMap.setOnCircleClickListener(new GoogleMap.OnCircleClickListener() {
-
-            @Override
-            public void onCircleClick(final Circle circle) {
-
-                // If the user tries to click on a circle that is not a circleTemp while circleTemp exists, return.
-                if (chatSelectorSeekBar.getVisibility() == View.VISIBLE && (circle.getTag() != selectedOverlappingShapeUUID)) {
-
-                    Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> Selected circle is not a circleTemp. Resetting and returning");
-
-                    if (circleTemp != null) {
-
-                        circleTemp.remove();
-                    }
-
-                    if (polygonTemp != null) {
-
-                        polygonTemp.remove();
-                    }
-
-                    selectingShape = false;
-
-                    // Change the circle color depending on the map type.
-                    if (mMap.getMapType() == 2 || mMap.getMapType() == 4) {
-
-                        for (int i = 0; i < overlappingShapesCircleLocation.size(); i++) {
-
-                            Circle circle0 = mMap.addCircle(
-                                    new CircleOptions()
-                                            .center(overlappingShapesCircleLocation.get(i))
-                                            .clickable(true)
-                                            .radius(overlappingShapesCircleRadius.get(i))
-                                            .strokeColor(Color.rgb(255, 255, 0))
-                                            .strokeWidth(3f)
-                                            .zIndex(0)
-                            );
-
-                            circle0.setTag(overlappingShapesCircleUUID.get(i));
-                        }
-
-                        for (int i = 0; i < overlappingShapesPolygonVertices.size(); i++) {
-
-                            Polygon polygon0 = mMap.addPolygon(
-                                    new PolygonOptions()
-                                            .clickable(true)
-                                            .addAll(overlappingShapesPolygonVertices.get(i))
-                                            .strokeColor(Color.rgb(255, 255, 0))
-                                            .strokeWidth(3f)
-                                            .zIndex(0)
-                            );
-
-                            polygon0.setTag(overlappingShapesPolygonUUID.get(i));
-                        }
-                    } else {
-
-                        for (int i = 0; i < overlappingShapesCircleLocation.size(); i++) {
-
-                            Circle circle0 = mMap.addCircle(
-                                    new CircleOptions()
-                                            .center(overlappingShapesCircleLocation.get(i))
-                                            .clickable(true)
-                                            .radius(overlappingShapesCircleRadius.get(i))
-                                            .strokeColor(Color.rgb(255, 0, 255))
-                                            .strokeWidth(3f)
-                                            .zIndex(0)
-                            );
-
-                            circle0.setTag(overlappingShapesCircleUUID.get(i));
-                        }
-
-                        for (int i = 0; i < overlappingShapesPolygonVertices.size(); i++) {
-
-                            Polygon polygon0 = mMap.addPolygon(
-                                    new PolygonOptions()
-                                            .clickable(true)
-                                            .addAll(overlappingShapesPolygonVertices.get(i))
-                                            .strokeColor(Color.rgb(255, 0, 255))
-                                            .strokeWidth(3f)
-                                            .zIndex(0)
-                            );
-
-                            polygon0.setTag(overlappingShapesPolygonUUID.get(i));
-                        }
-                    }
-
-                    overlappingShapesUUID = new ArrayList<>();
-                    overlappingShapesCircleUUID = new ArrayList<>();
-                    overlappingShapesPolygonUUID = new ArrayList<>();
-                    overlappingShapesCircleLocation = new ArrayList<>();
-                    overlappingShapesCircleRadius = new ArrayList<>();
-                    overlappingShapesPolygonVertices = new ArrayList<>();
-
-                    chatSelectorSeekBar.setVisibility(View.INVISIBLE);
-                    chatSizeSeekBar.setVisibility(View.VISIBLE);
-                    chatSizeSeekBar.setProgress(0);
-                    chatSelectorSeekBar.setProgress(0);
-
-                    chatsSize = 0;
-
-                    // Get rid of new shapes if the user clicks away from them.
-                    if (newCircle != null) {
-
-                        newCircle.remove();
-
-                        if (marker0 != null) {
-
-                            marker0.remove();
-                        }
-
-                        if (marker1 != null) {
-
-                            marker1.remove();
-                        }
-
-                        newCircle = null;
-                        marker0 = null;
-                        marker1 = null;
-                        marker0Position = null;
-                        marker1Position = null;
-                        marker0ID = null;
-                        marker1ID = null;
-
-                        chatSizeSeekBar.setProgress(0);
-                        relativeAngle = 0.0;
-                        usedSeekBar = false;
-                    }
-
-                    if (newPolygon != null) {
-
-                        newPolygon.remove();
-                        marker0.remove();
-                        marker1.remove();
-                        marker2.remove();
-                        newPolygon = null;
-                        marker0 = null;
-                        marker1 = null;
-                        marker2 = null;
-                        marker0Position = null;
-                        marker1Position = null;
-                        marker2Position = null;
-                        marker0ID = null;
-                        marker1ID = null;
-                        marker2ID = null;
-
-                        if (marker3 != null) {
-
-                            marker3.remove();
-                            marker3 = null;
-                            marker3Position = null;
-                            marker3ID = null;
-                        }
-
-                        if (marker4 != null) {
-
-                            marker4.remove();
-                            marker4 = null;
-                            marker4Position = null;
-                            marker4ID = null;
-                        }
-
-                        if (marker5 != null) {
-
-                            marker5.remove();
-                            marker5 = null;
-                            marker5Position = null;
-                            marker5ID = null;
-                        }
-
-                        if (marker6 != null) {
-
-                            marker6.remove();
-                            marker6 = null;
-                            marker6Position = null;
-                            marker6ID = null;
-                        }
-
-                        if (marker7 != null) {
-
-                            marker7.remove();
-                            marker7 = null;
-                            marker7Position = null;
-                            marker7ID = null;
-                        }
-
-                        chatSizeSeekBar.setProgress(0);
-                        usedSeekBar = false;
-                    }
-
-                    return;
-                }
-
-                // Change boolean value so the x and y values in touchAgain() from dispatchTouchEvent() do not change.
-                waitingForClicksToProcess = true;
-
-                // While clicking through the circles, if a circle does not have a tag, it is new. Therefore, go directly to the recyclerviewlayout, as this is probably the recyclerviewlayout the user wants to enter.
-                if (circle.getTag() == null) {
-
-                    Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> User clicked on a new circle");
-
-                    // End this method if the method is already being processed from another shape clicking event.
-                    if (waitingForShapeInformationToProcess) {
-
-                        return;
-                    }
-
-                    // Update boolean to prevent double clicking a shape.
-                    waitingForShapeInformationToProcess = true;
-
-                    // Inform the user is the circle is too small.
-                    if (circle.getRadius() < 1) {
-
-                        toastMessageLong("Please make the shape larger");
-
-                        return;
-                    }
-
-                    // Generate a uuid, as the shape is new.
-                    shapeUUID = UUID.randomUUID().toString();
-
-                    // Check location permissions.
-                    if (ContextCompat.checkSelfPermission(getBaseContext(),
-                            Manifest.permission.ACCESS_FINE_LOCATION)
-                            == PackageManager.PERMISSION_GRANTED) {
-
-                        // Check if user is within the circle before going to the recyclerviewlayout.
-                        FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
-
-                        mFusedLocationClient.getLastLocation()
-                                .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
-
-                                    @Override
-                                    public void onSuccess(Location location) {
-
-                                        if (location != null) {
-
-                                            float[] distance = new float[2];
-
-                                            Location.distanceBetween(location.getLatitude(), location.getLongitude(),
-                                                    circle.getCenter().latitude, circle.getCenter().longitude, distance);
-
-                                            // Boolean; will be true if user is within the circle upon circle click.
-                                            userIsWithinShape = !(distance[0] > circle.getRadius());
-
-                                            // Check if the user is already signed in.
-                                            if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) instanceof GoogleSignInAccount) {
-
-                                                // User signed in.
-
-                                                Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> New circle -> User signed in");
-
-                                                // Carry the extras all the way to Chat.java.
-                                                Intent Activity = new Intent(Map.this, Navigation.class);
-                                                goToNextActivityCircle(Activity, circle, true);
-                                            } else {
-
-                                                // User NOT signed in.
-
-                                                Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> New circle -> User NOT signed in");
-
-                                                // Carry the extras all the way to Chat.java.
-                                                Intent Activity = new Intent(Map.this, SignIn.class);
-                                                goToNextActivityCircle(Activity, circle, true);
-                                            }
-                                        } else {
-
-                                            Log.e(TAG, "onMapReadyAndRestart() -> onCircleClick -> circle.getTag() == null -> location == null");
-                                            mMap.getUiSettings().setScrollGesturesEnabled(true);
-                                            loadingIcon.setVisibility(View.GONE);
-                                            toastMessageLong("An error occurred: your location is null");
-                                        }
-                                    }
-                                });
-                    } else {
-
-                        checkLocationPermissions();
-                    }
-
-                    // As getFusedLocationProviderClient is asynchronous, this return statement will prevent executing the rest of the code.
-                    return;
-                }
-
-                // Click through all shapes, using the z-index to figure out which ones have not been cycled through. All the information to the arrayLists to be used by chatSelectorSeekBar.
-                if (circle.getZIndex() == 0 && circle.getTag() != null) {
-
-                    Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> Lowering z-index of a circle");
-
-                    // Prevent the map from scrolling so the same spot will be clicked again in touchAgain().
-                    if (mMap.getUiSettings().isScrollGesturesEnabled()) {
-
-                        mMap.getUiSettings().setScrollGesturesEnabled(false);
-                    }
-
-                    loadingIcon.setVisibility(View.VISIBLE);
-
-                    // Drop the z-index to metaphorically check it off the "to click" list.
-                    circle.setZIndex(-1);
-
-                    // Add the information to arrayLists to be used by chatSelectorSeekBar.
-                    overlappingShapesUUID.add(circle.getTag().toString());
-                    overlappingShapesCircleUUID.add(circle.getTag().toString());
-                    overlappingShapesCircleLocation.add(circle.getCenter());
-                    overlappingShapesCircleRadius.add(circle.getRadius());
-
-                    // If the user zooms out and a shape is too small, touchAgain() will not touch the shape again (I'm not sure why).
-                    // Therefore, save an instance of the shape so that if onMapClick is called, it will just go to the last shape.
-                    mCircle = circle;
-
-                    // Programmatically click the same spot again.
-                    touchAgain();
-
-                    return;
-                }
-
-                waitingForClicksToProcess = false;
-
-                // This will get called after the last shape is programmatically clicked.
-                chatsSize = overlappingShapesUUID.size();
-
-                // If none of the clicked shapes are new, get rid of any new shapes.
-                if (!overlappingShapesUUID.contains("new")) {
-
-                    // Remove the polygon and markers.
-                    if (newPolygon != null) {
-
-                        newPolygon.remove();
-                        marker0.remove();
-                        marker1.remove();
-                        marker2.remove();
-                        newPolygon = null;
-                        marker0 = null;
-                        marker1 = null;
-                        marker2 = null;
-                        marker0Position = null;
-                        marker1Position = null;
-                        marker2Position = null;
-                        marker0ID = null;
-                        marker1ID = null;
-                        marker2ID = null;
-
-                        if (marker3 != null) {
-
-                            marker3.remove();
-                            marker3 = null;
-                            marker3Position = null;
-                            marker3ID = null;
-                        }
-
-                        if (marker4 != null) {
-
-                            marker4.remove();
-                            marker4 = null;
-                            marker4Position = null;
-                            marker4ID = null;
-                        }
-
-                        if (marker5 != null) {
-
-                            marker5.remove();
-                            marker5 = null;
-                            marker5Position = null;
-                            marker5ID = null;
-                        }
-
-                        if (marker6 != null) {
-
-                            marker6.remove();
-                            marker6 = null;
-                            marker6Position = null;
-                            marker6ID = null;
-                        }
-
-                        if (marker7 != null) {
-
-                            marker7.remove();
-                            marker7 = null;
-                            marker7Position = null;
-                            marker7ID = null;
-                        }
-                    }
-
-                    // Remove the circle and markers.
-                    if (newCircle != null) {
-
-                        newCircle.remove();
-                        if (marker0 != null) {
-
-                            marker0.remove();
-                        }
-
-                        if (marker1 != null) {
-                            marker1.remove();
-                        }
-
-                        newCircle = null;
-                        marker0 = null;
-                        marker1 = null;
-                        marker0Position = null;
-                        marker1Position = null;
-                        marker0ID = null;
-                        marker1ID = null;
-                    }
-                }
-
-                // If selectingShape, user has selected a highlighted shape. Similar logic applies to originally only clicking on one circle.
-                if (selectingShape || (chatsSize == 1 && circle.getTag() != null)) {
-
-                    Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> User selected a circle");
-
-                    // End this method if the method is already being processed from another shape clicking event.
-                    if (waitingForShapeInformationToProcess) {
-
-                        return;
-                    }
-
-                    // Update boolean to prevent double clicking a shape.
-                    waitingForShapeInformationToProcess = true;
-
-                    // "New" shapes are automatically clicked. Therefore, get the ID set by Firebase to identify which circle the user clicked on.
-                    if (chatsSize == 1) {
-
-                        shapeUUID = (String) circle.getTag();
-                    } else {
-
-                        shapeUUID = selectedOverlappingShapeUUID;
-                    }
 
                     // Check if user is within the circle before going to the recyclerviewlayout.
                     FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
 
-                    mFusedLocationClient.getLastLocation()
-                            .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
+                    // Check location permissions.
+                    if (ContextCompat.checkSelfPermission(getBaseContext(),
+                            Manifest.permission.ACCESS_FINE_LOCATION)
+                            == PackageManager.PERMISSION_GRANTED) {
 
-                                @Override
-                                public void onSuccess(Location location) {
+                        mFusedLocationClient.getLastLocation()
+                                .addOnSuccessListener(Map.this, location -> {
 
                                     if (location != null) {
 
                                         float[] distance = new float[2];
 
                                         Location.distanceBetween(location.getLatitude(), location.getLongitude(),
-                                                circle.getCenter().latitude, circle.getCenter().longitude, distance);
+                                                newCircle.getCenter().latitude, newCircle.getCenter().longitude, distance);
 
                                         // Boolean; will be true if user is within the circle upon circle click.
-                                        userIsWithinShape = !(distance[0] > circle.getRadius());
-
-                                        // Check if the user is already signed in.
-                                        if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) instanceof GoogleSignInAccount) {
-
-                                            // User signed in.
-
-                                            Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> User selected a circle -> User signed in");
-
-                                            Intent Activity = new Intent(Map.this, Navigation.class);
-                                            goToNextActivityCircle(Activity, circle, false);
-                                        } else {
-
-                                            // User NOT signed in.
-
-                                            Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> User selected a circle -> User NOT signed in");
-
-                                            Intent Activity = new Intent(Map.this, SignIn.class);
-                                            goToNextActivityCircle(Activity, circle, false);
-                                        }
+                                        userIsWithinShape = !(distance[0] > newCircle.getRadius());
                                     } else {
 
-                                        Log.e(TAG, "onMapReadyAndRestart() -> onCircleClick -> User selected a circle -> location == null");
+                                        Log.e(TAG, "onMapReadyAndRestart() -> onMarkerClick -> location == null");
                                         mMap.getUiSettings().setScrollGesturesEnabled(true);
                                         loadingIcon.setVisibility(View.GONE);
                                         toastMessageLong("An error occurred: your location is null");
                                     }
-                                }
-                            });
+                                });
 
-                    return;
-                }
+                        // Check if the user is already signed in.
+                        if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) instanceof GoogleSignInAccount) {
 
-                selectingShape = true;
+                            // User signed in.
 
-                // The following shows a shape consistent with the location of the seekBar.
-                selectedOverlappingShapeUUID = overlappingShapesUUID.get(0);
+                            Log.i(TAG, "onMapReadyAndRestart() -> onMarkerClick -> user signed in -> circle -> marker0");
 
-                if (selectedOverlappingShapeUUID != null) {
+                            // uuid does not already exist in Firebase. Go to Chat.java with the uuid.
 
-                    if (circleTemp != null) {
-
-                        circleTemp.remove();
-                    }
-
-                    if (polygonTemp != null) {
-
-                        polygonTemp.remove();
-                    }
-
-                    if (overlappingShapesCircleLocation.size() > overlappingShapesPolygonVertices.size() && overlappingShapesPolygonVertices.size() > 0) {
-
-                        selectedOverlappingShapePolygonVertices = overlappingShapesPolygonVertices.get(0);
-
-                        if (mMap.getMapType() == 2 || mMap.getMapType() == 4) {
-
-                            polygonTemp = mMap.addPolygon(
-                                    new PolygonOptions()
-                                            .clickable(true)
-                                            .fillColor(Color.argb(100, 255, 255, 0))
-                                            .strokeColor(Color.rgb(255, 255, 0))
-                                            .strokeWidth(3f)
-                                            .addAll(selectedOverlappingShapePolygonVertices)
-                                            .zIndex(2)
-                            );
+                            // Carry the extras all the way to Chat.java.
+                            Intent Activity = new Intent(Map.this, Navigation.class);
+                            goToNextActivityCircle(Activity, newCircle, true);
                         } else {
 
-                            polygonTemp = mMap.addPolygon(
-                                    new PolygonOptions()
-                                            .clickable(true)
-                                            .fillColor(Color.argb(100, 255, 0, 255))
-                                            .strokeColor(Color.rgb(255, 0, 255))
-                                            .strokeWidth(3f)
-                                            .addAll(selectedOverlappingShapePolygonVertices)
-                                            .zIndex(2)
-                            );
-                        }
+                            // User NOT signed in.
 
-                        // Used when getting rid of the shapes in onMapClick.
-                        polygonTemp.setTag(selectedOverlappingShapeUUID);
+                            Log.i(TAG, "onMapReadyAndRestart() -> onMarkerClick -> user NOT signed in -> circle -> marker0");
+
+                            // Carry the extras all the way to Chat.java.
+                            Intent Activity = new Intent(Map.this, SignIn.class);
+                            goToNextActivityCircle(Activity, newCircle, true);
+                        }
                     } else {
 
-                        selectedOverlappingShapeCircleLocation = overlappingShapesCircleLocation.get(0);
-                        selectedOverlappingShapeCircleRadius = overlappingShapesCircleRadius.get(0);
+                        checkLocationPermissions();
+                    }
+                }
+            }
 
-                        if (mMap.getMapType() == 2 || mMap.getMapType() == 4) {
+            return true;
+        });
 
-                            circleTemp = mMap.addCircle(
-                                    new CircleOptions()
-                                            .center(selectedOverlappingShapeCircleLocation)
-                                            .clickable(true)
-                                            .fillColor(Color.argb(100, 255, 255, 0))
-                                            .radius(selectedOverlappingShapeCircleRadius)
-                                            .strokeColor(Color.rgb(255, 255, 0))
-                                            .strokeWidth(3f)
-                                            .zIndex(2)
-                            );
-                        } else {
+        // Go to Chat.java when clicking on a polygon.
+        mMap.setOnPolygonClickListener(polygon -> {
 
-                            circleTemp = mMap.addCircle(
-                                    new CircleOptions()
-                                            .center(selectedOverlappingShapeCircleLocation)
-                                            .clickable(true)
-                                            .fillColor(Color.argb(100, 255, 0, 255))
-                                            .radius(selectedOverlappingShapeCircleRadius)
-                                            .strokeColor(Color.rgb(255, 0, 255))
-                                            .strokeWidth(3f)
-                                            .zIndex(2)
-                            );
-                        }
+            // If the user tries to click on a polygon that is not a polygonTemp while polygonTemp exists, return.
+            if (chatSelectorSeekBar.getVisibility() == View.VISIBLE && (polygon.getTag() != selectedOverlappingShapeUUID)) {
 
-                        // Used when getting rid of the shapes in onMapClick.
-                        circleTemp.setTag(selectedOverlappingShapeUUID);
-                        circleTemp.setCenter(selectedOverlappingShapeCircleLocation);
-                        circleTemp.setRadius(selectedOverlappingShapeCircleRadius);
+                Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> Selected polygon is not a polygonTemp. Returning");
+
+                if (circleTemp != null) {
+
+                    circleTemp.remove();
+                }
+
+                if (polygonTemp != null) {
+
+                    polygonTemp.remove();
+                }
+
+                selectingShape = false;
+
+                // Change the circle color depending on the map type.
+                if (mMap.getMapType() == 2 || mMap.getMapType() == 4) {
+
+                    for (int i = 0; i < overlappingShapesCircleLocation.size(); i++) {
+
+                        Circle circle0 = mMap.addCircle(
+                                new CircleOptions()
+                                        .center(overlappingShapesCircleLocation.get(i))
+                                        .clickable(true)
+                                        .radius(overlappingShapesCircleRadius.get(i))
+                                        .strokeColor(Color.rgb(255, 255, 0))
+                                        .strokeWidth(3f)
+                                        .zIndex(0)
+                        );
+
+                        circle0.setTag(overlappingShapesCircleUUID.get(i));
+                    }
+
+                    for (int i = 0; i < overlappingShapesPolygonVertices.size(); i++) {
+
+                        Polygon polygon0 = mMap.addPolygon(
+                                new PolygonOptions()
+                                        .clickable(true)
+                                        .addAll(overlappingShapesPolygonVertices.get(i))
+                                        .strokeColor(Color.rgb(255, 255, 0))
+                                        .strokeWidth(3f)
+                                        .zIndex(0)
+                        );
+
+                        polygon0.setTag(overlappingShapesPolygonUUID.get(i));
                     }
                 } else {
 
-                    Log.e(TAG, "onMapReadyAndRestart() -> onCircleClick -> selectedOverlappingShapeUUID == null");
-                    mMap.getUiSettings().setScrollGesturesEnabled(true);
-                    loadingIcon.setVisibility(View.GONE);
-                    toastMessageLong("An error occurred");
+                    for (int i = 0; i < overlappingShapesCircleLocation.size(); i++) {
+
+                        Circle circle0 = mMap.addCircle(
+                                new CircleOptions()
+                                        .center(overlappingShapesCircleLocation.get(i))
+                                        .clickable(true)
+                                        .radius(overlappingShapesCircleRadius.get(i))
+                                        .strokeColor(Color.rgb(255, 0, 255))
+                                        .strokeWidth(3f)
+                                        .zIndex(0)
+                        );
+
+                        circle0.setTag(overlappingShapesCircleUUID.get(i));
+                    }
+
+                    for (int i = 0; i < overlappingShapesPolygonVertices.size(); i++) {
+
+                        Polygon polygon0 = mMap.addPolygon(
+                                new PolygonOptions()
+                                        .clickable(true)
+                                        .addAll(overlappingShapesPolygonVertices.get(i))
+                                        .strokeColor(Color.rgb(255, 0, 255))
+                                        .strokeWidth(3f)
+                                        .zIndex(0)
+                        );
+
+                        polygon0.setTag(overlappingShapesPolygonUUID.get(i));
+                    }
                 }
 
-                // At this point, chatsSize > 1 so set the chatSelectorSeekBar to VISIBLE.
-                chatSelectorSeekBar.setMax(chatsSize - 1);
+                overlappingShapesUUID = new ArrayList<>();
+                overlappingShapesCircleUUID = new ArrayList<>();
+                overlappingShapesPolygonUUID = new ArrayList<>();
+                overlappingShapesCircleLocation = new ArrayList<>();
+                overlappingShapesCircleRadius = new ArrayList<>();
+                overlappingShapesPolygonVertices = new ArrayList<>();
+
+                chatSelectorSeekBar.setVisibility(View.INVISIBLE);
+                chatSizeSeekBar.setVisibility(View.VISIBLE);
+                chatSizeSeekBar.setProgress(0);
                 chatSelectorSeekBar.setProgress(0);
-                chatSizeSeekBar.setVisibility(View.GONE);
-                chatSelectorSeekBar.setVisibility(View.VISIBLE);
-                mMap.getUiSettings().setScrollGesturesEnabled(true);
-                loadingIcon.setVisibility(View.GONE);
-                toastMessageLong("Highlight and select a shape using the SeekBar below");
-            }
-        });
 
-        mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
-
-            @Override
-            public void onMapClick(LatLng latLng) {
-
-                // Make new shapes with z-index = 0.
-                if (chatSelectorSeekBar.getVisibility() == View.VISIBLE) {
-
-                    Log.i(TAG, "onMapReadyAndRestart() -> onMapClick -> Replacing circles with z = -1 with z-index = 0");
-
-                    if (circleTemp != null) {
-
-                        circleTemp.remove();
-                    }
-
-                    if (polygonTemp != null) {
-
-                        polygonTemp.remove();
-                    }
-
-                    selectingShape = false;
-
-                    // Change the circle color depending on the map type.
-                    if (mMap.getMapType() == 2 || mMap.getMapType() == 4) {
-
-                        for (int i = 0; i < overlappingShapesCircleLocation.size(); i++) {
-
-                            Circle circle0 = mMap.addCircle(
-                                    new CircleOptions()
-                                            .center(overlappingShapesCircleLocation.get(i))
-                                            .clickable(true)
-                                            .radius(overlappingShapesCircleRadius.get(i))
-                                            .strokeColor(Color.rgb(255, 255, 0))
-                                            .strokeWidth(3f)
-                                            .zIndex(0)
-                            );
-
-                            circle0.setTag(overlappingShapesCircleUUID.get(i));
-                        }
-
-                        for (int i = 0; i < overlappingShapesPolygonVertices.size(); i++) {
-
-                            Polygon polygon0 = mMap.addPolygon(
-                                    new PolygonOptions()
-                                            .clickable(true)
-                                            .addAll(overlappingShapesPolygonVertices.get(i))
-                                            .strokeColor(Color.rgb(255, 255, 0))
-                                            .strokeWidth(3f)
-                                            .zIndex(0)
-                            );
-
-                            polygon0.setTag(overlappingShapesPolygonUUID.get(i));
-                        }
-                    } else {
-
-                        for (int i = 0; i < overlappingShapesCircleLocation.size(); i++) {
-
-                            Circle circle0 = mMap.addCircle(
-                                    new CircleOptions()
-                                            .center(overlappingShapesCircleLocation.get(i))
-                                            .clickable(true)
-                                            .radius(overlappingShapesCircleRadius.get(i))
-                                            .strokeColor(Color.rgb(255, 0, 255))
-                                            .strokeWidth(3f)
-                                            .zIndex(0)
-                            );
-
-                            circle0.setTag(overlappingShapesCircleUUID.get(i));
-                        }
-
-                        for (int i = 0; i < overlappingShapesPolygonVertices.size(); i++) {
-
-                            Polygon polygon0 = mMap.addPolygon(
-                                    new PolygonOptions()
-                                            .clickable(true)
-                                            .addAll(overlappingShapesPolygonVertices.get(i))
-                                            .strokeColor(Color.rgb(255, 0, 255))
-                                            .strokeWidth(3f)
-                                            .zIndex(0)
-                            );
-
-                            polygon0.setTag(overlappingShapesPolygonUUID.get(i));
-                        }
-                    }
-
-                    overlappingShapesUUID = new ArrayList<>();
-                    overlappingShapesCircleUUID = new ArrayList<>();
-                    overlappingShapesPolygonUUID = new ArrayList<>();
-                    overlappingShapesCircleLocation = new ArrayList<>();
-                    overlappingShapesCircleRadius = new ArrayList<>();
-                    overlappingShapesPolygonVertices = new ArrayList<>();
-
-                    chatSelectorSeekBar.setVisibility(View.INVISIBLE);
-                    chatSizeSeekBar.setVisibility(View.VISIBLE);
-                    chatSizeSeekBar.setProgress(0);
-                    chatSelectorSeekBar.setProgress(0);
-
-                    chatsSize = 0;
-                }
-
-                // If the user zooms out and a shape is too small, touchAgain() will not touch the shape again (I'm not sure why).
-                // Therefore, just follow through with the on[Shape]Click code without getting ALL the shapes.
-                if (loadingIcon.getVisibility() == View.VISIBLE && mCircle != null) {
-
-                    Log.i(TAG, "onMapReadyAndRestart() -> onMapClick -> User selected a circle");
-
-                    chatsSize = overlappingShapesUUID.size();
-
-                    // End this method if the method is already being processed from another shape clicking event.
-                    if (waitingForShapeInformationToProcess) {
-
-                        return;
-                    }
-
-                    // Update boolean to prevent double clicking a shape.
-                    waitingForShapeInformationToProcess = true;
-
-                    shapeUUID = (String) mCircle.getTag();
-
-                    // Check location permissions.
-                    if (ContextCompat.checkSelfPermission(getBaseContext(),
-                            Manifest.permission.ACCESS_FINE_LOCATION)
-                            == PackageManager.PERMISSION_GRANTED) {
-
-                        // Check if user is within the circle before going to the recyclerviewlayout.
-                        FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
-
-                        mFusedLocationClient.getLastLocation()
-                                .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
-
-                                    @Override
-                                    public void onSuccess(Location location) {
-
-                                        if (location != null) {
-
-                                            float[] distance = new float[2];
-
-                                            Location.distanceBetween(location.getLatitude(), location.getLongitude(),
-                                                    mCircle.getCenter().latitude, mCircle.getCenter().longitude, distance);
-
-                                            // Boolean; will be true if user is within the circle upon circle click.
-                                            userIsWithinShape = !(distance[0] > mCircle.getRadius());
-
-                                            // Check if the user is already signed in.
-                                            if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) instanceof GoogleSignInAccount) {
-
-                                                // User signed in.
-
-                                                Log.i(TAG, "onMapReadyAndRestart() -> onMapClick -> User selected a circle -> User signed in");
-
-                                                Intent Activity = new Intent(Map.this, Navigation.class);
-                                                goToNextActivityCircle(Activity, mCircle, false);
-                                            } else {
-
-                                                // User NOT signed in.
-
-                                                Log.i(TAG, "onMapReadyAndRestart() -> onMapClick -> User selected a circle -> User NOT signed in");
-
-                                                Intent Activity = new Intent(Map.this, SignIn.class);
-                                                goToNextActivityCircle(Activity, mCircle, false);
-                                            }
-                                        } else {
-
-                                            Log.e(TAG, "onMapReadyAndRestart() -> onMapClick -> User selected a circle -> location == null");
-                                            mMap.getUiSettings().setScrollGesturesEnabled(true);
-                                            loadingIcon.setVisibility(View.GONE);
-                                            toastMessageLong("An error occurred: your location is null");
-                                        }
-                                    }
-                                });
-                    } else {
-
-                        checkLocationPermissions();
-                    }
-
-                    return;
-                }
-
-                if (loadingIcon.getVisibility() == View.VISIBLE && mPolygon != null) {
-
-                    Log.i(TAG, "onMapReadyAndRestart() -> onMapClick -> User selected a polygon");
-
-                    chatsSize = overlappingShapesUUID.size();
-
-                    // End this method if the method is already being processed from another shape clicking event.
-                    if (waitingForShapeInformationToProcess) {
-
-                        return;
-                    }
-
-                    // Update boolean to prevent double clicking a shape.
-                    waitingForShapeInformationToProcess = true;
-
-                    shapeUUID = (String) mPolygon.getTag();
-
-                    // Check location permissions.
-                    if (ContextCompat.checkSelfPermission(getBaseContext(),
-                            Manifest.permission.ACCESS_FINE_LOCATION)
-                            == PackageManager.PERMISSION_GRANTED) {
-
-                        // Check if user is within the shape before going to the recyclerviewlayout.
-                        FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
-
-                        mFusedLocationClient.getLastLocation()
-                                .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
-
-                                    @Override
-                                    public void onSuccess(Location location) {
-
-                                        if (location != null) {
-
-                                            // Boolean; will be true if user is within the shape upon shape click.
-                                            userIsWithinShape = PolyUtil.containsLocation(location.getLatitude(), location.getLongitude(), mPolygon.getPoints(), false);
-
-                                            // Check if the user is already signed in.
-                                            if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) instanceof GoogleSignInAccount) {
-
-                                                Log.i(TAG, "onMapReadyAndRestart() -> onMapClick -> User selected a polygon -> User signed in");
-
-                                                // User is signed in.
-
-                                                Intent Activity = new Intent(Map.this, Navigation.class);
-                                                goToNextActivityPolygon(Activity, false);
-                                            } else {
-
-                                                Log.i(TAG, "onMapReadyAndRestart() -> onMapClick -> User selected a polygon -> No user signed in");
-
-                                                // No user is signed in.
-
-                                                Intent Activity = new Intent(Map.this, SignIn.class);
-                                                goToNextActivityPolygon(Activity, false);
-                                            }
-                                        } else {
-
-                                            Log.e(TAG, "onMapReadyAndRestart() -> onMapClick -> User selected a polygon -> location == null");
-                                            mMap.getUiSettings().setScrollGesturesEnabled(true);
-                                            loadingIcon.setVisibility(View.GONE);
-                                            toastMessageLong("An error occurred: your location is null");
-                                        }
-                                    }
-                                });
-                    } else {
-
-                        checkLocationPermissions();
-                    }
-
-                    return;
-                }
+                chatsSize = 0;
 
                 // Get rid of new shapes if the user clicks away from them.
                 if (newCircle != null) {
 
                     newCircle.remove();
+
                     if (marker0 != null) {
 
                         marker0.remove();
@@ -4569,6 +3222,1268 @@ public class Map extends FragmentActivity implements
                     chatSizeSeekBar.setProgress(0);
                     usedSeekBar = false;
                 }
+
+                return;
+            }
+
+            // Change boolean value so the x and y values in touchAgain() from dispatchTouchEvent() do not change.
+            waitingForClicksToProcess = true;
+
+            // While clicking through the circles, if a circle does not have a tag, it is new. Therefore, go directly to the recyclerviewlayout, as this is probably the recyclerviewlayout the user wants to enter.
+            if (polygon.getTag() == null) {
+
+                Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> User clicked on a new polygon");
+
+                // End this method if the method is already being processed from another shape clicking event.
+                if (waitingForShapeInformationToProcess) {
+
+                    return;
+                }
+
+                // Update boolean to prevent double clicking a shape.
+                waitingForShapeInformationToProcess = true;
+
+                // Inform the user is the circle is too small.
+                if (SphericalUtil.computeArea(polygonPointsList) < Math.PI) {
+
+                    toastMessageLong("Please make the shape larger");
+                    return;
+                }
+
+                // Generate a uuid, as the shape is new.
+                shapeUUID = UUID.randomUUID().toString();
+
+                // Check location permissions.
+                if (ContextCompat.checkSelfPermission(getBaseContext(),
+                        Manifest.permission.ACCESS_FINE_LOCATION)
+                        == PackageManager.PERMISSION_GRANTED) {
+
+                    // Check if user is within the circle before going to the recyclerviewlayout.
+                    FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
+
+                    mFusedLocationClient.getLastLocation()
+                            .addOnSuccessListener(Map.this, location -> {
+
+                                if (location != null) {
+
+                                    // Boolean; will be true if user is within the shape upon shape click.
+                                    userIsWithinShape = PolyUtil.containsLocation(location.getLatitude(), location.getLongitude(), polygon.getPoints(), false);
+
+                                    // Check if the user is already signed in.
+                                    if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) instanceof GoogleSignInAccount) {
+
+                                        // User signed in.
+
+                                        Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> New polygon -> User signed in");
+
+                                        // Carry the extras all the way to Chat.java.
+                                        Intent Activity = new Intent(Map.this, Navigation.class);
+                                        goToNextActivityPolygon(Activity, true);
+                                    } else {
+
+                                        // User NOT signed in.
+
+                                        Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> New polygon -> User NOT signed in");
+
+                                        // Carry the extras all the way to Chat.java.
+                                        Intent Activity = new Intent(Map.this, SignIn.class);
+                                        goToNextActivityPolygon(Activity, true);
+                                    }
+                                } else {
+
+                                    Log.e(TAG, "onMapReadyAndRestart() -> onPolygonClick -> polygon.getTag() == null -> location == null");
+                                    mMap.getUiSettings().setScrollGesturesEnabled(true);
+                                    loadingIcon.setVisibility(View.GONE);
+                                    toastMessageLong("An error occurred: your location is null");
+                                }
+                            });
+                } else {
+
+                    checkLocationPermissions();
+                }
+
+                // As getFusedLocationProviderClient is asynchronous, this return statement will prevent executing the rest of the code.
+                return;
+            }
+
+            // Click through all shapes, using the z-index to figure out which ones have not been cycled through. All the information to the arrayLists to be used by chatSelectorSeekBar.
+            if (polygon.getZIndex() == 0 && polygon.getTag() != null) {
+
+                Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> Lowering z-index of a polygon");
+
+                // Prevent the map from scrolling so the same spot will be clicked again in touchAgain().
+                if (mMap.getUiSettings().isScrollGesturesEnabled()) {
+
+                    mMap.getUiSettings().setScrollGesturesEnabled(false);
+                }
+
+                loadingIcon.setVisibility(View.VISIBLE);
+
+                // Drop the z-index to metaphorically check it off the "to click" list.
+                polygon.setZIndex(-1);
+
+                // Add the information to arrayLists to be used by chatSelectorSeekBar.
+                overlappingShapesUUID.add(polygon.getTag().toString());
+                overlappingShapesPolygonUUID.add(polygon.getTag().toString());
+                overlappingShapesPolygonVertices.add(polygon.getPoints());
+
+                // If the user zooms out and a shape is too small, touchAgain() will not touch the shape again (I'm not sure why).
+                // Therefore, save an instance of the shape so that if onMapClick is called, it will just go to the last shape.
+                mPolygon = polygon;
+
+                // Programmatically click the same spot again.
+                touchAgain();
+
+                return;
+            }
+
+            waitingForClicksToProcess = false;
+
+            // This will get called after the last shape is programmatically clicked.
+            chatsSize = overlappingShapesUUID.size();
+
+            // If none of the clicked shapes are new, get rid of any new shapes.
+            if (!overlappingShapesUUID.contains("new")) {
+
+                // Remove the polygon and markers.
+                if (newPolygon != null) {
+
+                    newPolygon.remove();
+                    marker0.remove();
+                    marker1.remove();
+                    marker2.remove();
+                    newPolygon = null;
+                    marker0 = null;
+                    marker1 = null;
+                    marker2 = null;
+                    marker0Position = null;
+                    marker1Position = null;
+                    marker2Position = null;
+                    marker0ID = null;
+                    marker1ID = null;
+                    marker2ID = null;
+
+                    if (marker3 != null) {
+
+                        marker3.remove();
+                        marker3 = null;
+                        marker3Position = null;
+                        marker3ID = null;
+                    }
+
+                    if (marker4 != null) {
+
+                        marker4.remove();
+                        marker4 = null;
+                        marker4Position = null;
+                        marker4ID = null;
+                    }
+
+                    if (marker5 != null) {
+
+                        marker5.remove();
+                        marker5 = null;
+                        marker5Position = null;
+                        marker5ID = null;
+                    }
+
+                    if (marker6 != null) {
+
+                        marker6.remove();
+                        marker6 = null;
+                        marker6Position = null;
+                        marker6ID = null;
+                    }
+
+                    if (marker7 != null) {
+
+                        marker7.remove();
+                        marker7 = null;
+                        marker7Position = null;
+                        marker7ID = null;
+                    }
+                }
+
+                // Remove the circle and markers.
+                if (newCircle != null) {
+
+                    newCircle.remove();
+
+                    if (marker0 != null) {
+
+                        marker0.remove();
+                    }
+
+                    if (marker1 != null) {
+                        marker1.remove();
+                    }
+
+                    newCircle = null;
+                    marker0 = null;
+                    marker1 = null;
+                    marker0Position = null;
+                    marker1Position = null;
+                    marker0ID = null;
+                    marker1ID = null;
+                }
+            }
+
+            // If selectingShape, user has selected a highlighted shape. Similar logic applies to originally only clicking on one circle.
+            if (selectingShape || (chatsSize == 1 && polygon.getTag() != null)) {
+
+                Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> User selected a polygon");
+
+                // End this method if the method is already being processed from another shape clicking event.
+                if (waitingForShapeInformationToProcess) {
+
+                    return;
+                }
+
+                // Update boolean to prevent double clicking a shape.
+                waitingForShapeInformationToProcess = true;
+
+                // "New" shapes are automatically clicked. Therefore, get the ID set by Firebase to identify which circle the user clicked on.
+                if (chatsSize == 1) {
+
+                    shapeUUID = (String) polygon.getTag();
+                } else {
+
+                    shapeUUID = selectedOverlappingShapeUUID;
+                }
+
+                // Check if user is within the shape before going to the recyclerviewlayout.
+                FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
+
+                mFusedLocationClient.getLastLocation()
+                        .addOnSuccessListener(Map.this, location -> {
+
+                            if (location != null) {
+
+                                // Boolean; will be true if user is within the shape upon shape click.
+                                userIsWithinShape = PolyUtil.containsLocation(location.getLatitude(), location.getLongitude(), polygon.getPoints(), false);
+
+                                // Check if the user is already signed in.
+                                if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) instanceof GoogleSignInAccount) {
+
+                                    Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> User selected a polygon -> User signed in");
+
+                                    // User is signed in.
+
+                                    Intent Activity = new Intent(Map.this, Navigation.class);
+                                    goToNextActivityPolygon(Activity, false);
+                                } else {
+
+                                    Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> User selected a polygon -> No user signed in");
+
+                                    // No user is signed in.
+
+                                    Intent Activity = new Intent(Map.this, SignIn.class);
+                                    goToNextActivityPolygon(Activity, false);
+                                }
+                            } else {
+
+                                Log.e(TAG, "onMapReadyAndRestart() -> onPolygonClick -> User selected a polygon -> location == null");
+                                mMap.getUiSettings().setScrollGesturesEnabled(true);
+                                loadingIcon.setVisibility(View.GONE);
+                                toastMessageLong("An error occurred: your location is null");
+                            }
+                        });
+
+                return;
+            }
+
+            selectingShape = true;
+
+            // The following shows a shape consistent with the location of the seekBar.
+            selectedOverlappingShapeUUID = overlappingShapesUUID.get(0);
+
+            if (selectedOverlappingShapeUUID != null) {
+
+                if (circleTemp != null) {
+
+                    circleTemp.remove();
+                }
+
+                if (polygonTemp != null) {
+
+                    polygonTemp.remove();
+                }
+
+                if ((overlappingShapesPolygonVertices.size() > overlappingShapesCircleLocation.size() || overlappingShapesPolygonVertices.size() == overlappingShapesCircleLocation.size()) && overlappingShapesCircleLocation.size() > 0) {
+
+                    selectedOverlappingShapeCircleLocation = overlappingShapesCircleLocation.get(0);
+                    selectedOverlappingShapeCircleRadius = overlappingShapesCircleRadius.get(0);
+
+                    if (mMap.getMapType() == 2 || mMap.getMapType() == 4) {
+
+                        circleTemp = mMap.addCircle(
+                                new CircleOptions()
+                                        .center(selectedOverlappingShapeCircleLocation)
+                                        .clickable(true)
+                                        .fillColor(Color.argb(100, 255, 255, 0))
+                                        .radius(selectedOverlappingShapeCircleRadius)
+                                        .strokeColor(Color.rgb(255, 255, 0))
+                                        .strokeWidth(3f)
+                                        .zIndex(2)
+                        );
+                    } else {
+
+                        circleTemp = mMap.addCircle(
+                                new CircleOptions()
+                                        .center(selectedOverlappingShapeCircleLocation)
+                                        .clickable(true)
+                                        .fillColor(Color.argb(100, 255, 0, 255))
+                                        .radius(selectedOverlappingShapeCircleRadius)
+                                        .strokeColor(Color.rgb(255, 0, 255))
+                                        .strokeWidth(3f)
+                                        .zIndex(2)
+                        );
+                    }
+
+                    // Used when getting rid of the shapes in onMapClick.
+                    circleTemp.setTag(selectedOverlappingShapeUUID);
+                    circleTemp.setCenter(selectedOverlappingShapeCircleLocation);
+                    circleTemp.setRadius(selectedOverlappingShapeCircleRadius);
+                } else {
+
+                    selectedOverlappingShapePolygonVertices = overlappingShapesPolygonVertices.get(0);
+
+                    if (mMap.getMapType() == 2 || mMap.getMapType() == 4) {
+
+                        polygonTemp = mMap.addPolygon(
+                                new PolygonOptions()
+                                        .clickable(true)
+                                        .fillColor(Color.argb(100, 255, 255, 0))
+                                        .strokeColor(Color.rgb(255, 255, 0))
+                                        .strokeWidth(3f)
+                                        .addAll(selectedOverlappingShapePolygonVertices)
+                                        .zIndex(2)
+                        );
+                    } else {
+
+                        polygonTemp = mMap.addPolygon(
+                                new PolygonOptions()
+                                        .clickable(true)
+                                        .fillColor(Color.argb(100, 255, 0, 255))
+                                        .strokeColor(Color.rgb(255, 0, 255))
+                                        .strokeWidth(3f)
+                                        .addAll(selectedOverlappingShapePolygonVertices)
+                                        .zIndex(2)
+                        );
+                    }
+
+                    // Used when getting rid of the shapes in onMapClick.
+                    polygonTemp.setTag(selectedOverlappingShapeUUID);
+                }
+            } else {
+
+                Log.e(TAG, "onMapReadyAndRestart() -> onPolygonClick -> selectedOverlappingShapeUUID == null");
+                mMap.getUiSettings().setScrollGesturesEnabled(true);
+                loadingIcon.setVisibility(View.GONE);
+                toastMessageLong("An error occurred");
+            }
+
+            // At this point, chatsSize > 1 so set the chatSelectorSeekBar to VISIBLE.
+            chatSelectorSeekBar.setMax(chatsSize - 1);
+            chatSelectorSeekBar.setProgress(0);
+            chatSizeSeekBar.setVisibility(View.GONE);
+            chatSelectorSeekBar.setVisibility(View.VISIBLE);
+            mMap.getUiSettings().setScrollGesturesEnabled(true);
+            loadingIcon.setVisibility(View.GONE);
+            toastMessageLong("Highlight and select a shape using the SeekBar below");
+        });
+
+        // Go to Chat.java when clicking on a circle.
+        mMap.setOnCircleClickListener(circle -> {
+
+            // If the user tries to click on a circle that is not a circleTemp while circleTemp exists, return.
+            if (chatSelectorSeekBar.getVisibility() == View.VISIBLE && (circle.getTag() != selectedOverlappingShapeUUID)) {
+
+                Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> Selected circle is not a circleTemp. Resetting and returning");
+
+                if (circleTemp != null) {
+
+                    circleTemp.remove();
+                }
+
+                if (polygonTemp != null) {
+
+                    polygonTemp.remove();
+                }
+
+                selectingShape = false;
+
+                // Change the circle color depending on the map type.
+                if (mMap.getMapType() == 2 || mMap.getMapType() == 4) {
+
+                    for (int i = 0; i < overlappingShapesCircleLocation.size(); i++) {
+
+                        Circle circle0 = mMap.addCircle(
+                                new CircleOptions()
+                                        .center(overlappingShapesCircleLocation.get(i))
+                                        .clickable(true)
+                                        .radius(overlappingShapesCircleRadius.get(i))
+                                        .strokeColor(Color.rgb(255, 255, 0))
+                                        .strokeWidth(3f)
+                                        .zIndex(0)
+                        );
+
+                        circle0.setTag(overlappingShapesCircleUUID.get(i));
+                    }
+
+                    for (int i = 0; i < overlappingShapesPolygonVertices.size(); i++) {
+
+                        Polygon polygon0 = mMap.addPolygon(
+                                new PolygonOptions()
+                                        .clickable(true)
+                                        .addAll(overlappingShapesPolygonVertices.get(i))
+                                        .strokeColor(Color.rgb(255, 255, 0))
+                                        .strokeWidth(3f)
+                                        .zIndex(0)
+                        );
+
+                        polygon0.setTag(overlappingShapesPolygonUUID.get(i));
+                    }
+                } else {
+
+                    for (int i = 0; i < overlappingShapesCircleLocation.size(); i++) {
+
+                        Circle circle0 = mMap.addCircle(
+                                new CircleOptions()
+                                        .center(overlappingShapesCircleLocation.get(i))
+                                        .clickable(true)
+                                        .radius(overlappingShapesCircleRadius.get(i))
+                                        .strokeColor(Color.rgb(255, 0, 255))
+                                        .strokeWidth(3f)
+                                        .zIndex(0)
+                        );
+
+                        circle0.setTag(overlappingShapesCircleUUID.get(i));
+                    }
+
+                    for (int i = 0; i < overlappingShapesPolygonVertices.size(); i++) {
+
+                        Polygon polygon0 = mMap.addPolygon(
+                                new PolygonOptions()
+                                        .clickable(true)
+                                        .addAll(overlappingShapesPolygonVertices.get(i))
+                                        .strokeColor(Color.rgb(255, 0, 255))
+                                        .strokeWidth(3f)
+                                        .zIndex(0)
+                        );
+
+                        polygon0.setTag(overlappingShapesPolygonUUID.get(i));
+                    }
+                }
+
+                overlappingShapesUUID = new ArrayList<>();
+                overlappingShapesCircleUUID = new ArrayList<>();
+                overlappingShapesPolygonUUID = new ArrayList<>();
+                overlappingShapesCircleLocation = new ArrayList<>();
+                overlappingShapesCircleRadius = new ArrayList<>();
+                overlappingShapesPolygonVertices = new ArrayList<>();
+
+                chatSelectorSeekBar.setVisibility(View.INVISIBLE);
+                chatSizeSeekBar.setVisibility(View.VISIBLE);
+                chatSizeSeekBar.setProgress(0);
+                chatSelectorSeekBar.setProgress(0);
+
+                chatsSize = 0;
+
+                // Get rid of new shapes if the user clicks away from them.
+                if (newCircle != null) {
+
+                    newCircle.remove();
+
+                    if (marker0 != null) {
+
+                        marker0.remove();
+                    }
+
+                    if (marker1 != null) {
+
+                        marker1.remove();
+                    }
+
+                    newCircle = null;
+                    marker0 = null;
+                    marker1 = null;
+                    marker0Position = null;
+                    marker1Position = null;
+                    marker0ID = null;
+                    marker1ID = null;
+
+                    chatSizeSeekBar.setProgress(0);
+                    relativeAngle = 0.0;
+                    usedSeekBar = false;
+                }
+
+                if (newPolygon != null) {
+
+                    newPolygon.remove();
+                    marker0.remove();
+                    marker1.remove();
+                    marker2.remove();
+                    newPolygon = null;
+                    marker0 = null;
+                    marker1 = null;
+                    marker2 = null;
+                    marker0Position = null;
+                    marker1Position = null;
+                    marker2Position = null;
+                    marker0ID = null;
+                    marker1ID = null;
+                    marker2ID = null;
+
+                    if (marker3 != null) {
+
+                        marker3.remove();
+                        marker3 = null;
+                        marker3Position = null;
+                        marker3ID = null;
+                    }
+
+                    if (marker4 != null) {
+
+                        marker4.remove();
+                        marker4 = null;
+                        marker4Position = null;
+                        marker4ID = null;
+                    }
+
+                    if (marker5 != null) {
+
+                        marker5.remove();
+                        marker5 = null;
+                        marker5Position = null;
+                        marker5ID = null;
+                    }
+
+                    if (marker6 != null) {
+
+                        marker6.remove();
+                        marker6 = null;
+                        marker6Position = null;
+                        marker6ID = null;
+                    }
+
+                    if (marker7 != null) {
+
+                        marker7.remove();
+                        marker7 = null;
+                        marker7Position = null;
+                        marker7ID = null;
+                    }
+
+                    chatSizeSeekBar.setProgress(0);
+                    usedSeekBar = false;
+                }
+
+                return;
+            }
+
+            // Change boolean value so the x and y values in touchAgain() from dispatchTouchEvent() do not change.
+            waitingForClicksToProcess = true;
+
+            // While clicking through the circles, if a circle does not have a tag, it is new. Therefore, go directly to the recyclerviewlayout, as this is probably the recyclerviewlayout the user wants to enter.
+            if (circle.getTag() == null) {
+
+                Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> User clicked on a new circle");
+
+                // End this method if the method is already being processed from another shape clicking event.
+                if (waitingForShapeInformationToProcess) {
+
+                    return;
+                }
+
+                // Update boolean to prevent double clicking a shape.
+                waitingForShapeInformationToProcess = true;
+
+                // Inform the user is the circle is too small.
+                if (circle.getRadius() < 1) {
+
+                    toastMessageLong("Please make the shape larger");
+
+                    return;
+                }
+
+                // Generate a uuid, as the shape is new.
+                shapeUUID = UUID.randomUUID().toString();
+
+                // Check location permissions.
+                if (ContextCompat.checkSelfPermission(getBaseContext(),
+                        Manifest.permission.ACCESS_FINE_LOCATION)
+                        == PackageManager.PERMISSION_GRANTED) {
+
+                    // Check if user is within the circle before going to the recyclerviewlayout.
+                    FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
+
+                    mFusedLocationClient.getLastLocation()
+                            .addOnSuccessListener(Map.this, location -> {
+
+                                if (location != null) {
+
+                                    float[] distance = new float[2];
+
+                                    Location.distanceBetween(location.getLatitude(), location.getLongitude(),
+                                            circle.getCenter().latitude, circle.getCenter().longitude, distance);
+
+                                    // Boolean; will be true if user is within the circle upon circle click.
+                                    userIsWithinShape = !(distance[0] > circle.getRadius());
+
+                                    // Check if the user is already signed in.
+                                    if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) instanceof GoogleSignInAccount) {
+
+                                        // User signed in.
+
+                                        Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> New circle -> User signed in");
+
+                                        // Carry the extras all the way to Chat.java.
+                                        Intent Activity = new Intent(Map.this, Navigation.class);
+                                        goToNextActivityCircle(Activity, circle, true);
+                                    } else {
+
+                                        // User NOT signed in.
+
+                                        Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> New circle -> User NOT signed in");
+
+                                        // Carry the extras all the way to Chat.java.
+                                        Intent Activity = new Intent(Map.this, SignIn.class);
+                                        goToNextActivityCircle(Activity, circle, true);
+                                    }
+                                } else {
+
+                                    Log.e(TAG, "onMapReadyAndRestart() -> onCircleClick -> circle.getTag() == null -> location == null");
+                                    mMap.getUiSettings().setScrollGesturesEnabled(true);
+                                    loadingIcon.setVisibility(View.GONE);
+                                    toastMessageLong("An error occurred: your location is null");
+                                }
+                            });
+                } else {
+
+                    checkLocationPermissions();
+                }
+
+                // As getFusedLocationProviderClient is asynchronous, this return statement will prevent executing the rest of the code.
+                return;
+            }
+
+            // Click through all shapes, using the z-index to figure out which ones have not been cycled through. All the information to the arrayLists to be used by chatSelectorSeekBar.
+            if (circle.getZIndex() == 0 && circle.getTag() != null) {
+
+                Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> Lowering z-index of a circle");
+
+                // Prevent the map from scrolling so the same spot will be clicked again in touchAgain().
+                if (mMap.getUiSettings().isScrollGesturesEnabled()) {
+
+                    mMap.getUiSettings().setScrollGesturesEnabled(false);
+                }
+
+                loadingIcon.setVisibility(View.VISIBLE);
+
+                // Drop the z-index to metaphorically check it off the "to click" list.
+                circle.setZIndex(-1);
+
+                // Add the information to arrayLists to be used by chatSelectorSeekBar.
+                overlappingShapesUUID.add(circle.getTag().toString());
+                overlappingShapesCircleUUID.add(circle.getTag().toString());
+                overlappingShapesCircleLocation.add(circle.getCenter());
+                overlappingShapesCircleRadius.add(circle.getRadius());
+
+                // If the user zooms out and a shape is too small, touchAgain() will not touch the shape again (I'm not sure why).
+                // Therefore, save an instance of the shape so that if onMapClick is called, it will just go to the last shape.
+                mCircle = circle;
+
+                // Programmatically click the same spot again.
+                touchAgain();
+
+                return;
+            }
+
+            waitingForClicksToProcess = false;
+
+            // This will get called after the last shape is programmatically clicked.
+            chatsSize = overlappingShapesUUID.size();
+
+            // If none of the clicked shapes are new, get rid of any new shapes.
+            if (!overlappingShapesUUID.contains("new")) {
+
+                // Remove the polygon and markers.
+                if (newPolygon != null) {
+
+                    newPolygon.remove();
+                    marker0.remove();
+                    marker1.remove();
+                    marker2.remove();
+                    newPolygon = null;
+                    marker0 = null;
+                    marker1 = null;
+                    marker2 = null;
+                    marker0Position = null;
+                    marker1Position = null;
+                    marker2Position = null;
+                    marker0ID = null;
+                    marker1ID = null;
+                    marker2ID = null;
+
+                    if (marker3 != null) {
+
+                        marker3.remove();
+                        marker3 = null;
+                        marker3Position = null;
+                        marker3ID = null;
+                    }
+
+                    if (marker4 != null) {
+
+                        marker4.remove();
+                        marker4 = null;
+                        marker4Position = null;
+                        marker4ID = null;
+                    }
+
+                    if (marker5 != null) {
+
+                        marker5.remove();
+                        marker5 = null;
+                        marker5Position = null;
+                        marker5ID = null;
+                    }
+
+                    if (marker6 != null) {
+
+                        marker6.remove();
+                        marker6 = null;
+                        marker6Position = null;
+                        marker6ID = null;
+                    }
+
+                    if (marker7 != null) {
+
+                        marker7.remove();
+                        marker7 = null;
+                        marker7Position = null;
+                        marker7ID = null;
+                    }
+                }
+
+                // Remove the circle and markers.
+                if (newCircle != null) {
+
+                    newCircle.remove();
+                    if (marker0 != null) {
+
+                        marker0.remove();
+                    }
+
+                    if (marker1 != null) {
+                        marker1.remove();
+                    }
+
+                    newCircle = null;
+                    marker0 = null;
+                    marker1 = null;
+                    marker0Position = null;
+                    marker1Position = null;
+                    marker0ID = null;
+                    marker1ID = null;
+                }
+            }
+
+            // If selectingShape, user has selected a highlighted shape. Similar logic applies to originally only clicking on one circle.
+            if (selectingShape || (chatsSize == 1 && circle.getTag() != null)) {
+
+                Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> User selected a circle");
+
+                // End this method if the method is already being processed from another shape clicking event.
+                if (waitingForShapeInformationToProcess) {
+
+                    return;
+                }
+
+                // Update boolean to prevent double clicking a shape.
+                waitingForShapeInformationToProcess = true;
+
+                // "New" shapes are automatically clicked. Therefore, get the ID set by Firebase to identify which circle the user clicked on.
+                if (chatsSize == 1) {
+
+                    shapeUUID = (String) circle.getTag();
+                } else {
+
+                    shapeUUID = selectedOverlappingShapeUUID;
+                }
+
+                // Check if user is within the circle before going to the recyclerviewlayout.
+                FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
+
+                mFusedLocationClient.getLastLocation()
+                        .addOnSuccessListener(Map.this, location -> {
+
+                            if (location != null) {
+
+                                float[] distance = new float[2];
+
+                                Location.distanceBetween(location.getLatitude(), location.getLongitude(),
+                                        circle.getCenter().latitude, circle.getCenter().longitude, distance);
+
+                                // Boolean; will be true if user is within the circle upon circle click.
+                                userIsWithinShape = !(distance[0] > circle.getRadius());
+
+                                // Check if the user is already signed in.
+                                if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) instanceof GoogleSignInAccount) {
+
+                                    // User signed in.
+
+                                    Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> User selected a circle -> User signed in");
+
+                                    Intent Activity = new Intent(Map.this, Navigation.class);
+                                    goToNextActivityCircle(Activity, circle, false);
+                                } else {
+
+                                    // User NOT signed in.
+
+                                    Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> User selected a circle -> User NOT signed in");
+
+                                    Intent Activity = new Intent(Map.this, SignIn.class);
+                                    goToNextActivityCircle(Activity, circle, false);
+                                }
+                            } else {
+
+                                Log.e(TAG, "onMapReadyAndRestart() -> onCircleClick -> User selected a circle -> location == null");
+                                mMap.getUiSettings().setScrollGesturesEnabled(true);
+                                loadingIcon.setVisibility(View.GONE);
+                                toastMessageLong("An error occurred: your location is null");
+                            }
+                        });
+
+                return;
+            }
+
+            selectingShape = true;
+
+            // The following shows a shape consistent with the location of the seekBar.
+            selectedOverlappingShapeUUID = overlappingShapesUUID.get(0);
+
+            if (selectedOverlappingShapeUUID != null) {
+
+                if (circleTemp != null) {
+
+                    circleTemp.remove();
+                }
+
+                if (polygonTemp != null) {
+
+                    polygonTemp.remove();
+                }
+
+                if (overlappingShapesCircleLocation.size() > overlappingShapesPolygonVertices.size() && overlappingShapesPolygonVertices.size() > 0) {
+
+                    selectedOverlappingShapePolygonVertices = overlappingShapesPolygonVertices.get(0);
+
+                    if (mMap.getMapType() == 2 || mMap.getMapType() == 4) {
+
+                        polygonTemp = mMap.addPolygon(
+                                new PolygonOptions()
+                                        .clickable(true)
+                                        .fillColor(Color.argb(100, 255, 255, 0))
+                                        .strokeColor(Color.rgb(255, 255, 0))
+                                        .strokeWidth(3f)
+                                        .addAll(selectedOverlappingShapePolygonVertices)
+                                        .zIndex(2)
+                        );
+                    } else {
+
+                        polygonTemp = mMap.addPolygon(
+                                new PolygonOptions()
+                                        .clickable(true)
+                                        .fillColor(Color.argb(100, 255, 0, 255))
+                                        .strokeColor(Color.rgb(255, 0, 255))
+                                        .strokeWidth(3f)
+                                        .addAll(selectedOverlappingShapePolygonVertices)
+                                        .zIndex(2)
+                        );
+                    }
+
+                    // Used when getting rid of the shapes in onMapClick.
+                    polygonTemp.setTag(selectedOverlappingShapeUUID);
+                } else {
+
+                    selectedOverlappingShapeCircleLocation = overlappingShapesCircleLocation.get(0);
+                    selectedOverlappingShapeCircleRadius = overlappingShapesCircleRadius.get(0);
+
+                    if (mMap.getMapType() == 2 || mMap.getMapType() == 4) {
+
+                        circleTemp = mMap.addCircle(
+                                new CircleOptions()
+                                        .center(selectedOverlappingShapeCircleLocation)
+                                        .clickable(true)
+                                        .fillColor(Color.argb(100, 255, 255, 0))
+                                        .radius(selectedOverlappingShapeCircleRadius)
+                                        .strokeColor(Color.rgb(255, 255, 0))
+                                        .strokeWidth(3f)
+                                        .zIndex(2)
+                        );
+                    } else {
+
+                        circleTemp = mMap.addCircle(
+                                new CircleOptions()
+                                        .center(selectedOverlappingShapeCircleLocation)
+                                        .clickable(true)
+                                        .fillColor(Color.argb(100, 255, 0, 255))
+                                        .radius(selectedOverlappingShapeCircleRadius)
+                                        .strokeColor(Color.rgb(255, 0, 255))
+                                        .strokeWidth(3f)
+                                        .zIndex(2)
+                        );
+                    }
+
+                    // Used when getting rid of the shapes in onMapClick.
+                    circleTemp.setTag(selectedOverlappingShapeUUID);
+                    circleTemp.setCenter(selectedOverlappingShapeCircleLocation);
+                    circleTemp.setRadius(selectedOverlappingShapeCircleRadius);
+                }
+            } else {
+
+                Log.e(TAG, "onMapReadyAndRestart() -> onCircleClick -> selectedOverlappingShapeUUID == null");
+                mMap.getUiSettings().setScrollGesturesEnabled(true);
+                loadingIcon.setVisibility(View.GONE);
+                toastMessageLong("An error occurred");
+            }
+
+            // At this point, chatsSize > 1 so set the chatSelectorSeekBar to VISIBLE.
+            chatSelectorSeekBar.setMax(chatsSize - 1);
+            chatSelectorSeekBar.setProgress(0);
+            chatSizeSeekBar.setVisibility(View.GONE);
+            chatSelectorSeekBar.setVisibility(View.VISIBLE);
+            mMap.getUiSettings().setScrollGesturesEnabled(true);
+            loadingIcon.setVisibility(View.GONE);
+            toastMessageLong("Highlight and select a shape using the SeekBar below");
+        });
+
+        mMap.setOnMapClickListener(latLng -> {
+
+            // Make new shapes with z-index = 0.
+            if (chatSelectorSeekBar.getVisibility() == View.VISIBLE) {
+
+                Log.i(TAG, "onMapReadyAndRestart() -> onMapClick -> Replacing circles with z = -1 with z-index = 0");
+
+                if (circleTemp != null) {
+
+                    circleTemp.remove();
+                }
+
+                if (polygonTemp != null) {
+
+                    polygonTemp.remove();
+                }
+
+                selectingShape = false;
+
+                // Change the circle color depending on the map type.
+                if (mMap.getMapType() == 2 || mMap.getMapType() == 4) {
+
+                    for (int i = 0; i < overlappingShapesCircleLocation.size(); i++) {
+
+                        Circle circle0 = mMap.addCircle(
+                                new CircleOptions()
+                                        .center(overlappingShapesCircleLocation.get(i))
+                                        .clickable(true)
+                                        .radius(overlappingShapesCircleRadius.get(i))
+                                        .strokeColor(Color.rgb(255, 255, 0))
+                                        .strokeWidth(3f)
+                                        .zIndex(0)
+                        );
+
+                        circle0.setTag(overlappingShapesCircleUUID.get(i));
+                    }
+
+                    for (int i = 0; i < overlappingShapesPolygonVertices.size(); i++) {
+
+                        Polygon polygon0 = mMap.addPolygon(
+                                new PolygonOptions()
+                                        .clickable(true)
+                                        .addAll(overlappingShapesPolygonVertices.get(i))
+                                        .strokeColor(Color.rgb(255, 255, 0))
+                                        .strokeWidth(3f)
+                                        .zIndex(0)
+                        );
+
+                        polygon0.setTag(overlappingShapesPolygonUUID.get(i));
+                    }
+                } else {
+
+                    for (int i = 0; i < overlappingShapesCircleLocation.size(); i++) {
+
+                        Circle circle0 = mMap.addCircle(
+                                new CircleOptions()
+                                        .center(overlappingShapesCircleLocation.get(i))
+                                        .clickable(true)
+                                        .radius(overlappingShapesCircleRadius.get(i))
+                                        .strokeColor(Color.rgb(255, 0, 255))
+                                        .strokeWidth(3f)
+                                        .zIndex(0)
+                        );
+
+                        circle0.setTag(overlappingShapesCircleUUID.get(i));
+                    }
+
+                    for (int i = 0; i < overlappingShapesPolygonVertices.size(); i++) {
+
+                        Polygon polygon0 = mMap.addPolygon(
+                                new PolygonOptions()
+                                        .clickable(true)
+                                        .addAll(overlappingShapesPolygonVertices.get(i))
+                                        .strokeColor(Color.rgb(255, 0, 255))
+                                        .strokeWidth(3f)
+                                        .zIndex(0)
+                        );
+
+                        polygon0.setTag(overlappingShapesPolygonUUID.get(i));
+                    }
+                }
+
+                overlappingShapesUUID = new ArrayList<>();
+                overlappingShapesCircleUUID = new ArrayList<>();
+                overlappingShapesPolygonUUID = new ArrayList<>();
+                overlappingShapesCircleLocation = new ArrayList<>();
+                overlappingShapesCircleRadius = new ArrayList<>();
+                overlappingShapesPolygonVertices = new ArrayList<>();
+
+                chatSelectorSeekBar.setVisibility(View.INVISIBLE);
+                chatSizeSeekBar.setVisibility(View.VISIBLE);
+                chatSizeSeekBar.setProgress(0);
+                chatSelectorSeekBar.setProgress(0);
+
+                chatsSize = 0;
+            }
+
+            // If the user zooms out and a shape is too small, touchAgain() will not touch the shape again (I'm not sure why).
+            // Therefore, just follow through with the on[Shape]Click code without getting ALL the shapes.
+            if (loadingIcon.getVisibility() == View.VISIBLE && mCircle != null) {
+
+                Log.i(TAG, "onMapReadyAndRestart() -> onMapClick -> User selected a circle");
+
+                chatsSize = overlappingShapesUUID.size();
+
+                // End this method if the method is already being processed from another shape clicking event.
+                if (waitingForShapeInformationToProcess) {
+
+                    return;
+                }
+
+                // Update boolean to prevent double clicking a shape.
+                waitingForShapeInformationToProcess = true;
+
+                shapeUUID = (String) mCircle.getTag();
+
+                // Check location permissions.
+                if (ContextCompat.checkSelfPermission(getBaseContext(),
+                        Manifest.permission.ACCESS_FINE_LOCATION)
+                        == PackageManager.PERMISSION_GRANTED) {
+
+                    // Check if user is within the circle before going to the recyclerviewlayout.
+                    FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
+
+                    mFusedLocationClient.getLastLocation()
+                            .addOnSuccessListener(Map.this, location -> {
+
+                                if (location != null) {
+
+                                    float[] distance = new float[2];
+
+                                    Location.distanceBetween(location.getLatitude(), location.getLongitude(),
+                                            mCircle.getCenter().latitude, mCircle.getCenter().longitude, distance);
+
+                                    // Boolean; will be true if user is within the circle upon circle click.
+                                    userIsWithinShape = !(distance[0] > mCircle.getRadius());
+
+                                    // Check if the user is already signed in.
+                                    if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) instanceof GoogleSignInAccount) {
+
+                                        // User signed in.
+
+                                        Log.i(TAG, "onMapReadyAndRestart() -> onMapClick -> User selected a circle -> User signed in");
+
+                                        Intent Activity = new Intent(Map.this, Navigation.class);
+                                        goToNextActivityCircle(Activity, mCircle, false);
+                                    } else {
+
+                                        // User NOT signed in.
+
+                                        Log.i(TAG, "onMapReadyAndRestart() -> onMapClick -> User selected a circle -> User NOT signed in");
+
+                                        Intent Activity = new Intent(Map.this, SignIn.class);
+                                        goToNextActivityCircle(Activity, mCircle, false);
+                                    }
+                                } else {
+
+                                    Log.e(TAG, "onMapReadyAndRestart() -> onMapClick -> User selected a circle -> location == null");
+                                    mMap.getUiSettings().setScrollGesturesEnabled(true);
+                                    loadingIcon.setVisibility(View.GONE);
+                                    toastMessageLong("An error occurred: your location is null");
+                                }
+                            });
+                } else {
+
+                    checkLocationPermissions();
+                }
+
+                return;
+            }
+
+            if (loadingIcon.getVisibility() == View.VISIBLE && mPolygon != null) {
+
+                Log.i(TAG, "onMapReadyAndRestart() -> onMapClick -> User selected a polygon");
+
+                chatsSize = overlappingShapesUUID.size();
+
+                // End this method if the method is already being processed from another shape clicking event.
+                if (waitingForShapeInformationToProcess) {
+
+                    return;
+                }
+
+                // Update boolean to prevent double clicking a shape.
+                waitingForShapeInformationToProcess = true;
+
+                shapeUUID = (String) mPolygon.getTag();
+
+                // Check location permissions.
+                if (ContextCompat.checkSelfPermission(getBaseContext(),
+                        Manifest.permission.ACCESS_FINE_LOCATION)
+                        == PackageManager.PERMISSION_GRANTED) {
+
+                    // Check if user is within the shape before going to the recyclerviewlayout.
+                    FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
+
+                    mFusedLocationClient.getLastLocation()
+                            .addOnSuccessListener(Map.this, location -> {
+
+                                if (location != null) {
+
+                                    // Boolean; will be true if user is within the shape upon shape click.
+                                    userIsWithinShape = PolyUtil.containsLocation(location.getLatitude(), location.getLongitude(), mPolygon.getPoints(), false);
+
+                                    // Check if the user is already signed in.
+                                    if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) instanceof GoogleSignInAccount) {
+
+                                        Log.i(TAG, "onMapReadyAndRestart() -> onMapClick -> User selected a polygon -> User signed in");
+
+                                        // User is signed in.
+
+                                        Intent Activity = new Intent(Map.this, Navigation.class);
+                                        goToNextActivityPolygon(Activity, false);
+                                    } else {
+
+                                        Log.i(TAG, "onMapReadyAndRestart() -> onMapClick -> User selected a polygon -> No user signed in");
+
+                                        // No user is signed in.
+
+                                        Intent Activity = new Intent(Map.this, SignIn.class);
+                                        goToNextActivityPolygon(Activity, false);
+                                    }
+                                } else {
+
+                                    Log.e(TAG, "onMapReadyAndRestart() -> onMapClick -> User selected a polygon -> location == null");
+                                    mMap.getUiSettings().setScrollGesturesEnabled(true);
+                                    loadingIcon.setVisibility(View.GONE);
+                                    toastMessageLong("An error occurred: your location is null");
+                                }
+                            });
+                } else {
+
+                    checkLocationPermissions();
+                }
+
+                return;
+            }
+
+            // Get rid of new shapes if the user clicks away from them.
+            if (newCircle != null) {
+
+                newCircle.remove();
+                if (marker0 != null) {
+
+                    marker0.remove();
+                }
+
+                if (marker1 != null) {
+
+                    marker1.remove();
+                }
+
+                newCircle = null;
+                marker0 = null;
+                marker1 = null;
+                marker0Position = null;
+                marker1Position = null;
+                marker0ID = null;
+                marker1ID = null;
+
+                chatSizeSeekBar.setProgress(0);
+                relativeAngle = 0.0;
+                usedSeekBar = false;
+            }
+
+            if (newPolygon != null) {
+
+                newPolygon.remove();
+                marker0.remove();
+                marker1.remove();
+                marker2.remove();
+                newPolygon = null;
+                marker0 = null;
+                marker1 = null;
+                marker2 = null;
+                marker0Position = null;
+                marker1Position = null;
+                marker2Position = null;
+                marker0ID = null;
+                marker1ID = null;
+                marker2ID = null;
+
+                if (marker3 != null) {
+
+                    marker3.remove();
+                    marker3 = null;
+                    marker3Position = null;
+                    marker3ID = null;
+                }
+
+                if (marker4 != null) {
+
+                    marker4.remove();
+                    marker4 = null;
+                    marker4Position = null;
+                    marker4ID = null;
+                }
+
+                if (marker5 != null) {
+
+                    marker5.remove();
+                    marker5 = null;
+                    marker5Position = null;
+                    marker5ID = null;
+                }
+
+                if (marker6 != null) {
+
+                    marker6.remove();
+                    marker6 = null;
+                    marker6Position = null;
+                    marker6ID = null;
+                }
+
+                if (marker7 != null) {
+
+                    marker7.remove();
+                    marker7 = null;
+                    marker7Position = null;
+                    marker7ID = null;
+                }
+
+                chatSizeSeekBar.setProgress(0);
+                usedSeekBar = false;
             }
         });
 
@@ -5399,162 +5314,158 @@ public class Map extends FragmentActivity implements
             FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
 
             mFusedLocationClient.getLastLocation()
-                    .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
+                    .addOnSuccessListener(Map.this, location -> {
 
-                        @Override
-                        public void onSuccess(Location location) {
+                        if (location != null) {
 
-                            if (location != null) {
+                            if (!locationProviderDisabled) {
 
-                                if (!locationProviderDisabled) {
+                                cancelToasts();
 
-                                    cancelToasts();
+                                // Pass this boolean value Chat.java.
+                                Activity.putExtra("newShape", newShape);
+                                Activity.putExtra("userLatitude", location.getLatitude());
+                                Activity.putExtra("userLongitude", location.getLongitude());
 
-                                    // Pass this boolean value Chat.java.
-                                    Activity.putExtra("newShape", newShape);
-                                    Activity.putExtra("userLatitude", location.getLatitude());
-                                    Activity.putExtra("userLongitude", location.getLongitude());
+                                if (threeMarkers) {
 
-                                    if (threeMarkers) {
+                                    Log.i(TAG, "goToNextActivityPolygon() -> threeMarkers");
 
-                                        Log.i(TAG, "goToNextActivityPolygon() -> threeMarkers");
-
-                                        // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
-                                        Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
-                                        Activity.putExtra("threeMarkers", true);
-                                        Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                        Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                        Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                        Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                        Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                        Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                                    }
-
-                                    if (fourMarkers) {
-
-                                        Log.i(TAG, "goToNextActivityPolygon() -> fourMarkers");
-
-                                        // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
-                                        Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
-                                        Activity.putExtra("fourMarkers", true);
-                                        Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                        Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                        Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                        Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                        Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                        Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                                        Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                                        Activity.putExtra("marker3Longitude", marker3Position.longitude);
-                                    }
-
-                                    if (fiveMarkers) {
-
-                                        Log.i(TAG, "goToNextActivityPolygon() -> fiveMarkers");
-
-                                        // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
-                                        Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
-                                        Activity.putExtra("fiveMarkers", true);
-                                        Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                        Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                        Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                        Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                        Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                        Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                                        Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                                        Activity.putExtra("marker3Longitude", marker3Position.longitude);
-                                        Activity.putExtra("marker4Latitude", marker4Position.latitude);
-                                        Activity.putExtra("marker4Longitude", marker4Position.longitude);
-                                    }
-
-                                    if (sixMarkers) {
-
-                                        Log.i(TAG, "goToNextActivityPolygon() -> sixMarkers");
-
-                                        // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
-                                        Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
-                                        Activity.putExtra("sixMarkers", true);
-                                        Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                        Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                        Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                        Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                        Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                        Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                                        Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                                        Activity.putExtra("marker3Longitude", marker3Position.longitude);
-                                        Activity.putExtra("marker4Latitude", marker4Position.latitude);
-                                        Activity.putExtra("marker4Longitude", marker4Position.longitude);
-                                        Activity.putExtra("marker5Latitude", marker5Position.latitude);
-                                        Activity.putExtra("marker5Longitude", marker5Position.longitude);
-                                    }
-
-                                    if (sevenMarkers) {
-
-                                        Log.i(TAG, "goToNextActivityPolygon() -> sevenMarkers");
-
-                                        // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
-                                        Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
-                                        Activity.putExtra("sevenMarkers", true);
-                                        Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                        Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                        Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                        Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                        Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                        Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                                        Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                                        Activity.putExtra("marker3Longitude", marker3Position.longitude);
-                                        Activity.putExtra("marker4Latitude", marker4Position.latitude);
-                                        Activity.putExtra("marker4Longitude", marker4Position.longitude);
-                                        Activity.putExtra("marker5Latitude", marker5Position.latitude);
-                                        Activity.putExtra("marker5Longitude", marker5Position.longitude);
-                                        Activity.putExtra("marker6Latitude", marker6Position.latitude);
-                                        Activity.putExtra("marker6Longitude", marker6Position.longitude);
-                                    }
-
-                                    if (eightMarkers) {
-
-                                        Log.i(TAG, "goToNextActivityPolygon() -> eightMarkers");
-
-                                        // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
-                                        Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
-                                        Activity.putExtra("eightMarkers", true);
-                                        Activity.putExtra("marker0Latitude", marker0Position.latitude);
-                                        Activity.putExtra("marker0Longitude", marker0Position.longitude);
-                                        Activity.putExtra("marker1Latitude", marker1Position.latitude);
-                                        Activity.putExtra("marker1Longitude", marker1Position.longitude);
-                                        Activity.putExtra("marker2Latitude", marker2Position.latitude);
-                                        Activity.putExtra("marker2Longitude", marker2Position.longitude);
-                                        Activity.putExtra("marker3Latitude", marker3Position.latitude);
-                                        Activity.putExtra("marker3Longitude", marker3Position.longitude);
-                                        Activity.putExtra("marker4Latitude", marker4Position.latitude);
-                                        Activity.putExtra("marker4Longitude", marker4Position.longitude);
-                                        Activity.putExtra("marker5Latitude", marker5Position.latitude);
-                                        Activity.putExtra("marker5Longitude", marker5Position.longitude);
-                                        Activity.putExtra("marker6Latitude", marker6Position.latitude);
-                                        Activity.putExtra("marker6Longitude", marker6Position.longitude);
-                                        Activity.putExtra("marker7Latitude", marker7Position.latitude);
-                                        Activity.putExtra("marker7Longitude", marker7Position.longitude);
-                                    }
-                                    // Pass this value to Chat.java to identify the shape.
-                                    Activity.putExtra("shapeUUID", shapeUUID);
-                                    // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
-                                    Activity.putExtra("userIsWithinShape", userIsWithinShape);
-
-                                    clearMap();
-
-                                    loadingIcon.setVisibility(View.GONE);
-
-                                    startActivity(Activity);
-                                } else {
-
-                                    loadingIcon.setVisibility(View.GONE);
-                                    toastMessageLong("Enable the location provider and try again.");
+                                    // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
+                                    Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
+                                    Activity.putExtra("threeMarkers", true);
+                                    Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                    Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                    Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                    Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                    Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                    Activity.putExtra("marker2Longitude", marker2Position.longitude);
                                 }
+
+                                if (fourMarkers) {
+
+                                    Log.i(TAG, "goToNextActivityPolygon() -> fourMarkers");
+
+                                    // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
+                                    Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
+                                    Activity.putExtra("fourMarkers", true);
+                                    Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                    Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                    Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                    Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                    Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                    Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                    Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                    Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                }
+
+                                if (fiveMarkers) {
+
+                                    Log.i(TAG, "goToNextActivityPolygon() -> fiveMarkers");
+
+                                    // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
+                                    Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
+                                    Activity.putExtra("fiveMarkers", true);
+                                    Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                    Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                    Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                    Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                    Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                    Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                    Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                    Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                    Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                    Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                }
+
+                                if (sixMarkers) {
+
+                                    Log.i(TAG, "goToNextActivityPolygon() -> sixMarkers");
+
+                                    // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
+                                    Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
+                                    Activity.putExtra("sixMarkers", true);
+                                    Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                    Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                    Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                    Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                    Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                    Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                    Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                    Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                    Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                    Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                    Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                    Activity.putExtra("marker5Longitude", marker5Position.longitude);
+                                }
+
+                                if (sevenMarkers) {
+
+                                    Log.i(TAG, "goToNextActivityPolygon() -> sevenMarkers");
+
+                                    // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
+                                    Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
+                                    Activity.putExtra("sevenMarkers", true);
+                                    Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                    Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                    Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                    Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                    Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                    Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                    Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                    Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                    Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                    Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                    Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                    Activity.putExtra("marker5Longitude", marker5Position.longitude);
+                                    Activity.putExtra("marker6Latitude", marker6Position.latitude);
+                                    Activity.putExtra("marker6Longitude", marker6Position.longitude);
+                                }
+
+                                if (eightMarkers) {
+
+                                    Log.i(TAG, "goToNextActivityPolygon() -> eightMarkers");
+
+                                    // Calculate the area of the polygon and send it to Firebase - used for chatViewsMenu.
+                                    Activity.putExtra("polygonArea", SphericalUtil.computeArea(polygonPointsList));
+                                    Activity.putExtra("eightMarkers", true);
+                                    Activity.putExtra("marker0Latitude", marker0Position.latitude);
+                                    Activity.putExtra("marker0Longitude", marker0Position.longitude);
+                                    Activity.putExtra("marker1Latitude", marker1Position.latitude);
+                                    Activity.putExtra("marker1Longitude", marker1Position.longitude);
+                                    Activity.putExtra("marker2Latitude", marker2Position.latitude);
+                                    Activity.putExtra("marker2Longitude", marker2Position.longitude);
+                                    Activity.putExtra("marker3Latitude", marker3Position.latitude);
+                                    Activity.putExtra("marker3Longitude", marker3Position.longitude);
+                                    Activity.putExtra("marker4Latitude", marker4Position.latitude);
+                                    Activity.putExtra("marker4Longitude", marker4Position.longitude);
+                                    Activity.putExtra("marker5Latitude", marker5Position.latitude);
+                                    Activity.putExtra("marker5Longitude", marker5Position.longitude);
+                                    Activity.putExtra("marker6Latitude", marker6Position.latitude);
+                                    Activity.putExtra("marker6Longitude", marker6Position.longitude);
+                                    Activity.putExtra("marker7Latitude", marker7Position.latitude);
+                                    Activity.putExtra("marker7Longitude", marker7Position.longitude);
+                                }
+                                // Pass this value to Chat.java to identify the shape.
+                                Activity.putExtra("shapeUUID", shapeUUID);
+                                // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
+                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
+
+                                clearMap();
+
+                                loadingIcon.setVisibility(View.GONE);
+
+                                startActivity(Activity);
                             } else {
 
                                 loadingIcon.setVisibility(View.GONE);
-                                Log.e(TAG, "goToNextActivityPolygon() -> location == null");
-                                toastMessageLong("An error occurred: your location is null");
+                                toastMessageLong("Enable the location provider and try again.");
                             }
+                        } else {
+
+                            loadingIcon.setVisibility(View.GONE);
+                            Log.e(TAG, "goToNextActivityPolygon() -> location == null");
+                            toastMessageLong("An error occurred: your location is null");
                         }
                     });
         } else {
@@ -5575,45 +5486,41 @@ public class Map extends FragmentActivity implements
             FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
 
             mFusedLocationClient.getLastLocation()
-                    .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
+                    .addOnSuccessListener(Map.this, location -> {
 
-                        @Override
-                        public void onSuccess(Location location) {
+                        if (location != null) {
 
-                            if (location != null) {
+                            if (!locationProviderDisabled) {
 
-                                if (!locationProviderDisabled) {
+                                cancelToasts();
 
-                                    cancelToasts();
+                                // Pass this boolean value to Chat.java.
+                                Activity.putExtra("newShape", newShape);
+                                Activity.putExtra("userLatitude", location.getLatitude());
+                                Activity.putExtra("userLongitude", location.getLongitude());
+                                // Pass this value to Chat.java to identify the shape.
+                                Activity.putExtra("shapeUUID", shapeUUID);
+                                // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
+                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                Activity.putExtra("circleLatitude", circle.getCenter().latitude);
+                                Activity.putExtra("circleLongitude", circle.getCenter().longitude);
+                                Activity.putExtra("radius", circle.getRadius());
 
-                                    // Pass this boolean value to Chat.java.
-                                    Activity.putExtra("newShape", newShape);
-                                    Activity.putExtra("userLatitude", location.getLatitude());
-                                    Activity.putExtra("userLongitude", location.getLongitude());
-                                    // Pass this value to Chat.java to identify the shape.
-                                    Activity.putExtra("shapeUUID", shapeUUID);
-                                    // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
-                                    Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                    Activity.putExtra("circleLatitude", circle.getCenter().latitude);
-                                    Activity.putExtra("circleLongitude", circle.getCenter().longitude);
-                                    Activity.putExtra("radius", circle.getRadius());
+                                clearMap();
 
-                                    clearMap();
+                                loadingIcon.setVisibility(View.GONE);
 
-                                    loadingIcon.setVisibility(View.GONE);
-
-                                    startActivity(Activity);
-                                } else {
-
-                                    loadingIcon.setVisibility(View.GONE);
-                                    toastMessageLong("Enable the location provider and try again.");
-                                }
+                                startActivity(Activity);
                             } else {
 
                                 loadingIcon.setVisibility(View.GONE);
-                                Log.e(TAG, "goToNextActivityCircle() -> location == null");
-                                toastMessageLong("An error occurred: your location is null");
+                                toastMessageLong("Enable the location provider and try again.");
                             }
+                        } else {
+
+                            loadingIcon.setVisibility(View.GONE);
+                            Log.e(TAG, "goToNextActivityCircle() -> location == null");
+                            toastMessageLong("An error occurred: your location is null");
                         }
                     });
         } else {
@@ -6044,133 +5951,129 @@ public class Map extends FragmentActivity implements
                     FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
 
                     mFusedLocationClient.getLastLocation()
-                            .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
+                            .addOnSuccessListener(Map.this, location -> {
 
-                                @Override
-                                public void onSuccess(Location location) {
+                                // Get last known location. In some rare situations, this can be null.
+                                if (location != null) {
 
-                                    // Get last known location. In some rare situations, this can be null.
-                                    if (location != null) {
+                                    // Load different colored shapes depending on the map type.
+                                    if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
 
-                                        // Load different colored shapes depending on the map type.
-                                        if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
+                                        // Global variable used in chatSizeSeekBar's onProgressChanged().
+                                        mlocation = location;
 
-                                            // Global variable used in chatSizeSeekBar's onProgressChanged().
-                                            mlocation = location;
+                                        // Update the global variable - used in chatSeekBarChangeListener.
+                                        fourMarkers = true;
 
-                                            // Update the global variable - used in chatSeekBarChangeListener.
-                                            fourMarkers = true;
+                                        // Set seekBar to be the same as the polygon's arbitrary size.
+                                        chatSizeSeekBar.setProgress(50);
 
-                                            // Set seekBar to be the same as the polygon's arbitrary size.
-                                            chatSizeSeekBar.setProgress(50);
+                                        // Logic to handle location object.
+                                        marker0Position = new LatLng(location.getLatitude() - 0.0001, location.getLongitude());
+                                        marker1Position = new LatLng(location.getLatitude(), location.getLongitude() - 0.0001);
+                                        marker2Position = new LatLng(location.getLatitude() + 0.0001, location.getLongitude());
+                                        marker3Position = new LatLng(location.getLatitude(), location.getLongitude() + 0.0001);
+                                        PolygonOptions polygonOptions =
+                                                new PolygonOptions()
+                                                        .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                                        .clickable(true)
+                                                        .strokeColor(Color.YELLOW)
+                                                        .strokeWidth(3f);
 
-                                            // Logic to handle location object.
-                                            marker0Position = new LatLng(location.getLatitude() - 0.0001, location.getLongitude());
-                                            marker1Position = new LatLng(location.getLatitude(), location.getLongitude() - 0.0001);
-                                            marker2Position = new LatLng(location.getLatitude() + 0.0001, location.getLongitude());
-                                            marker3Position = new LatLng(location.getLatitude(), location.getLongitude() + 0.0001);
-                                            PolygonOptions polygonOptions =
-                                                    new PolygonOptions()
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position)
-                                                            .clickable(true)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f);
+                                        // Create markers when creating the polygon to allow for dragging of the center and vertices.
+                                        MarkerOptions markerOptions0 = new MarkerOptions()
+                                                .position(marker0Position)
+                                                .draggable(true);
 
-                                            // Create markers when creating the polygon to allow for dragging of the center and vertices.
-                                            MarkerOptions markerOptions0 = new MarkerOptions()
-                                                    .position(marker0Position)
-                                                    .draggable(true);
+                                        MarkerOptions markerOptions1 = new MarkerOptions()
+                                                .position(marker1Position)
+                                                .draggable(true);
 
-                                            MarkerOptions markerOptions1 = new MarkerOptions()
-                                                    .position(marker1Position)
-                                                    .draggable(true);
+                                        MarkerOptions markerOptions2 = new MarkerOptions()
+                                                .position(marker2Position)
+                                                .draggable(true);
 
-                                            MarkerOptions markerOptions2 = new MarkerOptions()
-                                                    .position(marker2Position)
-                                                    .draggable(true);
+                                        MarkerOptions markerOptions3 = new MarkerOptions()
+                                                .position(marker3Position)
+                                                .draggable(true);
 
-                                            MarkerOptions markerOptions3 = new MarkerOptions()
-                                                    .position(marker3Position)
-                                                    .draggable(true);
+                                        marker0 = mMap.addMarker(markerOptions0);
+                                        marker1 = mMap.addMarker(markerOptions1);
+                                        marker2 = mMap.addMarker(markerOptions2);
+                                        marker3 = mMap.addMarker(markerOptions3);
 
-                                            marker0 = mMap.addMarker(markerOptions0);
-                                            marker1 = mMap.addMarker(markerOptions1);
-                                            marker2 = mMap.addMarker(markerOptions2);
-                                            marker3 = mMap.addMarker(markerOptions3);
+                                        // Update the global variable to compare with the marker the user clicks on during the dragging process.
+                                        marker0ID = marker0.getId();
+                                        marker1ID = marker1.getId();
+                                        marker2ID = marker2.getId();
+                                        marker3ID = marker3.getId();
 
-                                            // Update the global variable to compare with the marker the user clicks on during the dragging process.
-                                            marker0ID = marker0.getId();
-                                            marker1ID = marker1.getId();
-                                            marker2ID = marker2.getId();
-                                            marker3ID = marker3.getId();
+                                        // Update the global variable for use when a user clicks on the polygon to go to recyclerviewlayout without updating the marker locations.
+                                        LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position};
+                                        polygonPointsList = Arrays.asList(polygonPoints);
 
-                                            // Update the global variable for use when a user clicks on the polygon to go to recyclerviewlayout without updating the marker locations.
-                                            LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position};
-                                            polygonPointsList = Arrays.asList(polygonPoints);
-
-                                            newPolygon = mMap.addPolygon(polygonOptions);
-                                        } else {
-
-                                            // Global variable used in chatSizeSeekBar's onProgressChanged().
-                                            mlocation = location;
-
-                                            // Update the global variable - used in chatSeekBarChangeListener.
-                                            fourMarkers = true;
-
-                                            // Set seekBar to be the same as the polygon's arbitrary size.
-                                            chatSizeSeekBar.setProgress(50);
-
-                                            // Logic to handle location object.
-                                            marker0Position = new LatLng(location.getLatitude() - 0.0001, location.getLongitude());
-                                            marker1Position = new LatLng(location.getLatitude(), location.getLongitude() - 0.0001);
-                                            marker2Position = new LatLng(location.getLatitude() + 0.0001, location.getLongitude());
-                                            marker3Position = new LatLng(location.getLatitude(), location.getLongitude() + 0.0001);
-                                            PolygonOptions polygonOptions =
-                                                    new PolygonOptions()
-                                                            .add(marker0Position, marker1Position, marker2Position, marker3Position)
-                                                            .clickable(true)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f);
-
-                                            // Create markers when creating the polygon to allow for dragging of the center and vertices.
-                                            MarkerOptions markerOptions0 = new MarkerOptions()
-                                                    .position(marker0Position)
-                                                    .draggable(true);
-
-                                            MarkerOptions markerOptions1 = new MarkerOptions()
-                                                    .position(marker1Position)
-                                                    .draggable(true);
-
-                                            MarkerOptions markerOptions2 = new MarkerOptions()
-                                                    .position(marker2Position)
-                                                    .draggable(true);
-
-                                            MarkerOptions markerOptions3 = new MarkerOptions()
-                                                    .position(marker3Position)
-                                                    .draggable(true);
-
-                                            marker0 = mMap.addMarker(markerOptions0);
-                                            marker1 = mMap.addMarker(markerOptions1);
-                                            marker2 = mMap.addMarker(markerOptions2);
-                                            marker3 = mMap.addMarker(markerOptions3);
-
-                                            // Update the global variable to compare with the marker the user clicks on during the dragging process.
-                                            marker0ID = marker0.getId();
-                                            marker1ID = marker1.getId();
-                                            marker2ID = marker2.getId();
-                                            marker3ID = marker3.getId();
-
-                                            // Update the global variable for use when a user clicks on the polygon to go to recyclerviewlayout without updating the marker locations.
-                                            LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position};
-                                            polygonPointsList = Arrays.asList(polygonPoints);
-
-                                            newPolygon = mMap.addPolygon(polygonOptions);
-                                        }
+                                        newPolygon = mMap.addPolygon(polygonOptions);
                                     } else {
 
-                                        Log.e(TAG, "createPolygon -> location == null");
-                                        toastMessageLong("An error occurred: your location is null");
+                                        // Global variable used in chatSizeSeekBar's onProgressChanged().
+                                        mlocation = location;
+
+                                        // Update the global variable - used in chatSeekBarChangeListener.
+                                        fourMarkers = true;
+
+                                        // Set seekBar to be the same as the polygon's arbitrary size.
+                                        chatSizeSeekBar.setProgress(50);
+
+                                        // Logic to handle location object.
+                                        marker0Position = new LatLng(location.getLatitude() - 0.0001, location.getLongitude());
+                                        marker1Position = new LatLng(location.getLatitude(), location.getLongitude() - 0.0001);
+                                        marker2Position = new LatLng(location.getLatitude() + 0.0001, location.getLongitude());
+                                        marker3Position = new LatLng(location.getLatitude(), location.getLongitude() + 0.0001);
+                                        PolygonOptions polygonOptions =
+                                                new PolygonOptions()
+                                                        .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                                        .clickable(true)
+                                                        .strokeColor(Color.rgb(255, 0, 255))
+                                                        .strokeWidth(3f);
+
+                                        // Create markers when creating the polygon to allow for dragging of the center and vertices.
+                                        MarkerOptions markerOptions0 = new MarkerOptions()
+                                                .position(marker0Position)
+                                                .draggable(true);
+
+                                        MarkerOptions markerOptions1 = new MarkerOptions()
+                                                .position(marker1Position)
+                                                .draggable(true);
+
+                                        MarkerOptions markerOptions2 = new MarkerOptions()
+                                                .position(marker2Position)
+                                                .draggable(true);
+
+                                        MarkerOptions markerOptions3 = new MarkerOptions()
+                                                .position(marker3Position)
+                                                .draggable(true);
+
+                                        marker0 = mMap.addMarker(markerOptions0);
+                                        marker1 = mMap.addMarker(markerOptions1);
+                                        marker2 = mMap.addMarker(markerOptions2);
+                                        marker3 = mMap.addMarker(markerOptions3);
+
+                                        // Update the global variable to compare with the marker the user clicks on during the dragging process.
+                                        marker0ID = marker0.getId();
+                                        marker1ID = marker1.getId();
+                                        marker2ID = marker2.getId();
+                                        marker3ID = marker3.getId();
+
+                                        // Update the global variable for use when a user clicks on the polygon to go to recyclerviewlayout without updating the marker locations.
+                                        LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position};
+                                        polygonPointsList = Arrays.asList(polygonPoints);
+
+                                        newPolygon = mMap.addPolygon(polygonOptions);
                                     }
+                                } else {
+
+                                    Log.e(TAG, "createPolygon -> location == null");
+                                    toastMessageLong("An error occurred: your location is null");
                                 }
                             });
                 } else {
@@ -6361,89 +6264,85 @@ public class Map extends FragmentActivity implements
                     FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
 
                     mFusedLocationClient.getLastLocation()
-                            .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
+                            .addOnSuccessListener(Map.this, location -> {
+                                // Get last known location. In some rare situations, this can be null.
+                                if (location != null) {
 
-                                @Override
-                                public void onSuccess(Location location) {
-                                    // Get last known location. In some rare situations, this can be null.
-                                    if (location != null) {
+                                    // Load different colored shapes depending on the map type.
+                                    if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
 
-                                        // Load different colored shapes depending on the map type.
-                                        if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
+                                        chatSizeSeekBar.setProgress(88);
 
-                                            chatSizeSeekBar.setProgress(88);
+                                        // Logic to handle location object.
+                                        LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
+                                        marker1Position = new LatLng(location.getLatitude() + 0.0001, location.getLongitude());
+                                        float circleRadius = distanceGivenLatLng(location.getLatitude(), location.getLongitude(), marker1Position.latitude, marker1Position.longitude);
+                                        CircleOptions circleOptions =
+                                                new CircleOptions()
+                                                        .center(latLng)
+                                                        .clickable(true)
+                                                        .radius(circleRadius)
+                                                        .strokeColor(Color.YELLOW)
+                                                        .strokeWidth(3f);
 
-                                            // Logic to handle location object.
-                                            LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-                                            marker1Position = new LatLng(location.getLatitude() + 0.0001, location.getLongitude());
-                                            float circleRadius = distanceGivenLatLng(location.getLatitude(), location.getLongitude(), marker1Position.latitude, marker1Position.longitude);
-                                            CircleOptions circleOptions =
-                                                    new CircleOptions()
-                                                            .center(latLng)
-                                                            .clickable(true)
-                                                            .radius(circleRadius)
-                                                            .strokeColor(Color.YELLOW)
-                                                            .strokeWidth(3f);
+                                        // Create a marker in the center of the circle to allow for dragging.
+                                        MarkerOptions markerOptionsCenter = new MarkerOptions()
+                                                .position(latLng)
+                                                .draggable(true);
 
-                                            // Create a marker in the center of the circle to allow for dragging.
-                                            MarkerOptions markerOptionsCenter = new MarkerOptions()
-                                                    .position(latLng)
-                                                    .draggable(true);
+                                        MarkerOptions markerOptionsEdge = new MarkerOptions()
+                                                .position(marker1Position)
+                                                .draggable(true);
 
-                                            MarkerOptions markerOptionsEdge = new MarkerOptions()
-                                                    .position(marker1Position)
-                                                    .draggable(true);
+                                        marker0 = mMap.addMarker(markerOptionsCenter);
+                                        marker1 = mMap.addMarker(markerOptionsEdge);
 
-                                            marker0 = mMap.addMarker(markerOptionsCenter);
-                                            marker1 = mMap.addMarker(markerOptionsEdge);
+                                        // Update the global variable to compare with the marker the user clicks on during the dragging process.
+                                        marker0ID = marker0.getId();
+                                        marker1ID = marker1.getId();
 
-                                            // Update the global variable to compare with the marker the user clicks on during the dragging process.
-                                            marker0ID = marker0.getId();
-                                            marker1ID = marker1.getId();
-
-                                            newCircle = mMap.addCircle(circleOptions);
-                                            chatSizeSeekBar.setProgress((int) distanceGivenLatLng(location.getLatitude(), location.getLongitude(), marker1Position.latitude, marker1Position.longitude));
-                                        } else {
-
-                                            // Set seekBar to be within 75 and 100, as there are 4 markers.
-                                            chatSizeSeekBar.setProgress(88);
-
-                                            // Logic to handle location object.
-                                            LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-                                            marker1Position = new LatLng(location.getLatitude() + 0.0001, location.getLongitude());
-                                            float circleRadius = distanceGivenLatLng(location.getLatitude(), location.getLongitude(), marker1Position.latitude, marker1Position.longitude);
-                                            CircleOptions circleOptions =
-                                                    new CircleOptions()
-                                                            .center(latLng)
-                                                            .clickable(true)
-                                                            .radius(circleRadius)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f);
-
-                                            // Create a marker in the center of the circle to allow for dragging.
-                                            MarkerOptions markerOptionsCenter = new MarkerOptions()
-                                                    .position(latLng)
-                                                    .draggable(true);
-
-                                            MarkerOptions markerOptionsEdge = new MarkerOptions()
-                                                    .position(marker1Position)
-                                                    .draggable(true);
-
-                                            marker0 = mMap.addMarker(markerOptionsCenter);
-                                            marker1 = mMap.addMarker(markerOptionsEdge);
-
-                                            // Update the global variable to compare with the marker the user clicks on during the dragging process.
-                                            marker0ID = marker0.getId();
-                                            marker1ID = marker1.getId();
-
-                                            newCircle = mMap.addCircle(circleOptions);
-                                            chatSizeSeekBar.setProgress((int) distanceGivenLatLng(location.getLatitude(), location.getLongitude(), marker1Position.latitude, marker1Position.longitude));
-                                        }
+                                        newCircle = mMap.addCircle(circleOptions);
+                                        chatSizeSeekBar.setProgress((int) distanceGivenLatLng(location.getLatitude(), location.getLongitude(), marker1Position.latitude, marker1Position.longitude));
                                     } else {
 
-                                        Log.e(TAG, "createCircle -> location == null");
-                                        toastMessageLong("An error occurred: your location is null");
+                                        // Set seekBar to be within 75 and 100, as there are 4 markers.
+                                        chatSizeSeekBar.setProgress(88);
+
+                                        // Logic to handle location object.
+                                        LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
+                                        marker1Position = new LatLng(location.getLatitude() + 0.0001, location.getLongitude());
+                                        float circleRadius = distanceGivenLatLng(location.getLatitude(), location.getLongitude(), marker1Position.latitude, marker1Position.longitude);
+                                        CircleOptions circleOptions =
+                                                new CircleOptions()
+                                                        .center(latLng)
+                                                        .clickable(true)
+                                                        .radius(circleRadius)
+                                                        .strokeColor(Color.rgb(255, 0, 255))
+                                                        .strokeWidth(3f);
+
+                                        // Create a marker in the center of the circle to allow for dragging.
+                                        MarkerOptions markerOptionsCenter = new MarkerOptions()
+                                                .position(latLng)
+                                                .draggable(true);
+
+                                        MarkerOptions markerOptionsEdge = new MarkerOptions()
+                                                .position(marker1Position)
+                                                .draggable(true);
+
+                                        marker0 = mMap.addMarker(markerOptionsCenter);
+                                        marker1 = mMap.addMarker(markerOptionsEdge);
+
+                                        // Update the global variable to compare with the marker the user clicks on during the dragging process.
+                                        marker0ID = marker0.getId();
+                                        marker1ID = marker1.getId();
+
+                                        newCircle = mMap.addCircle(circleOptions);
+                                        chatSizeSeekBar.setProgress((int) distanceGivenLatLng(location.getLatitude(), location.getLongitude(), marker1Position.latitude, marker1Position.longitude));
                                     }
+                                } else {
+
+                                    Log.e(TAG, "createCircle -> location == null");
+                                    toastMessageLong("An error occurred: your location is null");
                                 }
                             });
                 } else {
@@ -6554,76 +6453,72 @@ public class Map extends FragmentActivity implements
                     FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
 
                     mFusedLocationClient.getLastLocation()
-                            .addOnSuccessListener(Map.this, new OnSuccessListener<Location>() {
+                            .addOnSuccessListener(Map.this, location -> {
 
-                                @Override
-                                public void onSuccess(final Location location) {
+                                if (location.getAccuracy() > 5 && !showedLocationAccuracyWarning) {
 
-                                    if (location.getAccuracy() > 5 && !showedLocationAccuracyWarning) {
+                                    toastMessageLong("Waiting a moment should increase your location accuracy. Proceed anyway?");
+                                    showedLocationAccuracyWarning = true;
+                                    return;
+                                }
 
-                                        toastMessageLong("Waiting a moment should increase your location accuracy. Proceed anyway?");
-                                        showedLocationAccuracyWarning = true;
-                                        return;
-                                    }
+                                // Remove any other shape before adding the circle to Firebase.
+                                if (newCircle != null) {
 
-                                    // Remove any other shape before adding the circle to Firebase.
-                                    if (newCircle != null) {
+                                    newCircle.remove();
+                                    newCircle = null;
+                                }
 
-                                        newCircle.remove();
-                                        newCircle = null;
-                                    }
+                                if (newPolygon != null) {
 
-                                    if (newPolygon != null) {
+                                    newPolygon.remove();
+                                    newPolygon = null;
+                                }
 
-                                        newPolygon.remove();
-                                        newPolygon = null;
-                                    }
+                                // Add circle to the map and go to recyclerviewlayout.
+                                if (mMap != null) {
 
-                                    // Add circle to the map and go to recyclerviewlayout.
-                                    if (mMap != null) {
+                                    shapeUUID = UUID.randomUUID().toString();
 
-                                        shapeUUID = UUID.randomUUID().toString();
+                                    // Check if the user is already signed in.
+                                    if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) instanceof GoogleSignInAccount) {
 
-                                        // Check if the user is already signed in.
-                                        if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) instanceof GoogleSignInAccount) {
+                                        // User signed in.
 
-                                            // User signed in.
+                                        Log.i(TAG, "onMenuItemClick() -> create point and enter chat -> user signed in");
 
-                                            Log.i(TAG, "onMenuItemClick() -> create point and enter chat -> user signed in");
+                                        // Carry the extras all the way to Chat.java.
+                                        Intent Activity = new Intent(Map.this, Navigation.class);
+                                        // Pass this boolean value to Chat.java.
+                                        Activity.putExtra("newShape", true);
+                                        // Pass this value to Chat.java to identify the shape.
+                                        Activity.putExtra("shapeUUID", shapeUUID);
+                                        // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
+                                        Activity.putExtra("userIsWithinShape", true);
+                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a recyclerviewlayout.
+                                        Activity.putExtra("circleLatitude", location.getLatitude());
+                                        Activity.putExtra("circleLongitude", location.getLongitude());
+                                        Activity.putExtra("radius", 1.0);
+                                        startActivity(Activity);
+                                    } else {
 
-                                            // Carry the extras all the way to Chat.java.
-                                            Intent Activity = new Intent(Map.this, Navigation.class);
-                                            // Pass this boolean value to Chat.java.
-                                            Activity.putExtra("newShape", true);
-                                            // Pass this value to Chat.java to identify the shape.
-                                            Activity.putExtra("shapeUUID", shapeUUID);
-                                            // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
-                                            Activity.putExtra("userIsWithinShape", true);
-                                            // Pass this information to Chat.java to create a new circle in Firebase after someone writes a recyclerviewlayout.
-                                            Activity.putExtra("circleLatitude", location.getLatitude());
-                                            Activity.putExtra("circleLongitude", location.getLongitude());
-                                            Activity.putExtra("radius", 1.0);
-                                            startActivity(Activity);
-                                        } else {
+                                        // User NOT signed in.
 
-                                            // User NOT signed in.
+                                        Log.i(TAG, "onMenuItemClick() -> create point and enter chat -> user NOT signed in");
 
-                                            Log.i(TAG, "onMenuItemClick() -> create point and enter chat -> user NOT signed in");
-
-                                            // Carry the extras all the way to Chat.java.
-                                            Intent Activity = new Intent(Map.this, SignIn.class);
-                                            // Pass this boolean value to Chat.java.
-                                            Activity.putExtra("newShape", true);
-                                            // Pass this value to Chat.java to identify the shape.
-                                            Activity.putExtra("shapeUUID", shapeUUID);
-                                            // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
-                                            Activity.putExtra("userIsWithinShape", true);
-                                            // Pass this information to Chat.java to create a new circle in Firebase after someone writes a recyclerviewlayout.
-                                            Activity.putExtra("circleLatitude", location.getLatitude());
-                                            Activity.putExtra("circleLongitude", location.getLongitude());
-                                            Activity.putExtra("radius", 1.0);
-                                            startActivity(Activity);
-                                        }
+                                        // Carry the extras all the way to Chat.java.
+                                        Intent Activity = new Intent(Map.this, SignIn.class);
+                                        // Pass this boolean value to Chat.java.
+                                        Activity.putExtra("newShape", true);
+                                        // Pass this value to Chat.java to identify the shape.
+                                        Activity.putExtra("shapeUUID", shapeUUID);
+                                        // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
+                                        Activity.putExtra("userIsWithinShape", true);
+                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a recyclerviewlayout.
+                                        Activity.putExtra("circleLatitude", location.getLatitude());
+                                        Activity.putExtra("circleLongitude", location.getLongitude());
+                                        Activity.putExtra("radius", 1.0);
+                                        startActivity(Activity);
                                     }
                                 }
                             });

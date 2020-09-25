@@ -92,69 +92,58 @@ public class Feedback extends AppCompatActivity {
 
         super.onStart();
 
-        sendFeedback.setOnClickListener(new View.OnClickListener() {
+        sendFeedback.setOnClickListener(v -> {
 
-            @Override
-            public void onClick(View v) {
+            feedback = mFeedback.getText().toString().trim();
 
-                feedback = mFeedback.getText().toString().trim();
+            if (feedback.equals("")) {
 
-                if (feedback.equals("")) {
+                toastMessageShort("Please enter feedback");
+                mFeedback.requestFocus();
+                return;
+            }
 
-                    toastMessageShort("Please enter feedback");
-                    mFeedback.requestFocus();
-                    return;
+            loadingIcon.bringToFront();
+            loadingIcon.setVisibility(View.VISIBLE);
+
+            // Close the keyboard.
+            if (Feedback.this.getCurrentFocus() != null) {
+
+                InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                if (imm != null) {
+
+                    imm.hideSoftInputFromWindow(Feedback.this.getCurrentFocus().getWindowToken(), 0);
+                }
+            }
+
+            DatabaseReference Feedback = FirebaseDatabase.getInstance().getReference().child("Feedback");
+            Feedback.addListenerForSingleValueEvent(new ValueEventListener() {
+
+                @Override
+                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                    FeedbackInformation feedbackInformation = new FeedbackInformation();
+                    feedbackInformation.setFeedback(feedback);
+                    feedbackInformation.setDate(ServerValue.TIMESTAMP);
+                    DatabaseReference newFeedback = FirebaseDatabase.getInstance().getReference().child("Feedback").push();
+                    newFeedback.setValue(feedbackInformation);
+                    mFeedback.getText().clear();
+                    RelativeLayout layout = findViewById(R.id.layout);
+                    layout.requestFocus();
+                    loadingIcon.setVisibility(View.GONE);
+                    toastMessageShort("Feedback sent. Thank you!");
                 }
 
-                loadingIcon.bringToFront();
-                loadingIcon.setVisibility(View.VISIBLE);
+                @Override
+                public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                // Close the keyboard.
-                if (Feedback.this.getCurrentFocus() != null) {
-
-                    InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-                    if (imm != null) {
-
-                        imm.hideSoftInputFromWindow(Feedback.this.getCurrentFocus().getWindowToken(), 0);
-                    }
+                    loadingIcon.setVisibility(View.GONE);
+                    toastMessageShort("Feedback sent. Thank you!");
                 }
-
-                DatabaseReference Feedback = FirebaseDatabase.getInstance().getReference().child("Feedback");
-                Feedback.addListenerForSingleValueEvent(new ValueEventListener() {
-
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-
-                        FeedbackInformation feedbackInformation = new FeedbackInformation();
-                        feedbackInformation.setFeedback(feedback);
-                        feedbackInformation.setDate(ServerValue.TIMESTAMP);
-                        DatabaseReference newFeedback = FirebaseDatabase.getInstance().getReference().child("Feedback").push();
-                        newFeedback.setValue(feedbackInformation);
-                        mFeedback.getText().clear();
-                        RelativeLayout layout = findViewById(R.id.layout);
-                        layout.requestFocus();
-                        loadingIcon.setVisibility(View.GONE);
-                        toastMessageShort("Feedback sent. Thank you!");
-                    }
-
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                        loadingIcon.setVisibility(View.GONE);
-                        toastMessageShort("Feedback sent. Thank you!");
-                    }
-                });
-            }
+            });
         });
 
-        goBack.setOnClickListener(new View.OnClickListener() {
-
-            @Override
-            public void onClick(View v) {
-
-                onBackPressed();
-            }
-        });
+        goBack.setOnClickListener(v -> onBackPressed());
     }
 
     @Override

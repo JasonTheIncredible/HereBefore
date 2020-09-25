@@ -458,400 +458,380 @@ public class DirectMentions extends Fragment {
                 messageTextOutside = itemView.findViewById(R.id.messageTextOutside);
                 messageItem = itemView.findViewById(R.id.message);
 
-                itemView.setOnClickListener(new View.OnClickListener() {
+                itemView.setOnClickListener(v -> {
 
-                    @Override
-                    public void onClick(View v) {
+                    loadingIcon.setVisibility(View.VISIBLE);
 
-                        loadingIcon.setVisibility(View.VISIBLE);
+                    DatabaseReference shape = null;
+                    double shapeSize = mShapeSize.get(getAdapterPosition());
 
-                        DatabaseReference shape = null;
-                        double shapeSize = mShapeSize.get(getAdapterPosition());
+                    if (mShapeIsCircle.get(getAdapterPosition())) {
 
-                        if (mShapeIsCircle.get(getAdapterPosition())) {
+                        if (shapeSize == 1) {
 
-                            if (shapeSize == 1) {
+                            shape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latUser + ", " + lonUser + ")").child("Point");
+                        } else if (1 < shapeSize && shapeSize <= 10) {
 
-                                shape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latUser + ", " + lonUser + ")").child("Point");
-                            } else if (1 < shapeSize && shapeSize <= 10) {
+                            shape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latUser + ", " + lonUser + ")").child("Small");
+                        } else if (10 < shapeSize && shapeSize <= 50) {
 
-                                shape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latUser + ", " + lonUser + ")").child("Small");
-                            } else if (10 < shapeSize && shapeSize <= 50) {
+                            shape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latUser + ", " + lonUser + ")").child("Medium");
+                        } else if (50 < shapeSize) {
 
-                                shape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latUser + ", " + lonUser + ")").child("Medium");
-                            } else if (50 < shapeSize) {
-
-                                shape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latUser + ", " + lonUser + ")").child("Large");
-                            }
-
-                            shape.addListenerForSingleValueEvent(new ValueEventListener() {
-
-                                @Override
-                                public void onDataChange(@NonNull DataSnapshot snapshot) {
-
-                                    for (DataSnapshot ds : snapshot.getChildren()) {
-
-                                        String shapeUUID = (String) ds.child("shapeUUID").getValue();
-                                        if (shapeUUID != null) {
-
-                                            if (shapeUUID.equals(mShapeUUID.get(getAdapterPosition()))) {
-
-                                                Double mLatitude = (Double) ds.child("circleOptions").child("center").child("latitude").getValue();
-                                                Double mLongitude = (Double) ds.child("circleOptions").child("center").child("longitude").getValue();
-                                                if (mLatitude != null && mLongitude != null) {
-
-                                                    double mRadius = (double) (long) ds.child("circleOptions").child("radius").getValue();
-                                                    if (mRadius != 0) {
-
-                                                        float[] distance = new float[2];
-
-                                                        Location.distanceBetween(mLatitude, mLongitude,
-                                                                userLatitude, userLongitude, distance);
-
-                                                        // Boolean; will be true if user is within the circle upon circle click.
-                                                        userIsWithinShape = !(distance[0] > mRadius);
-
-                                                        cancelToasts();
-
-                                                        Intent Activity = new Intent(mContext, Navigation.class);
-                                                        Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
-                                                        Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
-                                                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                        Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()));
-                                                        Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()));
-
-                                                        loadingIcon.setVisibility(View.GONE);
-
-                                                        mContext.startActivity(Activity);
-
-                                                        mActivity.finish();
-                                                        return;
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    // If this part is reached, the user is not within the shape because the user's location is not in the same loadable map area as the shape.
-                                    cancelToasts();
-
-                                    Intent Activity = new Intent(mContext, Navigation.class);
-                                    Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
-                                    Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
-                                    Activity.putExtra("userIsWithinShape", false);
-                                    Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()));
-                                    Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()));
-
-                                    loadingIcon.setVisibility(View.GONE);
-
-                                    mContext.startActivity(Activity);
-
-                                    mActivity.finish();
-                                }
-
-                                @Override
-                                public void onCancelled(@NonNull DatabaseError error) {
-
-                                    loadingIcon.setVisibility(View.GONE);
-                                    toastMessageLong(error.getMessage());
-                                }
-                            });
-                        } else {
-
-                            // Shape is not a circle.
-
-                            if (shapeSize <= Math.PI * (Math.pow(10, 2))) {
-
-                                shape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latUser + ", " + lonUser + ")").child("Small");
-                            } else if (Math.PI * (Math.pow(10, 2)) < shapeSize && shapeSize <= Math.PI * (Math.pow(50, 2))) {
-
-                                shape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latUser + ", " + lonUser + ")").child("Medium");
-                            } else if (Math.PI * (Math.pow(50, 2)) < shapeSize) {
-
-                                shape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latUser + ", " + lonUser + ")").child("Large");
-                            }
-
-                            shape.addListenerForSingleValueEvent(new ValueEventListener() {
-
-                                @Override
-                                public void onDataChange(@NonNull DataSnapshot snapshot) {
-
-                                    for (DataSnapshot ds : snapshot.getChildren()) {
-
-                                        String shapeUUID = (String) ds.child("shapeUUID").getValue();
-                                        if (shapeUUID != null) {
-
-                                            if (shapeUUID.equals(mShapeUUID.get(getAdapterPosition()))) {
-
-                                                LatLng marker3Position = null;
-                                                LatLng marker4Position = null;
-                                                LatLng marker5Position = null;
-                                                LatLng marker6Position = null;
-                                                LatLng marker7Position;
-                                                List<LatLng> polygon = new ArrayList<>();
-
-                                                LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
-                                                LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
-                                                LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
-                                                if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                                    marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
-                                                }
-                                                if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                                    marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
-                                                }
-                                                if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                                    marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
-                                                }
-                                                if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                                    marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
-                                                }
-                                                if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
-                                                    marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
-
-                                                    polygon.add(marker7Position);
-                                                    polygon.add(marker6Position);
-                                                    polygon.add(marker5Position);
-                                                    polygon.add(marker4Position);
-                                                    polygon.add(marker3Position);
-                                                    polygon.add(marker2Position);
-                                                    polygon.add(marker1Position);
-                                                    polygon.add(marker0Position);
-
-                                                    userIsWithinShape = PolyUtil.containsLocation(userLatitude, userLongitude, polygon, false);
-
-                                                    cancelToasts();
-
-                                                    Intent Activity = new Intent(mContext, Navigation.class);
-                                                    Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
-                                                    Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
-                                                    Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                    Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()));
-                                                    Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()));
-
-                                                    loadingIcon.setVisibility(View.GONE);
-
-                                                    mContext.startActivity(Activity);
-
-                                                    mActivity.finish();
-                                                    return;
-                                                } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
-                                                    polygon.add(marker6Position);
-                                                    polygon.add(marker5Position);
-                                                    polygon.add(marker4Position);
-                                                    polygon.add(marker3Position);
-                                                    polygon.add(marker2Position);
-                                                    polygon.add(marker1Position);
-                                                    polygon.add(marker0Position);
-
-                                                    userIsWithinShape = PolyUtil.containsLocation(userLatitude, userLongitude, polygon, false);
-
-                                                    cancelToasts();
-
-                                                    Intent Activity = new Intent(mContext, Navigation.class);
-                                                    Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
-                                                    Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
-                                                    Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                    Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()));
-                                                    Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()));
-
-                                                    loadingIcon.setVisibility(View.GONE);
-
-                                                    mContext.startActivity(Activity);
-
-                                                    mActivity.finish();
-                                                    return;
-                                                } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
-                                                    polygon.add(marker5Position);
-                                                    polygon.add(marker4Position);
-                                                    polygon.add(marker3Position);
-                                                    polygon.add(marker2Position);
-                                                    polygon.add(marker1Position);
-                                                    polygon.add(marker0Position);
-
-                                                    userIsWithinShape = PolyUtil.containsLocation(userLatitude, userLongitude, polygon, false);
-
-                                                    cancelToasts();
-
-                                                    Intent Activity = new Intent(mContext, Navigation.class);
-                                                    Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
-                                                    Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
-                                                    Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                    Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()));
-                                                    Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()));
-
-                                                    loadingIcon.setVisibility(View.GONE);
-
-                                                    mContext.startActivity(Activity);
-
-                                                    mActivity.finish();
-                                                    return;
-                                                } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
-                                                    polygon.add(marker4Position);
-                                                    polygon.add(marker3Position);
-                                                    polygon.add(marker2Position);
-                                                    polygon.add(marker1Position);
-                                                    polygon.add(marker0Position);
-
-                                                    userIsWithinShape = PolyUtil.containsLocation(userLatitude, userLongitude, polygon, false);
-
-                                                    cancelToasts();
-
-                                                    Intent Activity = new Intent(mContext, Navigation.class);
-                                                    Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
-                                                    Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
-                                                    Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                    Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()));
-                                                    Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()));
-
-                                                    loadingIcon.setVisibility(View.GONE);
-
-                                                    mContext.startActivity(Activity);
-
-                                                    mActivity.finish();
-                                                    return;
-                                                } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
-                                                    polygon.add(marker3Position);
-                                                    polygon.add(marker2Position);
-                                                    polygon.add(marker1Position);
-                                                    polygon.add(marker0Position);
-
-                                                    userIsWithinShape = PolyUtil.containsLocation(userLatitude, userLongitude, polygon, false);
-
-                                                    cancelToasts();
-
-                                                    Intent Activity = new Intent(mContext, Navigation.class);
-                                                    Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
-                                                    Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
-                                                    Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                    Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()));
-                                                    Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()));
-
-                                                    loadingIcon.setVisibility(View.GONE);
-
-                                                    mContext.startActivity(Activity);
-
-                                                    mActivity.finish();
-                                                    return;
-                                                } else {
-                                                    polygon.add(marker2Position);
-                                                    polygon.add(marker1Position);
-                                                    polygon.add(marker0Position);
-
-                                                    userIsWithinShape = PolyUtil.containsLocation(userLatitude, userLongitude, polygon, false);
-
-                                                    cancelToasts();
-
-                                                    Intent Activity = new Intent(mContext, Navigation.class);
-                                                    Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
-                                                    Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
-                                                    Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                    Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()));
-                                                    Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()));
-
-                                                    loadingIcon.setVisibility(View.GONE);
-
-                                                    mContext.startActivity(Activity);
-
-                                                    mActivity.finish();
-                                                    return;
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    // If this part is reached, the user is not within the shape because the user's location is not in the same loadable map area as the shape.
-                                    cancelToasts();
-
-                                    Intent Activity = new Intent(mContext, Navigation.class);
-                                    Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
-                                    Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
-                                    Activity.putExtra("userIsWithinShape", false);
-                                    Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()));
-                                    Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()));
-
-                                    loadingIcon.setVisibility(View.GONE);
-
-                                    mContext.startActivity(Activity);
-
-                                    mActivity.finish();
-                                }
-
-                                @Override
-                                public void onCancelled(@NonNull DatabaseError error) {
-
-                                    loadingIcon.setVisibility(View.GONE);
-                                    toastMessageLong(error.getMessage());
-                                }
-                            });
+                            shape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latUser + ", " + lonUser + ")").child("Large");
                         }
+
+                        shape.addListenerForSingleValueEvent(new ValueEventListener() {
+
+                            @Override
+                            public void onDataChange(@NonNull DataSnapshot snapshot) {
+
+                                for (DataSnapshot ds : snapshot.getChildren()) {
+
+                                    String shapeUUID = (String) ds.child("shapeUUID").getValue();
+                                    if (shapeUUID != null) {
+
+                                        if (shapeUUID.equals(mShapeUUID.get(getAdapterPosition()))) {
+
+                                            Double mLatitude = (Double) ds.child("circleOptions").child("center").child("latitude").getValue();
+                                            Double mLongitude = (Double) ds.child("circleOptions").child("center").child("longitude").getValue();
+                                            if (mLatitude != null && mLongitude != null) {
+
+                                                double mRadius = (double) (long) ds.child("circleOptions").child("radius").getValue();
+                                                if (mRadius != 0) {
+
+                                                    float[] distance = new float[2];
+
+                                                    Location.distanceBetween(mLatitude, mLongitude,
+                                                            userLatitude, userLongitude, distance);
+
+                                                    // Boolean; will be true if user is within the circle upon circle click.
+                                                    userIsWithinShape = !(distance[0] > mRadius);
+
+                                                    cancelToasts();
+
+                                                    Intent Activity = new Intent(mContext, Navigation.class);
+                                                    Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
+                                                    Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
+                                                    Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                                    Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()));
+                                                    Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()));
+
+                                                    loadingIcon.setVisibility(View.GONE);
+
+                                                    mContext.startActivity(Activity);
+
+                                                    mActivity.finish();
+                                                    return;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // If this part is reached, the user is not within the shape because the user's location is not in the same loadable map area as the shape.
+                                cancelToasts();
+
+                                Intent Activity = new Intent(mContext, Navigation.class);
+                                Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
+                                Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
+                                Activity.putExtra("userIsWithinShape", false);
+                                Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()));
+                                Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()));
+
+                                loadingIcon.setVisibility(View.GONE);
+
+                                mContext.startActivity(Activity);
+
+                                mActivity.finish();
+                            }
+
+                            @Override
+                            public void onCancelled(@NonNull DatabaseError error) {
+
+                                loadingIcon.setVisibility(View.GONE);
+                                toastMessageLong(error.getMessage());
+                            }
+                        });
+                    } else {
+
+                        // Shape is not a circle.
+
+                        if (shapeSize <= Math.PI * (Math.pow(10, 2))) {
+
+                            shape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latUser + ", " + lonUser + ")").child("Small");
+                        } else if (Math.PI * (Math.pow(10, 2)) < shapeSize && shapeSize <= Math.PI * (Math.pow(50, 2))) {
+
+                            shape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latUser + ", " + lonUser + ")").child("Medium");
+                        } else if (Math.PI * (Math.pow(50, 2)) < shapeSize) {
+
+                            shape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latUser + ", " + lonUser + ")").child("Large");
+                        }
+
+                        shape.addListenerForSingleValueEvent(new ValueEventListener() {
+
+                            @Override
+                            public void onDataChange(@NonNull DataSnapshot snapshot) {
+
+                                for (DataSnapshot ds : snapshot.getChildren()) {
+
+                                    String shapeUUID = (String) ds.child("shapeUUID").getValue();
+                                    if (shapeUUID != null) {
+
+                                        if (shapeUUID.equals(mShapeUUID.get(getAdapterPosition()))) {
+
+                                            LatLng marker3Position = null;
+                                            LatLng marker4Position = null;
+                                            LatLng marker5Position = null;
+                                            LatLng marker6Position = null;
+                                            LatLng marker7Position;
+                                            List<LatLng> polygon = new ArrayList<>();
+
+                                            LatLng marker0Position = new LatLng((double) ds.child("polygonOptions/points/0/latitude/").getValue(), (double) ds.child("polygonOptions/points/0/longitude/").getValue());
+                                            LatLng marker1Position = new LatLng((double) ds.child("polygonOptions/points/1/latitude/").getValue(), (double) ds.child("polygonOptions/points/1/longitude/").getValue());
+                                            LatLng marker2Position = new LatLng((double) ds.child("polygonOptions/points/2/latitude/").getValue(), (double) ds.child("polygonOptions/points/2/longitude/").getValue());
+                                            if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                marker3Position = new LatLng((double) ds.child("polygonOptions/points/3/latitude/").getValue(), (double) ds.child("polygonOptions/points/3/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                marker4Position = new LatLng((double) ds.child("polygonOptions/points/4/latitude/").getValue(), (double) ds.child("polygonOptions/points/4/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                marker5Position = new LatLng((double) ds.child("polygonOptions/points/5/latitude/").getValue(), (double) ds.child("polygonOptions/points/5/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                marker6Position = new LatLng((double) ds.child("polygonOptions/points/6/latitude/").getValue(), (double) ds.child("polygonOptions/points/6/longitude/").getValue());
+                                            }
+                                            if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
+                                                marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
+
+                                                polygon.add(marker7Position);
+                                                polygon.add(marker6Position);
+                                                polygon.add(marker5Position);
+                                                polygon.add(marker4Position);
+                                                polygon.add(marker3Position);
+                                                polygon.add(marker2Position);
+                                                polygon.add(marker1Position);
+                                                polygon.add(marker0Position);
+
+                                                userIsWithinShape = PolyUtil.containsLocation(userLatitude, userLongitude, polygon, false);
+
+                                                cancelToasts();
+
+                                                Intent Activity = new Intent(mContext, Navigation.class);
+                                                Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
+                                                Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
+                                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                                Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()));
+                                                Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()));
+
+                                                loadingIcon.setVisibility(View.GONE);
+
+                                                mContext.startActivity(Activity);
+
+                                                mActivity.finish();
+                                                return;
+                                            } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+                                                polygon.add(marker6Position);
+                                                polygon.add(marker5Position);
+                                                polygon.add(marker4Position);
+                                                polygon.add(marker3Position);
+                                                polygon.add(marker2Position);
+                                                polygon.add(marker1Position);
+                                                polygon.add(marker0Position);
+
+                                                userIsWithinShape = PolyUtil.containsLocation(userLatitude, userLongitude, polygon, false);
+
+                                                cancelToasts();
+
+                                                Intent Activity = new Intent(mContext, Navigation.class);
+                                                Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
+                                                Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
+                                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                                Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()));
+                                                Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()));
+
+                                                loadingIcon.setVisibility(View.GONE);
+
+                                                mContext.startActivity(Activity);
+
+                                                mActivity.finish();
+                                                return;
+                                            } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+                                                polygon.add(marker5Position);
+                                                polygon.add(marker4Position);
+                                                polygon.add(marker3Position);
+                                                polygon.add(marker2Position);
+                                                polygon.add(marker1Position);
+                                                polygon.add(marker0Position);
+
+                                                userIsWithinShape = PolyUtil.containsLocation(userLatitude, userLongitude, polygon, false);
+
+                                                cancelToasts();
+
+                                                Intent Activity = new Intent(mContext, Navigation.class);
+                                                Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
+                                                Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
+                                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                                Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()));
+                                                Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()));
+
+                                                loadingIcon.setVisibility(View.GONE);
+
+                                                mContext.startActivity(Activity);
+
+                                                mActivity.finish();
+                                                return;
+                                            } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+                                                polygon.add(marker4Position);
+                                                polygon.add(marker3Position);
+                                                polygon.add(marker2Position);
+                                                polygon.add(marker1Position);
+                                                polygon.add(marker0Position);
+
+                                                userIsWithinShape = PolyUtil.containsLocation(userLatitude, userLongitude, polygon, false);
+
+                                                cancelToasts();
+
+                                                Intent Activity = new Intent(mContext, Navigation.class);
+                                                Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
+                                                Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
+                                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                                Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()));
+                                                Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()));
+
+                                                loadingIcon.setVisibility(View.GONE);
+
+                                                mContext.startActivity(Activity);
+
+                                                mActivity.finish();
+                                                return;
+                                            } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+                                                polygon.add(marker3Position);
+                                                polygon.add(marker2Position);
+                                                polygon.add(marker1Position);
+                                                polygon.add(marker0Position);
+
+                                                userIsWithinShape = PolyUtil.containsLocation(userLatitude, userLongitude, polygon, false);
+
+                                                cancelToasts();
+
+                                                Intent Activity = new Intent(mContext, Navigation.class);
+                                                Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
+                                                Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
+                                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                                Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()));
+                                                Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()));
+
+                                                loadingIcon.setVisibility(View.GONE);
+
+                                                mContext.startActivity(Activity);
+
+                                                mActivity.finish();
+                                                return;
+                                            } else {
+                                                polygon.add(marker2Position);
+                                                polygon.add(marker1Position);
+                                                polygon.add(marker0Position);
+
+                                                userIsWithinShape = PolyUtil.containsLocation(userLatitude, userLongitude, polygon, false);
+
+                                                cancelToasts();
+
+                                                Intent Activity = new Intent(mContext, Navigation.class);
+                                                Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
+                                                Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
+                                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                                Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()));
+                                                Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()));
+
+                                                loadingIcon.setVisibility(View.GONE);
+
+                                                mContext.startActivity(Activity);
+
+                                                mActivity.finish();
+                                                return;
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // If this part is reached, the user is not within the shape because the user's location is not in the same loadable map area as the shape.
+                                cancelToasts();
+
+                                Intent Activity = new Intent(mContext, Navigation.class);
+                                Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
+                                Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
+                                Activity.putExtra("userIsWithinShape", false);
+                                Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()));
+                                Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()));
+
+                                loadingIcon.setVisibility(View.GONE);
+
+                                mContext.startActivity(Activity);
+
+                                mActivity.finish();
+                            }
+
+                            @Override
+                            public void onCancelled(@NonNull DatabaseError error) {
+
+                                loadingIcon.setVisibility(View.GONE);
+                                toastMessageLong(error.getMessage());
+                            }
+                        });
                     }
                 });
 
                 if (messageImageInside != null) {
 
-                    messageImageInside.setOnClickListener(new View.OnClickListener() {
+                    messageImageInside.setOnClickListener(view -> {
 
-                        @Override
-                        public void onClick(View view) {
+                        cancelToasts();
 
-                            cancelToasts();
+                        Intent Activity = new Intent(mContext, PhotoView.class);
+                        Activity.putExtra("imgURL", mImage.get(getAdapterPosition()));
 
-                            Intent Activity = new Intent(mContext, PhotoView.class);
-                            Activity.putExtra("imgURL", mImage.get(getAdapterPosition()));
-
-                            mContext.startActivity(Activity);
-                        }
+                        mContext.startActivity(Activity);
                     });
                 }
 
                 if (messageImageOutside != null) {
 
-                    messageImageOutside.setOnClickListener(new View.OnClickListener() {
+                    messageImageOutside.setOnClickListener(view -> {
 
-                        @Override
-                        public void onClick(View view) {
+                        cancelToasts();
 
-                            cancelToasts();
+                        Intent Activity = new Intent(mContext, PhotoView.class);
+                        Activity.putExtra("imgURL", mImage.get(getAdapterPosition()));
 
-                            Intent Activity = new Intent(mContext, PhotoView.class);
-                            Activity.putExtra("imgURL", mImage.get(getAdapterPosition()));
-
-                            mContext.startActivity(Activity);
-                        }
+                        mContext.startActivity(Activity);
                     });
                 }
 
                 if (playButtonInside != null) {
 
-                    playButtonInside.setOnClickListener(new View.OnClickListener() {
+                    playButtonInside.setOnClickListener(v -> {
 
-                        @Override
-                        public void onClick(View v) {
+                        cancelToasts();
 
-                            cancelToasts();
+                        Intent Activity = new Intent(mContext, VideoView.class);
+                        Activity.putExtra("videoURL", mVideo.get(getAdapterPosition()));
 
-                            Intent Activity = new Intent(mContext, VideoView.class);
-                            Activity.putExtra("videoURL", mVideo.get(getAdapterPosition()));
-
-                            mContext.startActivity(Activity);
-                        }
+                        mContext.startActivity(Activity);
                     });
                 }
 
                 if (playButtonOutside != null) {
 
-                    playButtonOutside.setOnClickListener(new View.OnClickListener() {
+                    playButtonOutside.setOnClickListener(v -> {
 
-                        @Override
-                        public void onClick(View v) {
+                        cancelToasts();
 
-                            cancelToasts();
+                        Intent Activity = new Intent(mContext, VideoView.class);
+                        Activity.putExtra("videoURL", mVideo.get(getAdapterPosition()));
 
-                            Intent Activity = new Intent(mContext, VideoView.class);
-                            Activity.putExtra("videoURL", mVideo.get(getAdapterPosition()));
-
-                            mContext.startActivity(Activity);
-                        }
+                        mContext.startActivity(Activity);
                     });
                 }
             }

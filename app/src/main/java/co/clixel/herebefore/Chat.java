@@ -5,7 +5,6 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ContentValues;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -33,7 +32,6 @@ import android.provider.MediaStore;
 import android.util.Base64;
 import android.util.Base64OutputStream;
 import android.util.Log;
-import android.view.ContextMenu;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -51,8 +49,6 @@ import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.PolygonOptions;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import android.view.ViewGroup;
@@ -76,7 +72,6 @@ import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.StorageTask;
-import com.google.firebase.storage.UploadTask;
 import com.iceteck.silicompressorr.SiliCompressor;
 import com.linkedin.android.spyglass.mentions.Mentionable;
 import com.linkedin.android.spyglass.suggestions.interfaces.SuggestionsVisibilityManager;
@@ -370,444 +365,401 @@ public class Chat extends Fragment implements
         });
 
         // Hide the imageView or videoImageView if user presses the delete button.
-        mInput.setOnKeyListener(new View.OnKeyListener() {
+        mInput.setOnKeyListener((v, keyCode, event) -> {
 
-            @Override
-            public boolean onKey(View v, int keyCode, KeyEvent event) {
+            if (keyCode == KeyEvent.KEYCODE_DEL && (imageView.getVisibility() == View.VISIBLE || videoImageView.getVisibility() == View.VISIBLE) &&
+                    (mInput.getText().toString().trim().length() == 0 || mInput.getSelectionStart() == 0)) {
 
-                if (keyCode == KeyEvent.KEYCODE_DEL && (imageView.getVisibility() == View.VISIBLE || videoImageView.getVisibility() == View.VISIBLE) &&
-                        (mInput.getText().toString().trim().length() == 0 || mInput.getSelectionStart() == 0)) {
-
-                    imageView.setVisibility(View.GONE);
-                    imageView.setImageDrawable(null);
-                    videoImageView.setVisibility(View.GONE);
-                    videoImageView.setImageDrawable(null);
-                }
-
-                // Keep "return false" or the enter key will not go to the next line.
-                return false;
+                imageView.setVisibility(View.GONE);
+                imageView.setImageDrawable(null);
+                videoImageView.setVisibility(View.GONE);
+                videoImageView.setImageDrawable(null);
             }
+
+            // Keep "return false" or the enter key will not go to the next line.
+            return false;
         });
 
         mInput.setTokenizer(new WordTokenizer(tokenizerConfig));
         mInput.setQueryTokenReceiver(this);
         mInput.setSuggestionsVisibilityManager(this);
 
-        mediaButton.setOnClickListener(new View.OnClickListener() {
+        mediaButton.setOnClickListener(view -> {
 
-            @Override
-            public void onClick(View view) {
+            Log.i(TAG, "onStart() -> mediaButton -> onClick");
 
-                Log.i(TAG, "onStart() -> mediaButton -> onClick");
+            mediaButtonMenu = new PopupMenu(mContext, mediaButton);
+            mediaButtonMenu.setOnMenuItemClickListener(Chat.this);
+            mediaButtonMenu.inflate(R.menu.mediabutton_menu);
+            mediaButtonMenu.show();
+            mediaButtonMenuIsOpen = true;
 
-                mediaButtonMenu = new PopupMenu(mContext, mediaButton);
-                mediaButtonMenu.setOnMenuItemClickListener(Chat.this);
-                mediaButtonMenu.inflate(R.menu.mediabutton_menu);
-                mediaButtonMenu.show();
-                mediaButtonMenuIsOpen = true;
+            // Changes boolean value (used in OnConfigurationChanged) to determine whether menu is currently open.
+            mediaButtonMenu.setOnDismissListener(popupMenu -> {
 
-                // Changes boolean value (used in OnConfigurationChanged) to determine whether menu is currently open.
-                mediaButtonMenu.setOnDismissListener(new PopupMenu.OnDismissListener() {
+                Log.i(TAG, "onStart() -> mediaButton -> onDismiss");
 
-                    @Override
-                    public void onDismiss(PopupMenu popupMenu) {
-
-                        Log.i(TAG, "onStart() -> mediaButton -> onDismiss");
-
-                        mediaButtonMenuIsOpen = false;
-                        mediaButtonMenu.setOnDismissListener(null);
-                    }
-                });
-            }
+                mediaButtonMenuIsOpen = false;
+                mediaButtonMenu.setOnDismissListener(null);
+            });
         });
 
         // onClickListener for sending recyclerviewlayout to Firebase.
-        sendButton.setOnClickListener(new View.OnClickListener() {
+        sendButton.setOnClickListener(view -> {
 
-            @Override
-            public void onClick(View view) {
+            Log.i(TAG, "onStart() -> sendButton -> onClick");
 
-                Log.i(TAG, "onStart() -> sendButton -> onClick");
+            // Close keyboard.
+            if (mActivity.getCurrentFocus() != null) {
 
-                // Close keyboard.
-                if (mActivity.getCurrentFocus() != null) {
+                InputMethodManager imm = (InputMethodManager) mActivity.getSystemService(Context.INPUT_METHOD_SERVICE);
+                if (imm != null) {
 
-                    InputMethodManager imm = (InputMethodManager) mActivity.getSystemService(Context.INPUT_METHOD_SERVICE);
-                    if (imm != null) {
+                    imm.hideSoftInputFromWindow(mActivity.getCurrentFocus().getWindowToken(), 0);
+                } else {
 
-                        imm.hideSoftInputFromWindow(mActivity.getCurrentFocus().getWindowToken(), 0);
-                    } else {
-
-                        Log.e(TAG, "onStart() -> sendButton -> imm == null");
-                    }
-                    if (mInput != null) {
-
-                        mInput.clearFocus();
-                    }
+                    Log.e(TAG, "onStart() -> sendButton -> imm == null");
                 }
+                if (mInput != null) {
 
-                // Prevent double clicking the send button.
-                if (sendButtonClicked) {
-
-                    return;
+                    mInput.clearFocus();
                 }
+            }
 
-                sendButtonClicked = true;
+            // Prevent double clicking the send button.
+            if (sendButtonClicked) {
 
-                final String input = mInput.getText().toString();
+                return;
+            }
 
-                // Send recyclerviewlayout to Firebase.
-                if (!input.equals("") || imageView.getVisibility() != View.GONE || videoImageView.getVisibility() != View.GONE) {
+            sendButtonClicked = true;
 
-                    // Check Boolean value from onStart();
-                    if (newShape) {
+            final String input = mInput.getText().toString();
 
-                        if (imageView.getVisibility() != View.GONE || videoImageView.getVisibility() != View.GONE) {
+            // Send recyclerviewlayout to Firebase.
+            if (!input.equals("") || imageView.getVisibility() != View.GONE || videoImageView.getVisibility() != View.GONE) {
 
-                            // Upload the image to Firebase if it exists and is not already in the process of sending an image.
-                            if (uploadTask != null && uploadTask.isInProgress()) {
+                // Check Boolean value from onStart();
+                if (newShape) {
 
-                                toastMessageShort("Upload in progress");
-                            } else {
+                    if (imageView.getVisibility() != View.GONE || videoImageView.getVisibility() != View.GONE) {
 
-                                firebaseUpload();
-                            }
+                        // Upload the image to Firebase if it exists and is not already in the process of sending an image.
+                        if (uploadTask != null && uploadTask.isInProgress()) {
+
+                            toastMessageShort("Upload in progress");
                         } else {
 
-                            // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter()).
-                            messageSent = true;
-
-                            DatabaseReference newFirebaseShape = null;
-                            if (circleLatitude != 0 && circleLongitude != 0) {
-
-                                // Shape is a circle.
-
-                                // Since the uuid doesn't already exist in Firebase, add the circle.
-                                CircleOptions circleOptions = new CircleOptions()
-                                        .center(new LatLng(circleLatitude, circleLongitude))
-                                        .clickable(true)
-                                        .radius(radius);
-                                CircleInformation circleInformation = new CircleInformation();
-                                circleInformation.setCircleOptions(circleOptions);
-                                circleInformation.setShapeUUID(shapeUUID);
-
-                                if (radius == 1) {
-
-                                    newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Point").push();
-                                } else if (1 < radius && radius <= 10) {
-
-                                    newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Small").push();
-                                } else if (10 < radius && radius <= 50) {
-
-                                    newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Medium").push();
-                                } else if (50 < radius) {
-
-                                    newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Large").push();
-                                }
-
-                                if (newFirebaseShape != null) {
-
-                                    newFirebaseShape.setValue(circleInformation);
-                                }
-                            } else if (polygonArea != 0) {
-
-                                // Shape is a polygon.
-
-                                PolygonOptions polygonOptions = null;
-
-                                // Since the uuid doesn't already exist in Firebase, add the circle.
-                                if (threeMarkers) {
-
-                                    polygonOptions = new PolygonOptions()
-                                            .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude))
-                                            .clickable(true);
-                                }
-
-                                if (fourMarkers) {
-
-                                    polygonOptions = new PolygonOptions()
-                                            .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude))
-                                            .clickable(true);
-                                }
-
-                                if (fiveMarkers) {
-
-                                    polygonOptions = new PolygonOptions()
-                                            .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude))
-                                            .clickable(true);
-                                }
-
-                                if (sixMarkers) {
-
-                                    polygonOptions = new PolygonOptions()
-                                            .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude))
-                                            .clickable(true);
-                                }
-
-                                if (sevenMarkers) {
-
-                                    polygonOptions = new PolygonOptions()
-                                            .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude), new LatLng(marker6Latitude, marker6Longitude))
-                                            .clickable(true);
-                                }
-
-                                if (eightMarkers) {
-
-                                    polygonOptions = new PolygonOptions()
-                                            .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude), new LatLng(marker6Latitude, marker6Longitude), new LatLng(marker7Latitude, marker7Longitude))
-                                            .clickable(true);
-                                }
-
-                                PolygonInformation polygonInformation = new PolygonInformation();
-                                polygonInformation.setPolygonOptions(polygonOptions);
-                                polygonInformation.setArea(polygonArea);
-                                polygonInformation.setShapeUUID(shapeUUID);
-
-                                if (polygonArea <= Math.PI * (Math.pow(10, 2))) {
-
-                                    newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Small").push();
-                                } else if (Math.PI * (Math.pow(10, 2)) < polygonArea && polygonArea <= Math.PI * (Math.pow(50, 2))) {
-
-                                    newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Medium").push();
-                                } else if (Math.PI * (Math.pow(50, 2)) < polygonArea) {
-
-                                    newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Large").push();
-                                }
-
-                                if (newFirebaseShape != null) {
-
-                                    newFirebaseShape.setValue(polygonInformation);
-                                }
-                            } else {
-
-                                // Both radius and polygonArea are null.
-                                toastMessageLong("Oops! Something went wrong!");
-                                return;
-                            }
-
-                            String userUUID = UUID.randomUUID().toString();
-
-                            // If mentions exist, add to the user's DMs.
-                            if (removedMentionDuplicates != null) {
-
-                                for (String mention : removedMentionDuplicates) {
-
-                                    for (int i = 0; i < userUUIDAL.size(); i++) {
-
-                                        if (userUUIDAL.get(i).equals(mention)) {
-
-                                            String email = userEmailAL.get(i);
-
-                                            MessageInformation messageInformation = new MessageInformation();
-                                            messageInformation.setMessage(input);
-                                            // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                                            // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                                            Object date = ServerValue.TIMESTAMP;
-                                            messageInformation.setDate(date);
-                                            messageInformation.setUserUUID(userUUID);
-                                            messageInformation.setShapeUUID(shapeUUID);
-                                            messageInformation.setPosition(mUser.size());
-                                            messageInformation.setSeenByUser(false);
-                                            messageInformation.setUserIsWithinShape(userIsWithinShape);
-                                            if (circleLatitude != 0) {
-                                                messageInformation.setShapeIsCircle(true);
-                                                messageInformation.setSize(radius);
-                                            } else {
-                                                messageInformation.setShapeIsCircle(false);
-                                                messageInformation.setSize(polygonArea);
-                                            }
-                                            messageInformation.setLat(latFirebaseValue);
-                                            messageInformation.setLon(lonFirebaseValue);
-
-                                            // Firebase does not allow ".", so replace them with ",".
-                                            String receiverEmailFirebase = email.replace(".", ",");
-                                            DatabaseReference newDM = FirebaseDatabase.getInstance().getReference().child("Users").child(receiverEmailFirebase).child("ReceivedDMs").push();
-                                            newDM.setValue(messageInformation);
-                                        }
-                                    }
-                                }
-                            }
-
-                            MessageInformation messageInformation = new MessageInformation();
-                            messageInformation.setMessage(input);
-                            // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                            // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                            Object date = ServerValue.TIMESTAMP;
-                            messageInformation.setDate(date);
-                            messageInformation.setUserUUID(userUUID);
-                            // If user has a Google account, get email one way. Else, get email another way.
-                            GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
-                            String email;
-                            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-                            if (acct != null) {
-                                email = acct.getEmail();
-                            } else {
-                                email = sharedPreferences.getString("userToken", "null");
-                            }
-                            messageInformation.setEmail(email);
-                            messageInformation.setShapeUUID(shapeUUID);
-                            messageInformation.setPosition(mUser.size());
-                            messageInformation.setUserIsWithinShape(userIsWithinShape);
-                            if (circleLatitude != 0) {
-                                messageInformation.setShapeIsCircle(true);
-                                messageInformation.setSize(radius);
-                            } else {
-                                messageInformation.setShapeIsCircle(false);
-                                messageInformation.setSize(polygonArea);
-                            }
-                            DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID).push();
-                            newMessage.setValue(messageInformation);
-
-                            if (removedMentionDuplicates != null) {
-
-                                removedMentionDuplicates.clear();
-                            }
-
-                            mInput.getText().clear();
-                            newShape = false;
-                            sendButtonClicked = false;
+                            firebaseUpload();
                         }
                     } else {
 
-                        // Shape is not new.
+                        // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter()).
+                        messageSent = true;
 
-                        if (imageView.getVisibility() != View.GONE || videoImageView.getVisibility() != View.GONE) {
+                        DatabaseReference newFirebaseShape = null;
+                        if (circleLatitude != 0 && circleLongitude != 0) {
 
-                            // Upload the image to Firebase if it exists and is not already in the process of sending an image.
-                            if (uploadTask != null && uploadTask.isInProgress()) {
+                            // Shape is a circle.
 
-                                toastMessageShort("Upload in progress");
+                            // Since the uuid doesn't already exist in Firebase, add the circle.
+                            CircleOptions circleOptions = new CircleOptions()
+                                    .center(new LatLng(circleLatitude, circleLongitude))
+                                    .clickable(true)
+                                    .radius(radius);
+                            CircleInformation circleInformation = new CircleInformation();
+                            circleInformation.setCircleOptions(circleOptions);
+                            circleInformation.setShapeUUID(shapeUUID);
 
-                                sendButtonClicked = false;
-                            } else {
+                            if (radius == 1) {
 
-                                firebaseUpload();
+                                newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Point").push();
+                            } else if (1 < radius && radius <= 10) {
+
+                                newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Small").push();
+                            } else if (10 < radius && radius <= 50) {
+
+                                newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Medium").push();
+                            } else if (50 < radius) {
+
+                                newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Large").push();
+                            }
+
+                            if (newFirebaseShape != null) {
+
+                                newFirebaseShape.setValue(circleInformation);
+                            }
+                        } else if (polygonArea != 0) {
+
+                            // Shape is a polygon.
+
+                            PolygonOptions polygonOptions = null;
+
+                            // Since the uuid doesn't already exist in Firebase, add the circle.
+                            if (threeMarkers) {
+
+                                polygonOptions = new PolygonOptions()
+                                        .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude))
+                                        .clickable(true);
+                            }
+
+                            if (fourMarkers) {
+
+                                polygonOptions = new PolygonOptions()
+                                        .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude))
+                                        .clickable(true);
+                            }
+
+                            if (fiveMarkers) {
+
+                                polygonOptions = new PolygonOptions()
+                                        .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude))
+                                        .clickable(true);
+                            }
+
+                            if (sixMarkers) {
+
+                                polygonOptions = new PolygonOptions()
+                                        .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude))
+                                        .clickable(true);
+                            }
+
+                            if (sevenMarkers) {
+
+                                polygonOptions = new PolygonOptions()
+                                        .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude), new LatLng(marker6Latitude, marker6Longitude))
+                                        .clickable(true);
+                            }
+
+                            if (eightMarkers) {
+
+                                polygonOptions = new PolygonOptions()
+                                        .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude), new LatLng(marker6Latitude, marker6Longitude), new LatLng(marker7Latitude, marker7Longitude))
+                                        .clickable(true);
+                            }
+
+                            PolygonInformation polygonInformation = new PolygonInformation();
+                            polygonInformation.setPolygonOptions(polygonOptions);
+                            polygonInformation.setArea(polygonArea);
+                            polygonInformation.setShapeUUID(shapeUUID);
+
+                            if (polygonArea <= Math.PI * (Math.pow(10, 2))) {
+
+                                newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Small").push();
+                            } else if (Math.PI * (Math.pow(10, 2)) < polygonArea && polygonArea <= Math.PI * (Math.pow(50, 2))) {
+
+                                newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Medium").push();
+                            } else if (Math.PI * (Math.pow(50, 2)) < polygonArea) {
+
+                                newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Large").push();
+                            }
+
+                            if (newFirebaseShape != null) {
+
+                                newFirebaseShape.setValue(polygonInformation);
                             }
                         } else {
 
-                            // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter()).
-                            messageSent = true;
+                            // Both radius and polygonArea are null.
+                            toastMessageLong("Oops! Something went wrong!");
+                            return;
+                        }
 
-                            String userUUID = UUID.randomUUID().toString();
+                        String userUUID = UUID.randomUUID().toString();
 
-                            // If mentions exist, add to the user's DMs.
-                            if (removedMentionDuplicates != null) {
+                        // If mentions exist, add to the user's DMs.
+                        if (removedMentionDuplicates != null) {
 
-                                for (String mention : removedMentionDuplicates) {
+                            for (String mention : removedMentionDuplicates) {
 
-                                    for (int i = 0; i < userUUIDAL.size(); i++) {
+                                for (int i = 0; i < userUUIDAL.size(); i++) {
 
-                                        if (userUUIDAL.get(i).equals(mention)) {
+                                    if (userUUIDAL.get(i).equals(mention)) {
 
-                                            String email = userEmailAL.get(i);
+                                        String email = userEmailAL.get(i);
 
-                                            MessageInformation messageInformation = new MessageInformation();
-                                            messageInformation.setMessage(input);
-                                            // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                                            // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                                            Object date = ServerValue.TIMESTAMP;
-                                            messageInformation.setDate(date);
-                                            messageInformation.setUserUUID(userUUID);
-                                            messageInformation.setShapeUUID(shapeUUID);
-                                            messageInformation.setPosition(mUser.size());
-                                            messageInformation.setSeenByUser(false);
-                                            messageInformation.setUserIsWithinShape(userIsWithinShape);
-                                            if (circleLatitude != 0) {
-                                                messageInformation.setShapeIsCircle(true);
-                                                messageInformation.setSize(radius);
-                                            } else {
-                                                messageInformation.setShapeIsCircle(false);
-                                                messageInformation.setSize(polygonArea);
-                                            }
-                                            messageInformation.setLat(latFirebaseValue);
-                                            messageInformation.setLon(lonFirebaseValue);
-
-                                            // Firebase does not allow ".", so replace them with ",".
-                                            String receiverEmailFirebase = email.replace(".", ",");
-                                            DatabaseReference newDM = FirebaseDatabase.getInstance().getReference().child("Users").child(receiverEmailFirebase).child("ReceivedDMs").push();
-                                            newDM.setValue(messageInformation);
+                                        DMInformation dmInformation = new DMInformation();
+                                        dmInformation.setMessage(input);
+                                        // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+                                        // This will cause onDataChange to fire twice; optimizations could be made in the future.
+                                        Object date = ServerValue.TIMESTAMP;
+                                        dmInformation.setDate(date);
+                                        dmInformation.setUserUUID(userUUID);
+                                        dmInformation.setShapeUUID(shapeUUID);
+                                        dmInformation.setPosition(mUser.size());
+                                        dmInformation.setSeenByUser(false);
+                                        dmInformation.setUserIsWithinShape(userIsWithinShape);
+                                        if (circleLatitude != 0) {
+                                            dmInformation.setSize(radius);
+                                            dmInformation.setShapeIsCircle(true);
+                                        } else {
+                                            dmInformation.setSize(polygonArea);
+                                            dmInformation.setShapeIsCircle(false);
                                         }
+                                        dmInformation.setLat(latFirebaseValue);
+                                        dmInformation.setLon(lonFirebaseValue);
+
+                                        // Firebase does not allow ".", so replace them with ",".
+                                        String receiverEmailFirebase = email.replace(".", ",");
+                                        DatabaseReference newDM = FirebaseDatabase.getInstance().getReference().child("Users").child(receiverEmailFirebase).child("ReceivedDMs").push();
+                                        newDM.setValue(dmInformation);
                                     }
                                 }
                             }
-
-                            MessageInformation messageInformation = new MessageInformation();
-                            messageInformation.setMessage(input);
-                            // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                            // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                            Object date = ServerValue.TIMESTAMP;
-                            messageInformation.setDate(date);
-                            messageInformation.setUserUUID(userUUID);
-                            messageInformation.setPosition(mUser.size());
-                            messageInformation.setShapeUUID(shapeUUID);
-                            // If user has a Google account, get email one way. Else, get email another way.
-                            GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
-                            String email;
-                            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-                            if (acct != null) {
-                                email = acct.getEmail();
-                            } else {
-                                email = sharedPreferences.getString("userToken", "null");
-                            }
-                            messageInformation.setEmail(email);
-                            if (removedMentionDuplicates.isEmpty()) {
-                                messageInformation.setSeenByUser(true);
-                            } else {
-                                messageInformation.setRemovedMentionDuplicates(removedMentionDuplicates);
-                                messageInformation.setSeenByUser(false);
-                            }
-                            messageInformation.setUserIsWithinShape(userIsWithinShape);
-                            if (circleLatitude != 0) {
-                                messageInformation.setShapeIsCircle(true);
-                                messageInformation.setSize(radius);
-                            } else {
-                                messageInformation.setShapeIsCircle(false);
-                                messageInformation.setSize(polygonArea);
-                            }
-                            DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID).push();
-                            newMessage.setValue(messageInformation);
-
-                            if (removedMentionDuplicates != null) {
-
-                                removedMentionDuplicates.clear();
-                            }
-
-                            mInput.getText().clear();
-                            sendButtonClicked = false;
                         }
+
+                        MessageInformation messageInformation = new MessageInformation();
+                        messageInformation.setMessage(input);
+                        // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+                        // This will cause onDataChange to fire twice; optimizations could be made in the future.
+                        Object date = ServerValue.TIMESTAMP;
+                        messageInformation.setDate(date);
+                        messageInformation.setUserUUID(userUUID);
+                        // If user has a Google account, get email one way. Else, get email another way.
+                        GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
+                        String email;
+                        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+                        if (acct != null) {
+                            email = acct.getEmail();
+                        } else {
+                            email = sharedPreferences.getString("userToken", "null");
+                        }
+                        messageInformation.setEmail(email);
+                        messageInformation.setPosition(mUser.size());
+                        messageInformation.setUserIsWithinShape(userIsWithinShape);
+                        DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID).push();
+                        newMessage.setValue(messageInformation);
+
+                        if (removedMentionDuplicates != null) {
+
+                            removedMentionDuplicates.clear();
+                        }
+
+                        mInput.getText().clear();
+                        newShape = false;
+                        sendButtonClicked = false;
+                    }
+                } else {
+
+                    // Shape is not new.
+
+                    if (imageView.getVisibility() != View.GONE || videoImageView.getVisibility() != View.GONE) {
+
+                        // Upload the image to Firebase if it exists and is not already in the process of sending an image.
+                        if (uploadTask != null && uploadTask.isInProgress()) {
+
+                            toastMessageShort("Upload in progress");
+
+                            sendButtonClicked = false;
+                        } else {
+
+                            firebaseUpload();
+                        }
+                    } else {
+
+                        // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter()).
+                        messageSent = true;
+
+                        String userUUID = UUID.randomUUID().toString();
+
+                        // If mentions exist, add to the user's DMs.
+                        if (removedMentionDuplicates != null) {
+
+                            for (String mention : removedMentionDuplicates) {
+
+                                for (int i = 0; i < userUUIDAL.size(); i++) {
+
+                                    if (userUUIDAL.get(i).equals(mention)) {
+
+                                        String email = userEmailAL.get(i);
+
+                                        DMInformation dmInformation = new DMInformation();
+                                        dmInformation.setMessage(input);
+                                        // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+                                        // This will cause onDataChange to fire twice; optimizations could be made in the future.
+                                        Object date = ServerValue.TIMESTAMP;
+                                        dmInformation.setDate(date);
+                                        dmInformation.setUserUUID(userUUID);
+                                        dmInformation.setShapeUUID(shapeUUID);
+                                        dmInformation.setPosition(mUser.size());
+                                        dmInformation.setSeenByUser(false);
+                                        dmInformation.setUserIsWithinShape(userIsWithinShape);
+                                        if (circleLatitude != 0) {
+                                            dmInformation.setSize(radius);
+                                            dmInformation.setShapeIsCircle(true);
+                                        } else {
+                                            dmInformation.setSize(polygonArea);
+                                            dmInformation.setShapeIsCircle(false);
+                                        }
+                                        dmInformation.setLat(latFirebaseValue);
+                                        dmInformation.setLon(lonFirebaseValue);
+
+                                        // Firebase does not allow ".", so replace them with ",".
+                                        String receiverEmailFirebase = email.replace(".", ",");
+                                        DatabaseReference newDM = FirebaseDatabase.getInstance().getReference().child("Users").child(receiverEmailFirebase).child("ReceivedDMs").push();
+                                        newDM.setValue(dmInformation);
+                                    }
+                                }
+                            }
+                        }
+
+                        MessageInformation messageInformation = new MessageInformation();
+                        messageInformation.setMessage(input);
+                        // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+                        // This will cause onDataChange to fire twice; optimizations could be made in the future.
+                        Object date = ServerValue.TIMESTAMP;
+                        messageInformation.setDate(date);
+                        messageInformation.setUserUUID(userUUID);
+                        messageInformation.setPosition(mUser.size());
+                        // If user has a Google account, get email one way. Else, get email another way.
+                        GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
+                        String email;
+                        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+                        if (acct != null) {
+                            email = acct.getEmail();
+                        } else {
+                            email = sharedPreferences.getString("userToken", "null");
+                        }
+                        messageInformation.setEmail(email);
+                        if (!removedMentionDuplicates.isEmpty()) {
+                            messageInformation.setRemovedMentionDuplicates(removedMentionDuplicates);
+                        }
+                        messageInformation.setUserIsWithinShape(userIsWithinShape);
+                        DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID).push();
+                        newMessage.setValue(messageInformation);
+
+                        if (removedMentionDuplicates != null) {
+
+                            removedMentionDuplicates.clear();
+                        }
+
+                        mInput.getText().clear();
+                        sendButtonClicked = false;
                     }
                 }
             }
         });
 
-        imageView.setOnClickListener(new View.OnClickListener() {
+        imageView.setOnClickListener(v -> {
 
-            @Override
-            public void onClick(View v) {
+            Log.i(TAG, "imageView -> onClick");
 
-                Log.i(TAG, "imageView -> onClick");
+            cancelToasts();
 
-                cancelToasts();
-
-                Intent Activity = new Intent(mContext, PhotoView.class);
-                Activity.putExtra("imgURL", imageURI.toString());
-                Chat.this.startActivity(Activity);
-            }
+            Intent Activity = new Intent(mContext, PhotoView.class);
+            Activity.putExtra("imgURL", imageURI.toString());
+            Chat.this.startActivity(Activity);
         });
 
-        videoImageView.setOnClickListener(new View.OnClickListener() {
+        videoImageView.setOnClickListener(v -> {
 
-            @Override
-            public void onClick(View v) {
+            Log.i(TAG, "videoImageView -> onClick");
 
-                Log.i(TAG, "videoImageView -> onClick");
+            cancelToasts();
 
-                cancelToasts();
-
-                Intent Activity = new Intent(mContext, co.clixel.herebefore.VideoView.class);
-                Activity.putExtra("videoURL", videoURI.toString());
-                Chat.this.startActivity(Activity);
-            }
+            Intent Activity = new Intent(mContext, VideoView.class);
+            Activity.putExtra("videoURL", videoURI.toString());
+            Chat.this.startActivity(Activity);
         });
     }
 
@@ -885,30 +837,17 @@ public class Chat extends Fragment implements
             });
 
             // If RecyclerView is scrolled to the bottom, move the layout up when the keyboard appears.
-            chatRecyclerView.addOnLayoutChangeListener(onLayoutChangeListener = new View.OnLayoutChangeListener() {
+            chatRecyclerView.addOnLayoutChangeListener(onLayoutChangeListener = (v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
 
-                @Override
-                public void onLayoutChange(View v,
-                                           int left, int top, int right, int bottom,
-                                           int oldLeft, int oldTop, int oldRight, int oldBottom) {
+                if (reachedEndOfRecyclerView || !recyclerViewHasScrolled) {
 
-                    if (reachedEndOfRecyclerView || !recyclerViewHasScrolled) {
+                    if (bottom < oldBottom) {
 
-                        if (bottom < oldBottom) {
+                        if (chatRecyclerView.getAdapter() != null && chatRecyclerView.getAdapter().getItemCount() > 0) {
 
-                            if (chatRecyclerView.getAdapter() != null && chatRecyclerView.getAdapter().getItemCount() > 0) {
+                            chatRecyclerView.postDelayed(() -> chatRecyclerView.smoothScrollToPosition(
 
-                                chatRecyclerView.postDelayed(new Runnable() {
-
-                                    @Override
-                                    public void run() {
-
-                                        chatRecyclerView.smoothScrollToPosition(
-
-                                                chatRecyclerView.getAdapter().getItemCount() - 1);
-                                    }
-                                }, 100);
-                            }
+                                    chatRecyclerView.getAdapter().getItemCount() - 1), 100);
                         }
                     }
                 }
@@ -1206,98 +1145,70 @@ public class Chat extends Fragment implements
                 messageTextOutside = itemView.findViewById(R.id.messageTextOutside);
                 messageItem = itemView.findViewById(R.id.message);
 
-                itemView.setOnCreateContextMenuListener(new View.OnCreateContextMenuListener() {
+                itemView.setOnCreateContextMenuListener((menu, v, menuInfo) -> {
 
-                    @Override
-                    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
-
-                        // Get a unique identifier (the user's name) to search for in Firebase.
-                        reportedUser = mMessageUser.get(getAdapterPosition());
-                        menu.add(0, R.string.report_post, 0, R.string.report_post);
-                    }
+                    // Get a unique identifier (the user's name) to search for in Firebase.
+                    reportedUser = mMessageUser.get(getAdapterPosition());
+                    menu.add(0, R.string.report_post, 0, R.string.report_post);
                 });
 
                 if (messageImageInside != null) {
 
-                    messageImageInside.setOnClickListener(new View.OnClickListener() {
+                    messageImageInside.setOnClickListener(v -> {
 
-                        @Override
-                        public void onClick(View v) {
-
-                            Intent Activity = new Intent(mContext, PhotoView.class);
-                            Activity.putExtra("imgURL", mMessageImage.get(getAdapterPosition()));
-                            mContext.startActivity(Activity);
-                        }
+                        Intent Activity = new Intent(mContext, PhotoView.class);
+                        Activity.putExtra("imgURL", mMessageImage.get(getAdapterPosition()));
+                        mContext.startActivity(Activity);
                     });
                 }
 
                 if (messageImageOutside != null) {
 
-                    messageImageOutside.setOnClickListener(new View.OnClickListener() {
+                    messageImageOutside.setOnClickListener(v -> {
 
-                        @Override
-                        public void onClick(View v) {
-
-                            Intent Activity = new Intent(mContext, PhotoView.class);
-                            Activity.putExtra("imgURL", mMessageImage.get(getAdapterPosition()));
-                            mContext.startActivity(Activity);
-                        }
+                        Intent Activity = new Intent(mContext, PhotoView.class);
+                        Activity.putExtra("imgURL", mMessageImage.get(getAdapterPosition()));
+                        mContext.startActivity(Activity);
                     });
                 }
 
                 if (messageImageVideoInside != null) {
 
-                    messageImageVideoInside.setOnClickListener(new View.OnClickListener() {
+                    messageImageVideoInside.setOnClickListener(v -> {
 
-                        @Override
-                        public void onClick(View v) {
-
-                            Intent Activity = new Intent(mContext, co.clixel.herebefore.VideoView.class);
-                            Activity.putExtra("videoURL", mMessageImageVideo.get(getAdapterPosition()));
-                            mContext.startActivity(Activity);
-                        }
+                        Intent Activity = new Intent(mContext, VideoView.class);
+                        Activity.putExtra("videoURL", mMessageImageVideo.get(getAdapterPosition()));
+                        mContext.startActivity(Activity);
                     });
                 }
 
                 if (messageImageVideoOutside != null) {
 
-                    messageImageVideoOutside.setOnClickListener(new View.OnClickListener() {
+                    messageImageVideoOutside.setOnClickListener(v -> {
 
-                        @Override
-                        public void onClick(View v) {
-
-                            Intent Activity = new Intent(mContext, co.clixel.herebefore.VideoView.class);
-                            Activity.putExtra("videoURL", mMessageImageVideo.get(getAdapterPosition()));
-                            mContext.startActivity(Activity);
-                        }
+                        Intent Activity = new Intent(mContext, VideoView.class);
+                        Activity.putExtra("videoURL", mMessageImageVideo.get(getAdapterPosition()));
+                        mContext.startActivity(Activity);
                     });
                 }
 
                 if (playButtonInside != null) {
 
-                    playButtonInside.setOnClickListener(new View.OnClickListener() {
+                    playButtonInside.setOnClickListener(v -> {
 
-                        @Override
-                        public void onClick(View v) {
-
-                            Intent Activity = new Intent(mContext, co.clixel.herebefore.VideoView.class);
-                            Activity.putExtra("videoURL", mMessageImageVideo.get(getAdapterPosition()));
-                            mContext.startActivity(Activity);
-                        }
+                        Intent Activity = new Intent(mContext, VideoView.class);
+                        Activity.putExtra("videoURL", mMessageImageVideo.get(getAdapterPosition()));
+                        mContext.startActivity(Activity);
                     });
                 }
 
                 if (playButtonOutside != null) {
 
-                    playButtonOutside.setOnClickListener(new View.OnClickListener() {
+                    playButtonOutside.setOnClickListener(v -> {
 
-                        @Override
-                        public void onClick(View v) {
-
-                            Intent Activity = new Intent(mContext, co.clixel.herebefore.VideoView.class);
-                            Activity.putExtra("videoURL", mMessageImageVideo.get(getAdapterPosition()));
-                            mContext.startActivity(Activity);
-                        }
+                        Intent Activity = new Intent(mContext, VideoView.class);
+                        Activity.putExtra("videoURL", mMessageImageVideo.get(getAdapterPosition()));
+                        mContext.startActivity(Activity);
                     });
                 }
             }
@@ -1618,67 +1529,63 @@ public class Chat extends Fragment implements
 
             holder.suggestion.setText(mSuggestions.get(position));
 
-            holder.itemView.setOnClickListener(new View.OnClickListener() {
+            holder.itemView.setOnClickListener(v -> {
 
-                @Override
-                public void onClick(View v) {
+                // Convert the string into a mentionable to be inserted into the MentionsEditText.
+                Mentionable mentionable = new Mentionable() {
 
-                    // Convert the string into a mentionable to be inserted into the MentionsEditText.
-                    Mentionable mentionable = new Mentionable() {
+                    @NonNull
+                    @Override
+                    public String getTextForDisplayMode(@NonNull MentionDisplayMode mode) {
 
-                        @NonNull
-                        @Override
-                        public String getTextForDisplayMode(@NonNull MentionDisplayMode mode) {
+                        // Add mentions to this list. Duplicates will be added and later cleared from this list.
+                        allMentions.add(mSuggestions.get(position));
 
-                            // Add mentions to this list. Duplicates will be added and later cleared from this list.
-                            allMentions.add(mSuggestions.get(position));
+                        return "@" + (mSuggestions.get(position)).substring(0, 10) + "...";
+                    }
 
-                            return "@" + (mSuggestions.get(position)).substring(0, 10) + "...";
-                        }
+                    @NonNull
+                    @Override
+                    public MentionDeleteStyle getDeleteStyle() {
 
-                        @NonNull
-                        @Override
-                        public MentionDeleteStyle getDeleteStyle() {
+                        removedMentionDuplicates.remove(mSuggestions.get(position));
 
-                            removedMentionDuplicates.remove(mSuggestions.get(position));
+                        return MentionDeleteStyle.FULL_DELETE;
+                    }
 
-                            return MentionDeleteStyle.FULL_DELETE;
-                        }
+                    @Override
+                    public int getSuggestibleId() {
 
-                        @Override
-                        public int getSuggestibleId() {
+                        return 0;
+                    }
 
-                            return 0;
-                        }
+                    @NonNull
+                    @Override
+                    public String getSuggestiblePrimaryText() {
 
-                        @NonNull
-                        @Override
-                        public String getSuggestiblePrimaryText() {
+                        return mSuggestions.get(position);
+                    }
 
-                            return mSuggestions.get(position);
-                        }
+                    @Override
+                    public int describeContents() {
 
-                        @Override
-                        public int describeContents() {
+                        return 0;
+                    }
 
-                            return 0;
-                        }
+                    @Override
+                    public void writeToParcel(Parcel dest, int flags) {
+                    }
+                };
 
-                        @Override
-                        public void writeToParcel(Parcel dest, int flags) {
-                        }
-                    };
+                mInput.insertMention(mentionable);
 
-                    mInput.insertMention(mentionable);
+                // A set will not allow duplicates, so this will get rid of any duplicates before they are added to the final list.
+                // The final list will be sent to Firebase to notify users of messages.
+                Set<String> hashSet = new LinkedHashSet<>(allMentions);
+                removedMentionDuplicates = new ArrayList<>(hashSet);
 
-                    // A set will not allow duplicates, so this will get rid of any duplicates before they are added to the final list.
-                    // The final list will be sent to Firebase to notify users of messages.
-                    Set<String> hashSet = new LinkedHashSet<>(allMentions);
-                    removedMentionDuplicates = new ArrayList<>(hashSet);
-
-                    // Add a space after inserting mention.
-                    mInput.append(" ");
-                }
+                // Add a space after inserting mention.
+                mInput.append(" ");
             });
 
             loadPreferences();
@@ -2111,18 +2018,14 @@ public class Chat extends Fragment implements
                         .setTitle("Camera Permission Required")
                         .setMessage("Here Before needs permission to use your camera to take pictures or video. " +
                                 "You may need to enable permission manually through the settings menu.")
-                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                        .setPositiveButton("OK", (dialogInterface, i) -> {
 
-                            @Override
-                            public void onClick(DialogInterface dialogInterface, int i) {
+                            if (checkPermissionsPicture) {
 
-                                if (checkPermissionsPicture) {
+                                activityWeakRef.get().checkPermissionsPicture();
+                            } else {
 
-                                    activityWeakRef.get().checkPermissionsPicture();
-                                } else {
-
-                                    activityWeakRef.get().checkPermissionsVideo();
-                                }
+                                activityWeakRef.get().checkPermissionsVideo();
                             }
                         })
                         .create()
@@ -2174,18 +2077,14 @@ public class Chat extends Fragment implements
                         .setTitle("Storage Permission Required")
                         .setMessage("Here Before needs permission to use your storage to save photos or video. " +
                                 "You may need to enable permission manually through the settings menu.")
-                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                        .setPositiveButton("OK", (dialogInterface, i) -> {
 
-                            @Override
-                            public void onClick(DialogInterface dialogInterface, int i) {
+                            if (checkPermissionsPicture) {
 
-                                if (checkPermissionsPicture) {
+                                activityWeakRef.get().checkPermissionsPicture();
+                            } else {
 
-                                    activityWeakRef.get().checkPermissionsPicture();
-                                } else {
-
-                                    activityWeakRef.get().checkPermissionsVideo();
-                                }
+                                activityWeakRef.get().checkPermissionsVideo();
                             }
                         })
                         .create()
@@ -2237,18 +2136,14 @@ public class Chat extends Fragment implements
                         .setTitle("Audio Permission Required")
                         .setMessage("Here Before needs permission to record audio during video recording. " +
                                 "You may need to enable permission manually through the settings menu.")
-                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                        .setPositiveButton("OK", (dialogInterface, i) -> {
 
-                            @Override
-                            public void onClick(DialogInterface dialogInterface, int i) {
+                            if (checkPermissionsPicture) {
 
-                                if (checkPermissionsPicture) {
+                                activityWeakRef.get().checkPermissionsPicture();
+                            } else {
 
-                                    activityWeakRef.get().checkPermissionsPicture();
-                                } else {
-
-                                    activityWeakRef.get().checkPermissionsVideo();
-                                }
+                                activityWeakRef.get().checkPermissionsVideo();
                             }
                         })
                         .create()
@@ -2634,251 +2529,224 @@ public class Chat extends Fragment implements
             final StorageReference storageReferenceVideo = FirebaseStorage.getInstance().getReference("Video").child(String.valueOf(System.currentTimeMillis()));
             uploadTask = storageReferenceVideo.putFile(videoURI);
 
-            storageReferenceVideo.putFile(videoURI).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+            storageReferenceVideo.putFile(videoURI).addOnSuccessListener(taskSnapshot -> storageReferenceVideo.getDownloadUrl().addOnSuccessListener(uri -> {
 
-                @Override
-                public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                Log.i(TAG, "uploadImage() -> onSuccess");
 
-                    storageReferenceVideo.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
+                if (newShape) {
 
-                        @Override
-                        public void onSuccess(Uri uri) {
+                    // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter()).
+                    messageSent = true;
 
-                            Log.i(TAG, "uploadImage() -> onSuccess");
+                    DatabaseReference newFirebaseShape = null;
+                    if (radius != 0) {
 
-                            if (newShape) {
+                        // Shape is a circle.
 
-                                // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter()).
-                                messageSent = true;
+                        // Since the uuid doesn't already exist in Firebase, add the circle.
+                        CircleOptions circleOptions = new CircleOptions()
+                                .center(new LatLng(circleLatitude, circleLongitude))
+                                .clickable(true)
+                                .radius(radius);
+                        CircleInformation circleInformation = new CircleInformation();
+                        circleInformation.setCircleOptions(circleOptions);
+                        circleInformation.setShapeUUID(shapeUUID);
 
-                                DatabaseReference newFirebaseShape = null;
-                                if (radius != 0) {
+                        if (radius == 1) {
 
-                                    // Shape is a circle.
+                            newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Point").push();
+                        } else if (1 < radius && radius <= 10) {
 
-                                    // Since the uuid doesn't already exist in Firebase, add the circle.
-                                    CircleOptions circleOptions = new CircleOptions()
-                                            .center(new LatLng(circleLatitude, circleLongitude))
-                                            .clickable(true)
-                                            .radius(radius);
-                                    CircleInformation circleInformation = new CircleInformation();
-                                    circleInformation.setCircleOptions(circleOptions);
-                                    circleInformation.setShapeUUID(shapeUUID);
+                            newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Small").push();
+                        } else if (10 < radius && radius <= 50) {
 
-                                    if (radius == 1) {
+                            newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Medium").push();
+                        } else if (50 < radius) {
 
-                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Point").push();
-                                    } else if (1 < radius && radius <= 10) {
-
-                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Small").push();
-                                    } else if (10 < radius && radius <= 50) {
-
-                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Medium").push();
-                                    } else if (50 < radius) {
-
-                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Large").push();
-                                    }
-
-                                    if (newFirebaseShape != null) {
-
-                                        newFirebaseShape.setValue(circleInformation);
-                                    }
-                                } else if (polygonArea != 0) {
-
-                                    // Shape is a polygon.
-
-                                    PolygonOptions polygonOptions = null;
-
-                                    // Since the uuid doesn't already exist in Firebase, add the circle.
-                                    if (threeMarkers) {
-
-                                        polygonOptions = new PolygonOptions()
-                                                .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude))
-                                                .clickable(true);
-                                    }
-
-                                    if (fourMarkers) {
-
-                                        polygonOptions = new PolygonOptions()
-                                                .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude))
-                                                .clickable(true);
-                                    }
-
-                                    if (fiveMarkers) {
-
-                                        polygonOptions = new PolygonOptions()
-                                                .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude))
-                                                .clickable(true);
-                                    }
-
-                                    if (sixMarkers) {
-
-                                        polygonOptions = new PolygonOptions()
-                                                .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude))
-                                                .clickable(true);
-                                    }
-
-                                    if (sevenMarkers) {
-
-                                        polygonOptions = new PolygonOptions()
-                                                .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude), new LatLng(marker6Latitude, marker6Longitude))
-                                                .clickable(true);
-                                    }
-
-                                    if (eightMarkers) {
-
-                                        polygonOptions = new PolygonOptions()
-                                                .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude), new LatLng(marker6Latitude, marker6Longitude), new LatLng(marker7Latitude, marker7Longitude))
-                                                .clickable(true);
-                                    }
-
-                                    PolygonInformation polygonInformation = new PolygonInformation();
-                                    polygonInformation.setPolygonOptions(polygonOptions);
-                                    polygonInformation.setArea(polygonArea);
-                                    polygonInformation.setShapeUUID(shapeUUID);
-
-                                    if (polygonArea <= Math.PI * (Math.pow(10, 2))) {
-
-                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Small").push();
-                                    } else if (Math.PI * (Math.pow(10, 2)) < polygonArea && polygonArea <= Math.PI * (Math.pow(50, 2))) {
-
-                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Medium").push();
-                                    } else if (Math.PI * (Math.pow(50, 2)) < polygonArea) {
-
-                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Large").push();
-                                    }
-
-                                    if (newFirebaseShape != null) {
-
-                                        newFirebaseShape.setValue(polygonInformation);
-                                    }
-                                } else {
-
-                                    // Both radius and polygonArea are null.
-                                    toastMessageLong("Oops! Something went wrong!");
-                                    return;
-                                }
-
-                                newShape = false;
-                            }
-
-                            // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter()).
-                            messageSent = true;
-
-                            String userUUID = UUID.randomUUID().toString();
-
-                            // If mentions exist, add to the user's DMs.
-                            if (removedMentionDuplicates != null) {
-
-                                for (String mention : removedMentionDuplicates) {
-
-                                    for (int i = 0; i < userUUIDAL.size(); i++) {
-
-                                        if (userUUIDAL.get(i).equals(mention)) {
-
-                                            String email = userEmailAL.get(i);
-
-                                            MessageInformation messageInformation = new MessageInformation();
-                                            messageInformation.setVideoURL(uri.toString());
-                                            if (mInput.getText().toString().trim().length() != 0) {
-
-                                                messageInformation.setMessage(mInput.getText().toString());
-                                            }
-                                            // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                                            // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                                            Object date = ServerValue.TIMESTAMP;
-                                            messageInformation.setDate(date);
-                                            userUUID = UUID.randomUUID().toString();
-                                            messageInformation.setUserUUID(userUUID);
-                                            messageInformation.setShapeUUID(shapeUUID);
-                                            messageInformation.setPosition(mUser.size());
-                                            messageInformation.setSeenByUser(false);
-                                            messageInformation.setUserIsWithinShape(userIsWithinShape);
-                                            if (circleLatitude != 0) {
-                                                messageInformation.setShapeIsCircle(true);
-                                                messageInformation.setSize(radius);
-                                            } else {
-                                                messageInformation.setShapeIsCircle(false);
-                                                messageInformation.setSize(polygonArea);
-                                            }
-                                            messageInformation.setLat(latFirebaseValue);
-                                            messageInformation.setLon(lonFirebaseValue);
-
-                                            // Firebase does not allow ".", so replace them with ",".
-                                            String receiverEmailFirebase = email.replace(".", ",");
-                                            DatabaseReference newDM = FirebaseDatabase.getInstance().getReference().child("Users").child(receiverEmailFirebase).child("ReceivedDMs").push();
-                                            newDM.setValue(messageInformation);
-                                        }
-                                    }
-                                }
-                            }
-
-                            MessageInformation messageInformation = new MessageInformation();
-                            messageInformation.setVideoURL(uri.toString());
-                            if (mInput.getText().toString().trim().length() != 0) {
-
-                                messageInformation.setMessage(mInput.getText().toString());
-                            }
-                            // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                            // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                            Object date = ServerValue.TIMESTAMP;
-                            messageInformation.setDate(date);
-                            messageInformation.setUserUUID(userUUID);
-                            messageInformation.setPosition(mUser.size());
-                            // If user has a Google account, get email one way. Else, get email another way.
-                            GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
-                            String email;
-                            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-                            if (acct != null) {
-                                email = acct.getEmail();
-                            } else {
-                                email = sharedPreferences.getString("userToken", "null");
-                            }
-                            messageInformation.setEmail(email);
-                            messageInformation.setShapeUUID(shapeUUID);
-                            if (removedMentionDuplicates.isEmpty()) {
-                                messageInformation.setSeenByUser(true);
-                            } else {
-                                messageInformation.setRemovedMentionDuplicates(removedMentionDuplicates);
-                                messageInformation.setSeenByUser(false);
-                            }
-                            messageInformation.setUserIsWithinShape(userIsWithinShape);
-                            if (circleLatitude != 0) {
-                                messageInformation.setShapeIsCircle(true);
-                                messageInformation.setSize(radius);
-                            } else {
-                                messageInformation.setShapeIsCircle(false);
-                                messageInformation.setSize(polygonArea);
-                            }
-                            DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID).push();
-                            newMessage.setValue(messageInformation);
-
-                            mInput.getText().clear();
-                            if (removedMentionDuplicates != null) {
-                                removedMentionDuplicates.clear();
-                            }
-                            videoImageView.setVisibility(View.GONE);
-                            videoImageView.setImageDrawable(null);
-                            if (video != null) {
-
-                                deleteDirectory(video);
-                            }
-                            sendButtonClicked = false;
-                            loadingIcon.setVisibility(View.GONE);
+                            newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Large").push();
                         }
-                    });
+
+                        if (newFirebaseShape != null) {
+
+                            newFirebaseShape.setValue(circleInformation);
+                        }
+                    } else if (polygonArea != 0) {
+
+                        // Shape is a polygon.
+
+                        PolygonOptions polygonOptions = null;
+
+                        // Since the uuid doesn't already exist in Firebase, add the circle.
+                        if (threeMarkers) {
+
+                            polygonOptions = new PolygonOptions()
+                                    .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude))
+                                    .clickable(true);
+                        }
+
+                        if (fourMarkers) {
+
+                            polygonOptions = new PolygonOptions()
+                                    .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude))
+                                    .clickable(true);
+                        }
+
+                        if (fiveMarkers) {
+
+                            polygonOptions = new PolygonOptions()
+                                    .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude))
+                                    .clickable(true);
+                        }
+
+                        if (sixMarkers) {
+
+                            polygonOptions = new PolygonOptions()
+                                    .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude))
+                                    .clickable(true);
+                        }
+
+                        if (sevenMarkers) {
+
+                            polygonOptions = new PolygonOptions()
+                                    .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude), new LatLng(marker6Latitude, marker6Longitude))
+                                    .clickable(true);
+                        }
+
+                        if (eightMarkers) {
+
+                            polygonOptions = new PolygonOptions()
+                                    .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude), new LatLng(marker6Latitude, marker6Longitude), new LatLng(marker7Latitude, marker7Longitude))
+                                    .clickable(true);
+                        }
+
+                        PolygonInformation polygonInformation = new PolygonInformation();
+                        polygonInformation.setPolygonOptions(polygonOptions);
+                        polygonInformation.setArea(polygonArea);
+                        polygonInformation.setShapeUUID(shapeUUID);
+
+                        if (polygonArea <= Math.PI * (Math.pow(10, 2))) {
+
+                            newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Small").push();
+                        } else if (Math.PI * (Math.pow(10, 2)) < polygonArea && polygonArea <= Math.PI * (Math.pow(50, 2))) {
+
+                            newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Medium").push();
+                        } else if (Math.PI * (Math.pow(50, 2)) < polygonArea) {
+
+                            newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Large").push();
+                        }
+
+                        if (newFirebaseShape != null) {
+
+                            newFirebaseShape.setValue(polygonInformation);
+                        }
+                    } else {
+
+                        // Both radius and polygonArea are null.
+                        toastMessageLong("Oops! Something went wrong!");
+                        return;
+                    }
+
+                    newShape = false;
                 }
-            })
-                    .addOnFailureListener(new OnFailureListener() {
 
-                        @Override
-                        public void onFailure(@NonNull Exception ex) {
+                // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter()).
+                messageSent = true;
 
-                            // Handle unsuccessful uploads
-                            loadingIcon.setVisibility(View.GONE);
-                            toastMessageLong(ex.getMessage());
-                            Log.e(TAG, "firebaseUpload() -> !fileIsImage -> onFailure -> " + ex.getMessage());
+                String userUUID = UUID.randomUUID().toString();
+
+                // If mentions exist, add to the user's DMs.
+                if (removedMentionDuplicates != null) {
+
+                    for (String mention : removedMentionDuplicates) {
+
+                        for (int i = 0; i < userUUIDAL.size(); i++) {
+
+                            if (userUUIDAL.get(i).equals(mention)) {
+
+                                String email = userEmailAL.get(i);
+
+                                DMInformation dmInformation = new DMInformation();
+                                dmInformation.setVideoURL(uri.toString());
+                                if (mInput.getText().toString().trim().length() != 0) {
+                                    dmInformation.setMessage(mInput.getText().toString());
+                                }
+                                // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+                                // This will cause onDataChange to fire twice; optimizations could be made in the future.
+                                Object date = ServerValue.TIMESTAMP;
+                                dmInformation.setDate(date);
+                                userUUID = UUID.randomUUID().toString();
+                                dmInformation.setUserUUID(userUUID);
+                                dmInformation.setShapeUUID(shapeUUID);
+                                dmInformation.setPosition(mUser.size());
+                                dmInformation.setSeenByUser(false);
+                                dmInformation.setUserIsWithinShape(userIsWithinShape);
+                                if (circleLatitude != 0) {
+                                    dmInformation.setSize(radius);
+                                    dmInformation.setShapeIsCircle(true);
+                                } else {
+                                    dmInformation.setSize(polygonArea);
+                                    dmInformation.setShapeIsCircle(false);
+                                }
+                                dmInformation.setLat(latFirebaseValue);
+                                dmInformation.setLon(lonFirebaseValue);
+
+                                // Firebase does not allow ".", so replace them with ",".
+                                String receiverEmailFirebase = email.replace(".", ",");
+                                DatabaseReference newDM = FirebaseDatabase.getInstance().getReference().child("Users").child(receiverEmailFirebase).child("ReceivedDMs").push();
+                                newDM.setValue(dmInformation);
+                            }
                         }
+                    }
+                }
+
+                MessageInformation messageInformation = new MessageInformation();
+                messageInformation.setVideoURL(uri.toString());
+                if (mInput.getText().toString().trim().length() != 0) {
+
+                    messageInformation.setMessage(mInput.getText().toString());
+                }
+                // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+                // This will cause onDataChange to fire twice; optimizations could be made in the future.
+                Object date = ServerValue.TIMESTAMP;
+                messageInformation.setDate(date);
+                messageInformation.setUserUUID(userUUID);
+                messageInformation.setPosition(mUser.size());
+                // If user has a Google account, get email one way. Else, get email another way.
+                GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
+                String email;
+                SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+                if (acct != null) {
+                    email = acct.getEmail();
+                } else {
+                    email = sharedPreferences.getString("userToken", "null");
+                }
+                messageInformation.setEmail(email);
+                if (!removedMentionDuplicates.isEmpty()) {
+                    messageInformation.setRemovedMentionDuplicates(removedMentionDuplicates);
+                }
+                messageInformation.setUserIsWithinShape(userIsWithinShape);
+                DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID).push();
+                newMessage.setValue(messageInformation);
+
+                mInput.getText().clear();
+                if (removedMentionDuplicates != null) {
+                    removedMentionDuplicates.clear();
+                }
+                videoImageView.setVisibility(View.GONE);
+                videoImageView.setImageDrawable(null);
+                if (video != null) {
+
+                    deleteDirectory(video);
+                }
+                sendButtonClicked = false;
+                loadingIcon.setVisibility(View.GONE);
+            }))
+                    .addOnFailureListener(ex -> {
+
+                        // Handle unsuccessful uploads
+                        loadingIcon.setVisibility(View.GONE);
+                        toastMessageLong(ex.getMessage());
+                        Log.e(TAG, "firebaseUpload() -> !fileIsImage -> onFailure -> " + ex.getMessage());
                     });
         } else {
 
@@ -2886,250 +2754,223 @@ public class Chat extends Fragment implements
             final StorageReference storageReferenceImage = FirebaseStorage.getInstance().getReference("Images").child(String.valueOf(System.currentTimeMillis()));
             uploadTask = storageReferenceImage.putBytes(byteArray);
 
-            storageReferenceImage.putBytes(byteArray).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+            storageReferenceImage.putBytes(byteArray).addOnSuccessListener(taskSnapshot -> storageReferenceImage.getDownloadUrl().addOnSuccessListener(uri -> {
 
-                @Override
-                public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                Log.i(TAG, "uploadImage() -> onSuccess");
 
-                    storageReferenceImage.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
+                if (newShape) {
 
-                        @Override
-                        public void onSuccess(Uri uri) {
+                    // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter()).
+                    messageSent = true;
 
-                            Log.i(TAG, "uploadImage() -> onSuccess");
+                    DatabaseReference newFirebaseShape = null;
+                    if (radius != 0) {
 
-                            if (newShape) {
+                        // Shape is a circle.
 
-                                // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter()).
-                                messageSent = true;
+                        // Since the uuid doesn't already exist in Firebase, add the circle.
+                        CircleOptions circleOptions = new CircleOptions()
+                                .center(new LatLng(circleLatitude, circleLongitude))
+                                .clickable(true)
+                                .radius(radius);
+                        CircleInformation circleInformation = new CircleInformation();
+                        circleInformation.setCircleOptions(circleOptions);
+                        circleInformation.setShapeUUID(shapeUUID);
 
-                                DatabaseReference newFirebaseShape = null;
-                                if (radius != 0) {
+                        if (radius == 1) {
 
-                                    // Shape is a circle.
+                            newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Point").push();
+                        } else if (1 < radius && radius <= 10) {
 
-                                    // Since the uuid doesn't already exist in Firebase, add the circle.
-                                    CircleOptions circleOptions = new CircleOptions()
-                                            .center(new LatLng(circleLatitude, circleLongitude))
-                                            .clickable(true)
-                                            .radius(radius);
-                                    CircleInformation circleInformation = new CircleInformation();
-                                    circleInformation.setCircleOptions(circleOptions);
-                                    circleInformation.setShapeUUID(shapeUUID);
+                            newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Small").push();
+                        } else if (10 < radius && radius <= 50) {
 
-                                    if (radius == 1) {
+                            newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Medium").push();
+                        } else if (50 < radius) {
 
-                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Point").push();
-                                    } else if (1 < radius && radius <= 10) {
-
-                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Small").push();
-                                    } else if (10 < radius && radius <= 50) {
-
-                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Medium").push();
-                                    } else if (50 < radius) {
-
-                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Large").push();
-                                    }
-
-                                    if (newFirebaseShape != null) {
-
-                                        newFirebaseShape.setValue(circleInformation);
-                                    }
-                                } else if (polygonArea != 0) {
-
-                                    // Shape is a polygon.
-
-                                    PolygonOptions polygonOptions = null;
-
-                                    // Since the uuid doesn't already exist in Firebase, add the circle.
-                                    if (threeMarkers) {
-
-                                        polygonOptions = new PolygonOptions()
-                                                .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude))
-                                                .clickable(true);
-                                    }
-
-                                    if (fourMarkers) {
-
-                                        polygonOptions = new PolygonOptions()
-                                                .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude))
-                                                .clickable(true);
-                                    }
-
-                                    if (fiveMarkers) {
-
-                                        polygonOptions = new PolygonOptions()
-                                                .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude))
-                                                .clickable(true);
-                                    }
-
-                                    if (sixMarkers) {
-
-                                        polygonOptions = new PolygonOptions()
-                                                .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude))
-                                                .clickable(true);
-                                    }
-
-                                    if (sevenMarkers) {
-
-                                        polygonOptions = new PolygonOptions()
-                                                .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude), new LatLng(marker6Latitude, marker6Longitude))
-                                                .clickable(true);
-                                    }
-
-                                    if (eightMarkers) {
-
-                                        polygonOptions = new PolygonOptions()
-                                                .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude), new LatLng(marker6Latitude, marker6Longitude), new LatLng(marker7Latitude, marker7Longitude))
-                                                .clickable(true);
-                                    }
-
-                                    PolygonInformation polygonInformation = new PolygonInformation();
-                                    polygonInformation.setPolygonOptions(polygonOptions);
-                                    polygonInformation.setArea(polygonArea);
-                                    polygonInformation.setShapeUUID(shapeUUID);
-
-                                    if (polygonArea <= Math.PI * (Math.pow(10, 2))) {
-
-                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Small").push();
-                                    } else if (Math.PI * (Math.pow(10, 2)) < polygonArea && polygonArea <= Math.PI * (Math.pow(50, 2))) {
-
-                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Medium").push();
-                                    } else if (Math.PI * (Math.pow(50, 2)) < polygonArea) {
-
-                                        newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Large").push();
-                                    }
-
-                                    if (newFirebaseShape != null) {
-
-                                        newFirebaseShape.setValue(polygonInformation);
-                                    }
-                                } else {
-
-                                    // Both radius and polygonArea are null.
-                                    toastMessageLong("Oops! Something went wrong!");
-                                    return;
-                                }
-
-                                newShape = false;
-                            }
-
-                            // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter()).
-                            messageSent = true;
-
-                            String userUUID = UUID.randomUUID().toString();
-
-                            // If mentions exist, add to the user's DMs.
-                            if (removedMentionDuplicates != null) {
-
-                                for (String mention : removedMentionDuplicates) {
-
-                                    for (int i = 0; i < userUUIDAL.size(); i++) {
-
-                                        if (userUUIDAL.get(i).equals(mention)) {
-
-                                            String email = userEmailAL.get(i);
-
-                                            MessageInformation messageInformation = new MessageInformation();
-                                            messageInformation.setImageURL(uri.toString());
-                                            if (mInput.getText().toString().trim().length() != 0) {
-
-                                                messageInformation.setMessage(mInput.getText().toString());
-                                            }
-                                            // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                                            // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                                            Object date = ServerValue.TIMESTAMP;
-                                            messageInformation.setDate(date);
-                                            messageInformation.setUserUUID(userUUID);
-                                            messageInformation.setShapeUUID(shapeUUID);
-                                            messageInformation.setPosition(mUser.size());
-                                            messageInformation.setSeenByUser(false);
-                                            messageInformation.setUserIsWithinShape(userIsWithinShape);
-                                            if (circleLatitude != 0) {
-                                                messageInformation.setShapeIsCircle(true);
-                                                messageInformation.setSize(radius);
-                                            } else {
-                                                messageInformation.setShapeIsCircle(false);
-                                                messageInformation.setSize(polygonArea);
-                                            }
-                                            messageInformation.setLat(latFirebaseValue);
-                                            messageInformation.setLon(lonFirebaseValue);
-
-                                            // Firebase does not allow ".", so replace them with ",".
-                                            String receiverEmailFirebase = email.replace(".", ",");
-                                            DatabaseReference newDM = FirebaseDatabase.getInstance().getReference().child("Users").child(receiverEmailFirebase).child("ReceivedDMs").push();
-                                            newDM.setValue(messageInformation);
-                                        }
-                                    }
-                                }
-                            }
-
-                            MessageInformation messageInformation = new MessageInformation();
-                            messageInformation.setImageURL(uri.toString());
-                            if (mInput.getText().toString().trim().length() != 0) {
-
-                                messageInformation.setMessage(mInput.getText().toString());
-                            }
-                            // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                            // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                            Object date = ServerValue.TIMESTAMP;
-                            messageInformation.setDate(date);
-                            messageInformation.setUserUUID(userUUID);
-                            messageInformation.setPosition(mUser.size());
-                            // If user has a Google account, get email one way. Else, get email another way.
-                            GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
-                            String email;
-                            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-                            if (acct != null) {
-                                email = acct.getEmail();
-                            } else {
-                                email = sharedPreferences.getString("userToken", "null");
-                            }
-                            messageInformation.setEmail(email);
-                            messageInformation.setShapeUUID(shapeUUID);
-                            if (removedMentionDuplicates.isEmpty()) {
-                                messageInformation.setSeenByUser(true);
-                            } else {
-                                messageInformation.setRemovedMentionDuplicates(removedMentionDuplicates);
-                                messageInformation.setSeenByUser(false);
-                            }
-                            messageInformation.setUserIsWithinShape(userIsWithinShape);
-                            if (circleLatitude != 0) {
-                                messageInformation.setShapeIsCircle(true);
-                                messageInformation.setSize(radius);
-                            } else {
-                                messageInformation.setShapeIsCircle(false);
-                                messageInformation.setSize(polygonArea);
-                            }
-                            DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID).push();
-                            newMessage.setValue(messageInformation);
-
-                            mInput.getText().clear();
-                            if (removedMentionDuplicates != null) {
-                                removedMentionDuplicates.clear();
-                            }
-                            imageView.setVisibility(View.GONE);
-                            imageView.setImageDrawable(null);
-                            if (image != null) {
-
-                                deleteDirectory(image);
-                            }
-                            sendButtonClicked = false;
-                            loadingIcon.setVisibility(View.GONE);
+                            newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Large").push();
                         }
-                    });
+
+                        if (newFirebaseShape != null) {
+
+                            newFirebaseShape.setValue(circleInformation);
+                        }
+                    } else if (polygonArea != 0) {
+
+                        // Shape is a polygon.
+
+                        PolygonOptions polygonOptions = null;
+
+                        // Since the uuid doesn't already exist in Firebase, add the circle.
+                        if (threeMarkers) {
+
+                            polygonOptions = new PolygonOptions()
+                                    .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude))
+                                    .clickable(true);
+                        }
+
+                        if (fourMarkers) {
+
+                            polygonOptions = new PolygonOptions()
+                                    .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude))
+                                    .clickable(true);
+                        }
+
+                        if (fiveMarkers) {
+
+                            polygonOptions = new PolygonOptions()
+                                    .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude))
+                                    .clickable(true);
+                        }
+
+                        if (sixMarkers) {
+
+                            polygonOptions = new PolygonOptions()
+                                    .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude))
+                                    .clickable(true);
+                        }
+
+                        if (sevenMarkers) {
+
+                            polygonOptions = new PolygonOptions()
+                                    .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude), new LatLng(marker6Latitude, marker6Longitude))
+                                    .clickable(true);
+                        }
+
+                        if (eightMarkers) {
+
+                            polygonOptions = new PolygonOptions()
+                                    .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude), new LatLng(marker6Latitude, marker6Longitude), new LatLng(marker7Latitude, marker7Longitude))
+                                    .clickable(true);
+                        }
+
+                        PolygonInformation polygonInformation = new PolygonInformation();
+                        polygonInformation.setPolygonOptions(polygonOptions);
+                        polygonInformation.setArea(polygonArea);
+                        polygonInformation.setShapeUUID(shapeUUID);
+
+                        if (polygonArea <= Math.PI * (Math.pow(10, 2))) {
+
+                            newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Small").push();
+                        } else if (Math.PI * (Math.pow(10, 2)) < polygonArea && polygonArea <= Math.PI * (Math.pow(50, 2))) {
+
+                            newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Medium").push();
+                        } else if (Math.PI * (Math.pow(50, 2)) < polygonArea) {
+
+                            newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Large").push();
+                        }
+
+                        if (newFirebaseShape != null) {
+
+                            newFirebaseShape.setValue(polygonInformation);
+                        }
+                    } else {
+
+                        // Both radius and polygonArea are null.
+                        toastMessageLong("Oops! Something went wrong!");
+                        return;
+                    }
+
+                    newShape = false;
                 }
-            })
-                    .addOnFailureListener(new OnFailureListener() {
 
-                        @Override
-                        public void onFailure(@NonNull Exception ex) {
+                // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter()).
+                messageSent = true;
 
-                            // Handle unsuccessful uploads
-                            loadingIcon.setVisibility(View.GONE);
-                            toastMessageLong(ex.getMessage());
-                            Log.e(TAG, "firebaseUpload() -> else -> onFailure -> " + ex.getMessage());
+                String userUUID = UUID.randomUUID().toString();
+
+                // If mentions exist, add to the user's DMs.
+                if (removedMentionDuplicates != null) {
+
+                    for (String mention : removedMentionDuplicates) {
+
+                        for (int i = 0; i < userUUIDAL.size(); i++) {
+
+                            if (userUUIDAL.get(i).equals(mention)) {
+
+                                String email = userEmailAL.get(i);
+
+                                DMInformation dmInformation = new DMInformation();
+                                dmInformation.setImageURL(uri.toString());
+                                if (mInput.getText().toString().trim().length() != 0) {
+                                    dmInformation.setMessage(mInput.getText().toString());
+                                }
+                                // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+                                // This will cause onDataChange to fire twice; optimizations could be made in the future.
+                                Object date = ServerValue.TIMESTAMP;
+                                dmInformation.setDate(date);
+                                dmInformation.setUserUUID(userUUID);
+                                dmInformation.setShapeUUID(shapeUUID);
+                                dmInformation.setPosition(mUser.size());
+                                dmInformation.setSeenByUser(false);
+                                dmInformation.setUserIsWithinShape(userIsWithinShape);
+                                if (circleLatitude != 0) {
+                                    dmInformation.setSize(radius);
+                                    dmInformation.setShapeIsCircle(true);
+                                } else {
+                                    dmInformation.setSize(polygonArea);
+                                    dmInformation.setShapeIsCircle(false);
+                                }
+                                dmInformation.setLat(latFirebaseValue);
+                                dmInformation.setLon(lonFirebaseValue);
+
+                                // Firebase does not allow ".", so replace them with ",".
+                                String receiverEmailFirebase = email.replace(".", ",");
+                                DatabaseReference newDM = FirebaseDatabase.getInstance().getReference().child("Users").child(receiverEmailFirebase).child("ReceivedDMs").push();
+                                newDM.setValue(dmInformation);
+                            }
                         }
+                    }
+                }
+
+                MessageInformation messageInformation = new MessageInformation();
+                messageInformation.setImageURL(uri.toString());
+                if (mInput.getText().toString().trim().length() != 0) {
+
+                    messageInformation.setMessage(mInput.getText().toString());
+                }
+                // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+                // This will cause onDataChange to fire twice; optimizations could be made in the future.
+                Object date = ServerValue.TIMESTAMP;
+                messageInformation.setDate(date);
+                messageInformation.setUserUUID(userUUID);
+                messageInformation.setPosition(mUser.size());
+                // If user has a Google account, get email one way. Else, get email another way.
+                GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
+                String email;
+                SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+                if (acct != null) {
+                    email = acct.getEmail();
+                } else {
+                    email = sharedPreferences.getString("userToken", "null");
+                }
+                messageInformation.setEmail(email);
+                if (!removedMentionDuplicates.isEmpty()) {
+                    messageInformation.setRemovedMentionDuplicates(removedMentionDuplicates);
+                }
+                messageInformation.setUserIsWithinShape(userIsWithinShape);
+                DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID).push();
+                newMessage.setValue(messageInformation);
+
+                mInput.getText().clear();
+                if (removedMentionDuplicates != null) {
+                    removedMentionDuplicates.clear();
+                }
+                imageView.setVisibility(View.GONE);
+                imageView.setImageDrawable(null);
+                if (image != null) {
+
+                    deleteDirectory(image);
+                }
+                sendButtonClicked = false;
+                loadingIcon.setVisibility(View.GONE);
+            }))
+                    .addOnFailureListener(ex -> {
+
+                        // Handle unsuccessful uploads
+                        loadingIcon.setVisibility(View.GONE);
+                        toastMessageLong(ex.getMessage());
+                        Log.e(TAG, "firebaseUpload() -> else -> onFailure -> " + ex.getMessage());
                     });
         }
     }

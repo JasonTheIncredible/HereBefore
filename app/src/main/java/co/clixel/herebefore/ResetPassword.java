@@ -89,76 +89,65 @@ public class ResetPassword extends AppCompatActivity {
 
         super.onStart();
 
-        sendEmail.setOnClickListener(new View.OnClickListener() {
+        sendEmail.setOnClickListener(v -> {
 
-            @Override
-            public void onClick(View v) {
+            emailAddress = mEmailAddress.getText().toString().trim();
 
-                emailAddress = mEmailAddress.getText().toString().trim();
+            if (emailAddress.equals("")) {
 
-                if (emailAddress.equals("")) {
+                toastMessageShort("Email address required");
+                mEmailAddress.requestFocus();
+                return;
+            }
+            if (!Patterns.EMAIL_ADDRESS.matcher(emailAddress).matches()) {
 
-                    toastMessageShort("Email address required");
-                    mEmailAddress.requestFocus();
-                    return;
+                toastMessageShort("Please enter a valid email address");
+                mEmailAddress.requestFocus();
+                return;
+            }
+
+            loadingIcon.bringToFront();
+            loadingIcon.setVisibility(View.VISIBLE);
+
+            // Close the keyboard.
+            if (ResetPassword.this.getCurrentFocus() != null) {
+
+                InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                if (imm != null) {
+
+                    imm.hideSoftInputFromWindow(ResetPassword.this.getCurrentFocus().getWindowToken(), 0);
                 }
-                if (!Patterns.EMAIL_ADDRESS.matcher(emailAddress).matches()) {
+            }
 
-                    toastMessageShort("Please enter a valid email address");
-                    mEmailAddress.requestFocus();
-                    return;
-                }
+            FirebaseAuth firebaseAuth = FirebaseAuth.getInstance();
 
-                loadingIcon.bringToFront();
-                loadingIcon.setVisibility(View.VISIBLE);
+            firebaseAuth.sendPasswordResetEmail(emailAddress).addOnCompleteListener(new OnCompleteListener<Void>() {
 
-                // Close the keyboard.
-                if (ResetPassword.this.getCurrentFocus() != null) {
+                @Override
+                public void onComplete(@NonNull Task<Void> task) {
 
-                    InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-                    if (imm != null) {
+                    if (task.isSuccessful()) {
 
-                        imm.hideSoftInputFromWindow(ResetPassword.this.getCurrentFocus().getWindowToken(), 0);
+                        toastMessageLong("Password reset instructions sent to your email");
+                        loadingIcon.setVisibility(View.GONE);
+                    }
+
+                    if (!task.isSuccessful() && task.getException() != null) {
+
+                        // Tell the user what happened.
+                        loadingIcon.setVisibility(View.GONE);
+                        toastMessageLong("Email not sent: " + task.getException().getMessage());
+                    } else if (!task.isSuccessful() && task.getException() == null) {
+
+                        // Tell the user something happened.
+                        loadingIcon.setVisibility(View.GONE);
+                        toastMessageLong("An unknown error occurred. Please try again.");
                     }
                 }
-
-                FirebaseAuth firebaseAuth = FirebaseAuth.getInstance();
-
-                firebaseAuth.sendPasswordResetEmail(emailAddress).addOnCompleteListener(new OnCompleteListener<Void>() {
-
-                    @Override
-                    public void onComplete(@NonNull Task<Void> task) {
-
-                        if (task.isSuccessful()) {
-
-                            toastMessageLong("Password reset instructions sent to your email");
-                            loadingIcon.setVisibility(View.GONE);
-                        }
-
-                        if (!task.isSuccessful() && task.getException() != null) {
-
-                            // Tell the user what happened.
-                            loadingIcon.setVisibility(View.GONE);
-                            toastMessageLong("Email not sent: " + task.getException().getMessage());
-                        } else if (!task.isSuccessful() && task.getException() == null) {
-
-                            // Tell the user something happened.
-                            loadingIcon.setVisibility(View.GONE);
-                            toastMessageLong("An unknown error occurred. Please try again.");
-                        }
-                    }
-                });
-            }
+            });
         });
 
-        goBack.setOnClickListener(new View.OnClickListener() {
-
-            @Override
-            public void onClick(View v) {
-
-                onBackPressed();
-            }
-        });
+        goBack.setOnClickListener(v -> onBackPressed());
     }
 
     @Override

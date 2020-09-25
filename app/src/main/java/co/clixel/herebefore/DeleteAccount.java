@@ -12,7 +12,6 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.preference.PreferenceManager;
@@ -22,8 +21,6 @@ import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.ads.MobileAds;
 import com.google.android.gms.ads.RequestConfiguration;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.EmailAuthProvider;
 import com.google.firebase.auth.FirebaseAuth;
@@ -147,164 +144,131 @@ public class DeleteAccount extends AppCompatActivity {
 
         super.onStart();
 
-        deleteAccount.setOnClickListener(new View.OnClickListener() {
+        deleteAccount.setOnClickListener(v -> {
 
-            @Override
-            public void onClick(View v) {
+            // Get auth credentials from the user for re-authentication. The example below shows
+            // email and password credentials but there are multiple possible providers,
+            // such as GoogleAuthProvider or FacebookAuthProvider.
+            AuthCredential credential = null;
 
-                // Get auth credentials from the user for re-authentication. The example below shows
-                // email and password credentials but there are multiple possible providers,
-                // such as GoogleAuthProvider or FacebookAuthProvider.
-                AuthCredential credential = null;
+            String userToken = sharedPreferences.getString("userToken", "");
+            String passToken = sharedPreferences.getString("passToken", "");
 
-                String userToken = sharedPreferences.getString("userToken", "");
-                String passToken = sharedPreferences.getString("passToken", "");
+            // Check if the account is a Google account.
+            if (!googleIdToken.equals("")) {
 
-                // Check if the account is a Google account.
-                if (!googleIdToken.equals("")) {
+                credential = GoogleAuthProvider.getCredential(googleIdToken, null);
+            } else {
 
-                    credential = GoogleAuthProvider.getCredential(googleIdToken, null);
-                } else {
+                credential = EmailAuthProvider.getCredential(userToken, passToken);
+            }
 
-                    credential = EmailAuthProvider.getCredential(userToken, passToken);
-                }
+            final FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
 
-                final FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+            if (user != null) {
 
-                if (user != null) {
+                // Sign out the user without asking for a password, as the user has a Google account.
+                if (googleAccount) {
 
-                    // Sign out the user without asking for a password, as the user has a Google account.
-                    if (googleAccount) {
+                    loadingIcon.bringToFront();
+                    loadingIcon.setVisibility(View.VISIBLE);
 
-                        loadingIcon.bringToFront();
-                        loadingIcon.setVisibility(View.VISIBLE);
+                    // Close the keyboard.
+                    if (DeleteAccount.this.getCurrentFocus() != null) {
 
-                        // Close the keyboard.
-                        if (DeleteAccount.this.getCurrentFocus() != null) {
+                        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                        if (imm != null) {
 
-                            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-                            if (imm != null) {
+                            imm.hideSoftInputFromWindow(DeleteAccount.this.getCurrentFocus().getWindowToken(), 0);
+                        }
+                    }
 
-                                imm.hideSoftInputFromWindow(DeleteAccount.this.getCurrentFocus().getWindowToken(), 0);
-                            }
+                    user.reauthenticate(credential).addOnCompleteListener(task -> user.delete().addOnCompleteListener(task1 -> {
+
+                        if (task1.isSuccessful()) {
+
+                            // Sign-out the user.
+                            AuthUI.getInstance().signOut(DeleteAccount.this);
+
+                            PreferenceManager.getDefaultSharedPreferences(DeleteAccount.this).edit().clear().apply();
+
+                            Toast accountDeletedToast = Toast.makeText(DeleteAccount.this, "Account deleted", Toast.LENGTH_LONG);
+                            accountDeletedToast.show();
+
+                            Intent Activity = new Intent(DeleteAccount.this, Map.class);
+
+                            loadingIcon.setVisibility(View.GONE);
+
+                            finishAffinity();
+
+                            startActivity(Activity);
                         }
 
-                        user.reauthenticate(credential).addOnCompleteListener(new OnCompleteListener<Void>() {
+                        if (!task1.isSuccessful() && task1.getException() != null) {
 
-                            @Override
-                            public void onComplete(@NonNull Task<Void> task) {
+                            // Tell the user what happened.
+                            loadingIcon.setVisibility(View.GONE);
+                            toastMessageLong("Account Deletion Failed: " + task1.getException().getMessage());
+                        } else if (!task1.isSuccessful() && task1.getException() == null) {
 
-                                user.delete().addOnCompleteListener(new OnCompleteListener<Void>() {
+                            // Tell the user something happened.
+                            loadingIcon.setVisibility(View.GONE);
+                            toastMessageLong("An unknown error occurred. Please try again.");
+                        }
+                    }));
+                }
+                // Sign out the user by asking for the password, as the user has a Firebase account.
+                else if (password.getText().toString().equals(passToken)) {
 
-                                    @Override
-                                    public void onComplete(@NonNull Task<Void> task) {
+                    loadingIcon.bringToFront();
+                    loadingIcon.setVisibility(View.VISIBLE);
 
-                                        if (task.isSuccessful()) {
+                    user.reauthenticate(credential).addOnCompleteListener(task -> user.delete().addOnCompleteListener(task12 -> {
 
-                                            // Sign-out the user.
-                                            AuthUI.getInstance().signOut(DeleteAccount.this);
+                        if (task12.isSuccessful()) {
 
-                                            PreferenceManager.getDefaultSharedPreferences(DeleteAccount.this).edit().clear().apply();
+                            // Sign-out the user.
+                            AuthUI.getInstance().signOut(DeleteAccount.this);
 
-                                            Toast accountDeletedToast = Toast.makeText(DeleteAccount.this, "Account deleted", Toast.LENGTH_LONG);
-                                            accountDeletedToast.show();
+                            PreferenceManager.getDefaultSharedPreferences(DeleteAccount.this).edit().clear().apply();
 
-                                            Intent Activity = new Intent(DeleteAccount.this, Map.class);
+                            Toast accountDeletedToast = Toast.makeText(DeleteAccount.this, "Account deleted", Toast.LENGTH_LONG);
+                            accountDeletedToast.show();
 
-                                            loadingIcon.setVisibility(View.GONE);
+                            Intent Activity = new Intent(DeleteAccount.this, Map.class);
 
-                                            finishAffinity();
+                            loadingIcon.setVisibility(View.GONE);
 
-                                            startActivity(Activity);
-                                        }
+                            startActivity(Activity);
 
-                                        if (!task.isSuccessful() && task.getException() != null) {
+                            finish();
+                        }
 
-                                            // Tell the user what happened.
-                                            loadingIcon.setVisibility(View.GONE);
-                                            toastMessageLong("Account Deletion Failed: " + task.getException().getMessage());
-                                        } else if (!task.isSuccessful() && task.getException() == null) {
+                        if (!task12.isSuccessful() && task12.getException() != null) {
 
-                                            // Tell the user something happened.
-                                            loadingIcon.setVisibility(View.GONE);
-                                            toastMessageLong("An unknown error occurred. Please try again.");
-                                        }
-                                    }
-                                });
-                            }
-                        });
-                    }
-                    // Sign out the user by asking for the password, as the user has a Firebase account.
-                    else if (password.getText().toString().equals(passToken)) {
+                            // Tell the user what happened.
+                            loadingIcon.setVisibility(View.GONE);
+                            toastMessageLong("Account Deletion Failed: " + task12.getException().getMessage());
+                        } else if (!task12.isSuccessful() && task12.getException() == null) {
 
-                        loadingIcon.bringToFront();
-                        loadingIcon.setVisibility(View.VISIBLE);
+                            // Tell the user something happened.
+                            loadingIcon.setVisibility(View.GONE);
+                            toastMessageLong("An unknown error occurred. Please try again.");
+                        }
+                    }));
+                } else if (password.getText().toString().equals("")) {
 
-                        user.reauthenticate(credential).addOnCompleteListener(new OnCompleteListener<Void>() {
+                    password.requestFocus();
+                    toastMessageShort("Please re-enter password for this account");
+                } else {
 
-                            @Override
-                            public void onComplete(@NonNull Task<Void> task) {
-
-                                user.delete().addOnCompleteListener(new OnCompleteListener<Void>() {
-
-                                    @Override
-                                    public void onComplete(@NonNull Task<Void> task) {
-
-                                        if (task.isSuccessful()) {
-
-                                            // Sign-out the user.
-                                            AuthUI.getInstance().signOut(DeleteAccount.this);
-
-                                            PreferenceManager.getDefaultSharedPreferences(DeleteAccount.this).edit().clear().apply();
-
-                                            Toast accountDeletedToast = Toast.makeText(DeleteAccount.this, "Account deleted", Toast.LENGTH_LONG);
-                                            accountDeletedToast.show();
-
-                                            Intent Activity = new Intent(DeleteAccount.this, Map.class);
-
-                                            loadingIcon.setVisibility(View.GONE);
-
-                                            startActivity(Activity);
-
-                                            finish();
-                                        }
-
-                                        if (!task.isSuccessful() && task.getException() != null) {
-
-                                            // Tell the user what happened.
-                                            loadingIcon.setVisibility(View.GONE);
-                                            toastMessageLong("Account Deletion Failed: " + task.getException().getMessage());
-                                        } else if (!task.isSuccessful() && task.getException() == null) {
-
-                                            // Tell the user something happened.
-                                            loadingIcon.setVisibility(View.GONE);
-                                            toastMessageLong("An unknown error occurred. Please try again.");
-                                        }
-                                    }
-                                });
-                            }
-                        });
-                    } else if (password.getText().toString().equals("")) {
-
-                        password.requestFocus();
-                        toastMessageShort("Please re-enter password for this account");
-                    } else {
-
-                        password.getText().clear();
-                        toastMessageShort("Incorrect password");
-                    }
+                    password.getText().clear();
+                    toastMessageShort("Incorrect password");
                 }
             }
         });
 
-        goBack.setOnClickListener(new View.OnClickListener() {
-
-            @Override
-            public void onClick(View v) {
-
-                onBackPressed();
-            }
-        });
+        goBack.setOnClickListener(v -> onBackPressed());
     }
 
     @Override
