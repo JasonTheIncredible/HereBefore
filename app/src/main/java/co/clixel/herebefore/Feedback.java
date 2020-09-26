@@ -32,7 +32,6 @@ public class Feedback extends AppCompatActivity {
     private String feedback;
     private Button sendFeedback, goBack;
     private View loadingIcon;
-    private boolean theme;
     private Toast shortToast;
 
     @Override
@@ -41,7 +40,6 @@ public class Feedback extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         // Update to the user's preferences.
-        loadPreferences();
         updatePreferences();
 
         setContentView(R.layout.feedback);
@@ -65,14 +63,11 @@ public class Feedback extends AppCompatActivity {
         loadingIcon = findViewById(R.id.loadingIcon);
     }
 
-    protected void loadPreferences() {
+    protected void updatePreferences() {
 
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
 
-        theme = sharedPreferences.getBoolean(SettingsFragment.KEY_THEME_SWITCH, false);
-    }
-
-    protected void updatePreferences() {
+        boolean theme = sharedPreferences.getBoolean(SettingsFragment.KEY_THEME_SWITCH, false);
 
         if (theme) {
 

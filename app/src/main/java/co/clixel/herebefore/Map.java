@@ -119,8 +119,6 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // Compress "If mentions exist, add to the user's DMs." in Chat into method.
-    // Scale messageThreads, then adjust Feedback.
     // Don't clear highlighted DMs until user clicks on the DMs tab. Also, add notification to DM tab.
     // Allow some shapes when zoomed out? User should be able to see an overview and click places while zoomed out.
     // Decrease app size (compress repeating code into methods) / Check on accumulation of size over time.

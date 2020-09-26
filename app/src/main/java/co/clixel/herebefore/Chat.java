@@ -1637,7 +1637,7 @@ public class Chat extends Fragment implements
 
             loadingIcon.setVisibility(View.VISIBLE);
 
-            DatabaseReference firebaseMessages = FirebaseDatabase.getInstance().getReference().child("MessageThreads");
+            DatabaseReference firebaseMessages = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID);
             firebaseMessages.addListenerForSingleValueEvent(new ValueEventListener() {
 
                 @Override
@@ -1651,10 +1651,13 @@ public class Chat extends Fragment implements
                             if (userUUID.equals(reportedUser)) {
 
                                 String pushId = ds.getKey();
-                                ReportPostInformation reportPost = new ReportPostInformation();
-                                reportPost.setPushId(pushId);
+                                ReportPostInformation reportPostInformation = new ReportPostInformation();
+                                reportPostInformation.setPushId(pushId);
+                                reportPostInformation.setLat(latFirebaseValue);
+                                reportPostInformation.setLon(lonFirebaseValue);
+                                reportPostInformation.setShapeUUID(shapeUUID);
                                 DatabaseReference newReportedPost = FirebaseDatabase.getInstance().getReference().child("ReportedPost").push();
-                                newReportedPost.setValue(reportPost);
+                                newReportedPost.setValue(reportPostInformation);
                                 loadingIcon.setVisibility(View.GONE);
                                 toastMessageShort("Post reported. Thank you!");
                                 break;

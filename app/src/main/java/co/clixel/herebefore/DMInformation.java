@@ -9,8 +9,7 @@ public class DMInformation {
     public Boolean userIsWithinShape, seenByUser, shapeIsCircle;
     public int position;
     public double size;
-    // Should be Double instead of double so that it can be null and won't take up space in Firebase.
-    public Double lat, lon;
+    public double lat, lon;
 
     @Keep
     DMInformation() {

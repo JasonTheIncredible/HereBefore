@@ -24,8 +24,6 @@ public class Navigation extends AppCompatActivity {
     private BubbleNavigationConstraintView bubbleNavigationConstraintView;
     private ViewPager.OnPageChangeListener pagerListener;
     private int currentItem = -1;
-    private SharedPreferences sharedPreferences;
-    private boolean theme;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,7 +31,6 @@ public class Navigation extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         // Update to the user's preferences.
-        loadPreferences();
         updatePreferences();
 
         Bundle extras = getIntent().getExtras();
@@ -53,14 +50,11 @@ public class Navigation extends AppCompatActivity {
         }
     }
 
-    protected void loadPreferences() {
-
-        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-
-        theme = sharedPreferences.getBoolean(SettingsFragment.KEY_THEME_SWITCH, false);
-    }
-
     protected void updatePreferences() {
+
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+
+        boolean theme = sharedPreferences.getBoolean(SettingsFragment.KEY_THEME_SWITCH, false);
 
         if (theme) {
 

@@ -29,7 +29,6 @@ public class ResetPassword extends AppCompatActivity {
     private String emailAddress;
     private Button sendEmail, goBack;
     private View loadingIcon;
-    private boolean theme;
     private Toast shortToast, longToast;
 
     @Override
@@ -38,7 +37,6 @@ public class ResetPassword extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         // Update to the user's preferences.
-        loadPreferences();
         updatePreferences();
 
         setContentView(R.layout.resetpassword);
@@ -62,14 +60,11 @@ public class ResetPassword extends AppCompatActivity {
         loadingIcon = findViewById(R.id.loadingIcon);
     }
 
-    protected void loadPreferences() {
+    protected void updatePreferences() {
 
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
 
-        theme = sharedPreferences.getBoolean(SettingsFragment.KEY_THEME_SWITCH, false);
-    }
-
-    protected void updatePreferences() {
+        boolean theme = sharedPreferences.getBoolean(SettingsFragment.KEY_THEME_SWITCH, false);
 
         if (theme) {
 

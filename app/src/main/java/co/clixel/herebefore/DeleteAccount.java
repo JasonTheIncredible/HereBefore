@@ -32,7 +32,7 @@ public class DeleteAccount extends AppCompatActivity {
     private EditText password;
     private Button deleteAccount, goBack;
     private View loadingIcon;
-    private boolean theme, googleAccount;
+    private boolean googleAccount;
     private SharedPreferences sharedPreferences;
     private String googleIdToken;
     private Toast shortToast, longToast;
@@ -42,8 +42,9 @@ public class DeleteAccount extends AppCompatActivity {
 
         super.onCreate(savedInstanceState);
 
+        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(DeleteAccount.this);
+
         // Update to the user's preferences.
-        loadPreferences();
         updatePreferences();
 
         setContentView(R.layout.deleteaccount);
@@ -69,7 +70,6 @@ public class DeleteAccount extends AppCompatActivity {
         // Add a textView at the top with the user's private email address if they don't have a Google account.
 
         // Check if the account is a Google account.
-        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(DeleteAccount.this);
         googleIdToken = sharedPreferences.getString("googleIdToken", "");
         googleAccount = !googleIdToken.equals("");
         if (!googleAccount) {
@@ -117,14 +117,9 @@ public class DeleteAccount extends AppCompatActivity {
         }
     }
 
-    protected void loadPreferences() {
-
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-
-        theme = sharedPreferences.getBoolean(SettingsFragment.KEY_THEME_SWITCH, false);
-    }
-
     protected void updatePreferences() {
+
+        boolean theme = sharedPreferences.getBoolean(SettingsFragment.KEY_THEME_SWITCH, false);
 
         if (theme) {
 
@@ -149,7 +144,7 @@ public class DeleteAccount extends AppCompatActivity {
             // Get auth credentials from the user for re-authentication. The example below shows
             // email and password credentials but there are multiple possible providers,
             // such as GoogleAuthProvider or FacebookAuthProvider.
-            AuthCredential credential = null;
+            AuthCredential credential;
 
             String userToken = sharedPreferences.getString("userToken", "");
             String passToken = sharedPreferences.getString("passToken", "");
