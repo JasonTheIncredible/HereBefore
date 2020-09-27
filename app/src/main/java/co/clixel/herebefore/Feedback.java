@@ -111,31 +111,16 @@ public class Feedback extends AppCompatActivity {
                 }
             }
 
-            DatabaseReference Feedback = FirebaseDatabase.getInstance().getReference().child("Feedback");
-            Feedback.addListenerForSingleValueEvent(new ValueEventListener() {
-
-                @Override
-                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-
-                    FeedbackInformation feedbackInformation = new FeedbackInformation();
-                    feedbackInformation.setFeedback(feedback);
-                    feedbackInformation.setDate(ServerValue.TIMESTAMP);
-                    DatabaseReference newFeedback = FirebaseDatabase.getInstance().getReference().child("Feedback").push();
-                    newFeedback.setValue(feedbackInformation);
-                    mFeedback.getText().clear();
-                    RelativeLayout layout = findViewById(R.id.layout);
-                    layout.requestFocus();
-                    loadingIcon.setVisibility(View.GONE);
-                    toastMessageShort("Feedback sent. Thank you!");
-                }
-
-                @Override
-                public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                    loadingIcon.setVisibility(View.GONE);
-                    toastMessageShort("Feedback sent. Thank you!");
-                }
-            });
+            FeedbackInformation feedbackInformation = new FeedbackInformation();
+            feedbackInformation.setFeedback(feedback);
+            feedbackInformation.setDate(ServerValue.TIMESTAMP);
+            DatabaseReference newFeedback = FirebaseDatabase.getInstance().getReference().child("Feedback").push();
+            newFeedback.setValue(feedbackInformation);
+            mFeedback.getText().clear();
+            RelativeLayout layout = findViewById(R.id.layout);
+            layout.requestFocus();
+            loadingIcon.setVisibility(View.GONE);
+            toastMessageShort("Feedback sent. Thank you!");
         });
 
         goBack.setOnClickListener(v -> onBackPressed());

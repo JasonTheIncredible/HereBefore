@@ -1641,9 +1641,9 @@ public class Chat extends Fragment implements
             firebaseMessages.addListenerForSingleValueEvent(new ValueEventListener() {
 
                 @Override
-                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
 
-                    for (DataSnapshot ds : dataSnapshot.getChildren()) {
+                    for (DataSnapshot ds : snapshot.getChildren()) {
 
                         String userUUID = (String) ds.child("userUUID").getValue();
                         if (userUUID != null) {
