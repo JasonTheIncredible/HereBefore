@@ -136,6 +136,12 @@ public class Map extends FragmentActivity implements
     // Investigate why, occasionally, location icon does not disappear from notification bar.
     // Load parts of messages at a time to cut down on data and loading time.
     // Uploading a picture takes a long time.
+    // Use airdrop as inspiration - create items in the world.
+    // Figure out way to make changing shape color does not call Firebase and load shapes again - maybe with a list of saved shapes?
+    // Zoom in further.
+    // If user is on a point, prevent creating a new one.
+    // Inside building view?
+    // Require picture on creating a shape.
     // Find a way to not clear and reload map every time user returns from clicking a shape. Same with DMs.
     // Don't set "seenByUser" to true until the user clicks on the DMs tab.
     // Add user to database once an account has been created.
@@ -6679,6 +6685,8 @@ public class Map extends FragmentActivity implements
         }
 
         mMap.clear();
+
+        loadShapes();
 
         // Create a circleTemp or polygonTemp if one already exists.
         if (chatSelectorSeekBar.getVisibility() == View.VISIBLE) {
