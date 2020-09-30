@@ -60,7 +60,7 @@ public class DirectMentions extends Fragment {
     private ChildEventListener childEventListener;
     private LinearLayoutManager directMentionsRecyclerViewLinearLayoutManager;
     private boolean firstLoad, userIsWithinShape;
-    private int latUser, lonUser;
+    private int latUser, lonUser, dmCounter = 0;
     private View loadingIcon;
     private Toast longToast;
     private Double userLatitude, userLongitude;
@@ -213,8 +213,19 @@ public class DirectMentions extends Fragment {
 
                     if (!(Boolean) ds.child("seenByUser").getValue()) {
 
-                        ds.child("seenByUser").getRef().setValue(true);
+                        dmCounter++;
                     }
+                }
+
+                // Set the DM tab's badge value.
+                if (dmCounter == 0) {
+                    // Do nothing.
+                } else if (!Navigation.fromDMs && !Navigation.noChat) {
+
+                    Navigation.bubbleNavigationConstraintView.setBadgeValue(1, String.valueOf(dmCounter));
+                } else {
+
+                    Navigation.bubbleNavigationConstraintView.setBadgeValue(0, String.valueOf(dmCounter));
                 }
 
                 addQuery();
@@ -286,9 +297,15 @@ public class DirectMentions extends Fragment {
                 mPosition.add((Long) snapshot.child("position").getValue());
                 mSeenByUser.add((Boolean) snapshot.child("seenByUser").getValue());
 
-                if (!(Boolean) snapshot.child("seenByUser").getValue()) {
+                dmCounter++;
 
-                    snapshot.child("seenByUser").getRef().setValue(true);
+                // Set the DM tab's badge value.
+                if (!Navigation.fromDMs && !Navigation.noChat) {
+
+                    Navigation.bubbleNavigationConstraintView.setBadgeValue(1, String.valueOf(dmCounter));
+                } else {
+
+                    Navigation.bubbleNavigationConstraintView.setBadgeValue(0, String.valueOf(dmCounter));
                 }
 
                 initDirectMentionsAdapter();
@@ -461,6 +478,41 @@ public class DirectMentions extends Fragment {
                 itemView.setOnClickListener(v -> {
 
                     loadingIcon.setVisibility(View.VISIBLE);
+
+                    // When user clicks on a DM, set "seenByUser" to false so it is not highlighted in the future.
+                    if (!mSeenByUser.get(getAdapterPosition())) {
+
+                        DatabaseReference DMs = FirebaseDatabase.getInstance().getReference().child("Users").child(userEmailFirebase).child("ReceivedDMs");
+                        DMs.addListenerForSingleValueEvent(new ValueEventListener() {
+
+                            @Override
+                            public void onDataChange(@NonNull DataSnapshot snapshot) {
+
+                                for (DataSnapshot ds : snapshot.getChildren()) {
+
+                                    String userUUID = (String) ds.child("userUUID").getValue();
+
+                                    if (userUUID != null) {
+
+                                        if (userUUID.equals(mMessageUser.get(getAdapterPosition()))) {
+
+                                            if (!(Boolean) ds.child("seenByUser").getValue()) {
+
+                                                ds.child("seenByUser").getRef().setValue(true);
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            @Override
+                            public void onCancelled(@NonNull DatabaseError error) {
+
+                                toastMessageLong(error.getMessage());
+                            }
+                        });
+                    }
 
                     DatabaseReference shape = null;
                     double shapeSize = mShapeSize.get(getAdapterPosition());

@@ -119,7 +119,6 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // Don't clear highlighted DMs until user clicks on the DMs tab. Also, add notification to DM tab.
     // Allow some shapes when zoomed out? User should be able to see an overview and click places while zoomed out.
     // Decrease app size (compress repeating code into methods) / Check on accumulation of size over time.
     // Adjust Firebase security rules - bookmark.
@@ -131,6 +130,7 @@ public class Map extends FragmentActivity implements
     // Adjust AppIntro.
     // Switch existing values in Firebase.
     // Make sure the secret stuff is secret.
+    // Change version to year-month-day.
 
     // Create timer that kicks people out of a new Chat if they haven't posted within an amount of time.
     // Investigate why, occasionally, location icon does not disappear from notification bar.

@@ -19,9 +19,9 @@ import com.gauravk.bubblenavigation.listener.BubbleNavigationChangeListener;
 
 public class Navigation extends AppCompatActivity {
 
-    static private boolean noChat = false, fromDMs = false;
+    static public boolean noChat = false, fromDMs = false;
     private ViewPager viewPager;
-    private BubbleNavigationConstraintView bubbleNavigationConstraintView;
+    public static BubbleNavigationConstraintView bubbleNavigationConstraintView;
     private ViewPager.OnPageChangeListener pagerListener;
     private int currentItem = -1;
 
@@ -106,7 +106,7 @@ public class Navigation extends AppCompatActivity {
         };
 
         viewPager.addOnPageChangeListener(pagerListener);
-
+        
         BubbleNavigationChangeListener bubbleListener = (view, position) -> {
 
             viewPager.setCurrentItem(position, true);
