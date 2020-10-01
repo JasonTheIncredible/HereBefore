@@ -119,48 +119,42 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // Allow some shapes when zoomed out? User should be able to see an overview and click places while zoomed out.
-    // Decrease app size (compress repeating code into methods) / Check on accumulation of size over time.
     // Adjust Firebase security rules - bookmark.
-    // Finish setting up Google ads, then add more ads.
-    // Make sure Firebase has enough bandwidth.
+    // Decrease app size (compress repeating code into methods) / Check on accumulation of size over time.
     // Work on deprecated methods.
     // Check warning messages.
-    // Make sure aboutLibraries includes all libraries.
+    // Finish setting up Google ads, then add more ads.
     // Adjust AppIntro.
-    // Switch existing values in Firebase.
+    // Make sure Firebase has enough bandwidth.
+    // Make sure aboutLibraries includes all libraries.
     // Make sure the secret stuff is secret.
+    // Switch existing values in Firebase.
     // Change version to year-month-day.
 
-    // Create timer that kicks people out of a new Chat if they haven't posted within an amount of time.
-    // Investigate why, occasionally, location icon does not disappear from notification bar.
-    // Load parts of messages at a time to cut down on data and loading time.
+    // Load specific number of messages at a time to cut down on data and loading time.
     // Uploading a picture takes a long time.
-    // Use airdrop as inspiration - create items in the world.
-    // Figure out way to make changing shape color does not call Firebase and load shapes again - maybe with a list of saved shapes?
-    // Zoom in further.
-    // If user is on a point, prevent creating a new one.
-    // Inside building view?
-    // Require picture on creating a shape.
+    // Figure out way to make changing shape color not call Firebase and load shapes again - maybe with a list of saved shapes?
+    // Create timer that kicks people out of a new Chat if they haven't posted within an amount of time.
     // Find a way to not clear and reload map every time user returns from clicking a shape. Same with DMs.
+    // If user is on a point, prevent creating a new one. Deal with overlapping shapes in general. Maybe a warning message?
+    // Require picture on creating a shape.
+    // Make situations where Firebase circles are added to the map and then polygons are added (like in chatViews) async?
+    // Inside building view and/or panoramic view?
+    // Zoom in further?
+    // Use airdrop as inspiration - create items in the world.
+    // Leave messages in locations that users get notified of when they enter the area by adding geo-fencing..
     // Don't set "seenByUser" to true until the user clicks on the DMs tab.
-    // Add user to database once an account has been created.
-    // Update general look of app.
     // Find a way to add to existing snapshot - then send that snapshot to DirectMentions from Map.
+    // Update general look of app.
     // After clicking on a DM and going to that Chat, allow user to find that same shape on the map.
     // Users should be given a view of an area when clicking on a circle. Like they've been sent to that area.
-    // Change lines with multiple || statements into a ! statement.
-    // Increase viral potential - make it easier to share?
-    // Create a "general chat" where everyone can chat anonymously, maybe with more specific location rooms too?
-    // Deal with overlapping points (and shapes in general). Maybe a warning message?
+    // Create a "general chat" where everyone can chat anonymously, maybe with more specific location rooms too? Delete general chat after x amount of time or # of items.
     // Add some version of the random button, or allow users to click on a circle in a far away area while zoomed out on map.
-    // Make situations where Firebase circles are added to the map and then polygons are added (like in chatViews) async?
-    // Delete general chat after x amount of time or # of items.
     // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.
     // Add preference for shape color.
     //// Add ability to add images and video to general chat and Chat from gallery. Distinguish them from media added from location. Github 8/29.
     // Add ability to add both picture and video to firebase at the same time.
-    // Leave messages in locations that users get notified of when they enter the area by adding geo-fencing..
+    // Increase viral potential - make it easier to share?
     // Add ability to filter recyclerView by type of content (recorded at the scene...).
     // Load preferences after logging out and back in - looks like it will require saving info to database; is this worth it?
 
@@ -2396,6 +2390,12 @@ public class Map extends FragmentActivity implements
                 Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
 
+            // Location seems to work without the following line, but it is set to false in onPause so for symmetry's sake, I'm setting it to true here.
+            if (mMap != null) {
+
+                mMap.setMyLocationEnabled(true);
+            }
+
             String provider = LocationManager.NETWORK_PROVIDER;
             if (locationManager != null) {
 
@@ -2468,11 +2468,16 @@ public class Map extends FragmentActivity implements
         Log.i(TAG, "onPause()");
 
         // Remove updating location information.
-        if (locationManager != null) {
+        if (ContextCompat.checkSelfPermission(Map.this,
+                Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
 
-            if (ContextCompat.checkSelfPermission(Map.this,
-                    Manifest.permission.ACCESS_FINE_LOCATION)
-                    == PackageManager.PERMISSION_GRANTED) {
+            if (mMap != null) {
+
+                mMap.setMyLocationEnabled(false);
+            }
+
+            if (locationManager != null) {
 
                 locationManager.removeUpdates(Map.this);
             }
