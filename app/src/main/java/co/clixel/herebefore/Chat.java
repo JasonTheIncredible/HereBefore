@@ -171,8 +171,8 @@ public class Chat extends Fragment implements
                 newShape = extras.getBoolean("newShape");
                 shapeUUID = extras.getString("shapeUUID");
                 userIsWithinShape = extras.getBoolean("userIsWithinShape");
-                double shapeLat = extras.getLong("shapeLat");
-                double shapeLon = extras.getLong("shapeLon");
+                latFirebaseValue = extras.getInt("shapeLat");
+                lonFirebaseValue = extras.getInt("shapeLon");
                 // circleLatitude, circleLongitude, and radius will be null if the circle is not new (as a new circle is not being created).
                 circleLatitude = extras.getDouble("circleLatitude");
                 circleLongitude = extras.getDouble("circleLongitude");
@@ -201,40 +201,6 @@ public class Chat extends Fragment implements
                 marker6Longitude = extras.getDouble("marker6Longitude");
                 marker7Latitude = extras.getDouble("marker7Latitude");
                 marker7Longitude = extras.getDouble("marker7Longitude");
-
-                if (circleLatitude != 0 && circleLongitude != 0) {
-
-                    // Get a value with 1 decimal point and use it for Firebase.
-                    double nearLeftPrecisionLat = Math.pow(10, 1);
-                    // Can't create a firebase path with '.', so get rid of decimal.
-                    double nearLeftLatTemp = (int) (nearLeftPrecisionLat * circleLatitude) / nearLeftPrecisionLat;
-                    nearLeftLatTemp *= 10;
-                    latFirebaseValue = (int) nearLeftLatTemp;
-
-                    double nearLeftPrecisionLon = Math.pow(10, 1);
-                    // Can't create a firebase path with '.', so get rid of decimal.
-                    double nearLeftLonTemp = (int) (nearLeftPrecisionLon * circleLongitude) / nearLeftPrecisionLon;
-                    nearLeftLonTemp *= 10;
-                    lonFirebaseValue = (int) nearLeftLonTemp;
-                } else if (marker0Latitude != 0 && marker0Longitude != 0) {
-
-                    // Get a value with 1 decimal point and use it for Firebase.
-                    double nearLeftPrecisionLat = Math.pow(10, 1);
-                    // Can't create a firebase path with '.', so get rid of decimal.
-                    double nearLeftLatTemp = (int) (nearLeftPrecisionLat * marker0Latitude) / nearLeftPrecisionLat;
-                    nearLeftLatTemp *= 10;
-                    latFirebaseValue = (int) nearLeftLatTemp;
-
-                    double nearLeftPrecisionLon = Math.pow(10, 1);
-                    // Can't create a firebase path with '.', so get rid of decimal.
-                    double nearLeftLonTemp = (int) (nearLeftPrecisionLon * marker0Longitude) / nearLeftPrecisionLon;
-                    nearLeftLonTemp *= 10;
-                    lonFirebaseValue = (int) nearLeftLonTemp;
-                } else if (shapeLat != 0 && shapeLon != 0) {
-
-                    latFirebaseValue = (int) shapeLat;
-                    lonFirebaseValue = (int) shapeLon;
-                }
             } else {
 
                 Log.e(TAG, "onCreateView() -> extras == null");
@@ -589,7 +555,7 @@ public class Chat extends Fragment implements
                                         dmInformation.setPosition(mUser.size());
                                         dmInformation.setSeenByUser(false);
                                         dmInformation.setUserIsWithinShape(userIsWithinShape);
-                                        if (circleLatitude != 0) {
+                                        if (radius != 0) {
                                             dmInformation.setSize(radius);
                                             dmInformation.setShapeIsCircle(true);
                                         } else {
@@ -684,7 +650,7 @@ public class Chat extends Fragment implements
                                         dmInformation.setPosition(mUser.size());
                                         dmInformation.setSeenByUser(false);
                                         dmInformation.setUserIsWithinShape(userIsWithinShape);
-                                        if (circleLatitude != 0) {
+                                        if (radius != 0) {
                                             dmInformation.setSize(radius);
                                             dmInformation.setShapeIsCircle(true);
                                         } else {
@@ -1650,9 +1616,9 @@ public class Chat extends Fragment implements
 
                             if (userUUID.equals(reportedUser)) {
 
-                                String pushId = ds.getKey();
+                                String pushID = ds.getKey();
                                 ReportPostInformation reportPostInformation = new ReportPostInformation();
-                                reportPostInformation.setPushId(pushId);
+                                reportPostInformation.setPushID(pushID);
                                 reportPostInformation.setLat(latFirebaseValue);
                                 reportPostInformation.setLon(lonFirebaseValue);
                                 reportPostInformation.setShapeUUID(shapeUUID);
@@ -2683,7 +2649,7 @@ public class Chat extends Fragment implements
                                 dmInformation.setPosition(mUser.size());
                                 dmInformation.setSeenByUser(false);
                                 dmInformation.setUserIsWithinShape(userIsWithinShape);
-                                if (circleLatitude != 0) {
+                                if (radius != 0) {
                                     dmInformation.setSize(radius);
                                     dmInformation.setShapeIsCircle(true);
                                 } else {
@@ -2907,7 +2873,7 @@ public class Chat extends Fragment implements
                                 dmInformation.setPosition(mUser.size());
                                 dmInformation.setSeenByUser(false);
                                 dmInformation.setUserIsWithinShape(userIsWithinShape);
-                                if (circleLatitude != 0) {
+                                if (radius != 0) {
                                     dmInformation.setSize(radius);
                                     dmInformation.setShapeIsCircle(true);
                                 } else {
