@@ -400,7 +400,7 @@ public class Chat extends Fragment implements
 
             sendButtonClicked = true;
 
-            final String input = mInput.getText().toString();
+            String input = mInput.getText().toString().trim();
 
             // Send recyclerviewlayout to Firebase.
             if (!input.equals("") || imageView.getVisibility() != View.GONE || videoImageView.getVisibility() != View.GONE) {

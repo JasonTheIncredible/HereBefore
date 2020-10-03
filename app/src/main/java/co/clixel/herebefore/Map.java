@@ -124,9 +124,6 @@ public class Map extends FragmentActivity implements
     // If user tries posting to Chat and rules don't allow it, the item still gets posted to RecyclerView (but doesn't go to Firebase) and the last item also gets posted again.
     // Adjust Firebase security rules - bookmark.
     // Adjust storage rules.
-    // Limit message length to 1000 characters.
-    // Limit feedback length to 1000 characters.
-    // Move feedback value to MessageThreads.
     // Decrease app size (compress repeating code into methods) / Check on accumulation of size over time.
     // Work on deprecated methods.
     // Check warning messages.
@@ -139,6 +136,7 @@ public class Map extends FragmentActivity implements
     // Change version to year-month-day.
 
     // Don't reload data when user turns off / on screen.
+    // Allow user to click on a mention in Chat and scroll to that mention for context.
     // Sometimes, even with one shape, the shape gets highlighted (when the map isn't adjusted before clicking on an old shape).
     // Load specific number of messages at a time to cut down on data and loading time.
     // Uploading a picture takes a long time.

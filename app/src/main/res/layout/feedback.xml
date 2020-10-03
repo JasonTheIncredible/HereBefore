@@ -57,7 +57,7 @@
                     android:layout_marginRight="50dp"
                     android:hint="@string/feedback"
                     android:inputType="textCapSentences|textMultiLine"
-                    android:maxLength="2000"
+                    android:maxLength="1000"
                     android:maxLines="4"
                     android:scrollHorizontally="false" />
 

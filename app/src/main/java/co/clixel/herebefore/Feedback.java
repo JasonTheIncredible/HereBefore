@@ -94,6 +94,8 @@ public class Feedback extends AppCompatActivity {
                 return;
             }
 
+            String input = feedback.trim();
+
             loadingIcon.bringToFront();
             loadingIcon.setVisibility(View.VISIBLE);
 
@@ -108,7 +110,7 @@ public class Feedback extends AppCompatActivity {
             }
 
             FeedbackInformation feedbackInformation = new FeedbackInformation();
-            feedbackInformation.setFeedback(feedback);
+            feedbackInformation.setFeedback(input);
             feedbackInformation.setDate(ServerValue.TIMESTAMP);
             DatabaseReference newFeedback = FirebaseDatabase.getInstance().getReference().child("Feedback").push();
             newFeedback.setValue(feedbackInformation);
