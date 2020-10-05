@@ -4,7 +4,7 @@ import androidx.annotation.Keep;
 
 public class DMInformation {
 
-    public String userUUID, message, shapeUUID, imageURL, videoURL, email;
+    public String userUUID, message, shapeUUID, imageURL, videoURL;
     public Object date;
     public Boolean userIsWithinShape, seenByUser, shapeIsCircle;
     public int position;
@@ -21,10 +21,6 @@ public class DMInformation {
 
     public void setUserUUID(String userUUID) {
         this.userUUID = userUUID;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
     }
 
     public void setImageURL(String imageURL) {

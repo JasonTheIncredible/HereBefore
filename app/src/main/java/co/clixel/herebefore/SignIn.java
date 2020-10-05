@@ -39,8 +39,8 @@ public class SignIn extends AppCompatActivity {
     private SignInButton googleSignInButton;
     private String shapeUUID, email, pass;
     private Double polygonArea, circleLatitude, circleLongitude, radius, marker0Latitude, marker0Longitude, marker1Latitude, marker1Longitude, marker2Latitude, marker2Longitude, marker3Latitude, marker3Longitude, marker4Latitude, marker4Longitude, marker5Latitude, marker5Longitude, marker6Latitude, marker6Longitude, marker7Latitude, marker7Longitude;
-    private boolean newShape, userIsWithinShape, threeMarkers, fourMarkers, fiveMarkers, sixMarkers, sevenMarkers, eightMarkers, shapeIsCircle;
-    private int fillColor;
+    private boolean newShape, userIsWithinShape, threeMarkers, fourMarkers, fiveMarkers, sixMarkers, sevenMarkers, eightMarkers;
+    private int shapeLat, shapeLon;
     private GoogleSignInClient mGoogleSignInClient;
     private FirebaseAuth mAuth;
     private GoogleSignInAccount googleAccount;
@@ -89,14 +89,13 @@ public class SignIn extends AppCompatActivity {
             newShape = extras.getBoolean("newShape");
             shapeUUID = extras.getString("shapeUUID");
             userIsWithinShape = extras.getBoolean("userIsWithinShape");
-            // fillColor will be null if the shape is not a point.
-            fillColor = extras.getInt("fillColor");
+            shapeLat = extras.getInt("shapeLat");
+            shapeLon = extras.getInt("shapeLon");
             // circleLatitude, circleLongitude, and radius will be null if the circle is not new (as a new circle is not being created).
             circleLatitude = extras.getDouble("circleLatitude");
             circleLongitude = extras.getDouble("circleLongitude");
             radius = extras.getDouble("radius");
             // Most of these will be null if the polygon does not have eight markers, or if the polygon is not new.
-            shapeIsCircle = extras.getBoolean("shapeIsCircle");
             polygonArea = extras.getDouble("polygonArea");
             threeMarkers = extras.getBoolean("threeMarkers");
             fourMarkers = extras.getBoolean("fourMarkers");
@@ -207,14 +206,14 @@ public class SignIn extends AppCompatActivity {
 
                         Intent Activity = new Intent(SignIn.this, Navigation.class);
                         Activity.putExtra("newShape", newShape);
+                        Activity.putExtra("shapeLat", shapeLat);
+                        Activity.putExtra("shapeLon", shapeLon);
                         Activity.putExtra("shapeUUID", shapeUUID);
                         Activity.putExtra("userIsWithinShape", userIsWithinShape);
                         Activity.putExtra("circleLatitude", circleLatitude);
                         Activity.putExtra("circleLongitude", circleLongitude);
-                        Activity.putExtra("fillColor", fillColor);
                         Activity.putExtra("polygonArea", polygonArea);
                         Activity.putExtra("radius", radius);
-                        Activity.putExtra("shapeIsCircle", shapeIsCircle);
                         Activity.putExtra("threeMarkers", threeMarkers);
                         Activity.putExtra("fourMarkers", fourMarkers);
                         Activity.putExtra("fiveMarkers", fiveMarkers);
@@ -277,14 +276,14 @@ public class SignIn extends AppCompatActivity {
 
             Intent Activity = new Intent(SignIn.this, SignUp.class);
             Activity.putExtra("newShape", newShape);
+            Activity.putExtra("shapeLat", shapeLat);
+            Activity.putExtra("shapeLon", shapeLon);
             Activity.putExtra("shapeUUID", shapeUUID);
             Activity.putExtra("userIsWithinShape", userIsWithinShape);
             Activity.putExtra("circleLatitude", circleLatitude);
             Activity.putExtra("circleLongitude", circleLongitude);
-            Activity.putExtra("fillColor", fillColor);
             Activity.putExtra("polygonArea", polygonArea);
             Activity.putExtra("radius", radius);
-            Activity.putExtra("shapeIsCircle", shapeIsCircle);
             Activity.putExtra("threeMarkers", threeMarkers);
             Activity.putExtra("fourMarkers", fourMarkers);
             Activity.putExtra("fiveMarkers", fiveMarkers);
@@ -453,14 +452,14 @@ public class SignIn extends AppCompatActivity {
                             toastMessageShort("Signed in");
                             Intent Activity = new Intent(SignIn.this, Navigation.class);
                             Activity.putExtra("newShape", newShape);
+                            Activity.putExtra("shapeLat", shapeLat);
+                            Activity.putExtra("shapeLon", shapeLon);
                             Activity.putExtra("shapeUUID", shapeUUID);
                             Activity.putExtra("userIsWithinShape", userIsWithinShape);
                             Activity.putExtra("circleLatitude", circleLatitude);
                             Activity.putExtra("circleLongitude", circleLongitude);
-                            Activity.putExtra("fillColor", fillColor);
                             Activity.putExtra("polygonArea", polygonArea);
                             Activity.putExtra("radius", radius);
-                            Activity.putExtra("shapeIsCircle", shapeIsCircle);
                             Activity.putExtra("threeMarkers", threeMarkers);
                             Activity.putExtra("fourMarkers", fourMarkers);
                             Activity.putExtra("fiveMarkers", fiveMarkers);

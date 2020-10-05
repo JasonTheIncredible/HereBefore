@@ -119,10 +119,6 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // Limit number of children in Firebase security.
-    // Fix write and read values in Firebase security. Only allow deleting of threads from main account. Also adjust notes.
-    // If user tries posting to Chat and rules don't allow it, the item still gets posted to RecyclerView (but doesn't go to Firebase) and the last item also gets posted again.
-    // Adjust Firebase security rules - bookmark.
     // Adjust storage rules.
     // Decrease app size (compress repeating code into methods) / Check on accumulation of size over time.
     // Work on deprecated methods.
@@ -136,6 +132,11 @@ public class Map extends FragmentActivity implements
     // Change version to year-month-day.
 
     // Don't reload data when user turns off / on screen.
+    // Organize "information" classes to align with the information in Firebase.
+    // Make "getExtras" and "putExtras" ordering consistent between Map, Signs, and Chat.
+    // Get rid of "Highlight and select a shape using seekBar below" message after the first couple times.
+    // Fix "Users" Firebase rules to only allow overwriting on seenByUser.
+    // Change server timestamp to readable timestamp, then update security rules. Also, set validations for all items and adjust notes.
     // Allow user to click on a mention in Chat and scroll to that mention for context.
     // Sometimes, even with one shape, the shape gets highlighted (when the map isn't adjusted before clicking on an old shape).
     // Load specific number of messages at a time to cut down on data and loading time.
@@ -331,7 +332,7 @@ public class Map extends FragmentActivity implements
                 @Override
                 public void onCancelled(@NonNull DatabaseError error) {
 
-                    toastMessageLong(error.getMessage());
+                    // Don't put error toastMessage here, as it will create a "Permissions Denied" message when no user is signed in.
                 }
             });
         }
@@ -5374,8 +5375,6 @@ public class Map extends FragmentActivity implements
 
                                 // Pass this boolean value Chat.java.
                                 Activity.putExtra("newShape", newShape);
-                                Activity.putExtra("userLatitude", location.getLatitude());
-                                Activity.putExtra("userLongitude", location.getLongitude());
 
                                 // Get a value with 1 decimal point and use it for Firebase.
                                 double nearLeftPrecisionLat = Math.pow(10, 1);
@@ -5477,8 +5476,6 @@ public class Map extends FragmentActivity implements
 
                                 // Pass this boolean value to Chat.java.
                                 Activity.putExtra("newShape", newShape);
-                                Activity.putExtra("userLatitude", location.getLatitude());
-                                Activity.putExtra("userLongitude", location.getLongitude());
 
                                 // Get a value with 1 decimal point and use it for Firebase.
                                 double nearLeftPrecisionLat = Math.pow(10, 1);
