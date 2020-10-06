@@ -119,7 +119,14 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // Adjust storage rules.
+    // Don't reload data when user turns off / on screen.
+    // Organize "information" classes to align with the information in Firebase.
+    // Make "getExtras" and "putExtras" ordering consistent between Map, Signs, and Chat.
+    // Get rid of "Highlight and select a shape using seekBar below" message after the first couple times.
+    // Change server timestamp to readable timestamp, then update security rules. Also, set validations for all items and adjust notes.
+    // Allow user to click on a mention in Chat and scroll to that mention for context.
+    // Sometimes, even with one shape, the shape gets highlighted (when the map isn't adjusted before clicking on an old shape).
+    // Figure out way to make changing shape color not call Firebase and load shapes again - maybe with a list of saved shapes?
     // Decrease app size (compress repeating code into methods) / Check on accumulation of size over time.
     // Work on deprecated methods.
     // Check warning messages.
@@ -131,31 +138,24 @@ public class Map extends FragmentActivity implements
     // Switch existing values in Firebase.
     // Change version to year-month-day.
 
-    // Don't reload data when user turns off / on screen.
-    // Organize "information" classes to align with the information in Firebase.
-    // Make "getExtras" and "putExtras" ordering consistent between Map, Signs, and Chat.
-    // Get rid of "Highlight and select a shape using seekBar below" message after the first couple times.
     // Fix "Users" Firebase rules to only allow overwriting on seenByUser.
-    // Change server timestamp to readable timestamp, then update security rules. Also, set validations for all items and adjust notes.
-    // Allow user to click on a mention in Chat and scroll to that mention for context.
-    // Sometimes, even with one shape, the shape gets highlighted (when the map isn't adjusted before clicking on an old shape).
     // Load specific number of messages at a time to cut down on data and loading time.
     // Uploading a picture takes a long time.
-    // Figure out way to make changing shape color not call Firebase and load shapes again - maybe with a list of saved shapes?
-    // Create timer that kicks people out of a new Chat if they haven't posted within an amount of time.
+    // Create timer that kicks people out of a new Chat if they haven't posted within an amount of time?
     // Find a way to not clear and reload map every time user returns from clicking a shape. Same with DMs.
     // If user is on a point, prevent creating a new one. Deal with overlapping shapes in general. Maybe a warning message?
-    // Require picture on creating a shape.
+    // Require picture on creating a shape?
     // Make situations where Firebase circles are added to the map and then polygons are added (like in chatViews) async?
     // Inside building view and/or panoramic view?
     // Zoom in further?
+    // Allow user to delete their own content?
+    // Remember the AC: Origins inspiration.
     // Use airdrop as inspiration - create items in the world.
+    // Users should be given a view of an area when clicking on a circle. Like they've been sent to that area.
     // Leave messages in locations that users get notified of when they enter the area by adding geo-fencing..
-    // Don't set "seenByUser" to true until the user clicks on the DMs tab.
     // Find a way to add to existing snapshot - then send that snapshot to DirectMentions from Map.
     // Update general look of app.
     // After clicking on a DM and going to that Chat, allow user to find that same shape on the map.
-    // Users should be given a view of an area when clicking on a circle. Like they've been sent to that area.
     // Create a "general chat" where everyone can chat anonymously, maybe with more specific location rooms too? Delete general chat after x amount of time or # of items.
     // Add some version of the random button, or allow users to click on a circle in a far away area while zoomed out on map.
     // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.
