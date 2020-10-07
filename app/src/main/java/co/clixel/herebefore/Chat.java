@@ -405,23 +405,22 @@ public class Chat extends Fragment implements
             // Send recyclerviewlayout to Firebase.
             if (!input.equals("") || imageView.getVisibility() != View.GONE || videoImageView.getVisibility() != View.GONE) {
 
-                // Check Boolean value from onStart();
-                if (newShape) {
+                if (imageView.getVisibility() != View.GONE || videoImageView.getVisibility() != View.GONE) {
 
-                    if (imageView.getVisibility() != View.GONE || videoImageView.getVisibility() != View.GONE) {
+                    // Upload the image to Firebase if it exists and is not already in the process of sending an image.
+                    if (uploadTask != null && uploadTask.isInProgress()) {
 
-                        // Upload the image to Firebase if it exists and is not already in the process of sending an image.
-                        if (uploadTask != null && uploadTask.isInProgress()) {
-
-                            toastMessageShort("Upload in progress");
-                        } else {
-
-                            firebaseUpload();
-                        }
+                        toastMessageShort("Upload in progress");
                     } else {
 
-                        // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter()).
-                        messageSent = true;
+                        firebaseUpload();
+                    }
+                } else {
+
+                    // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter()).
+                    messageSent = true;
+
+                    if (newShape) {
 
                         DatabaseReference newFirebaseShape = null;
                         if (circleLatitude != 0 && circleLongitude != 0) {
@@ -530,175 +529,82 @@ public class Chat extends Fragment implements
                             toastMessageLong("Oops! Something went wrong!");
                             return;
                         }
+                    }
 
-                        String userUUID = UUID.randomUUID().toString();
+                    String userUUID = UUID.randomUUID().toString();
 
-                        // If mentions exist, add to the user's DMs.
-                        if (removedMentionDuplicates != null) {
+                    // If mentions exist, add to the user's DMs.
+                    if (removedMentionDuplicates != null) {
 
-                            for (String mention : removedMentionDuplicates) {
+                        for (String mention : removedMentionDuplicates) {
 
-                                for (int i = 0; i < userUUIDAL.size(); i++) {
+                            for (int i = 0; i < userUUIDAL.size(); i++) {
 
-                                    if (userUUIDAL.get(i).equals(mention)) {
+                                if (userUUIDAL.get(i).equals(mention)) {
 
-                                        String email = userEmailAL.get(i);
+                                    String email = userEmailAL.get(i);
 
-                                        DMInformation dmInformation = new DMInformation();
-                                        // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                                        // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                                        Object date = ServerValue.TIMESTAMP;
-                                        dmInformation.setDate(date);
-                                        dmInformation.setLat(latFirebaseValue);
-                                        dmInformation.setLon(lonFirebaseValue);
-                                        dmInformation.setMessage(input);
-                                        dmInformation.setPosition(mUser.size());
-                                        dmInformation.setSeenByUser(false);
-                                        if (radius != 0) {
-                                            dmInformation.setSize(radius);
-                                            dmInformation.setShapeIsCircle(true);
-                                        } else {
-                                            dmInformation.setSize(polygonArea);
-                                            dmInformation.setShapeIsCircle(false);
-                                        }
-                                        dmInformation.setShapeUUID(shapeUUID);
-                                        dmInformation.setUserIsWithinShape(userIsWithinShape);
-                                        dmInformation.setUserUUID(userUUID);
-
-                                        // Firebase does not allow ".", so replace them with ",".
-                                        String receiverEmailFirebase = email.replace(".", ",");
-                                        DatabaseReference newDM = FirebaseDatabase.getInstance().getReference().child("Users").child(receiverEmailFirebase).child("ReceivedDMs").push();
-                                        newDM.setValue(dmInformation);
-                                        break;
+                                    DMInformation dmInformation = new DMInformation();
+                                    // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+                                    // This will cause onDataChange to fire twice; optimizations could be made in the future.
+                                    Object date = ServerValue.TIMESTAMP;
+                                    dmInformation.setDate(date);
+                                    dmInformation.setLat(latFirebaseValue);
+                                    dmInformation.setLon(lonFirebaseValue);
+                                    dmInformation.setMessage(input);
+                                    dmInformation.setPosition(mUser.size());
+                                    dmInformation.setSeenByUser(false);
+                                    if (radius != 0) {
+                                        dmInformation.setSize(radius);
+                                        dmInformation.setShapeIsCircle(true);
+                                    } else {
+                                        dmInformation.setSize(polygonArea);
+                                        dmInformation.setShapeIsCircle(false);
                                     }
+                                    dmInformation.setShapeUUID(shapeUUID);
+                                    dmInformation.setUserIsWithinShape(userIsWithinShape);
+                                    dmInformation.setUserUUID(userUUID);
+
+                                    // Firebase does not allow ".", so replace them with ",".
+                                    String receiverEmailFirebase = email.replace(".", ",");
+                                    DatabaseReference newDM = FirebaseDatabase.getInstance().getReference().child("Users").child(receiverEmailFirebase).child("ReceivedDMs").push();
+                                    newDM.setValue(dmInformation);
+                                    break;
                                 }
                             }
                         }
-
-                        MessageInformation messageInformation = new MessageInformation();
-                        // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                        // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                        Object date = ServerValue.TIMESTAMP;
-                        messageInformation.setDate(date);
-                        // If user has a Google account, get email one way. Else, get email another way.
-                        GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
-                        String email;
-                        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-                        if (acct != null) {
-                            email = acct.getEmail();
-                        } else {
-                            email = sharedPreferences.getString("userToken", "null");
-                        }
-                        messageInformation.setEmail(email);
-                        messageInformation.setMessage(input);
-                        messageInformation.setPosition(mUser.size());
-                        messageInformation.setUserIsWithinShape(userIsWithinShape);
-                        messageInformation.setUserUUID(userUUID);
-                        DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID).push();
-                        newMessage.setValue(messageInformation);
-
-                        mInput.getText().clear();
-                        // For some reason, if the text begins with a mention and onCreateView was called after the mention was added, the mention is not cleared with one call to clear().
-                        mInput.getText().clear();
-                        newShape = false;
-                        sendButtonClicked = false;
                     }
-                } else {
 
-                    // Shape is not new.
-
-                    if (imageView.getVisibility() != View.GONE || videoImageView.getVisibility() != View.GONE) {
-
-                        // Upload the image to Firebase if it exists and is not already in the process of sending an image.
-                        if (uploadTask != null && uploadTask.isInProgress()) {
-
-                            toastMessageShort("Upload in progress");
-
-                            sendButtonClicked = false;
-                        } else {
-
-                            firebaseUpload();
-                        }
+                    MessageInformation messageInformation = new MessageInformation();
+                    // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+                    // This will cause onDataChange to fire twice; optimizations could be made in the future.
+                    Object date = ServerValue.TIMESTAMP;
+                    messageInformation.setDate(date);
+                    // If user has a Google account, get email one way. Else, get email another way.
+                    GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
+                    String email;
+                    SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+                    if (acct != null) {
+                        email = acct.getEmail();
                     } else {
-
-                        // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter()).
-                        messageSent = true;
-
-                        String userUUID = UUID.randomUUID().toString();
-
-                        // If mentions exist, add to the user's DMs.
-                        if (removedMentionDuplicates != null) {
-
-                            for (String mention : removedMentionDuplicates) {
-
-                                for (int i = 0; i < userUUIDAL.size(); i++) {
-
-                                    if (userUUIDAL.get(i).equals(mention)) {
-
-                                        String email = userEmailAL.get(i);
-
-                                        DMInformation dmInformation = new DMInformation();
-                                        // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                                        // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                                        Object date = ServerValue.TIMESTAMP;
-                                        dmInformation.setDate(date);
-                                        dmInformation.setLat(latFirebaseValue);
-                                        dmInformation.setLon(lonFirebaseValue);
-                                        dmInformation.setMessage(input);
-                                        dmInformation.setPosition(mUser.size());
-                                        dmInformation.setSeenByUser(false);
-                                        if (radius != 0) {
-                                            dmInformation.setSize(radius);
-                                            dmInformation.setShapeIsCircle(true);
-                                        } else {
-                                            dmInformation.setSize(polygonArea);
-                                            dmInformation.setShapeIsCircle(false);
-                                        }
-                                        dmInformation.setShapeUUID(shapeUUID);
-                                        dmInformation.setUserIsWithinShape(userIsWithinShape);
-                                        dmInformation.setUserUUID(userUUID);
-
-                                        // Firebase does not allow ".", so replace them with ",".
-                                        String receiverEmailFirebase = email.replace(".", ",");
-                                        DatabaseReference newDM = FirebaseDatabase.getInstance().getReference().child("Users").child(receiverEmailFirebase).child("ReceivedDMs").push();
-                                        newDM.setValue(dmInformation);
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-
-                        MessageInformation messageInformation = new MessageInformation();
-                        // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                        // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                        Object date = ServerValue.TIMESTAMP;
-                        messageInformation.setDate(date);
-                        // If user has a Google account, get email one way. Else, get email another way.
-                        GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
-                        String email;
-                        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-                        if (acct != null) {
-                            email = acct.getEmail();
-                        } else {
-                            email = sharedPreferences.getString("userToken", "null");
-                        }
-                        messageInformation.setEmail(email);
-                        messageInformation.setMessage(input);
-                        messageInformation.setPosition(mUser.size());
-                        if (!removedMentionDuplicates.isEmpty()) {
-                            messageInformation.setRemovedMentionDuplicates(removedMentionDuplicates);
-                            removedMentionDuplicates.clear();
-                        }
-                        messageInformation.setUserIsWithinShape(userIsWithinShape);
-                        messageInformation.setUserUUID(userUUID);
-                        DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID).push();
-                        newMessage.setValue(messageInformation);
-
-                        mInput.getText().clear();
-                        // For some reason, if the text begins with a mention and onCreateView was called after the mention was added, the mention is not cleared with one call to clear().
-                        mInput.getText().clear();
-                        sendButtonClicked = false;
+                        email = sharedPreferences.getString("userToken", "null");
                     }
+                    messageInformation.setEmail(email);
+                    messageInformation.setMessage(input);
+                    messageInformation.setPosition(mUser.size());
+                    if (!removedMentionDuplicates.isEmpty()) {
+                        messageInformation.setRemovedMentionDuplicates(removedMentionDuplicates);
+                        removedMentionDuplicates.clear();
+                    }
+                    messageInformation.setUserIsWithinShape(userIsWithinShape);
+                    messageInformation.setUserUUID(userUUID);
+                    DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID).push();
+                    newMessage.setValue(messageInformation);
+
+                    mInput.getText().clear();
+                    // For some reason, if the text begins with a mention and onCreateView was called after the mention was added, the mention is not cleared with one call to clear().
+                    mInput.getText().clear();
+                    sendButtonClicked = false;
                 }
             }
         });
@@ -2499,10 +2405,10 @@ public class Chat extends Fragment implements
 
                 Log.i(TAG, "uploadImage() -> onSuccess");
 
-                if (newShape) {
+                // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter()).
+                messageSent = true;
 
-                    // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter()).
-                    messageSent = true;
+                if (newShape) {
 
                     DatabaseReference newFirebaseShape = null;
                     if (radius != 0) {
@@ -2614,9 +2520,6 @@ public class Chat extends Fragment implements
 
                     newShape = false;
                 }
-
-                // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter()).
-                messageSent = true;
 
                 String userUUID = UUID.randomUUID().toString();
 
@@ -2724,10 +2627,10 @@ public class Chat extends Fragment implements
 
                 Log.i(TAG, "uploadImage() -> onSuccess");
 
-                if (newShape) {
+                // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter()).
+                messageSent = true;
 
-                    // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter()).
-                    messageSent = true;
+                if (newShape) {
 
                     DatabaseReference newFirebaseShape = null;
                     if (radius != 0) {
@@ -2839,9 +2742,6 @@ public class Chat extends Fragment implements
 
                     newShape = false;
                 }
-
-                // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter()).
-                messageSent = true;
 
                 String userUUID = UUID.randomUUID().toString();
 

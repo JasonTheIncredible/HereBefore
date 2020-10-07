@@ -119,7 +119,6 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // Combine "if (newShape)" and "else" into one statement like firebaseUpload in Chat.
     // Loading a photo into recyclerView takes a long time - needs compression?
     // Get rid of "Highlight and select a shape using seekBar below" message after the first couple times.
     // Change server timestamp to readable timestamp, then update security rules. Also, set validations for all items and adjust notes.
