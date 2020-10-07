@@ -15,12 +15,12 @@ class PolygonInformation {
     PolygonInformation() {
     }
 
-    void setPolygonOptions(PolygonOptions polygonOptions) {
-        this.polygonOptions = polygonOptions;
-    }
-
     void setArea(double polygonArea) {
         this.polygonArea = polygonArea;
+    }
+
+    void setPolygonOptions(PolygonOptions polygonOptions) {
+        this.polygonOptions = polygonOptions;
     }
 
     void setShapeUUID(String shapeUUID) {

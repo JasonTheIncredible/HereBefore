@@ -84,10 +84,10 @@ public class SignUp extends AppCompatActivity {
         if (extras != null) {
 
             newShape = extras.getBoolean("newShape");
-            shapeUUID = extras.getString("shapeUUID");
-            userIsWithinShape = extras.getBoolean("userIsWithinShape");
             shapeLat = extras.getInt("shapeLat");
             shapeLon = extras.getInt("shapeLon");
+            shapeUUID = extras.getString("shapeUUID");
+            userIsWithinShape = extras.getBoolean("userIsWithinShape");
             // circleLatitude, circleLongitude, and radius will be null if the circle is not new (as a new circle is not being created).
             circleLatitude = extras.getDouble("circleLatitude");
             circleLongitude = extras.getDouble("circleLongitude");
@@ -208,8 +208,8 @@ public class SignUp extends AppCompatActivity {
                         Activity.putExtra("userIsWithinShape", userIsWithinShape);
                         Activity.putExtra("circleLatitude", circleLatitude);
                         Activity.putExtra("circleLongitude", circleLongitude);
-                        Activity.putExtra("polygonArea", polygonArea);
                         Activity.putExtra("radius", radius);
+                        Activity.putExtra("polygonArea", polygonArea);
                         Activity.putExtra("threeMarkers", threeMarkers);
                         Activity.putExtra("fourMarkers", fourMarkers);
                         Activity.putExtra("fiveMarkers", fiveMarkers);
@@ -367,8 +367,8 @@ public class SignUp extends AppCompatActivity {
                             Activity.putExtra("userIsWithinShape", userIsWithinShape);
                             Activity.putExtra("circleLatitude", circleLatitude);
                             Activity.putExtra("circleLongitude", circleLongitude);
-                            Activity.putExtra("polygonArea", polygonArea);
                             Activity.putExtra("radius", radius);
+                            Activity.putExtra("polygonArea", polygonArea);
                             Activity.putExtra("threeMarkers", threeMarkers);
                             Activity.putExtra("fourMarkers", fourMarkers);
                             Activity.putExtra("fiveMarkers", fiveMarkers);

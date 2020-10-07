@@ -8,16 +8,16 @@ public class ReportPostInformation {
     ReportPostInformation() {
     }
 
-    void setPushID(String pushID) {
-        this.pushID = pushID;
-    }
-
     void setLat(int lat) {
         this.lat = lat;
     }
 
     void setLon(int lon) {
         this.lon = lon;
+    }
+
+    void setPushID(String pushID) {
+        this.pushID = pushID;
     }
 
     void setShapeUUID(String shapeUUID) {

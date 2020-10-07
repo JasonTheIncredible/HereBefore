@@ -15,11 +15,6 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         multiDexEnabled true
     }
-    // Fixed issue where Firebase-perf could not be updated from 19.0.7 to 19.0.8 due to duplicate class error (fixed with info from https://github.com/googleapis/google-cloud-java/issues/5608#issuecomment-510651054)
-    configurations {
-        implementation.exclude module: 'protobuf-java'
-        implementation.exclude module: 'protobuf-javalite'
-    }
     dexOptions {
         javaMaxHeapSize "8G"
     }
@@ -71,11 +66,11 @@ dependencies {
     implementation 'com.google.firebase:firebase-auth:19.4.0'
     implementation 'com.firebaseui:firebase-ui:4.3.2'
     implementation 'com.firebaseui:firebase-ui-auth:4.3.2'
-    implementation 'com.google.firebase:firebase-messaging:20.2.4'
+    implementation 'com.google.firebase:firebase-messaging:20.3.0'
     implementation 'com.google.firebase:firebase-analytics:17.5.0'
-    implementation 'com.google.firebase:firebase-crashlytics:17.2.1'
-    implementation 'com.google.firebase:firebase-perf:19.0.8'
-    implementation 'com.google.firebase:firebase-database:19.4.0'
+    implementation 'com.google.firebase:firebase-crashlytics:17.2.2'
+    implementation 'com.google.firebase:firebase-perf:19.0.7'
+    implementation 'com.google.firebase:firebase-database:19.5.0'
     implementation 'com.google.firebase:firebase-storage:19.2.0'
 
     implementation 'com.squareup.picasso:picasso:2.71828'
@@ -97,5 +92,5 @@ dependencies {
     implementation 'com.github.AppIntro:AppIntro:6.0.0'
 
     // debugImplementation because LeakCanary should only run in debug builds.
-    debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.4'
+    debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.5'
 }
