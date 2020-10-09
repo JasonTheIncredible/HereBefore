@@ -253,10 +253,10 @@ public class Chat extends Fragment implements
         mSuggestions = new ArrayList<>();
         allMentions = new ArrayList<>();
         mUserIsWithinShape = new ArrayList<>();
-        removedMentionDuplicates = new ArrayList<>();
-
-        // Set to true to scroll to the bottom of chatRecyclerView.
-        firstLoad = true;
+        // Prevents clearing this list if user adds a DM and takes a picture.
+        if (removedMentionDuplicates == null) {
+            removedMentionDuplicates = new ArrayList<>();
+        }
 
         // Make the loadingIcon visible upon the first load, as it can sometimes take a while to show anything. It should be made invisible in initChatAdapter().
         if (loadingIcon != null) {
@@ -280,6 +280,9 @@ public class Chat extends Fragment implements
 
         super.onStart();
         Log.i(TAG, "onStart()");
+
+        // Set to true to scroll to the bottom of chatRecyclerView. Also prevents duplicate items in addQuery.
+        firstLoad = true;
 
         // Clear text and prevent keyboard from opening.
         if (mInput != null) {
@@ -956,6 +959,7 @@ public class Chat extends Fragment implements
         if (chatRecyclerView != null) {
 
             chatRecyclerView.setAdapter(adapter);
+            chatRecyclerView.setHasFixedSize(true);
             chatRecyclerView.setLayoutManager(chatRecyclerViewLinearLayoutManager);
 
             if (directMentionsPosition != 0 && !firstLoad) {
@@ -1333,6 +1337,7 @@ public class Chat extends Fragment implements
 
         MentionsAdapter adapter = new MentionsAdapter(mContext, suggestions);
         mentionsRecyclerView.swapAdapter(adapter, true);
+        mentionsRecyclerView.setHasFixedSize(true);
         mentionsRecyclerView.setLayoutManager(mentionsRecyclerViewLinearLayoutManager);
         boolean display = suggestions.size() > 0;
         displaySuggestions(display);

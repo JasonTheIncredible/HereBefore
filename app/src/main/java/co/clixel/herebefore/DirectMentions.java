@@ -108,9 +108,6 @@ public class DirectMentions extends Fragment {
         mPosition = new ArrayList<>();
         mSeenByUser = new ArrayList<>();
 
-        // Set to true to scroll to the bottom of directMentionsRecyclerView.
-        firstLoad = true;
-
         if (mActivity != null) {
 
             Bundle extras = mActivity.getIntent().getExtras();
@@ -154,6 +151,9 @@ public class DirectMentions extends Fragment {
 
         super.onStart();
         Log.i(TAG, "onStart()");
+
+        // Set to true to scroll to the bottom of chatRecyclerView. Also prevents duplicate items in addQuery.
+        firstLoad = true;
 
         // If user has a Google account, get email one way. Else, get email another way.
         GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
@@ -319,6 +319,7 @@ public class DirectMentions extends Fragment {
 
         DirectMentionsAdapter adapter = new DirectMentionsAdapter(mContext, mTime, mUser, mImage, mVideo, mText, mShapeUUID, mUserIsWithinShape, mShapeIsCircle, mShapeSize, mShapeLat, mShapeLon, mPosition, mSeenByUser);
         directMentionsRecyclerView.setAdapter(adapter);
+        directMentionsRecyclerView.setHasFixedSize(true);
         directMentionsRecyclerView.setLayoutManager(directMentionsRecyclerViewLinearLayoutManager);
 
         if (last == (mTime.size() - 2) || firstLoad) {

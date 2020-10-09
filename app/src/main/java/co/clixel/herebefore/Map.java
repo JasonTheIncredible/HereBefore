@@ -119,11 +119,7 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // Loading a photo into recyclerView takes a long time - needs compression?
-    // Get rid of "Highlight and select a shape using seekBar below" message after the first couple times.
     // Change server timestamp to readable timestamp, then update security rules. Also, set validations for all items and adjust notes.
-    // Allow user to click on a mention in Chat and scroll to that mention for context.
-    // Sometimes, even with one shape, the shape gets highlighted (when the map isn't adjusted before clicking on an old shape).
     // Figure out way to make changing shape color not call Firebase and load shapes again - maybe with a list of saved shapes?
     // Decrease app size (compress repeating code into methods) / Check on accumulation of size over time.
     // Work on deprecated methods.
@@ -136,20 +132,25 @@ public class Map extends FragmentActivity implements
     // Switch existing values in Firebase.
     // Change version to year-month-day.
 
+    // Don't reload Firebase information every time (switching from Chat to Settings causes a full reload).
     // Fix "Users" Firebase rules to only allow overwriting on seenByUser.
+    // Increase image loading speed in Chat and DirectMentions.
     // Check "for" loops for a need for break / return.
     // Make scrollToPosition work in Chat after a restart.
     // Load specific number of messages at a time to cut down on data and loading time.
+    // Allow user to click on a mention in Chat and scroll to that mention for context.
     // Uploading a picture takes a long time.
     // Create timer that kicks people out of a new Chat if they haven't posted within an amount of time?
     // Find a way to not clear and reload map every time user returns from clicking a shape. Same with DMs.
     // Make a better loading icon, with a progress bar.
+    // Loading icon for Glide images.
     // If user is on a point, prevent creating a new one. Deal with overlapping shapes in general. Maybe a warning message?
     // Require picture on creating a shape? Also, long press a shape to see a popup of that picture.
     // Make situations where Firebase circles are added to the map and then polygons are added (like in chatViews) async?
     // Inside building view and/or panoramic view?
     // Zoom in further?
     // Allow user to delete their own content?
+    // Show direction camera was facing when taking photo?
     // Remember the AC: Origins inspiration.
     // Use airdrop as inspiration - create items in the world.
     // Create "my locations" or "my photos" and see friends' locations / follow friends?
@@ -3655,7 +3656,10 @@ public class Map extends FragmentActivity implements
             chatSelectorSeekBar.setVisibility(View.VISIBLE);
             mMap.getUiSettings().setScrollGesturesEnabled(true);
             loadingIcon.setVisibility(View.GONE);
-            toastMessageLong("Highlight and select a shape using the SeekBar below");
+
+            longToast = Toast.makeText(getBaseContext(), "Select a shape using the SeekBar below", Toast.LENGTH_LONG);
+            longToast.setGravity(Gravity.BOTTOM, 0, 250);
+            longToast.show();
         });
 
         // Go to Chat.java when clicking on a circle.
@@ -4222,7 +4226,10 @@ public class Map extends FragmentActivity implements
             chatSelectorSeekBar.setVisibility(View.VISIBLE);
             mMap.getUiSettings().setScrollGesturesEnabled(true);
             loadingIcon.setVisibility(View.GONE);
-            toastMessageLong("Highlight and select a shape using the SeekBar below");
+
+            longToast = Toast.makeText(getBaseContext(), "Select a shape using the SeekBar below", Toast.LENGTH_LONG);
+            longToast.setGravity(Gravity.BOTTOM, 0, 250);
+            longToast.show();
         });
 
         mMap.setOnMapClickListener(latLng -> {
