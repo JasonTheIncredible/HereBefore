@@ -115,7 +115,7 @@ public class Chat extends Fragment implements
     private MentionsEditText mInput;
     private ArrayList<String> mTime, mUser, mImage, mVideo, mText, mSuggestions, allMentions, userUUIDAL, userEmailAL;
     private ArrayList<Boolean> mUserIsWithinShape;
-    private ArrayList<String> removedMentionDuplicates;
+    private ArrayList<String> removedDuplicatesMentions;
     private RecyclerView chatRecyclerView, mentionsRecyclerView;
     private static int index = -1, top = -1, last;
     private ChildEventListener childEventListener;
@@ -254,8 +254,8 @@ public class Chat extends Fragment implements
         allMentions = new ArrayList<>();
         mUserIsWithinShape = new ArrayList<>();
         // Prevents clearing this list if user adds a DM and takes a picture.
-        if (removedMentionDuplicates == null) {
-            removedMentionDuplicates = new ArrayList<>();
+        if (removedDuplicatesMentions == null) {
+            removedDuplicatesMentions = new ArrayList<>();
         }
 
         // Make the loadingIcon visible upon the first load, as it can sometimes take a while to show anything. It should be made invisible in initChatAdapter().
@@ -537,13 +537,18 @@ public class Chat extends Fragment implements
                     String userUUID = UUID.randomUUID().toString();
 
                     // If mentions exist, add to the user's DMs.
-                    if (removedMentionDuplicates != null) {
+                    if (removedDuplicatesMentions != null) {
 
-                        for (String mention : removedMentionDuplicates) {
+                        ArrayList<String> messagedUsersAL = new ArrayList<>();
+                        for (String mention : removedDuplicatesMentions) {
 
                             for (int i = 0; i < userUUIDAL.size(); i++) {
 
-                                if (userUUIDAL.get(i).equals(mention)) {
+                                String userEmail = userEmailAL.get(i);
+                                if (userUUIDAL.get(i).equals(mention) && !messagedUsersAL.contains(userEmail)) {
+
+                                    // Prevent sending the same DM to a user multiple times.
+                                    messagedUsersAL.add(userEmail);
 
                                     String email = userEmailAL.get(i);
 
@@ -595,16 +600,15 @@ public class Chat extends Fragment implements
                     messageInformation.setEmail(email);
                     messageInformation.setMessage(input);
                     messageInformation.setPosition(mUser.size());
-                    if (!removedMentionDuplicates.isEmpty()) {
-                        messageInformation.setRemovedMentionDuplicates(removedMentionDuplicates);
-                        removedMentionDuplicates.clear();
-                    }
                     messageInformation.setUserIsWithinShape(userIsWithinShape);
                     messageInformation.setUserUUID(userUUID);
                     DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID).push();
                     newMessage.setValue(messageInformation);
 
                     mInput.getText().clear();
+                    if (!removedDuplicatesMentions.isEmpty()) {
+                        removedDuplicatesMentions.clear();
+                    }
                     // For some reason, if the text begins with a mention and onCreateView was called after the mention was added, the mention is not cleared with one call to clear().
                     mInput.getText().clear();
                     sendButtonClicked = false;
@@ -1422,7 +1426,7 @@ public class Chat extends Fragment implements
                     @Override
                     public MentionDeleteStyle getDeleteStyle() {
 
-                        removedMentionDuplicates.remove(mSuggestions.get(position));
+                        removedDuplicatesMentions.remove(mSuggestions.get(position));
 
                         return MentionDeleteStyle.FULL_DELETE;
                     }
@@ -1456,7 +1460,7 @@ public class Chat extends Fragment implements
                 // A set will not allow duplicates, so this will get rid of any duplicates before they are added to the final list.
                 // The final list will be sent to Firebase to notify users of messages.
                 Set<String> hashSet = new LinkedHashSet<>(allMentions);
-                removedMentionDuplicates = new ArrayList<>(hashSet);
+                removedDuplicatesMentions = new ArrayList<>(hashSet);
 
                 // Add a space after inserting mention.
                 mInput.append(" ");
@@ -2529,13 +2533,18 @@ public class Chat extends Fragment implements
                 String userUUID = UUID.randomUUID().toString();
 
                 // If mentions exist, add to the user's DMs.
-                if (removedMentionDuplicates != null) {
+                if (removedDuplicatesMentions != null) {
 
-                    for (String mention : removedMentionDuplicates) {
+                    ArrayList<String> messagedUsersAL = new ArrayList<>();
+                    for (String mention : removedDuplicatesMentions) {
 
                         for (int i = 0; i < userUUIDAL.size(); i++) {
 
-                            if (userUUIDAL.get(i).equals(mention)) {
+                            String userEmail = userEmailAL.get(i);
+                            if (userUUIDAL.get(i).equals(mention) && !messagedUsersAL.contains(userEmail)) {
+
+                                // Prevent sending the same DM to a user multiple times.
+                                messagedUsersAL.add(userEmail);
 
                                 String email = userEmailAL.get(i);
 
@@ -2593,10 +2602,6 @@ public class Chat extends Fragment implements
                     messageInformation.setMessage(mInput.getText().toString());
                 }
                 messageInformation.setPosition(mUser.size());
-                if (!removedMentionDuplicates.isEmpty()) {
-                    messageInformation.setRemovedMentionDuplicates(removedMentionDuplicates);
-                    removedMentionDuplicates.clear();
-                }
                 messageInformation.setUserIsWithinShape(userIsWithinShape);
                 messageInformation.setUserUUID(userUUID);
                 messageInformation.setVideoURL(uri.toString());
@@ -2604,6 +2609,9 @@ public class Chat extends Fragment implements
                 newMessage.setValue(messageInformation);
 
                 mInput.getText().clear();
+                if (!removedDuplicatesMentions.isEmpty()) {
+                    removedDuplicatesMentions.clear();
+                }
                 // For some reason, if the text begins with a mention and onCreateView was called after the mention was added, the mention is not cleared with one call to clear().
                 mInput.getText().clear();
                 videoImageView.setVisibility(View.GONE);
@@ -2751,13 +2759,18 @@ public class Chat extends Fragment implements
                 String userUUID = UUID.randomUUID().toString();
 
                 // If mentions exist, add to the user's DMs.
-                if (removedMentionDuplicates != null) {
+                if (removedDuplicatesMentions != null) {
 
-                    for (String mention : removedMentionDuplicates) {
+                    ArrayList<String> messagedUsersAL = new ArrayList<>();
+                    for (String mention : removedDuplicatesMentions) {
 
                         for (int i = 0; i < userUUIDAL.size(); i++) {
 
-                            if (userUUIDAL.get(i).equals(mention)) {
+                            String userEmail = userEmailAL.get(i);
+                            if (userUUIDAL.get(i).equals(mention) && !messagedUsersAL.contains(userEmail)) {
+
+                                // Prevent sending the same DM to a user multiple times.
+                                messagedUsersAL.add(userEmail);
 
                                 String email = userEmailAL.get(i);
 
@@ -2816,16 +2829,15 @@ public class Chat extends Fragment implements
                     messageInformation.setMessage(mInput.getText().toString());
                 }
                 messageInformation.setPosition(mUser.size());
-                if (!removedMentionDuplicates.isEmpty()) {
-                    messageInformation.setRemovedMentionDuplicates(removedMentionDuplicates);
-                    removedMentionDuplicates.clear();
-                }
                 messageInformation.setUserIsWithinShape(userIsWithinShape);
                 messageInformation.setUserUUID(userUUID);
                 DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID).push();
                 newMessage.setValue(messageInformation);
 
                 mInput.getText().clear();
+                if (!removedDuplicatesMentions.isEmpty()) {
+                    removedDuplicatesMentions.clear();
+                }
                 // For some reason, if the text begins with a mention and onCreateView was called after the mention was added, the mention is not cleared with one call to clear().
                 mInput.getText().clear();
                 imageView.setVisibility(View.GONE);

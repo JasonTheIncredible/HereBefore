@@ -2,12 +2,9 @@ package co.clixel.herebefore;
 
 import androidx.annotation.Keep;
 
-import java.util.ArrayList;
-
 @Keep
 class MessageInformation {
 
-    public ArrayList<String> removedMentionDuplicates;
     public String userUUID, message, imageURL, videoURL, email;
     public Object date;
     public Boolean userIsWithinShape;
@@ -35,10 +32,6 @@ class MessageInformation {
 
     public void setPosition(int position) {
         this.position = position;
-    }
-
-    public void setRemovedMentionDuplicates(ArrayList<String> removedMentionDuplicates) {
-        this.removedMentionDuplicates = removedMentionDuplicates;
     }
 
     public void setUserIsWithinShape(Boolean userIsWithinShape) {

@@ -119,23 +119,11 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // Change server timestamp to readable timestamp, then update security rules. Also, set validations for all items and adjust notes.
     // Figure out way to make changing shape color not call Firebase and load shapes again - maybe with a list of saved shapes?
-    // Decrease app size (compress repeating code into methods) / Check on accumulation of size over time.
-    // Work on deprecated methods.
-    // Check warning messages.
-    // Finish setting up Google ads, then add more ads.
-    // Adjust AppIntro.
-    // Make sure Firebase has enough bandwidth.
-    // Make sure aboutLibraries includes all libraries.
-    // Make sure the secret stuff is secret.
-    // Switch existing values in Firebase.
-    // Change version to year-month-day.
-
+    // Check "for" loops for a need for break / return.
     // Don't reload Firebase information every time (switching from Chat to Settings causes a full reload).
     // Fix "Users" Firebase rules to only allow overwriting on seenByUser.
     // Increase image loading speed in Chat and DirectMentions.
-    // Check "for" loops for a need for break / return.
     // Make scrollToPosition work in Chat after a restart.
     // Load specific number of messages at a time to cut down on data and loading time.
     // Allow user to click on a mention in Chat and scroll to that mention for context.
@@ -153,6 +141,7 @@ public class Map extends FragmentActivity implements
     // Show direction camera was facing when taking photo?
     // Remember the AC: Origins inspiration.
     // Use airdrop as inspiration - create items in the world.
+    // When sending DMs back and forth, verify that a user was included in the last DM.
     // Create "my locations" or "my photos" and see friends' locations / follow friends?
     // Users should be given a view of an area when clicking on a circle. Like they've been sent to that area.
     // Leave messages in locations that users get notified of when they enter the area by adding geo-fencing..
@@ -168,6 +157,17 @@ public class Map extends FragmentActivity implements
     // Increase viral potential - make it easier to share?
     // Add ability to filter recyclerView by type of content (recorded at the scene...).
     // Load preferences after logging out and back in - looks like it will require saving info to database; is this worth it?
+
+    // Decrease app size (compress repeating code into methods) / Check on accumulation of size over time.
+    // Work on deprecated methods.
+    // Check warning messages.
+    // Finish setting up Google ads, then add more ads.
+    // Adjust AppIntro.
+    // Make sure Firebase has enough bandwidth.
+    // Make sure aboutLibraries includes all libraries.
+    // Make sure the secret stuff is secret.
+    // Switch existing values in Firebase.
+    // Change version to year-month-day.
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
