@@ -105,10 +105,10 @@ public class Map extends FragmentActivity implements
     private Double relativeAngle = 0.0, selectedOverlappingShapeCircleRadius;
     private Location mlocation;
     private List<LatLng> polygonPointsList, selectedOverlappingShapePolygonVertices;
-    private ArrayList<String> overlappingShapesUUID = new ArrayList<>(), overlappingShapesCircleUUID = new ArrayList<>(), overlappingShapesPolygonUUID = new ArrayList<>();
-    private ArrayList<LatLng> overlappingShapesCircleLocation = new ArrayList<>();
-    private ArrayList<Double> overlappingShapesCircleRadius = new ArrayList<>();
-    private ArrayList<java.util.List<LatLng>> overlappingShapesPolygonVertices = new ArrayList<>();
+    private ArrayList<String> overlappingShapesUUID = new ArrayList<>(), overlappingShapesCircleUUID = new ArrayList<>(), overlappingShapesPolygonUUID = new ArrayList<>(), circleUUIDListForMapChange = new ArrayList<>(), polygonUUIDListForMapChange = new ArrayList<>();
+    private ArrayList<LatLng> overlappingShapesCircleLocation = new ArrayList<>(), circleCenterListForMapChange = new ArrayList<>();
+    private ArrayList<Double> overlappingShapesCircleRadius = new ArrayList<>(), circleRadiusArrayList = new ArrayList<>();
+    private ArrayList<java.util.List<LatLng>> overlappingShapesPolygonVertices = new ArrayList<>(), polygonPointsListForMapChange = new ArrayList<>();
     private float x, y;
     private int chatsSize, dmCounter = 0, newNearLeftLat, newNearLeftLon;
     private Toast longToast;
@@ -119,7 +119,8 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // Figure out way to make changing shape color not call Firebase and load shapes again - maybe with a list of saved shapes?
+    // If # polygons == # circles, the shapes are being added to combinedList in the wrong order.
+    // Webp files not being sent to Github.
     // Check "for" loops for a need for break / return.
     // Don't reload Firebase information every time (switching from Chat to Settings causes a full reload).
     // Fix "Users" Firebase rules to only allow overwriting on seenByUser.
@@ -134,8 +135,8 @@ public class Map extends FragmentActivity implements
     // Loading icon for Glide images.
     // If user is on a point, prevent creating a new one. Deal with overlapping shapes in general. Maybe a warning message?
     // Require picture on creating a shape? Also, long press a shape to see a popup of that picture.
-    // Make situations where Firebase circles are added to the map and then polygons are added (like in chatViews) async?
-    // Inside building view and/or panoramic view?
+    // Make situations where Firebase circles are added to the map and then polygons are added (like in chatViews) async? Also, do that for changing map and therefore changing shape colors.
+    // Panoramic view?
     // Zoom in further?
     // Allow user to delete their own content?
     // Show direction camera was facing when taking photo?
@@ -2257,6 +2258,11 @@ public class Map extends FragmentActivity implements
         oldNearRight = null;
         oldFarRight = null;
 
+        polygonPointsListForMapChange.clear();
+        polygonUUIDListForMapChange.clear();
+        circleCenterListForMapChange.clear();
+        circleUUIDListForMapChange.clear();
+
         if (dmButton != null) {
 
             dmButton.setCount(0);
@@ -4251,66 +4257,69 @@ public class Map extends FragmentActivity implements
 
                 selectingShape = false;
 
-                // Change the circle color depending on the map type.
-                if (mMap.getMapType() == 2 || mMap.getMapType() == 4) {
+                // !mapChanged prevents duplicate shapes when a user is selecting a shape and then changes map types.
+                if (!mapChanged) {
 
-                    for (int i = 0; i < overlappingShapesCircleLocation.size(); i++) {
+                    if (mMap.getMapType() == 2 || mMap.getMapType() == 4) {
 
-                        Circle circle0 = mMap.addCircle(
-                                new CircleOptions()
-                                        .center(overlappingShapesCircleLocation.get(i))
-                                        .clickable(true)
-                                        .radius(overlappingShapesCircleRadius.get(i))
-                                        .strokeColor(Color.rgb(255, 255, 0))
-                                        .strokeWidth(3f)
-                                        .zIndex(0)
-                        );
+                        for (int i = 0; i < overlappingShapesCircleLocation.size(); i++) {
 
-                        circle0.setTag(overlappingShapesCircleUUID.get(i));
-                    }
+                            Circle circle0 = mMap.addCircle(
+                                    new CircleOptions()
+                                            .center(overlappingShapesCircleLocation.get(i))
+                                            .clickable(true)
+                                            .radius(overlappingShapesCircleRadius.get(i))
+                                            .strokeColor(Color.rgb(255, 255, 0))
+                                            .strokeWidth(3f)
+                                            .zIndex(0)
+                            );
 
-                    for (int i = 0; i < overlappingShapesPolygonVertices.size(); i++) {
+                            circle0.setTag(overlappingShapesCircleUUID.get(i));
+                        }
 
-                        Polygon polygon0 = mMap.addPolygon(
-                                new PolygonOptions()
-                                        .clickable(true)
-                                        .addAll(overlappingShapesPolygonVertices.get(i))
-                                        .strokeColor(Color.rgb(255, 255, 0))
-                                        .strokeWidth(3f)
-                                        .zIndex(0)
-                        );
+                        for (int i = 0; i < overlappingShapesPolygonVertices.size(); i++) {
 
-                        polygon0.setTag(overlappingShapesPolygonUUID.get(i));
-                    }
-                } else {
+                            Polygon polygon0 = mMap.addPolygon(
+                                    new PolygonOptions()
+                                            .clickable(true)
+                                            .addAll(overlappingShapesPolygonVertices.get(i))
+                                            .strokeColor(Color.rgb(255, 255, 0))
+                                            .strokeWidth(3f)
+                                            .zIndex(0)
+                            );
 
-                    for (int i = 0; i < overlappingShapesCircleLocation.size(); i++) {
+                            polygon0.setTag(overlappingShapesPolygonUUID.get(i));
+                        }
+                    } else {
 
-                        Circle circle0 = mMap.addCircle(
-                                new CircleOptions()
-                                        .center(overlappingShapesCircleLocation.get(i))
-                                        .clickable(true)
-                                        .radius(overlappingShapesCircleRadius.get(i))
-                                        .strokeColor(Color.rgb(255, 0, 255))
-                                        .strokeWidth(3f)
-                                        .zIndex(0)
-                        );
+                        for (int i = 0; i < overlappingShapesCircleLocation.size(); i++) {
 
-                        circle0.setTag(overlappingShapesCircleUUID.get(i));
-                    }
+                            Circle circle0 = mMap.addCircle(
+                                    new CircleOptions()
+                                            .center(overlappingShapesCircleLocation.get(i))
+                                            .clickable(true)
+                                            .radius(overlappingShapesCircleRadius.get(i))
+                                            .strokeColor(Color.rgb(255, 0, 255))
+                                            .strokeWidth(3f)
+                                            .zIndex(0)
+                            );
 
-                    for (int i = 0; i < overlappingShapesPolygonVertices.size(); i++) {
+                            circle0.setTag(overlappingShapesCircleUUID.get(i));
+                        }
 
-                        Polygon polygon0 = mMap.addPolygon(
-                                new PolygonOptions()
-                                        .clickable(true)
-                                        .addAll(overlappingShapesPolygonVertices.get(i))
-                                        .strokeColor(Color.rgb(255, 0, 255))
-                                        .strokeWidth(3f)
-                                        .zIndex(0)
-                        );
+                        for (int i = 0; i < overlappingShapesPolygonVertices.size(); i++) {
 
-                        polygon0.setTag(overlappingShapesPolygonUUID.get(i));
+                            Polygon polygon0 = mMap.addPolygon(
+                                    new PolygonOptions()
+                                            .clickable(true)
+                                            .addAll(overlappingShapesPolygonVertices.get(i))
+                                            .strokeColor(Color.rgb(255, 0, 255))
+                                            .strokeWidth(3f)
+                                            .zIndex(0)
+                            );
+
+                            polygon0.setTag(overlappingShapesPolygonUUID.get(i));
+                        }
                     }
                 }
 
@@ -6621,6 +6630,8 @@ public class Map extends FragmentActivity implements
 
         loadingIcon.setVisibility(View.VISIBLE);
 
+        mMap.clear();
+
         // Change button color depending on map type.
         if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
 
@@ -6631,6 +6642,33 @@ public class Map extends FragmentActivity implements
             settingsButton.setBackgroundResource(R.drawable.ic_more_vert_yellow_24dp);
 
             dmButton.setBackgroundTintList(ContextCompat.getColorStateList(this, R.color.yellow));
+
+            for (int i = 0; i < circleCenterListForMapChange.size(); i++) {
+
+                Circle circle = mMap.addCircle(
+                        new CircleOptions()
+                                .center(circleCenterListForMapChange.get(i))
+                                .clickable(true)
+                                .radius(circleRadiusArrayList.get(i))
+                                .strokeColor(Color.YELLOW)
+                                .strokeWidth(3f)
+                );
+
+                circle.setTag(circleUUIDListForMapChange.get(i));
+            }
+
+            for (int i = 0; i < polygonPointsListForMapChange.size(); i++) {
+
+                Polygon polygon = mMap.addPolygon(
+                        new PolygonOptions()
+                                .clickable(true)
+                                .addAll(polygonPointsListForMapChange.get(i))
+                                .strokeColor(Color.YELLOW)
+                                .strokeWidth(3f)
+                );
+
+                polygon.setTag(polygonUUIDListForMapChange.get(i));
+            }
         } else {
 
             chatViewsButton.setBackgroundResource(R.drawable.chatviews_button_purple);
@@ -6640,11 +6678,40 @@ public class Map extends FragmentActivity implements
             settingsButton.setBackgroundResource(R.drawable.ic_more_vert_purple_24dp);
 
             dmButton.setBackgroundTintList(ContextCompat.getColorStateList(this, R.color.purple));
+
+            for (int i = 0; i < circleCenterListForMapChange.size(); i++) {
+
+                Circle circle = mMap.addCircle(
+                        new CircleOptions()
+                                .center(circleCenterListForMapChange.get(i))
+                                .clickable(true)
+                                .radius(circleRadiusArrayList.get(i))
+                                .strokeColor(Color.rgb(255, 0, 255))
+                                .strokeWidth(3f)
+                );
+
+                circle.setTag(circleUUIDListForMapChange.get(i));
+            }
+
+            for (int i = 0; i < polygonPointsListForMapChange.size(); i++) {
+
+                Polygon polygon = mMap.addPolygon(
+                        new PolygonOptions()
+                                .clickable(true)
+                                .addAll(polygonPointsListForMapChange.get(i))
+                                .strokeColor(Color.rgb(255, 0, 255))
+                                .strokeWidth(3f)
+                );
+
+                polygon.setTag(polygonUUIDListForMapChange.get(i));
+            }
         }
 
-        mMap.clear();
+        loadingIcon.setVisibility(View.GONE);
 
-        loadShapes();
+        newCircle = null;
+        newPolygon = null;
+        chatSizeSeekBar.setProgress(0);
 
         // Create a circleTemp or polygonTemp if one already exists.
         if (chatSelectorSeekBar.getVisibility() == View.VISIBLE) {
@@ -6677,38 +6744,76 @@ public class Map extends FragmentActivity implements
                     polygonTemp.remove();
                 }
 
-                // Change the shape color depending on the map type.
-                if (combinedList.get(chatSelectorSeekBar.getProgress()) instanceof LatLng) {
+                if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
 
-                    circleTemp = mMap.addCircle(
-                            new CircleOptions()
-                                    .center(selectedOverlappingShapeCircleLocation)
-                                    .clickable(true)
-                                    .fillColor(Color.argb(100, 255, 255, 0))
-                                    .radius(selectedOverlappingShapeCircleRadius)
-                                    .strokeColor(Color.rgb(255, 255, 0))
-                                    .strokeWidth(3f)
-                                    .zIndex(2)
-                    );
+                    // Create a yellow highlighted shape.
+                    if (combinedList.get(chatSelectorSeekBar.getProgress()) instanceof LatLng) {
 
-                    // Used when getting rid of the shapes in onMapClick.
-                    circleTemp.setTag(selectedOverlappingShapeUUID);
-                    circleTemp.setCenter(selectedOverlappingShapeCircleLocation);
-                    circleTemp.setRadius(selectedOverlappingShapeCircleRadius);
+                        circleTemp = mMap.addCircle(
+                                new CircleOptions()
+                                        .center(selectedOverlappingShapeCircleLocation)
+                                        .clickable(true)
+                                        .fillColor(Color.argb(100, 255, 255, 0))
+                                        .radius(selectedOverlappingShapeCircleRadius)
+                                        .strokeColor(Color.rgb(255, 255, 0))
+                                        .strokeWidth(3f)
+                                        .zIndex(2)
+                        );
+
+                        // Used when getting rid of the shapes in onMapClick.
+                        circleTemp.setTag(selectedOverlappingShapeUUID);
+                        circleTemp.setCenter(selectedOverlappingShapeCircleLocation);
+                        circleTemp.setRadius(selectedOverlappingShapeCircleRadius);
+                    } else {
+
+                        polygonTemp = mMap.addPolygon(
+                                new PolygonOptions()
+                                        .clickable(true)
+                                        .fillColor(Color.argb(100, 255, 255, 0))
+                                        .strokeColor(Color.rgb(255, 255, 0))
+                                        .strokeWidth(3f)
+                                        .addAll(selectedOverlappingShapePolygonVertices)
+                                        .zIndex(2)
+                        );
+
+                        // Used when getting rid of the shapes in onMapClick.
+                        polygonTemp.setTag(selectedOverlappingShapeUUID);
+                    }
                 } else {
 
-                    polygonTemp = mMap.addPolygon(
-                            new PolygonOptions()
-                                    .clickable(true)
-                                    .fillColor(Color.argb(100, 255, 255, 0))
-                                    .strokeColor(Color.rgb(255, 255, 0))
-                                    .strokeWidth(3f)
-                                    .addAll(selectedOverlappingShapePolygonVertices)
-                                    .zIndex(2)
-                    );
+                    // Create a purple highlighted shape.
+                    if (combinedList.get(chatSelectorSeekBar.getProgress()) instanceof LatLng) {
 
-                    // Used when getting rid of the shapes in onMapClick.
-                    polygonTemp.setTag(selectedOverlappingShapeUUID);
+                        circleTemp = mMap.addCircle(
+                                new CircleOptions()
+                                        .center(selectedOverlappingShapeCircleLocation)
+                                        .clickable(true)
+                                        .fillColor(Color.argb(100, 255, 0, 255))
+                                        .radius(selectedOverlappingShapeCircleRadius)
+                                        .strokeColor(Color.rgb(255, 0, 255))
+                                        .strokeWidth(3f)
+                                        .zIndex(2)
+                        );
+
+                        // Used when getting rid of the shapes in onMapClick.
+                        circleTemp.setTag(selectedOverlappingShapeUUID);
+                        circleTemp.setCenter(selectedOverlappingShapeCircleLocation);
+                        circleTemp.setRadius(selectedOverlappingShapeCircleRadius);
+                    } else {
+
+                        polygonTemp = mMap.addPolygon(
+                                new PolygonOptions()
+                                        .clickable(true)
+                                        .fillColor(Color.argb(100, 255, 0, 255))
+                                        .strokeColor(Color.rgb(255, 0, 255))
+                                        .strokeWidth(3f)
+                                        .addAll(selectedOverlappingShapePolygonVertices)
+                                        .zIndex(2)
+                        );
+
+                        // Used when getting rid of the shapes in onMapClick.
+                        polygonTemp.setTag(selectedOverlappingShapeUUID);
+                    }
                 }
             }
         }
@@ -6961,6 +7066,10 @@ public class Map extends FragmentActivity implements
 
                         // Shape is a circle.
 
+                        circleCenterListForMapChange.add(new LatLng((double) dss.child("circleOptions/center/latitude/").getValue(), (double) dss.child("circleOptions/center/longitude/").getValue()));
+                        circleRadiusArrayList.add(((Number) (Objects.requireNonNull(dss.child("circleOptions/radius").getValue()))).doubleValue());
+                        circleUUIDListForMapChange.add((String) dss.child("shapeUUID").getValue());
+
                         // Load different colored shapes depending on the map type.
                         if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
 
@@ -7013,7 +7122,7 @@ public class Map extends FragmentActivity implements
                         }
                     } else {
 
-                        // Shape is a polygon
+                        // Shape is a polygon.
 
                         // Load different colored shapes depending on the map type.
                         if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
@@ -7044,10 +7153,22 @@ public class Map extends FragmentActivity implements
                             if (dss.child("polygonOptions/points/7/latitude/").getValue() != null) {
                                 LatLng marker7Position = new LatLng((double) dss.child("polygonOptions/points/7/latitude/").getValue(), (double) dss.child("polygonOptions/points/7/longitude/").getValue());
 
+                                List<LatLng> points = new ArrayList<>();
+                                points.add(marker0Position);
+                                points.add(marker1Position);
+                                points.add(marker2Position);
+                                points.add(marker3Position);
+                                points.add(marker4Position);
+                                points.add(marker5Position);
+                                points.add(marker6Position);
+                                points.add(marker7Position);
+                                polygonPointsListForMapChange.add(points);
+                                polygonUUIDListForMapChange.add((String) dss.child("shapeUUID").getValue());
+
                                 polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                                .addAll(points)
                                                 .strokeColor(Color.YELLOW)
                                                 .strokeWidth(3f)
                                 );
@@ -7057,10 +7178,22 @@ public class Map extends FragmentActivity implements
 
                                 polygon.setTag(shapeUUID);
                             } else if (dss.child("polygonOptions/points/6/latitude/").getValue() != null) {
+
+                                List<LatLng> points = new ArrayList<>();
+                                points.add(marker0Position);
+                                points.add(marker1Position);
+                                points.add(marker2Position);
+                                points.add(marker3Position);
+                                points.add(marker4Position);
+                                points.add(marker5Position);
+                                points.add(marker6Position);
+                                polygonPointsListForMapChange.add(points);
+                                polygonUUIDListForMapChange.add((String) dss.child("shapeUUID").getValue());
+
                                 polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
+                                                .addAll(points)
                                                 .strokeColor(Color.YELLOW)
                                                 .strokeWidth(3f)
                                 );
@@ -7070,10 +7203,21 @@ public class Map extends FragmentActivity implements
 
                                 polygon.setTag(shapeUUID);
                             } else if (dss.child("polygonOptions/points/5/latitude/").getValue() != null) {
+
+                                List<LatLng> points = new ArrayList<>();
+                                points.add(marker0Position);
+                                points.add(marker1Position);
+                                points.add(marker2Position);
+                                points.add(marker3Position);
+                                points.add(marker4Position);
+                                points.add(marker5Position);
+                                polygonPointsListForMapChange.add(points);
+                                polygonUUIDListForMapChange.add((String) dss.child("shapeUUID").getValue());
+
                                 polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
+                                                .addAll(points)
                                                 .strokeColor(Color.YELLOW)
                                                 .strokeWidth(3f)
                                 );
@@ -7083,10 +7227,20 @@ public class Map extends FragmentActivity implements
 
                                 polygon.setTag(shapeUUID);
                             } else if (dss.child("polygonOptions/points/4/latitude/").getValue() != null) {
+
+                                List<LatLng> points = new ArrayList<>();
+                                points.add(marker0Position);
+                                points.add(marker1Position);
+                                points.add(marker2Position);
+                                points.add(marker3Position);
+                                points.add(marker4Position);
+                                polygonPointsListForMapChange.add(points);
+                                polygonUUIDListForMapChange.add((String) dss.child("shapeUUID").getValue());
+
                                 polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
+                                                .addAll(points)
                                                 .strokeColor(Color.YELLOW)
                                                 .strokeWidth(3f)
                                 );
@@ -7096,10 +7250,19 @@ public class Map extends FragmentActivity implements
 
                                 polygon.setTag(shapeUUID);
                             } else if (dss.child("polygonOptions/points/3/latitude/").getValue() != null) {
+
+                                List<LatLng> points = new ArrayList<>();
+                                points.add(marker0Position);
+                                points.add(marker1Position);
+                                points.add(marker2Position);
+                                points.add(marker3Position);
+                                polygonPointsListForMapChange.add(points);
+                                polygonUUIDListForMapChange.add((String) dss.child("shapeUUID").getValue());
+
                                 polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                                .addAll(points)
                                                 .strokeColor(Color.YELLOW)
                                                 .strokeWidth(3f)
                                 );
@@ -7109,10 +7272,18 @@ public class Map extends FragmentActivity implements
 
                                 polygon.setTag(shapeUUID);
                             } else {
+
+                                List<LatLng> points = new ArrayList<>();
+                                points.add(marker0Position);
+                                points.add(marker1Position);
+                                points.add(marker2Position);
+                                polygonPointsListForMapChange.add(points);
+                                polygonUUIDListForMapChange.add((String) dss.child("shapeUUID").getValue());
+
                                 polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .add(marker0Position, marker1Position, marker2Position)
+                                                .addAll(points)
                                                 .strokeColor(Color.YELLOW)
                                                 .strokeWidth(3f)
                                 );
@@ -7150,10 +7321,22 @@ public class Map extends FragmentActivity implements
                             if (dss.child("polygonOptions/points/7/latitude/").getValue() != null) {
                                 LatLng marker7Position = new LatLng((double) dss.child("polygonOptions/points/7/latitude/").getValue(), (double) dss.child("polygonOptions/points/7/longitude/").getValue());
 
+                                List<LatLng> points = new ArrayList<>();
+                                points.add(marker0Position);
+                                points.add(marker1Position);
+                                points.add(marker2Position);
+                                points.add(marker3Position);
+                                points.add(marker4Position);
+                                points.add(marker5Position);
+                                points.add(marker6Position);
+                                points.add(marker7Position);
+                                polygonPointsListForMapChange.add(points);
+                                polygonUUIDListForMapChange.add((String) ds.child("shapeUUID").getValue());
+
                                 polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                                .addAll(points)
                                                 .strokeColor(Color.rgb(255, 0, 255))
                                                 .strokeWidth(3f)
                                 );
@@ -7163,10 +7346,22 @@ public class Map extends FragmentActivity implements
 
                                 polygon.setTag(shapeUUID);
                             } else if (dss.child("polygonOptions/points/6/latitude/").getValue() != null) {
+
+                                List<LatLng> points = new ArrayList<>();
+                                points.add(marker0Position);
+                                points.add(marker1Position);
+                                points.add(marker2Position);
+                                points.add(marker3Position);
+                                points.add(marker4Position);
+                                points.add(marker5Position);
+                                points.add(marker6Position);
+                                polygonPointsListForMapChange.add(points);
+                                polygonUUIDListForMapChange.add((String) ds.child("shapeUUID").getValue());
+
                                 polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
+                                                .addAll(points)
                                                 .strokeColor(Color.rgb(255, 0, 255))
                                                 .strokeWidth(3f)
                                 );
@@ -7176,10 +7371,21 @@ public class Map extends FragmentActivity implements
 
                                 polygon.setTag(shapeUUID);
                             } else if (dss.child("polygonOptions/points/5/latitude/").getValue() != null) {
+
+                                List<LatLng> points = new ArrayList<>();
+                                points.add(marker0Position);
+                                points.add(marker1Position);
+                                points.add(marker2Position);
+                                points.add(marker3Position);
+                                points.add(marker4Position);
+                                points.add(marker5Position);
+                                polygonPointsListForMapChange.add(points);
+                                polygonUUIDListForMapChange.add((String) ds.child("shapeUUID").getValue());
+
                                 polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
+                                                .addAll(points)
                                                 .strokeColor(Color.rgb(255, 0, 255))
                                                 .strokeWidth(3f)
                                 );
@@ -7189,10 +7395,20 @@ public class Map extends FragmentActivity implements
 
                                 polygon.setTag(shapeUUID);
                             } else if (dss.child("polygonOptions/points/4/latitude/").getValue() != null) {
+
+                                List<LatLng> points = new ArrayList<>();
+                                points.add(marker0Position);
+                                points.add(marker1Position);
+                                points.add(marker2Position);
+                                points.add(marker3Position);
+                                points.add(marker4Position);
+                                polygonPointsListForMapChange.add(points);
+                                polygonUUIDListForMapChange.add((String) ds.child("shapeUUID").getValue());
+
                                 polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
+                                                .addAll(points)
                                                 .strokeColor(Color.rgb(255, 0, 255))
                                                 .strokeWidth(3f)
                                 );
@@ -7202,10 +7418,19 @@ public class Map extends FragmentActivity implements
 
                                 polygon.setTag(shapeUUID);
                             } else if (dss.child("polygonOptions/points/3/latitude/").getValue() != null) {
+
+                                List<LatLng> points = new ArrayList<>();
+                                points.add(marker0Position);
+                                points.add(marker1Position);
+                                points.add(marker2Position);
+                                points.add(marker3Position);
+                                polygonPointsListForMapChange.add(points);
+                                polygonUUIDListForMapChange.add((String) ds.child("shapeUUID").getValue());
+
                                 polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                                .addAll(points)
                                                 .strokeColor(Color.rgb(255, 0, 255))
                                                 .strokeWidth(3f)
                                 );
@@ -7215,10 +7440,18 @@ public class Map extends FragmentActivity implements
 
                                 polygon.setTag(shapeUUID);
                             } else {
+
+                                List<LatLng> points = new ArrayList<>();
+                                points.add(marker0Position);
+                                points.add(marker1Position);
+                                points.add(marker2Position);
+                                polygonPointsListForMapChange.add(points);
+                                polygonUUIDListForMapChange.add((String) ds.child("shapeUUID").getValue());
+
                                 polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .add(marker0Position, marker1Position, marker2Position)
+                                                .addAll(points)
                                                 .strokeColor(Color.rgb(255, 0, 255))
                                                 .strokeWidth(3f)
                                 );
@@ -7246,6 +7479,10 @@ public class Map extends FragmentActivity implements
                 if (ds.child("circleOptions").exists()) {
 
                     // Shape is a circle.
+
+                    circleCenterListForMapChange.add(new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue()));
+                    circleRadiusArrayList.add(((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue());
+                    circleUUIDListForMapChange.add((String) ds.child("shapeUUID").getValue());
 
                     // Load different colored shapes depending on the map type.
                     if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
@@ -7341,10 +7578,22 @@ public class Map extends FragmentActivity implements
                             if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
                                 LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
 
+                                List<LatLng> points = new ArrayList<>();
+                                points.add(marker0Position);
+                                points.add(marker1Position);
+                                points.add(marker2Position);
+                                points.add(marker3Position);
+                                points.add(marker4Position);
+                                points.add(marker5Position);
+                                points.add(marker6Position);
+                                points.add(marker7Position);
+                                polygonPointsListForMapChange.add(points);
+                                polygonUUIDListForMapChange.add((String) ds.child("shapeUUID").getValue());
+
                                 polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                                .addAll(points)
                                                 .strokeColor(Color.YELLOW)
                                                 .strokeWidth(3f)
                                 );
@@ -7354,10 +7603,22 @@ public class Map extends FragmentActivity implements
 
                                 polygon.setTag(shapeUUID);
                             } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+
+                                List<LatLng> points = new ArrayList<>();
+                                points.add(marker0Position);
+                                points.add(marker1Position);
+                                points.add(marker2Position);
+                                points.add(marker3Position);
+                                points.add(marker4Position);
+                                points.add(marker5Position);
+                                points.add(marker6Position);
+                                polygonPointsListForMapChange.add(points);
+                                polygonUUIDListForMapChange.add((String) ds.child("shapeUUID").getValue());
+
                                 polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
+                                                .addAll(points)
                                                 .strokeColor(Color.YELLOW)
                                                 .strokeWidth(3f)
                                 );
@@ -7367,10 +7628,21 @@ public class Map extends FragmentActivity implements
 
                                 polygon.setTag(shapeUUID);
                             } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+
+                                List<LatLng> points = new ArrayList<>();
+                                points.add(marker0Position);
+                                points.add(marker1Position);
+                                points.add(marker2Position);
+                                points.add(marker3Position);
+                                points.add(marker4Position);
+                                points.add(marker5Position);
+                                polygonPointsListForMapChange.add(points);
+                                polygonUUIDListForMapChange.add((String) ds.child("shapeUUID").getValue());
+
                                 polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
+                                                .addAll(points)
                                                 .strokeColor(Color.YELLOW)
                                                 .strokeWidth(3f)
                                 );
@@ -7380,10 +7652,20 @@ public class Map extends FragmentActivity implements
 
                                 polygon.setTag(shapeUUID);
                             } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+
+                                List<LatLng> points = new ArrayList<>();
+                                points.add(marker0Position);
+                                points.add(marker1Position);
+                                points.add(marker2Position);
+                                points.add(marker3Position);
+                                points.add(marker4Position);
+                                polygonPointsListForMapChange.add(points);
+                                polygonUUIDListForMapChange.add((String) ds.child("shapeUUID").getValue());
+
                                 polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
+                                                .addAll(points)
                                                 .strokeColor(Color.YELLOW)
                                                 .strokeWidth(3f)
                                 );
@@ -7393,10 +7675,19 @@ public class Map extends FragmentActivity implements
 
                                 polygon.setTag(shapeUUID);
                             } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+
+                                List<LatLng> points = new ArrayList<>();
+                                points.add(marker0Position);
+                                points.add(marker1Position);
+                                points.add(marker2Position);
+                                points.add(marker3Position);
+                                polygonPointsListForMapChange.add(points);
+                                polygonUUIDListForMapChange.add((String) ds.child("shapeUUID").getValue());
+
                                 polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                                .addAll(points)
                                                 .strokeColor(Color.YELLOW)
                                                 .strokeWidth(3f)
                                 );
@@ -7406,10 +7697,18 @@ public class Map extends FragmentActivity implements
 
                                 polygon.setTag(shapeUUID);
                             } else {
+
+                                List<LatLng> points = new ArrayList<>();
+                                points.add(marker0Position);
+                                points.add(marker1Position);
+                                points.add(marker2Position);
+                                polygonPointsListForMapChange.add(points);
+                                polygonUUIDListForMapChange.add((String) ds.child("shapeUUID").getValue());
+
                                 polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .add(marker0Position, marker1Position, marker2Position)
+                                                .addAll(points)
                                                 .strokeColor(Color.YELLOW)
                                                 .strokeWidth(3f)
                                 );
@@ -7451,10 +7750,22 @@ public class Map extends FragmentActivity implements
                             if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
                                 LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
 
+                                List<LatLng> points = new ArrayList<>();
+                                points.add(marker0Position);
+                                points.add(marker1Position);
+                                points.add(marker2Position);
+                                points.add(marker3Position);
+                                points.add(marker4Position);
+                                points.add(marker5Position);
+                                points.add(marker6Position);
+                                points.add(marker7Position);
+                                polygonPointsListForMapChange.add(points);
+                                polygonUUIDListForMapChange.add((String) ds.child("shapeUUID").getValue());
+
                                 polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                                .addAll(points)
                                                 .strokeColor(Color.rgb(255, 0, 255))
                                                 .strokeWidth(3f)
                                 );
@@ -7464,10 +7775,22 @@ public class Map extends FragmentActivity implements
 
                                 polygon.setTag(shapeUUID);
                             } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+
+                                List<LatLng> points = new ArrayList<>();
+                                points.add(marker0Position);
+                                points.add(marker1Position);
+                                points.add(marker2Position);
+                                points.add(marker3Position);
+                                points.add(marker4Position);
+                                points.add(marker5Position);
+                                points.add(marker6Position);
+                                polygonPointsListForMapChange.add(points);
+                                polygonUUIDListForMapChange.add((String) ds.child("shapeUUID").getValue());
+
                                 polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
+                                                .addAll(points)
                                                 .strokeColor(Color.rgb(255, 0, 255))
                                                 .strokeWidth(3f)
                                 );
@@ -7477,10 +7800,21 @@ public class Map extends FragmentActivity implements
 
                                 polygon.setTag(shapeUUID);
                             } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+
+                                List<LatLng> points = new ArrayList<>();
+                                points.add(marker0Position);
+                                points.add(marker1Position);
+                                points.add(marker2Position);
+                                points.add(marker3Position);
+                                points.add(marker4Position);
+                                points.add(marker5Position);
+                                polygonPointsListForMapChange.add(points);
+                                polygonUUIDListForMapChange.add((String) ds.child("shapeUUID").getValue());
+
                                 polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
+                                                .addAll(points)
                                                 .strokeColor(Color.rgb(255, 0, 255))
                                                 .strokeWidth(3f)
                                 );
@@ -7490,10 +7824,20 @@ public class Map extends FragmentActivity implements
 
                                 polygon.setTag(shapeUUID);
                             } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+
+                                List<LatLng> points = new ArrayList<>();
+                                points.add(marker0Position);
+                                points.add(marker1Position);
+                                points.add(marker2Position);
+                                points.add(marker3Position);
+                                points.add(marker4Position);
+                                polygonPointsListForMapChange.add(points);
+                                polygonUUIDListForMapChange.add((String) ds.child("shapeUUID").getValue());
+
                                 polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
+                                                .addAll(points)
                                                 .strokeColor(Color.rgb(255, 0, 255))
                                                 .strokeWidth(3f)
                                 );
@@ -7503,10 +7847,19 @@ public class Map extends FragmentActivity implements
 
                                 polygon.setTag(shapeUUID);
                             } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+
+                                List<LatLng> points = new ArrayList<>();
+                                points.add(marker0Position);
+                                points.add(marker1Position);
+                                points.add(marker2Position);
+                                points.add(marker3Position);
+                                polygonPointsListForMapChange.add(points);
+                                polygonUUIDListForMapChange.add((String) ds.child("shapeUUID").getValue());
+
                                 polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                                .addAll(points)
                                                 .strokeColor(Color.rgb(255, 0, 255))
                                                 .strokeWidth(3f)
                                 );
@@ -7516,10 +7869,18 @@ public class Map extends FragmentActivity implements
 
                                 polygon.setTag(shapeUUID);
                             } else {
+
+                                List<LatLng> points = new ArrayList<>();
+                                points.add(marker0Position);
+                                points.add(marker1Position);
+                                points.add(marker2Position);
+                                polygonPointsListForMapChange.add(points);
+                                polygonUUIDListForMapChange.add((String) ds.child("shapeUUID").getValue());
+
                                 polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .add(marker0Position, marker1Position, marker2Position)
+                                                .addAll(points)
                                                 .strokeColor(Color.rgb(255, 0, 255))
                                                 .strokeWidth(3f)
                                 );
@@ -7548,6 +7909,10 @@ public class Map extends FragmentActivity implements
 
                     // Shape is a circle.
 
+                    circleCenterListForMapChange.add(new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue()));
+                    circleRadiusArrayList.add(((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue());
+                    circleUUIDListForMapChange.add((String) ds.child("shapeUUID").getValue());
+
                     // Load different colored shapes depending on the map type.
                     if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
 
@@ -7642,10 +8007,22 @@ public class Map extends FragmentActivity implements
                             if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
                                 LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
 
+                                List<LatLng> points = new ArrayList<>();
+                                points.add(marker0Position);
+                                points.add(marker1Position);
+                                points.add(marker2Position);
+                                points.add(marker3Position);
+                                points.add(marker4Position);
+                                points.add(marker5Position);
+                                points.add(marker6Position);
+                                points.add(marker7Position);
+                                polygonPointsListForMapChange.add(points);
+                                polygonUUIDListForMapChange.add((String) ds.child("shapeUUID").getValue());
+
                                 polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                                .addAll(points)
                                                 .strokeColor(Color.YELLOW)
                                                 .strokeWidth(3f)
                                 );
@@ -7655,10 +8032,22 @@ public class Map extends FragmentActivity implements
 
                                 polygon.setTag(shapeUUID);
                             } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+
+                                List<LatLng> points = new ArrayList<>();
+                                points.add(marker0Position);
+                                points.add(marker1Position);
+                                points.add(marker2Position);
+                                points.add(marker3Position);
+                                points.add(marker4Position);
+                                points.add(marker5Position);
+                                points.add(marker6Position);
+                                polygonPointsListForMapChange.add(points);
+                                polygonUUIDListForMapChange.add((String) ds.child("shapeUUID").getValue());
+
                                 polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
+                                                .addAll(points)
                                                 .strokeColor(Color.YELLOW)
                                                 .strokeWidth(3f)
                                 );
@@ -7668,10 +8057,21 @@ public class Map extends FragmentActivity implements
 
                                 polygon.setTag(shapeUUID);
                             } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+
+                                List<LatLng> points = new ArrayList<>();
+                                points.add(marker0Position);
+                                points.add(marker1Position);
+                                points.add(marker2Position);
+                                points.add(marker3Position);
+                                points.add(marker4Position);
+                                points.add(marker5Position);
+                                polygonPointsListForMapChange.add(points);
+                                polygonUUIDListForMapChange.add((String) ds.child("shapeUUID").getValue());
+
                                 polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
+                                                .addAll(points)
                                                 .strokeColor(Color.YELLOW)
                                                 .strokeWidth(3f)
                                 );
@@ -7681,10 +8081,20 @@ public class Map extends FragmentActivity implements
 
                                 polygon.setTag(shapeUUID);
                             } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+
+                                List<LatLng> points = new ArrayList<>();
+                                points.add(marker0Position);
+                                points.add(marker1Position);
+                                points.add(marker2Position);
+                                points.add(marker3Position);
+                                points.add(marker4Position);
+                                polygonPointsListForMapChange.add(points);
+                                polygonUUIDListForMapChange.add((String) ds.child("shapeUUID").getValue());
+
                                 polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
+                                                .addAll(points)
                                                 .strokeColor(Color.YELLOW)
                                                 .strokeWidth(3f)
                                 );
@@ -7694,10 +8104,19 @@ public class Map extends FragmentActivity implements
 
                                 polygon.setTag(shapeUUID);
                             } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+
+                                List<LatLng> points = new ArrayList<>();
+                                points.add(marker0Position);
+                                points.add(marker1Position);
+                                points.add(marker2Position);
+                                points.add(marker3Position);
+                                polygonPointsListForMapChange.add(points);
+                                polygonUUIDListForMapChange.add((String) ds.child("shapeUUID").getValue());
+
                                 polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                                .addAll(points)
                                                 .strokeColor(Color.YELLOW)
                                                 .strokeWidth(3f)
                                 );
@@ -7707,10 +8126,18 @@ public class Map extends FragmentActivity implements
 
                                 polygon.setTag(shapeUUID);
                             } else {
+
+                                List<LatLng> points = new ArrayList<>();
+                                points.add(marker0Position);
+                                points.add(marker1Position);
+                                points.add(marker2Position);
+                                polygonPointsListForMapChange.add(points);
+                                polygonUUIDListForMapChange.add((String) ds.child("shapeUUID").getValue());
+
                                 polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .add(marker0Position, marker1Position, marker2Position)
+                                                .addAll(points)
                                                 .strokeColor(Color.YELLOW)
                                                 .strokeWidth(3f)
                                 );
@@ -7752,10 +8179,22 @@ public class Map extends FragmentActivity implements
                             if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
                                 LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
 
+                                List<LatLng> points = new ArrayList<>();
+                                points.add(marker0Position);
+                                points.add(marker1Position);
+                                points.add(marker2Position);
+                                points.add(marker3Position);
+                                points.add(marker4Position);
+                                points.add(marker5Position);
+                                points.add(marker6Position);
+                                points.add(marker7Position);
+                                polygonPointsListForMapChange.add(points);
+                                polygonUUIDListForMapChange.add((String) ds.child("shapeUUID").getValue());
+
                                 polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                                .addAll(points)
                                                 .strokeColor(Color.rgb(255, 0, 255))
                                                 .strokeWidth(3f)
                                 );
@@ -7765,10 +8204,22 @@ public class Map extends FragmentActivity implements
 
                                 polygon.setTag(shapeUUID);
                             } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+
+                                List<LatLng> points = new ArrayList<>();
+                                points.add(marker0Position);
+                                points.add(marker1Position);
+                                points.add(marker2Position);
+                                points.add(marker3Position);
+                                points.add(marker4Position);
+                                points.add(marker5Position);
+                                points.add(marker6Position);
+                                polygonPointsListForMapChange.add(points);
+                                polygonUUIDListForMapChange.add((String) ds.child("shapeUUID").getValue());
+
                                 polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
+                                                .addAll(points)
                                                 .strokeColor(Color.rgb(255, 0, 255))
                                                 .strokeWidth(3f)
                                 );
@@ -7778,10 +8229,21 @@ public class Map extends FragmentActivity implements
 
                                 polygon.setTag(shapeUUID);
                             } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+
+                                List<LatLng> points = new ArrayList<>();
+                                points.add(marker0Position);
+                                points.add(marker1Position);
+                                points.add(marker2Position);
+                                points.add(marker3Position);
+                                points.add(marker4Position);
+                                points.add(marker5Position);
+                                polygonPointsListForMapChange.add(points);
+                                polygonUUIDListForMapChange.add((String) ds.child("shapeUUID").getValue());
+
                                 polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
+                                                .addAll(points)
                                                 .strokeColor(Color.rgb(255, 0, 255))
                                                 .strokeWidth(3f)
                                 );
@@ -7791,10 +8253,20 @@ public class Map extends FragmentActivity implements
 
                                 polygon.setTag(shapeUUID);
                             } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+
+                                List<LatLng> points = new ArrayList<>();
+                                points.add(marker0Position);
+                                points.add(marker1Position);
+                                points.add(marker2Position);
+                                points.add(marker3Position);
+                                points.add(marker4Position);
+                                polygonPointsListForMapChange.add(points);
+                                polygonUUIDListForMapChange.add((String) ds.child("shapeUUID").getValue());
+
                                 polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
+                                                .addAll(points)
                                                 .strokeColor(Color.rgb(255, 0, 255))
                                                 .strokeWidth(3f)
                                 );
@@ -7804,10 +8276,19 @@ public class Map extends FragmentActivity implements
 
                                 polygon.setTag(shapeUUID);
                             } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+
+                                List<LatLng> points = new ArrayList<>();
+                                points.add(marker0Position);
+                                points.add(marker1Position);
+                                points.add(marker2Position);
+                                points.add(marker3Position);
+                                polygonPointsListForMapChange.add(points);
+                                polygonUUIDListForMapChange.add((String) ds.child("shapeUUID").getValue());
+
                                 polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                                .addAll(points)
                                                 .strokeColor(Color.rgb(255, 0, 255))
                                                 .strokeWidth(3f)
                                 );
@@ -7817,10 +8298,18 @@ public class Map extends FragmentActivity implements
 
                                 polygon.setTag(shapeUUID);
                             } else {
+
+                                List<LatLng> points = new ArrayList<>();
+                                points.add(marker0Position);
+                                points.add(marker1Position);
+                                points.add(marker2Position);
+                                polygonPointsListForMapChange.add(points);
+                                polygonUUIDListForMapChange.add((String) ds.child("shapeUUID").getValue());
+
                                 polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .add(marker0Position, marker1Position, marker2Position)
+                                                .addAll(points)
                                                 .strokeColor(Color.rgb(255, 0, 255))
                                                 .strokeWidth(3f)
                                 );
@@ -7849,6 +8338,10 @@ public class Map extends FragmentActivity implements
 
                     // Shape is a circle.
 
+                    circleCenterListForMapChange.add(new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue()));
+                    circleRadiusArrayList.add(((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue());
+                    circleUUIDListForMapChange.add((String) ds.child("shapeUUID").getValue());
+
                     // Load different colored shapes depending on the map type.
                     if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
 
@@ -7943,10 +8436,22 @@ public class Map extends FragmentActivity implements
                             if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
                                 LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
 
+                                List<LatLng> points = new ArrayList<>();
+                                points.add(marker0Position);
+                                points.add(marker1Position);
+                                points.add(marker2Position);
+                                points.add(marker3Position);
+                                points.add(marker4Position);
+                                points.add(marker5Position);
+                                points.add(marker6Position);
+                                points.add(marker7Position);
+                                polygonPointsListForMapChange.add(points);
+                                polygonUUIDListForMapChange.add((String) ds.child("shapeUUID").getValue());
+
                                 polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                                .addAll(points)
                                                 .strokeColor(Color.YELLOW)
                                                 .strokeWidth(3f)
                                 );
@@ -7956,10 +8461,22 @@ public class Map extends FragmentActivity implements
 
                                 polygon.setTag(shapeUUID);
                             } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+
+                                List<LatLng> points = new ArrayList<>();
+                                points.add(marker0Position);
+                                points.add(marker1Position);
+                                points.add(marker2Position);
+                                points.add(marker3Position);
+                                points.add(marker4Position);
+                                points.add(marker5Position);
+                                points.add(marker6Position);
+                                polygonPointsListForMapChange.add(points);
+                                polygonUUIDListForMapChange.add((String) ds.child("shapeUUID").getValue());
+
                                 polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
+                                                .addAll(points)
                                                 .strokeColor(Color.YELLOW)
                                                 .strokeWidth(3f)
                                 );
@@ -7969,10 +8486,21 @@ public class Map extends FragmentActivity implements
 
                                 polygon.setTag(shapeUUID);
                             } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+
+                                List<LatLng> points = new ArrayList<>();
+                                points.add(marker0Position);
+                                points.add(marker1Position);
+                                points.add(marker2Position);
+                                points.add(marker3Position);
+                                points.add(marker4Position);
+                                points.add(marker5Position);
+                                polygonPointsListForMapChange.add(points);
+                                polygonUUIDListForMapChange.add((String) ds.child("shapeUUID").getValue());
+
                                 polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
+                                                .addAll(points)
                                                 .strokeColor(Color.YELLOW)
                                                 .strokeWidth(3f)
                                 );
@@ -7982,10 +8510,20 @@ public class Map extends FragmentActivity implements
 
                                 polygon.setTag(shapeUUID);
                             } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+
+                                List<LatLng> points = new ArrayList<>();
+                                points.add(marker0Position);
+                                points.add(marker1Position);
+                                points.add(marker2Position);
+                                points.add(marker3Position);
+                                points.add(marker4Position);
+                                polygonPointsListForMapChange.add(points);
+                                polygonUUIDListForMapChange.add((String) ds.child("shapeUUID").getValue());
+
                                 polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
+                                                .addAll(points)
                                                 .strokeColor(Color.YELLOW)
                                                 .strokeWidth(3f)
                                 );
@@ -7995,10 +8533,19 @@ public class Map extends FragmentActivity implements
 
                                 polygon.setTag(shapeUUID);
                             } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+
+                                List<LatLng> points = new ArrayList<>();
+                                points.add(marker0Position);
+                                points.add(marker1Position);
+                                points.add(marker2Position);
+                                points.add(marker3Position);
+                                polygonPointsListForMapChange.add(points);
+                                polygonUUIDListForMapChange.add((String) ds.child("shapeUUID").getValue());
+
                                 polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                                .addAll(points)
                                                 .strokeColor(Color.YELLOW)
                                                 .strokeWidth(3f)
                                 );
@@ -8008,10 +8555,18 @@ public class Map extends FragmentActivity implements
 
                                 polygon.setTag(shapeUUID);
                             } else {
+
+                                List<LatLng> points = new ArrayList<>();
+                                points.add(marker0Position);
+                                points.add(marker1Position);
+                                points.add(marker2Position);
+                                polygonPointsListForMapChange.add(points);
+                                polygonUUIDListForMapChange.add((String) ds.child("shapeUUID").getValue());
+
                                 polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .add(marker0Position, marker1Position, marker2Position)
+                                                .addAll(points)
                                                 .strokeColor(Color.YELLOW)
                                                 .strokeWidth(3f)
                                 );
@@ -8053,10 +8608,22 @@ public class Map extends FragmentActivity implements
                             if (ds.child("polygonOptions/points/7/latitude/").getValue() != null) {
                                 LatLng marker7Position = new LatLng((double) ds.child("polygonOptions/points/7/latitude/").getValue(), (double) ds.child("polygonOptions/points/7/longitude/").getValue());
 
+                                List<LatLng> points = new ArrayList<>();
+                                points.add(marker0Position);
+                                points.add(marker1Position);
+                                points.add(marker2Position);
+                                points.add(marker3Position);
+                                points.add(marker4Position);
+                                points.add(marker5Position);
+                                points.add(marker6Position);
+                                points.add(marker7Position);
+                                polygonPointsListForMapChange.add(points);
+                                polygonUUIDListForMapChange.add((String) ds.child("shapeUUID").getValue());
+
                                 polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                                .addAll(points)
                                                 .strokeColor(Color.rgb(255, 0, 255))
                                                 .strokeWidth(3f)
                                 );
@@ -8066,10 +8633,22 @@ public class Map extends FragmentActivity implements
 
                                 polygon.setTag(shapeUUID);
                             } else if (ds.child("polygonOptions/points/6/latitude/").getValue() != null) {
+
+                                List<LatLng> points = new ArrayList<>();
+                                points.add(marker0Position);
+                                points.add(marker1Position);
+                                points.add(marker2Position);
+                                points.add(marker3Position);
+                                points.add(marker4Position);
+                                points.add(marker5Position);
+                                points.add(marker6Position);
+                                polygonPointsListForMapChange.add(points);
+                                polygonUUIDListForMapChange.add((String) ds.child("shapeUUID").getValue());
+
                                 polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
+                                                .addAll(points)
                                                 .strokeColor(Color.rgb(255, 0, 255))
                                                 .strokeWidth(3f)
                                 );
@@ -8079,10 +8658,21 @@ public class Map extends FragmentActivity implements
 
                                 polygon.setTag(shapeUUID);
                             } else if (ds.child("polygonOptions/points/5/latitude/").getValue() != null) {
+
+                                List<LatLng> points = new ArrayList<>();
+                                points.add(marker0Position);
+                                points.add(marker1Position);
+                                points.add(marker2Position);
+                                points.add(marker3Position);
+                                points.add(marker4Position);
+                                points.add(marker5Position);
+                                polygonPointsListForMapChange.add(points);
+                                polygonUUIDListForMapChange.add((String) ds.child("shapeUUID").getValue());
+
                                 polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
+                                                .addAll(points)
                                                 .strokeColor(Color.rgb(255, 0, 255))
                                                 .strokeWidth(3f)
                                 );
@@ -8092,10 +8682,20 @@ public class Map extends FragmentActivity implements
 
                                 polygon.setTag(shapeUUID);
                             } else if (ds.child("polygonOptions/points/4/latitude/").getValue() != null) {
+
+                                List<LatLng> points = new ArrayList<>();
+                                points.add(marker0Position);
+                                points.add(marker1Position);
+                                points.add(marker2Position);
+                                points.add(marker3Position);
+                                points.add(marker4Position);
+                                polygonPointsListForMapChange.add(points);
+                                polygonUUIDListForMapChange.add((String) ds.child("shapeUUID").getValue());
+
                                 polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
+                                                .addAll(points)
                                                 .strokeColor(Color.rgb(255, 0, 255))
                                                 .strokeWidth(3f)
                                 );
@@ -8105,10 +8705,19 @@ public class Map extends FragmentActivity implements
 
                                 polygon.setTag(shapeUUID);
                             } else if (ds.child("polygonOptions/points/3/latitude/").getValue() != null) {
+
+                                List<LatLng> points = new ArrayList<>();
+                                points.add(marker0Position);
+                                points.add(marker1Position);
+                                points.add(marker2Position);
+                                points.add(marker3Position);
+                                polygonPointsListForMapChange.add(points);
+                                polygonUUIDListForMapChange.add((String) ds.child("shapeUUID").getValue());
+
                                 polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                                .addAll(points)
                                                 .strokeColor(Color.rgb(255, 0, 255))
                                                 .strokeWidth(3f)
                                 );
@@ -8118,10 +8727,18 @@ public class Map extends FragmentActivity implements
 
                                 polygon.setTag(shapeUUID);
                             } else {
+
+                                List<LatLng> points = new ArrayList<>();
+                                points.add(marker0Position);
+                                points.add(marker1Position);
+                                points.add(marker2Position);
+                                polygonPointsListForMapChange.add(points);
+                                polygonUUIDListForMapChange.add((String) ds.child("shapeUUID").getValue());
+
                                 polygon = mMap.addPolygon(
                                         new PolygonOptions()
                                                 .clickable(true)
-                                                .add(marker0Position, marker1Position, marker2Position)
+                                                .addAll(points)
                                                 .strokeColor(Color.rgb(255, 0, 255))
                                                 .strokeWidth(3f)
                                 );
@@ -8149,6 +8766,10 @@ public class Map extends FragmentActivity implements
                 if (ds.child("circleOptions").exists()) {
 
                     // Shape is a circle.
+
+                    circleCenterListForMapChange.add(new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue()));
+                    circleRadiusArrayList.add(((Number) (Objects.requireNonNull(ds.child("circleOptions/radius").getValue()))).doubleValue());
+                    circleUUIDListForMapChange.add((String) ds.child("shapeUUID").getValue());
 
                     // Load different colored shapes depending on the map type.
                     if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
@@ -8397,6 +9018,10 @@ public class Map extends FragmentActivity implements
 
             // Shape is a circle.
 
+            circleCenterListForMapChange.add(new LatLng((double) snapshot.child("circleOptions/center/latitude/").getValue(), (double) snapshot.child("circleOptions/center/longitude/").getValue()));
+            circleRadiusArrayList.add(((Number) (Objects.requireNonNull(snapshot.child("circleOptions/radius").getValue()))).doubleValue());
+            circleUUIDListForMapChange.add((String) snapshot.child("shapeUUID").getValue());
+
             // Load different colored shapes depending on the map type.
             if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
 
@@ -8491,10 +9116,22 @@ public class Map extends FragmentActivity implements
                     if (snapshot.child("polygonOptions/points/7/latitude/").getValue() != null) {
                         LatLng marker7Position = new LatLng((double) snapshot.child("polygonOptions/points/7/latitude/").getValue(), (double) snapshot.child("polygonOptions/points/7/longitude/").getValue());
 
+                        List<LatLng> points = new ArrayList<>();
+                        points.add(marker0Position);
+                        points.add(marker1Position);
+                        points.add(marker2Position);
+                        points.add(marker3Position);
+                        points.add(marker4Position);
+                        points.add(marker5Position);
+                        points.add(marker6Position);
+                        points.add(marker7Position);
+                        polygonPointsListForMapChange.add(points);
+                        polygonUUIDListForMapChange.add((String) snapshot.child("shapeUUID").getValue());
+
                         polygon = mMap.addPolygon(
                                 new PolygonOptions()
                                         .clickable(true)
-                                        .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                        .addAll(points)
                                         .strokeColor(Color.YELLOW)
                                         .strokeWidth(3f)
                         );
@@ -8504,10 +9141,22 @@ public class Map extends FragmentActivity implements
 
                         polygon.setTag(shapeUUID);
                     } else if (snapshot.child("polygonOptions/points/6/latitude/").getValue() != null) {
+
+                        List<LatLng> points = new ArrayList<>();
+                        points.add(marker0Position);
+                        points.add(marker1Position);
+                        points.add(marker2Position);
+                        points.add(marker3Position);
+                        points.add(marker4Position);
+                        points.add(marker5Position);
+                        points.add(marker6Position);
+                        polygonPointsListForMapChange.add(points);
+                        polygonUUIDListForMapChange.add((String) snapshot.child("shapeUUID").getValue());
+
                         polygon = mMap.addPolygon(
                                 new PolygonOptions()
                                         .clickable(true)
-                                        .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
+                                        .addAll(points)
                                         .strokeColor(Color.YELLOW)
                                         .strokeWidth(3f)
                         );
@@ -8517,10 +9166,21 @@ public class Map extends FragmentActivity implements
 
                         polygon.setTag(shapeUUID);
                     } else if (snapshot.child("polygonOptions/points/5/latitude/").getValue() != null) {
+
+                        List<LatLng> points = new ArrayList<>();
+                        points.add(marker0Position);
+                        points.add(marker1Position);
+                        points.add(marker2Position);
+                        points.add(marker3Position);
+                        points.add(marker4Position);
+                        points.add(marker5Position);
+                        polygonPointsListForMapChange.add(points);
+                        polygonUUIDListForMapChange.add((String) snapshot.child("shapeUUID").getValue());
+
                         polygon = mMap.addPolygon(
                                 new PolygonOptions()
                                         .clickable(true)
-                                        .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
+                                        .addAll(points)
                                         .strokeColor(Color.YELLOW)
                                         .strokeWidth(3f)
                         );
@@ -8530,10 +9190,20 @@ public class Map extends FragmentActivity implements
 
                         polygon.setTag(shapeUUID);
                     } else if (snapshot.child("polygonOptions/points/4/latitude/").getValue() != null) {
+
+                        List<LatLng> points = new ArrayList<>();
+                        points.add(marker0Position);
+                        points.add(marker1Position);
+                        points.add(marker2Position);
+                        points.add(marker3Position);
+                        points.add(marker4Position);
+                        polygonPointsListForMapChange.add(points);
+                        polygonUUIDListForMapChange.add((String) snapshot.child("shapeUUID").getValue());
+
                         polygon = mMap.addPolygon(
                                 new PolygonOptions()
                                         .clickable(true)
-                                        .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
+                                        .addAll(points)
                                         .strokeColor(Color.YELLOW)
                                         .strokeWidth(3f)
                         );
@@ -8543,10 +9213,19 @@ public class Map extends FragmentActivity implements
 
                         polygon.setTag(shapeUUID);
                     } else if (snapshot.child("polygonOptions/points/3/latitude/").getValue() != null) {
+
+                        List<LatLng> points = new ArrayList<>();
+                        points.add(marker0Position);
+                        points.add(marker1Position);
+                        points.add(marker2Position);
+                        points.add(marker3Position);
+                        polygonPointsListForMapChange.add(points);
+                        polygonUUIDListForMapChange.add((String) snapshot.child("shapeUUID").getValue());
+
                         polygon = mMap.addPolygon(
                                 new PolygonOptions()
                                         .clickable(true)
-                                        .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                        .addAll(points)
                                         .strokeColor(Color.YELLOW)
                                         .strokeWidth(3f)
                         );
@@ -8556,10 +9235,18 @@ public class Map extends FragmentActivity implements
 
                         polygon.setTag(shapeUUID);
                     } else {
+
+                        List<LatLng> points = new ArrayList<>();
+                        points.add(marker0Position);
+                        points.add(marker1Position);
+                        points.add(marker2Position);
+                        polygonPointsListForMapChange.add(points);
+                        polygonUUIDListForMapChange.add((String) snapshot.child("shapeUUID").getValue());
+
                         polygon = mMap.addPolygon(
                                 new PolygonOptions()
                                         .clickable(true)
-                                        .add(marker0Position, marker1Position, marker2Position)
+                                        .addAll(points)
                                         .strokeColor(Color.YELLOW)
                                         .strokeWidth(3f)
                         );
@@ -8601,10 +9288,22 @@ public class Map extends FragmentActivity implements
                     if (snapshot.child("polygonOptions/points/7/latitude/").getValue() != null) {
                         LatLng marker7Position = new LatLng((double) snapshot.child("polygonOptions/points/7/latitude/").getValue(), (double) snapshot.child("polygonOptions/points/7/longitude/").getValue());
 
+                        List<LatLng> points = new ArrayList<>();
+                        points.add(marker0Position);
+                        points.add(marker1Position);
+                        points.add(marker2Position);
+                        points.add(marker3Position);
+                        points.add(marker4Position);
+                        points.add(marker5Position);
+                        points.add(marker6Position);
+                        points.add(marker7Position);
+                        polygonPointsListForMapChange.add(points);
+                        polygonUUIDListForMapChange.add((String) snapshot.child("shapeUUID").getValue());
+
                         polygon = mMap.addPolygon(
                                 new PolygonOptions()
                                         .clickable(true)
-                                        .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                        .addAll(points)
                                         .strokeColor(Color.rgb(255, 0, 255))
                                         .strokeWidth(3f)
                         );
@@ -8614,10 +9313,22 @@ public class Map extends FragmentActivity implements
 
                         polygon.setTag(shapeUUID);
                     } else if (snapshot.child("polygonOptions/points/6/latitude/").getValue() != null) {
+
+                        List<LatLng> points = new ArrayList<>();
+                        points.add(marker0Position);
+                        points.add(marker1Position);
+                        points.add(marker2Position);
+                        points.add(marker3Position);
+                        points.add(marker4Position);
+                        points.add(marker5Position);
+                        points.add(marker6Position);
+                        polygonPointsListForMapChange.add(points);
+                        polygonUUIDListForMapChange.add((String) snapshot.child("shapeUUID").getValue());
+
                         polygon = mMap.addPolygon(
                                 new PolygonOptions()
                                         .clickable(true)
-                                        .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
+                                        .addAll(points)
                                         .strokeColor(Color.rgb(255, 0, 255))
                                         .strokeWidth(3f)
                         );
@@ -8627,10 +9338,21 @@ public class Map extends FragmentActivity implements
 
                         polygon.setTag(shapeUUID);
                     } else if (snapshot.child("polygonOptions/points/5/latitude/").getValue() != null) {
+
+                        List<LatLng> points = new ArrayList<>();
+                        points.add(marker0Position);
+                        points.add(marker1Position);
+                        points.add(marker2Position);
+                        points.add(marker3Position);
+                        points.add(marker4Position);
+                        points.add(marker5Position);
+                        polygonPointsListForMapChange.add(points);
+                        polygonUUIDListForMapChange.add((String) snapshot.child("shapeUUID").getValue());
+
                         polygon = mMap.addPolygon(
                                 new PolygonOptions()
                                         .clickable(true)
-                                        .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
+                                        .addAll(points)
                                         .strokeColor(Color.rgb(255, 0, 255))
                                         .strokeWidth(3f)
                         );
@@ -8640,10 +9362,20 @@ public class Map extends FragmentActivity implements
 
                         polygon.setTag(shapeUUID);
                     } else if (snapshot.child("polygonOptions/points/4/latitude/").getValue() != null) {
+
+                        List<LatLng> points = new ArrayList<>();
+                        points.add(marker0Position);
+                        points.add(marker1Position);
+                        points.add(marker2Position);
+                        points.add(marker3Position);
+                        points.add(marker4Position);
+                        polygonPointsListForMapChange.add(points);
+                        polygonUUIDListForMapChange.add((String) snapshot.child("shapeUUID").getValue());
+
                         polygon = mMap.addPolygon(
                                 new PolygonOptions()
                                         .clickable(true)
-                                        .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
+                                        .addAll(points)
                                         .strokeColor(Color.rgb(255, 0, 255))
                                         .strokeWidth(3f)
                         );
@@ -8653,10 +9385,19 @@ public class Map extends FragmentActivity implements
 
                         polygon.setTag(shapeUUID);
                     } else if (snapshot.child("polygonOptions/points/3/latitude/").getValue() != null) {
+
+                        List<LatLng> points = new ArrayList<>();
+                        points.add(marker0Position);
+                        points.add(marker1Position);
+                        points.add(marker2Position);
+                        points.add(marker3Position);
+                        polygonPointsListForMapChange.add(points);
+                        polygonUUIDListForMapChange.add((String) snapshot.child("shapeUUID").getValue());
+
                         polygon = mMap.addPolygon(
                                 new PolygonOptions()
                                         .clickable(true)
-                                        .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                        .addAll(points)
                                         .strokeColor(Color.rgb(255, 0, 255))
                                         .strokeWidth(3f)
                         );
@@ -8666,10 +9407,18 @@ public class Map extends FragmentActivity implements
 
                         polygon.setTag(shapeUUID);
                     } else {
+
+                        List<LatLng> points = new ArrayList<>();
+                        points.add(marker0Position);
+                        points.add(marker1Position);
+                        points.add(marker2Position);
+                        polygonPointsListForMapChange.add(points);
+                        polygonUUIDListForMapChange.add((String) snapshot.child("shapeUUID").getValue());
+
                         polygon = mMap.addPolygon(
                                 new PolygonOptions()
                                         .clickable(true)
-                                        .add(marker0Position, marker1Position, marker2Position)
+                                        .addAll(points)
                                         .strokeColor(Color.rgb(255, 0, 255))
                                         .strokeWidth(3f)
                         );
@@ -8694,6 +9443,10 @@ public class Map extends FragmentActivity implements
 
             // Shape is a circle.
 
+            circleCenterListForMapChange.add(new LatLng((double) snapshot.child("circleOptions/center/latitude/").getValue(), (double) snapshot.child("circleOptions/center/longitude/").getValue()));
+            circleRadiusArrayList.add(((Number) (Objects.requireNonNull(snapshot.child("circleOptions/radius").getValue()))).doubleValue());
+            circleUUIDListForMapChange.add((String) snapshot.child("shapeUUID").getValue());
+
             // Load different colored shapes depending on the map type.
             if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
 
@@ -8788,10 +9541,22 @@ public class Map extends FragmentActivity implements
                     if (snapshot.child("polygonOptions/points/7/latitude/").getValue() != null) {
                         LatLng marker7Position = new LatLng((double) snapshot.child("polygonOptions/points/7/latitude/").getValue(), (double) snapshot.child("polygonOptions/points/7/longitude/").getValue());
 
+                        List<LatLng> points = new ArrayList<>();
+                        points.add(marker0Position);
+                        points.add(marker1Position);
+                        points.add(marker2Position);
+                        points.add(marker3Position);
+                        points.add(marker4Position);
+                        points.add(marker5Position);
+                        points.add(marker6Position);
+                        points.add(marker7Position);
+                        polygonPointsListForMapChange.add(points);
+                        polygonUUIDListForMapChange.add((String) snapshot.child("shapeUUID").getValue());
+
                         polygon = mMap.addPolygon(
                                 new PolygonOptions()
                                         .clickable(true)
-                                        .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                        .addAll(points)
                                         .strokeColor(Color.YELLOW)
                                         .strokeWidth(3f)
                         );
@@ -8801,10 +9566,22 @@ public class Map extends FragmentActivity implements
 
                         polygon.setTag(shapeUUID);
                     } else if (snapshot.child("polygonOptions/points/6/latitude/").getValue() != null) {
+
+                        List<LatLng> points = new ArrayList<>();
+                        points.add(marker0Position);
+                        points.add(marker1Position);
+                        points.add(marker2Position);
+                        points.add(marker3Position);
+                        points.add(marker4Position);
+                        points.add(marker5Position);
+                        points.add(marker6Position);
+                        polygonPointsListForMapChange.add(points);
+                        polygonUUIDListForMapChange.add((String) snapshot.child("shapeUUID").getValue());
+
                         polygon = mMap.addPolygon(
                                 new PolygonOptions()
                                         .clickable(true)
-                                        .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
+                                        .addAll(points)
                                         .strokeColor(Color.YELLOW)
                                         .strokeWidth(3f)
                         );
@@ -8814,10 +9591,21 @@ public class Map extends FragmentActivity implements
 
                         polygon.setTag(shapeUUID);
                     } else if (snapshot.child("polygonOptions/points/5/latitude/").getValue() != null) {
+
+                        List<LatLng> points = new ArrayList<>();
+                        points.add(marker0Position);
+                        points.add(marker1Position);
+                        points.add(marker2Position);
+                        points.add(marker3Position);
+                        points.add(marker4Position);
+                        points.add(marker5Position);
+                        polygonPointsListForMapChange.add(points);
+                        polygonUUIDListForMapChange.add((String) snapshot.child("shapeUUID").getValue());
+
                         polygon = mMap.addPolygon(
                                 new PolygonOptions()
                                         .clickable(true)
-                                        .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
+                                        .addAll(points)
                                         .strokeColor(Color.YELLOW)
                                         .strokeWidth(3f)
                         );
@@ -8827,10 +9615,20 @@ public class Map extends FragmentActivity implements
 
                         polygon.setTag(shapeUUID);
                     } else if (snapshot.child("polygonOptions/points/4/latitude/").getValue() != null) {
+
+                        List<LatLng> points = new ArrayList<>();
+                        points.add(marker0Position);
+                        points.add(marker1Position);
+                        points.add(marker2Position);
+                        points.add(marker3Position);
+                        points.add(marker4Position);
+                        polygonPointsListForMapChange.add(points);
+                        polygonUUIDListForMapChange.add((String) snapshot.child("shapeUUID").getValue());
+
                         polygon = mMap.addPolygon(
                                 new PolygonOptions()
                                         .clickable(true)
-                                        .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
+                                        .addAll(points)
                                         .strokeColor(Color.YELLOW)
                                         .strokeWidth(3f)
                         );
@@ -8840,10 +9638,19 @@ public class Map extends FragmentActivity implements
 
                         polygon.setTag(shapeUUID);
                     } else if (snapshot.child("polygonOptions/points/3/latitude/").getValue() != null) {
+
+                        List<LatLng> points = new ArrayList<>();
+                        points.add(marker0Position);
+                        points.add(marker1Position);
+                        points.add(marker2Position);
+                        points.add(marker3Position);
+                        polygonPointsListForMapChange.add(points);
+                        polygonUUIDListForMapChange.add((String) snapshot.child("shapeUUID").getValue());
+
                         polygon = mMap.addPolygon(
                                 new PolygonOptions()
                                         .clickable(true)
-                                        .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                        .addAll(points)
                                         .strokeColor(Color.YELLOW)
                                         .strokeWidth(3f)
                         );
@@ -8853,10 +9660,18 @@ public class Map extends FragmentActivity implements
 
                         polygon.setTag(shapeUUID);
                     } else {
+
+                        List<LatLng> points = new ArrayList<>();
+                        points.add(marker0Position);
+                        points.add(marker1Position);
+                        points.add(marker2Position);
+                        polygonPointsListForMapChange.add(points);
+                        polygonUUIDListForMapChange.add((String) snapshot.child("shapeUUID").getValue());
+
                         polygon = mMap.addPolygon(
                                 new PolygonOptions()
                                         .clickable(true)
-                                        .add(marker0Position, marker1Position, marker2Position)
+                                        .addAll(points)
                                         .strokeColor(Color.YELLOW)
                                         .strokeWidth(3f)
                         );
@@ -8898,10 +9713,22 @@ public class Map extends FragmentActivity implements
                     if (snapshot.child("polygonOptions/points/7/latitude/").getValue() != null) {
                         LatLng marker7Position = new LatLng((double) snapshot.child("polygonOptions/points/7/latitude/").getValue(), (double) snapshot.child("polygonOptions/points/7/longitude/").getValue());
 
+                        List<LatLng> points = new ArrayList<>();
+                        points.add(marker0Position);
+                        points.add(marker1Position);
+                        points.add(marker2Position);
+                        points.add(marker3Position);
+                        points.add(marker4Position);
+                        points.add(marker5Position);
+                        points.add(marker6Position);
+                        points.add(marker7Position);
+                        polygonPointsListForMapChange.add(points);
+                        polygonUUIDListForMapChange.add((String) snapshot.child("shapeUUID").getValue());
+
                         polygon = mMap.addPolygon(
                                 new PolygonOptions()
                                         .clickable(true)
-                                        .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                        .addAll(points)
                                         .strokeColor(Color.rgb(255, 0, 255))
                                         .strokeWidth(3f)
                         );
@@ -8911,10 +9738,22 @@ public class Map extends FragmentActivity implements
 
                         polygon.setTag(shapeUUID);
                     } else if (snapshot.child("polygonOptions/points/6/latitude/").getValue() != null) {
+
+                        List<LatLng> points = new ArrayList<>();
+                        points.add(marker0Position);
+                        points.add(marker1Position);
+                        points.add(marker2Position);
+                        points.add(marker3Position);
+                        points.add(marker4Position);
+                        points.add(marker5Position);
+                        points.add(marker6Position);
+                        polygonPointsListForMapChange.add(points);
+                        polygonUUIDListForMapChange.add((String) snapshot.child("shapeUUID").getValue());
+
                         polygon = mMap.addPolygon(
                                 new PolygonOptions()
                                         .clickable(true)
-                                        .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
+                                        .addAll(points)
                                         .strokeColor(Color.rgb(255, 0, 255))
                                         .strokeWidth(3f)
                         );
@@ -8924,10 +9763,21 @@ public class Map extends FragmentActivity implements
 
                         polygon.setTag(shapeUUID);
                     } else if (snapshot.child("polygonOptions/points/5/latitude/").getValue() != null) {
+
+                        List<LatLng> points = new ArrayList<>();
+                        points.add(marker0Position);
+                        points.add(marker1Position);
+                        points.add(marker2Position);
+                        points.add(marker3Position);
+                        points.add(marker4Position);
+                        points.add(marker5Position);
+                        polygonPointsListForMapChange.add(points);
+                        polygonUUIDListForMapChange.add((String) snapshot.child("shapeUUID").getValue());
+
                         polygon = mMap.addPolygon(
                                 new PolygonOptions()
                                         .clickable(true)
-                                        .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
+                                        .addAll(points)
                                         .strokeColor(Color.rgb(255, 0, 255))
                                         .strokeWidth(3f)
                         );
@@ -8937,10 +9787,20 @@ public class Map extends FragmentActivity implements
 
                         polygon.setTag(shapeUUID);
                     } else if (snapshot.child("polygonOptions/points/4/latitude/").getValue() != null) {
+
+                        List<LatLng> points = new ArrayList<>();
+                        points.add(marker0Position);
+                        points.add(marker1Position);
+                        points.add(marker2Position);
+                        points.add(marker3Position);
+                        points.add(marker4Position);
+                        polygonPointsListForMapChange.add(points);
+                        polygonUUIDListForMapChange.add((String) snapshot.child("shapeUUID").getValue());
+
                         polygon = mMap.addPolygon(
                                 new PolygonOptions()
                                         .clickable(true)
-                                        .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
+                                        .addAll(points)
                                         .strokeColor(Color.rgb(255, 0, 255))
                                         .strokeWidth(3f)
                         );
@@ -8950,10 +9810,19 @@ public class Map extends FragmentActivity implements
 
                         polygon.setTag(shapeUUID);
                     } else if (snapshot.child("polygonOptions/points/3/latitude/").getValue() != null) {
+
+                        List<LatLng> points = new ArrayList<>();
+                        points.add(marker0Position);
+                        points.add(marker1Position);
+                        points.add(marker2Position);
+                        points.add(marker3Position);
+                        polygonPointsListForMapChange.add(points);
+                        polygonUUIDListForMapChange.add((String) snapshot.child("shapeUUID").getValue());
+
                         polygon = mMap.addPolygon(
                                 new PolygonOptions()
                                         .clickable(true)
-                                        .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                        .addAll(points)
                                         .strokeColor(Color.rgb(255, 0, 255))
                                         .strokeWidth(3f)
                         );
@@ -8963,10 +9832,18 @@ public class Map extends FragmentActivity implements
 
                         polygon.setTag(shapeUUID);
                     } else {
+
+                        List<LatLng> points = new ArrayList<>();
+                        points.add(marker0Position);
+                        points.add(marker1Position);
+                        points.add(marker2Position);
+                        polygonPointsListForMapChange.add(points);
+                        polygonUUIDListForMapChange.add((String) snapshot.child("shapeUUID").getValue());
+
                         polygon = mMap.addPolygon(
                                 new PolygonOptions()
                                         .clickable(true)
-                                        .add(marker0Position, marker1Position, marker2Position)
+                                        .addAll(points)
                                         .strokeColor(Color.rgb(255, 0, 255))
                                         .strokeWidth(3f)
                         );
@@ -8991,6 +9868,10 @@ public class Map extends FragmentActivity implements
 
             // Shape is a circle.
 
+            circleCenterListForMapChange.add(new LatLng((double) snapshot.child("circleOptions/center/latitude/").getValue(), (double) snapshot.child("circleOptions/center/longitude/").getValue()));
+            circleRadiusArrayList.add(((Number) (Objects.requireNonNull(snapshot.child("circleOptions/radius").getValue()))).doubleValue());
+            circleUUIDListForMapChange.add((String) snapshot.child("shapeUUID").getValue());
+
             // Load different colored shapes depending on the map type.
             if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
 
@@ -9085,10 +9966,22 @@ public class Map extends FragmentActivity implements
                     if (snapshot.child("polygonOptions/points/7/latitude/").getValue() != null) {
                         LatLng marker7Position = new LatLng((double) snapshot.child("polygonOptions/points/7/latitude/").getValue(), (double) snapshot.child("polygonOptions/points/7/longitude/").getValue());
 
+                        List<LatLng> points = new ArrayList<>();
+                        points.add(marker0Position);
+                        points.add(marker1Position);
+                        points.add(marker2Position);
+                        points.add(marker3Position);
+                        points.add(marker4Position);
+                        points.add(marker5Position);
+                        points.add(marker6Position);
+                        points.add(marker7Position);
+                        polygonPointsListForMapChange.add(points);
+                        polygonUUIDListForMapChange.add((String) snapshot.child("shapeUUID").getValue());
+
                         polygon = mMap.addPolygon(
                                 new PolygonOptions()
                                         .clickable(true)
-                                        .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                        .addAll(points)
                                         .strokeColor(Color.YELLOW)
                                         .strokeWidth(3f)
                         );
@@ -9098,10 +9991,22 @@ public class Map extends FragmentActivity implements
 
                         polygon.setTag(shapeUUID);
                     } else if (snapshot.child("polygonOptions/points/6/latitude/").getValue() != null) {
+
+                        List<LatLng> points = new ArrayList<>();
+                        points.add(marker0Position);
+                        points.add(marker1Position);
+                        points.add(marker2Position);
+                        points.add(marker3Position);
+                        points.add(marker4Position);
+                        points.add(marker5Position);
+                        points.add(marker6Position);
+                        polygonPointsListForMapChange.add(points);
+                        polygonUUIDListForMapChange.add((String) snapshot.child("shapeUUID").getValue());
+
                         polygon = mMap.addPolygon(
                                 new PolygonOptions()
                                         .clickable(true)
-                                        .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
+                                        .addAll(points)
                                         .strokeColor(Color.YELLOW)
                                         .strokeWidth(3f)
                         );
@@ -9111,10 +10016,21 @@ public class Map extends FragmentActivity implements
 
                         polygon.setTag(shapeUUID);
                     } else if (snapshot.child("polygonOptions/points/5/latitude/").getValue() != null) {
+
+                        List<LatLng> points = new ArrayList<>();
+                        points.add(marker0Position);
+                        points.add(marker1Position);
+                        points.add(marker2Position);
+                        points.add(marker3Position);
+                        points.add(marker4Position);
+                        points.add(marker5Position);
+                        polygonPointsListForMapChange.add(points);
+                        polygonUUIDListForMapChange.add((String) snapshot.child("shapeUUID").getValue());
+
                         polygon = mMap.addPolygon(
                                 new PolygonOptions()
                                         .clickable(true)
-                                        .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
+                                        .addAll(points)
                                         .strokeColor(Color.YELLOW)
                                         .strokeWidth(3f)
                         );
@@ -9124,10 +10040,20 @@ public class Map extends FragmentActivity implements
 
                         polygon.setTag(shapeUUID);
                     } else if (snapshot.child("polygonOptions/points/4/latitude/").getValue() != null) {
+
+                        List<LatLng> points = new ArrayList<>();
+                        points.add(marker0Position);
+                        points.add(marker1Position);
+                        points.add(marker2Position);
+                        points.add(marker3Position);
+                        points.add(marker4Position);
+                        polygonPointsListForMapChange.add(points);
+                        polygonUUIDListForMapChange.add((String) snapshot.child("shapeUUID").getValue());
+
                         polygon = mMap.addPolygon(
                                 new PolygonOptions()
                                         .clickable(true)
-                                        .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
+                                        .addAll(points)
                                         .strokeColor(Color.YELLOW)
                                         .strokeWidth(3f)
                         );
@@ -9137,10 +10063,19 @@ public class Map extends FragmentActivity implements
 
                         polygon.setTag(shapeUUID);
                     } else if (snapshot.child("polygonOptions/points/3/latitude/").getValue() != null) {
+
+                        List<LatLng> points = new ArrayList<>();
+                        points.add(marker0Position);
+                        points.add(marker1Position);
+                        points.add(marker2Position);
+                        points.add(marker3Position);
+                        polygonPointsListForMapChange.add(points);
+                        polygonUUIDListForMapChange.add((String) snapshot.child("shapeUUID").getValue());
+
                         polygon = mMap.addPolygon(
                                 new PolygonOptions()
                                         .clickable(true)
-                                        .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                        .addAll(points)
                                         .strokeColor(Color.YELLOW)
                                         .strokeWidth(3f)
                         );
@@ -9150,10 +10085,18 @@ public class Map extends FragmentActivity implements
 
                         polygon.setTag(shapeUUID);
                     } else {
+
+                        List<LatLng> points = new ArrayList<>();
+                        points.add(marker0Position);
+                        points.add(marker1Position);
+                        points.add(marker2Position);
+                        polygonPointsListForMapChange.add(points);
+                        polygonUUIDListForMapChange.add((String) snapshot.child("shapeUUID").getValue());
+
                         polygon = mMap.addPolygon(
                                 new PolygonOptions()
                                         .clickable(true)
-                                        .add(marker0Position, marker1Position, marker2Position)
+                                        .addAll(points)
                                         .strokeColor(Color.YELLOW)
                                         .strokeWidth(3f)
                         );
@@ -9195,10 +10138,22 @@ public class Map extends FragmentActivity implements
                     if (snapshot.child("polygonOptions/points/7/latitude/").getValue() != null) {
                         LatLng marker7Position = new LatLng((double) snapshot.child("polygonOptions/points/7/latitude/").getValue(), (double) snapshot.child("polygonOptions/points/7/longitude/").getValue());
 
+                        List<LatLng> points = new ArrayList<>();
+                        points.add(marker0Position);
+                        points.add(marker1Position);
+                        points.add(marker2Position);
+                        points.add(marker3Position);
+                        points.add(marker4Position);
+                        points.add(marker5Position);
+                        points.add(marker6Position);
+                        points.add(marker7Position);
+                        polygonPointsListForMapChange.add(points);
+                        polygonUUIDListForMapChange.add((String) snapshot.child("shapeUUID").getValue());
+
                         polygon = mMap.addPolygon(
                                 new PolygonOptions()
                                         .clickable(true)
-                                        .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position)
+                                        .addAll(points)
                                         .strokeColor(Color.rgb(255, 0, 255))
                                         .strokeWidth(3f)
                         );
@@ -9208,10 +10163,22 @@ public class Map extends FragmentActivity implements
 
                         polygon.setTag(shapeUUID);
                     } else if (snapshot.child("polygonOptions/points/6/latitude/").getValue() != null) {
+
+                        List<LatLng> points = new ArrayList<>();
+                        points.add(marker0Position);
+                        points.add(marker1Position);
+                        points.add(marker2Position);
+                        points.add(marker3Position);
+                        points.add(marker4Position);
+                        points.add(marker5Position);
+                        points.add(marker6Position);
+                        polygonPointsListForMapChange.add(points);
+                        polygonUUIDListForMapChange.add((String) snapshot.child("shapeUUID").getValue());
+
                         polygon = mMap.addPolygon(
                                 new PolygonOptions()
                                         .clickable(true)
-                                        .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position)
+                                        .addAll(points)
                                         .strokeColor(Color.rgb(255, 0, 255))
                                         .strokeWidth(3f)
                         );
@@ -9221,10 +10188,21 @@ public class Map extends FragmentActivity implements
 
                         polygon.setTag(shapeUUID);
                     } else if (snapshot.child("polygonOptions/points/5/latitude/").getValue() != null) {
+
+                        List<LatLng> points = new ArrayList<>();
+                        points.add(marker0Position);
+                        points.add(marker1Position);
+                        points.add(marker2Position);
+                        points.add(marker3Position);
+                        points.add(marker4Position);
+                        points.add(marker5Position);
+                        polygonPointsListForMapChange.add(points);
+                        polygonUUIDListForMapChange.add((String) snapshot.child("shapeUUID").getValue());
+
                         polygon = mMap.addPolygon(
                                 new PolygonOptions()
                                         .clickable(true)
-                                        .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position)
+                                        .addAll(points)
                                         .strokeColor(Color.rgb(255, 0, 255))
                                         .strokeWidth(3f)
                         );
@@ -9234,10 +10212,20 @@ public class Map extends FragmentActivity implements
 
                         polygon.setTag(shapeUUID);
                     } else if (snapshot.child("polygonOptions/points/4/latitude/").getValue() != null) {
+
+                        List<LatLng> points = new ArrayList<>();
+                        points.add(marker0Position);
+                        points.add(marker1Position);
+                        points.add(marker2Position);
+                        points.add(marker3Position);
+                        points.add(marker4Position);
+                        polygonPointsListForMapChange.add(points);
+                        polygonUUIDListForMapChange.add((String) snapshot.child("shapeUUID").getValue());
+
                         polygon = mMap.addPolygon(
                                 new PolygonOptions()
                                         .clickable(true)
-                                        .add(marker0Position, marker1Position, marker2Position, marker3Position, marker4Position)
+                                        .addAll(points)
                                         .strokeColor(Color.rgb(255, 0, 255))
                                         .strokeWidth(3f)
                         );
@@ -9247,10 +10235,19 @@ public class Map extends FragmentActivity implements
 
                         polygon.setTag(shapeUUID);
                     } else if (snapshot.child("polygonOptions/points/3/latitude/").getValue() != null) {
+
+                        List<LatLng> points = new ArrayList<>();
+                        points.add(marker0Position);
+                        points.add(marker1Position);
+                        points.add(marker2Position);
+                        points.add(marker3Position);
+                        polygonPointsListForMapChange.add(points);
+                        polygonUUIDListForMapChange.add((String) snapshot.child("shapeUUID").getValue());
+
                         polygon = mMap.addPolygon(
                                 new PolygonOptions()
                                         .clickable(true)
-                                        .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                        .addAll(points)
                                         .strokeColor(Color.rgb(255, 0, 255))
                                         .strokeWidth(3f)
                         );
@@ -9260,10 +10257,18 @@ public class Map extends FragmentActivity implements
 
                         polygon.setTag(shapeUUID);
                     } else {
+
+                        List<LatLng> points = new ArrayList<>();
+                        points.add(marker0Position);
+                        points.add(marker1Position);
+                        points.add(marker2Position);
+                        polygonPointsListForMapChange.add(points);
+                        polygonUUIDListForMapChange.add((String) snapshot.child("shapeUUID").getValue());
+
                         polygon = mMap.addPolygon(
                                 new PolygonOptions()
                                         .clickable(true)
-                                        .add(marker0Position, marker1Position, marker2Position)
+                                        .addAll(points)
                                         .strokeColor(Color.rgb(255, 0, 255))
                                         .strokeWidth(3f)
                         );
@@ -9287,6 +10292,10 @@ public class Map extends FragmentActivity implements
         if (snapshot.child("circleOptions").exists()) {
 
             // Shape is a circle.
+
+            circleCenterListForMapChange.add(new LatLng((double) snapshot.child("circleOptions/center/latitude/").getValue(), (double) snapshot.child("circleOptions/center/longitude/").getValue()));
+            circleRadiusArrayList.add(((Number) (Objects.requireNonNull(snapshot.child("circleOptions/radius").getValue()))).doubleValue());
+            circleUUIDListForMapChange.add((String) snapshot.child("shapeUUID").getValue());
 
             // Load different colored shapes depending on the map type.
             if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
