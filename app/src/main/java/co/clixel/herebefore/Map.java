@@ -119,9 +119,6 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // If # polygons == # circles, the shapes are being added to combinedList in the wrong order.
-    // Webp files not being sent to Github.
-    // Check "for" loops for a need for break / return.
     // Don't reload Firebase information every time (switching from Chat to Settings causes a full reload).
     // Fix "Users" Firebase rules to only allow overwriting on seenByUser.
     // Increase image loading speed in Chat and DirectMentions.
@@ -2065,21 +2062,26 @@ public class Map extends FragmentActivity implements
 
                 if (chatSelectorSeekBar.getVisibility() == View.VISIBLE) {
 
-                    // Create an arrayList that combines a representative array from a circle and polygon to get a full list that represents the two.
-                    ArrayList<Object> combinedList = new ArrayList<>();
+                    // Create arrayLists that hold shape information in a useful order.
+                    ArrayList<Object> combinedListShapes = new ArrayList<>();
+                    ArrayList<String> combinedListUUID = new ArrayList<>();
 
                     // Add the smaller array fist for consistency with the rest of the logic.
-                    if (overlappingShapesCircleLocation.size() > overlappingShapesPolygonVertices.size()) {
+                    if (overlappingShapesCircleLocation.size() <= overlappingShapesPolygonVertices.size()) {
 
-                        combinedList.addAll(overlappingShapesPolygonVertices);
-                        combinedList.addAll(overlappingShapesCircleLocation);
+                        combinedListShapes.addAll(overlappingShapesPolygonVertices);
+                        combinedListShapes.addAll(overlappingShapesCircleLocation);
+                        combinedListUUID.addAll(overlappingShapesPolygonUUID);
+                        combinedListUUID.addAll(overlappingShapesCircleUUID);
                     } else {
 
-                        combinedList.addAll(overlappingShapesCircleLocation);
-                        combinedList.addAll(overlappingShapesPolygonVertices);
+                        combinedListShapes.addAll(overlappingShapesCircleLocation);
+                        combinedListShapes.addAll(overlappingShapesPolygonVertices);
+                        combinedListUUID.addAll(overlappingShapesCircleUUID);
+                        combinedListUUID.addAll(overlappingShapesPolygonUUID);
                     }
 
-                    selectedOverlappingShapeUUID = overlappingShapesUUID.get(chatSelectorSeekBar.getProgress());
+                    selectedOverlappingShapeUUID = combinedListUUID.get(chatSelectorSeekBar.getProgress());
 
                     if (selectedOverlappingShapeUUID != null) {
 
@@ -2093,16 +2095,16 @@ public class Map extends FragmentActivity implements
                             polygonTemp.remove();
                         }
 
-                        if (combinedList.get(chatSelectorSeekBar.getProgress()) instanceof LatLng) {
+                        if (combinedListShapes.get(chatSelectorSeekBar.getProgress()) instanceof LatLng) {
 
                             if (overlappingShapesCircleLocation.size() > overlappingShapesPolygonVertices.size()) {
 
-                                selectedOverlappingShapeCircleLocation = overlappingShapesCircleLocation.get(chatSelectorSeekBar.getProgress() - overlappingShapesPolygonVertices.size());
-                                selectedOverlappingShapeCircleRadius = overlappingShapesCircleRadius.get(chatSelectorSeekBar.getProgress() - overlappingShapesPolygonVertices.size());
-                            } else {
-
                                 selectedOverlappingShapeCircleLocation = overlappingShapesCircleLocation.get(chatSelectorSeekBar.getProgress());
                                 selectedOverlappingShapeCircleRadius = overlappingShapesCircleRadius.get(chatSelectorSeekBar.getProgress());
+                            } else {
+
+                                selectedOverlappingShapeCircleLocation = overlappingShapesCircleLocation.get(chatSelectorSeekBar.getProgress() - overlappingShapesPolygonVertices.size());
+                                selectedOverlappingShapeCircleRadius = overlappingShapesCircleRadius.get(chatSelectorSeekBar.getProgress() - overlappingShapesPolygonVertices.size());
                             }
 
                             if (mMap.getMapType() == 2 || mMap.getMapType() == 4) {
@@ -2137,12 +2139,12 @@ public class Map extends FragmentActivity implements
                             circleTemp.setRadius(selectedOverlappingShapeCircleRadius);
                         } else {
 
-                            if (overlappingShapesPolygonVertices.size() > overlappingShapesCircleLocation.size() || overlappingShapesPolygonVertices.size() == overlappingShapesCircleLocation.size()) {
-
-                                selectedOverlappingShapePolygonVertices = overlappingShapesPolygonVertices.get(chatSelectorSeekBar.getProgress() - overlappingShapesCircleLocation.size());
-                            } else {
+                            if (overlappingShapesPolygonVertices.size() >= overlappingShapesCircleLocation.size()) {
 
                                 selectedOverlappingShapePolygonVertices = overlappingShapesPolygonVertices.get(chatSelectorSeekBar.getProgress());
+                            } else {
+
+                                selectedOverlappingShapePolygonVertices = overlappingShapesPolygonVertices.get(chatSelectorSeekBar.getProgress() - overlappingShapesCircleLocation.size());
                             }
 
                             if (mMap.getMapType() == 2 || mMap.getMapType() == 4) {
@@ -3566,8 +3568,21 @@ public class Map extends FragmentActivity implements
 
             selectingShape = true;
 
-            // The following shows a shape consistent with the location of the seekBar.
-            selectedOverlappingShapeUUID = overlappingShapesUUID.get(0);
+            // Create arrayLists that hold shape information in a useful order.
+            ArrayList<String> combinedListUUID = new ArrayList<>();
+
+            // Add the smaller array fist for consistency with the rest of the logic.
+            if (overlappingShapesCircleLocation.size() <= overlappingShapesPolygonVertices.size()) {
+
+                combinedListUUID.addAll(overlappingShapesPolygonUUID);
+                combinedListUUID.addAll(overlappingShapesCircleUUID);
+            } else {
+
+                combinedListUUID.addAll(overlappingShapesCircleUUID);
+                combinedListUUID.addAll(overlappingShapesPolygonUUID);
+            }
+
+            selectedOverlappingShapeUUID = combinedListUUID.get(chatSelectorSeekBar.getProgress());
 
             if (selectedOverlappingShapeUUID != null) {
 
@@ -3581,7 +3596,7 @@ public class Map extends FragmentActivity implements
                     polygonTemp.remove();
                 }
 
-                if ((overlappingShapesPolygonVertices.size() > overlappingShapesCircleLocation.size() || overlappingShapesPolygonVertices.size() == overlappingShapesCircleLocation.size()) && overlappingShapesCircleLocation.size() > 0) {
+                if (overlappingShapesPolygonVertices.size() < overlappingShapesCircleLocation.size() && overlappingShapesPolygonVertices.size() > 0) {
 
                     selectedOverlappingShapeCircleLocation = overlappingShapesCircleLocation.get(0);
                     selectedOverlappingShapeCircleRadius = overlappingShapesCircleRadius.get(0);
@@ -4136,8 +4151,21 @@ public class Map extends FragmentActivity implements
 
             selectingShape = true;
 
-            // The following shows a shape consistent with the location of the seekBar.
-            selectedOverlappingShapeUUID = overlappingShapesUUID.get(0);
+            // Create arrayLists that hold shape information in a useful order.
+            ArrayList<String> combinedListUUID = new ArrayList<>();
+
+            // Add the smaller array fist for consistency with the rest of the logic.
+            if (overlappingShapesCircleLocation.size() <= overlappingShapesPolygonVertices.size()) {
+
+                combinedListUUID.addAll(overlappingShapesPolygonUUID);
+                combinedListUUID.addAll(overlappingShapesCircleUUID);
+            } else {
+
+                combinedListUUID.addAll(overlappingShapesCircleUUID);
+                combinedListUUID.addAll(overlappingShapesPolygonUUID);
+            }
+
+            selectedOverlappingShapeUUID = combinedListUUID.get(chatSelectorSeekBar.getProgress());
 
             if (selectedOverlappingShapeUUID != null) {
 
@@ -4151,7 +4179,7 @@ public class Map extends FragmentActivity implements
                     polygonTemp.remove();
                 }
 
-                if (overlappingShapesCircleLocation.size() > overlappingShapesPolygonVertices.size() && overlappingShapesPolygonVertices.size() > 0) {
+                if (overlappingShapesCircleLocation.size() < overlappingShapesPolygonVertices.size() && overlappingShapesCircleLocation.size() > 0) {
 
                     selectedOverlappingShapePolygonVertices = overlappingShapesPolygonVertices.get(0);
 
@@ -6716,21 +6744,26 @@ public class Map extends FragmentActivity implements
         // Create a circleTemp or polygonTemp if one already exists.
         if (chatSelectorSeekBar.getVisibility() == View.VISIBLE) {
 
-            // Create an arrayList that combines a representative array from a circle and polygon to get a full list that represents the two.
-            ArrayList<Object> combinedList = new ArrayList<>();
+            // Create arrayLists that hold shape information in a useful order.
+            ArrayList<Object> combinedListShapes = new ArrayList<>();
+            ArrayList<String> combinedListUUID = new ArrayList<>();
 
             // Add the smaller array fist for consistency with the rest of the logic.
-            if (overlappingShapesCircleLocation.size() > overlappingShapesPolygonVertices.size()) {
+            if (overlappingShapesCircleLocation.size() <= overlappingShapesPolygonVertices.size()) {
 
-                combinedList.addAll(overlappingShapesPolygonVertices);
-                combinedList.addAll(overlappingShapesCircleLocation);
+                combinedListShapes.addAll(overlappingShapesPolygonVertices);
+                combinedListShapes.addAll(overlappingShapesCircleLocation);
+                combinedListUUID.addAll(overlappingShapesPolygonUUID);
+                combinedListUUID.addAll(overlappingShapesCircleUUID);
             } else {
 
-                combinedList.addAll(overlappingShapesCircleLocation);
-                combinedList.addAll(overlappingShapesPolygonVertices);
+                combinedListShapes.addAll(overlappingShapesCircleLocation);
+                combinedListShapes.addAll(overlappingShapesPolygonVertices);
+                combinedListUUID.addAll(overlappingShapesCircleUUID);
+                combinedListUUID.addAll(overlappingShapesPolygonUUID);
             }
 
-            selectedOverlappingShapeUUID = overlappingShapesUUID.get(chatSelectorSeekBar.getProgress());
+            selectedOverlappingShapeUUID = combinedListUUID.get(chatSelectorSeekBar.getProgress());
 
             if (selectedOverlappingShapeUUID != null) {
 
@@ -6747,7 +6780,7 @@ public class Map extends FragmentActivity implements
                 if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
 
                     // Create a yellow highlighted shape.
-                    if (combinedList.get(chatSelectorSeekBar.getProgress()) instanceof LatLng) {
+                    if (combinedListShapes.get(chatSelectorSeekBar.getProgress()) instanceof LatLng) {
 
                         circleTemp = mMap.addCircle(
                                 new CircleOptions()
@@ -6782,7 +6815,7 @@ public class Map extends FragmentActivity implements
                 } else {
 
                     // Create a purple highlighted shape.
-                    if (combinedList.get(chatSelectorSeekBar.getProgress()) instanceof LatLng) {
+                    if (combinedListShapes.get(chatSelectorSeekBar.getProgress()) instanceof LatLng) {
 
                         circleTemp = mMap.addCircle(
                                 new CircleOptions()

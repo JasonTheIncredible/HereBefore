@@ -1538,7 +1538,7 @@ public class Chat extends Fragment implements
                                 newReportedPost.setValue(reportPostInformation);
                                 loadingIcon.setVisibility(View.GONE);
                                 toastMessageShort("Post reported. Thank you!");
-                                break;
+                                return;
                             }
                         }
                     }

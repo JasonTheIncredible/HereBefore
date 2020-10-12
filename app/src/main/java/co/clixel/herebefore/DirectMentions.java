@@ -479,7 +479,7 @@ public class DirectMentions extends Fragment {
                                             if (!(Boolean) ds.child("seenByUser").getValue()) {
 
                                                 ds.child("seenByUser").getRef().setValue(true);
-                                                break;
+                                                return;
                                             }
                                         }
                                     }
@@ -544,7 +544,6 @@ public class DirectMentions extends Fragment {
 
                                                     Intent Activity = new Intent(mContext, Navigation.class);
                                                     Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
-                                                    Log.i(TAG, "111111111111 " + mShapeSize.get(getAdapterPosition()).doubleValue());
                                                     Activity.putExtra("radius", mShapeSize.get(getAdapterPosition()).doubleValue());
                                                     Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
                                                     Activity.putExtra("userIsWithinShape", userIsWithinShape);
