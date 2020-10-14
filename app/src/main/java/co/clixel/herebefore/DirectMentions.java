@@ -423,10 +423,10 @@ public class DirectMentions extends Fragment {
 
     public class DirectMentionsAdapter extends RecyclerView.Adapter<DirectMentionsAdapter.ViewHolder> {
 
-        private Context mContext;
-        private ArrayList<String> mMessageTime, mMessageUser, mMessageImage, mMessageImageVideo, mMessageText, mShapeUUID;
-        private ArrayList<Boolean> mUserIsWithinShape, mShapeIsCircle, mSeenByUser;
-        private ArrayList<Long> mPosition, mShapeSize, mShapeLat, mShapeLon;
+        private final Context mContext;
+        private final ArrayList<String> mMessageTime, mMessageUser, mMessageImage, mMessageImageVideo, mMessageText, mShapeUUID;
+        private final ArrayList<Boolean> mUserIsWithinShape, mShapeIsCircle, mSeenByUser;
+        private final ArrayList<Long> mPosition, mShapeSize, mShapeLat, mShapeLon;
         private boolean theme;
 
         class ViewHolder extends RecyclerView.ViewHolder {

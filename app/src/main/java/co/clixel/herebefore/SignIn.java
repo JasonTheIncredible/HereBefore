@@ -38,7 +38,7 @@ public class SignIn extends AppCompatActivity {
     private Button signInButton, resetPasswordButton, goToCreateAccountButton;
     private SignInButton googleSignInButton;
     private String shapeUUID, email, pass;
-    private Double polygonArea, circleLatitude, circleLongitude, radius, marker0Latitude, marker0Longitude, marker1Latitude, marker1Longitude, marker2Latitude, marker2Longitude, marker3Latitude, marker3Longitude, marker4Latitude, marker4Longitude, marker5Latitude, marker5Longitude, marker6Latitude, marker6Longitude, marker7Latitude, marker7Longitude;
+    private Double polygonArea, circleLatitude, circleLongitude, userLatitude, userLongitude, radius, marker0Latitude, marker0Longitude, marker1Latitude, marker1Longitude, marker2Latitude, marker2Longitude, marker3Latitude, marker3Longitude, marker4Latitude, marker4Longitude, marker5Latitude, marker5Longitude, marker6Latitude, marker6Longitude, marker7Latitude, marker7Longitude;
     private boolean newShape, userIsWithinShape, threeMarkers, fourMarkers, fiveMarkers, sixMarkers, sevenMarkers, eightMarkers;
     private int shapeLat, shapeLon;
     private GoogleSignInClient mGoogleSignInClient;
@@ -89,6 +89,8 @@ public class SignIn extends AppCompatActivity {
             newShape = extras.getBoolean("newShape");
             shapeLat = extras.getInt("shapeLat");
             shapeLon = extras.getInt("shapeLon");
+            userLatitude = extras.getDouble("userLatitude");
+            userLongitude = extras.getDouble("userLongitude");
             shapeUUID = extras.getString("shapeUUID");
             userIsWithinShape = extras.getBoolean("userIsWithinShape");
             // circleLatitude, circleLongitude, and radius will be null if the circle is not new (as a new circle is not being created).
@@ -208,6 +210,9 @@ public class SignIn extends AppCompatActivity {
                         Activity.putExtra("newShape", newShape);
                         Activity.putExtra("shapeLat", shapeLat);
                         Activity.putExtra("shapeLon", shapeLon);
+                        // UserLatitude and userLongitude are used in DirectMentions.
+                        Activity.putExtra("userLatitude", userLatitude);
+                        Activity.putExtra("userLongitude", userLongitude);
                         Activity.putExtra("shapeUUID", shapeUUID);
                         Activity.putExtra("userIsWithinShape", userIsWithinShape);
                         Activity.putExtra("circleLatitude", circleLatitude);
@@ -278,6 +283,9 @@ public class SignIn extends AppCompatActivity {
             Activity.putExtra("newShape", newShape);
             Activity.putExtra("shapeLat", shapeLat);
             Activity.putExtra("shapeLon", shapeLon);
+            // UserLatitude and userLongitude are used in DirectMentions.
+            Activity.putExtra("userLatitude", userLatitude);
+            Activity.putExtra("userLongitude", userLongitude);
             Activity.putExtra("shapeUUID", shapeUUID);
             Activity.putExtra("userIsWithinShape", userIsWithinShape);
             Activity.putExtra("circleLatitude", circleLatitude);
@@ -454,6 +462,9 @@ public class SignIn extends AppCompatActivity {
                             Activity.putExtra("newShape", newShape);
                             Activity.putExtra("shapeLat", shapeLat);
                             Activity.putExtra("shapeLon", shapeLon);
+                            // UserLatitude and userLongitude are used in DirectMentions.
+                            Activity.putExtra("userLatitude", userLatitude);
+                            Activity.putExtra("userLongitude", userLongitude);
                             Activity.putExtra("shapeUUID", shapeUUID);
                             Activity.putExtra("userIsWithinShape", userIsWithinShape);
                             Activity.putExtra("circleLatitude", circleLatitude);

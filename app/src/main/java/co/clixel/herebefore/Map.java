@@ -105,10 +105,14 @@ public class Map extends FragmentActivity implements
     private Double relativeAngle = 0.0, selectedOverlappingShapeCircleRadius;
     private Location mlocation;
     private List<LatLng> polygonPointsList, selectedOverlappingShapePolygonVertices;
-    private ArrayList<String> overlappingShapesUUID = new ArrayList<>(), overlappingShapesCircleUUID = new ArrayList<>(), overlappingShapesPolygonUUID = new ArrayList<>(), circleUUIDListForMapChange = new ArrayList<>(), polygonUUIDListForMapChange = new ArrayList<>();
-    private ArrayList<LatLng> overlappingShapesCircleLocation = new ArrayList<>(), circleCenterListForMapChange = new ArrayList<>();
-    private ArrayList<Double> overlappingShapesCircleRadius = new ArrayList<>(), circleRadiusArrayList = new ArrayList<>();
-    private ArrayList<java.util.List<LatLng>> overlappingShapesPolygonVertices = new ArrayList<>(), polygonPointsListForMapChange = new ArrayList<>();
+    private ArrayList<String> overlappingShapesUUID = new ArrayList<>(), overlappingShapesCircleUUID = new ArrayList<>(), overlappingShapesPolygonUUID = new ArrayList<>();
+    private final ArrayList<String> circleUUIDListForMapChange = new ArrayList<>(), polygonUUIDListForMapChange = new ArrayList<>();
+    private ArrayList<LatLng> overlappingShapesCircleLocation = new ArrayList<>();
+    private final ArrayList<LatLng> circleCenterListForMapChange = new ArrayList<>();
+    private ArrayList<Double> overlappingShapesCircleRadius = new ArrayList<>();
+    private final ArrayList<Double> circleRadiusArrayList = new ArrayList<>();
+    private ArrayList<java.util.List<LatLng>> overlappingShapesPolygonVertices = new ArrayList<>();
+    private final ArrayList<java.util.List<LatLng>> polygonPointsListForMapChange = new ArrayList<>();
     private float x, y;
     private int chatsSize, dmCounter = 0, newNearLeftLat, newNearLeftLon;
     private Toast longToast;
@@ -117,10 +121,10 @@ public class Map extends FragmentActivity implements
     private LocationManager locationManager;
     private Query queryDMs, queryShapesLarge, queryShapesMedium, queryShapesSmall, queryShapesPoints;
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
-    private List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
+    private final List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
+    // Give warning on feedback with "since this is anonymous, if you want a followup, provide details".
     // Don't reload Firebase information every time (switching from Chat to Settings causes a full reload).
-    // Fix "Users" Firebase rules to only allow overwriting on seenByUser.
     // Increase image loading speed in Chat and DirectMentions.
     // Make scrollToPosition work in Chat after a restart.
     // Load specific number of messages at a time to cut down on data and loading time.
@@ -5439,6 +5443,9 @@ public class Map extends FragmentActivity implements
 
                                 Activity.putExtra("shapeLat", shapeLat);
                                 Activity.putExtra("shapeLon", shapeLon);
+                                // UserLatitude and userLongitude are used in DirectMentions.
+                                Activity.putExtra("userLatitude", location.getLatitude());
+                                Activity.putExtra("userLongitude", location.getLongitude());
                                 // Pass this value to Chat.java to identify the shape.
                                 Activity.putExtra("shapeUUID", shapeUUID);
                                 // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
@@ -5506,6 +5513,9 @@ public class Map extends FragmentActivity implements
 
                                 Activity.putExtra("shapeLat", shapeLat);
                                 Activity.putExtra("shapeLon", shapeLon);
+                                // UserLatitude and userLongitude are used in DirectMentions.
+                                Activity.putExtra("userLatitude", location.getLatitude());
+                                Activity.putExtra("userLongitude", location.getLongitude());
                                 // Pass this value to Chat.java to identify the shape.
                                 Activity.putExtra("shapeUUID", shapeUUID);
                                 // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
