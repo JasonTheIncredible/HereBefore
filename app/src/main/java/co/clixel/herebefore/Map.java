@@ -123,15 +123,14 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private final List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // Give warning on feedback with "since this is anonymous, if you want a followup, provide details".
     // Don't reload Firebase information every time (switching from Chat to Settings causes a full reload).
+    // Find a way to not clear and reload map every time user returns from clicking a shape. Same with DMs.
     // Increase image loading speed in Chat and DirectMentions.
     // Make scrollToPosition work in Chat after a restart.
     // Load specific number of messages at a time to cut down on data and loading time.
     // Allow user to click on a mention in Chat and scroll to that mention for context.
     // Uploading a picture takes a long time.
     // Create timer that kicks people out of a new Chat if they haven't posted within an amount of time?
-    // Find a way to not clear and reload map every time user returns from clicking a shape. Same with DMs.
     // Make a better loading icon, with a progress bar.
     // Loading icon for Glide images.
     // If user is on a point, prevent creating a new one. Deal with overlapping shapes in general. Maybe a warning message?

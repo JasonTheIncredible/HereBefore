@@ -49,11 +49,23 @@
                 android:focusableInTouchMode="true"
                 android:orientation="vertical">
 
+                <TextView
+                    android:id="@+id/additionalInfo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="50dp"
+                    android:layout_marginTop="30dp"
+                    android:layout_marginRight="50dp"
+                    android:text="@string/feedback_warning"
+                    android:textSize="16sp" />
+
                 <EditText
                     android:id="@+id/feedbackEditText"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_below="@id/additionalInfo"
                     android:layout_marginLeft="50dp"
+                    android:layout_marginTop="30dp"
                     android:layout_marginRight="50dp"
                     android:hint="@string/feedback"
                     android:inputType="textCapSentences|textMultiLine"
