@@ -133,6 +133,8 @@ public class Navigation extends AppCompatActivity {
 
         viewPager.addOnPageChangeListener(pagerListener);
 
+        viewPager.setOffscreenPageLimit(2);
+
         BubbleNavigationChangeListener bubbleNavigationChangeListener = (view, position) -> {
 
             viewPager.setCurrentItem(position, true);

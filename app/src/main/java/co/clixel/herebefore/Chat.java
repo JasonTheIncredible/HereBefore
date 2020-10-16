@@ -145,7 +145,7 @@ public class Chat extends Fragment implements
     private Query query;
     private Drawable imageDrawable, videoDrawable;
     private int latFirebaseValue, lonFirebaseValue;
-    private WordTokenizerConfig tokenizerConfig = new WordTokenizerConfig
+    private final WordTokenizerConfig tokenizerConfig = new WordTokenizerConfig
             .Builder()
             .setWordBreakChars(", ")
             .setExplicitChars("@")
@@ -991,9 +991,9 @@ public class Chat extends Fragment implements
 
     private class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ViewHolder> {
 
-        private Context mContext;
-        private ArrayList<String> mMessageTime, mMessageUser, mMessageImage, mMessageImageVideo, mMessageText;
-        private ArrayList<Boolean> mUserIsWithinShape;
+        private final Context mContext;
+        private final ArrayList<String> mMessageTime, mMessageUser, mMessageImage, mMessageImageVideo, mMessageText;
+        private final ArrayList<Boolean> mUserIsWithinShape;
         private boolean theme;
 
         class ViewHolder extends RecyclerView.ViewHolder {
@@ -1372,8 +1372,8 @@ public class Chat extends Fragment implements
     // The mentionsAdapter for the mentions recyclerView. I'm not sure how to make "mInput" work when it's in another activity so I added it here.
     private class MentionsAdapter extends RecyclerView.Adapter<MentionsAdapter.ViewHolder> {
 
-        private Context mContext;
-        private List<String> mSuggestions;
+        private final Context mContext;
+        private final List<String> mSuggestions;
         private boolean theme;
 
         class ViewHolder extends RecyclerView.ViewHolder {
@@ -1858,7 +1858,7 @@ public class Chat extends Fragment implements
     // Show an explanation as to why permission is necessary.
     private static class cameraPermissionAlertDialog extends AsyncTask<Boolean, Void, Boolean> {
 
-        private WeakReference<Chat> activityWeakRef;
+        private final WeakReference<Chat> activityWeakRef;
 
         cameraPermissionAlertDialog(Chat activity) {
 
@@ -1886,7 +1886,7 @@ public class Chat extends Fragment implements
 
             Log.i(TAG, "cameraPermissionAlertDialog -> onPostExecute()");
 
-            if (activityWeakRef != null && activityWeakRef.get() != null) {
+            if (activityWeakRef.get() != null) {
 
                 AlertDialog.Builder builder;
 
@@ -1919,7 +1919,7 @@ public class Chat extends Fragment implements
     private static class writeExternalStoragePermissionAlertDialog extends AsyncTask<Boolean, Void, Boolean> {
 
         AlertDialog.Builder builder;
-        private WeakReference<Chat> activityWeakRef;
+        private final WeakReference<Chat> activityWeakRef;
 
         writeExternalStoragePermissionAlertDialog(Chat activity) {
 
@@ -1947,7 +1947,7 @@ public class Chat extends Fragment implements
 
             Log.i(TAG, "writeExternalStoragePermissionAlertDialog -> onPostExecute()");
 
-            if (activityWeakRef != null && activityWeakRef.get() != null) {
+            if (activityWeakRef.get() != null) {
 
                 builder = new AlertDialog.Builder(activityWeakRef.get().getContext());
 
@@ -1978,7 +1978,7 @@ public class Chat extends Fragment implements
     private static class audioPermissionAlertDialog extends AsyncTask<Boolean, Void, Boolean> {
 
         AlertDialog.Builder builder;
-        private WeakReference<Chat> activityWeakRef;
+        private final WeakReference<Chat> activityWeakRef;
 
         audioPermissionAlertDialog(Chat activity) {
 
@@ -2006,7 +2006,7 @@ public class Chat extends Fragment implements
 
             Log.i(TAG, "audioPermissionAlertDialog -> onPostExecute()");
 
-            if (activityWeakRef != null && activityWeakRef.get() != null) {
+            if (activityWeakRef.get() != null) {
 
                 builder = new AlertDialog.Builder(activityWeakRef.get().getContext());
 
@@ -2220,7 +2220,7 @@ public class Chat extends Fragment implements
 
     private static class videoCompressAndAddToGalleryAsyncTask extends AsyncTask<String, String, String> {
 
-        private WeakReference<Chat> activityWeakRef;
+        private final WeakReference<Chat> activityWeakRef;
         private Bitmap mBmp;
         private int mBmpWidth;
         private int mBmpHeight;

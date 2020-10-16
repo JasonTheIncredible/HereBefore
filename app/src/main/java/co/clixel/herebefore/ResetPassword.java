@@ -10,7 +10,6 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.preference.PreferenceManager;
@@ -19,8 +18,6 @@ import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.ads.MobileAds;
 import com.google.android.gms.ads.RequestConfiguration;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 
 public class ResetPassword extends AppCompatActivity {
@@ -116,28 +113,24 @@ public class ResetPassword extends AppCompatActivity {
 
             FirebaseAuth firebaseAuth = FirebaseAuth.getInstance();
 
-            firebaseAuth.sendPasswordResetEmail(emailAddress).addOnCompleteListener(new OnCompleteListener<Void>() {
+            firebaseAuth.sendPasswordResetEmail(emailAddress).addOnCompleteListener(task -> {
 
-                @Override
-                public void onComplete(@NonNull Task<Void> task) {
+                if (task.isSuccessful()) {
 
-                    if (task.isSuccessful()) {
+                    toastMessageLong("Password reset instructions sent to your email");
+                    loadingIcon.setVisibility(View.GONE);
+                }
 
-                        toastMessageLong("Password reset instructions sent to your email");
-                        loadingIcon.setVisibility(View.GONE);
-                    }
+                if (!task.isSuccessful() && task.getException() != null) {
 
-                    if (!task.isSuccessful() && task.getException() != null) {
+                    // Tell the user what happened.
+                    loadingIcon.setVisibility(View.GONE);
+                    toastMessageLong("Email not sent: " + task.getException().getMessage());
+                } else if (!task.isSuccessful() && task.getException() == null) {
 
-                        // Tell the user what happened.
-                        loadingIcon.setVisibility(View.GONE);
-                        toastMessageLong("Email not sent: " + task.getException().getMessage());
-                    } else if (!task.isSuccessful() && task.getException() == null) {
-
-                        // Tell the user something happened.
-                        loadingIcon.setVisibility(View.GONE);
-                        toastMessageLong("An unknown error occurred. Please try again.");
-                    }
+                    // Tell the user something happened.
+                    loadingIcon.setVisibility(View.GONE);
+                    toastMessageLong("An unknown error occurred. Please try again.");
                 }
             });
         });

@@ -123,8 +123,7 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private final List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // Don't reload Firebase information every time (switching from Chat to Settings causes a full reload).
-    // Find a way to not clear and reload map every time user returns from clicking a shape. Same with DMs.
+    // Find a way to not clear and reload map every time user returns from clicking a shape. Same with DM notification.
     // Increase image loading speed in Chat and DirectMentions.
     // Make scrollToPosition work in Chat after a restart.
     // Load specific number of messages at a time to cut down on data and loading time.
@@ -2438,7 +2437,7 @@ public class Map extends FragmentActivity implements
     private static class buildAlertNoGPS extends AsyncTask<Void, Void, Void> {
 
         AlertDialog.Builder builder;
-        private WeakReference<Map> activityWeakRef;
+        private final WeakReference<Map> activityWeakRef;
 
         buildAlertNoGPS(Map activity) {
 
@@ -2709,7 +2708,7 @@ public class Map extends FragmentActivity implements
     private static class locationPermissionAlertDialog extends AsyncTask<Void, Void, Void> {
 
         AlertDialog.Builder builder;
-        private WeakReference<Map> activityWeakRef;
+        private final WeakReference<Map> activityWeakRef;
 
         locationPermissionAlertDialog(Map activity) {
 
@@ -3083,7 +3082,7 @@ public class Map extends FragmentActivity implements
                                 });
 
                         // Check if the user is already signed in.
-                        if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) instanceof GoogleSignInAccount) {
+                        if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) != null) {
 
                             // User signed in.
 
@@ -3347,7 +3346,7 @@ public class Map extends FragmentActivity implements
                                     userIsWithinShape = PolyUtil.containsLocation(location.getLatitude(), location.getLongitude(), polygon.getPoints(), false);
 
                                     // Check if the user is already signed in.
-                                    if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) instanceof GoogleSignInAccount) {
+                                    if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) != null) {
 
                                         // User signed in.
 
@@ -3925,7 +3924,7 @@ public class Map extends FragmentActivity implements
                                     userIsWithinShape = !(distance[0] > circle.getRadius());
 
                                     // Check if the user is already signed in.
-                                    if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) instanceof GoogleSignInAccount) {
+                                    if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) != null) {
 
                                         // User signed in.
 
