@@ -99,7 +99,7 @@ public class Map extends FragmentActivity implements
     private boolean locationProviderDisabled = false, firstLoadCamera = true, firstLoadShapes = true, firstLoadDMs = true, dmExists = false, largeExists = false, mediumExists = false, smallExists = false, pointsExist = false, mapChanged, cameraMoved = false, waitingForBetterLocationAccuracy = false, badAccuracy = false,
             waitingForClicksToProcess = false, waitingForShapeInformationToProcess = false, markerOutsidePolygon = false, usedSeekBar = false,
             userIsWithinShape, selectingShape = false, threeMarkers = false, fourMarkers = false, fiveMarkers = false, sixMarkers = false, sevenMarkers = false, eightMarkers = false,
-            showedLocationAccuracyWarning = false, restarted = false, newCameraCoordinates = false, showEverything = true, showLarge = false, showMedium = false, showSmall = false, showPoints = false, mapCleared = false;
+            restarted = false, newCameraCoordinates = false, showEverything = true, showLarge = false, showMedium = false, showSmall = false, showPoints = false, mapCleared = false;
     private Boolean showingEverything, showingLarge, showingMedium, showingSmall, showingPoints;
     private LatLng markerPositionAtVertexOfPolygon, marker0Position, marker1Position, marker2Position, marker3Position, marker4Position, marker5Position, marker6Position, marker7Position, selectedOverlappingShapeCircleLocation;
     private Double relativeAngle = 0.0, selectedOverlappingShapeCircleRadius;
@@ -123,27 +123,24 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private final List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // Find a way to not clear and reload map every time user returns from clicking a shape. Same with DM notification.
-    // Increase image loading speed in Chat and DirectMentions.
-    // Make scrollToPosition work in Chat after a restart.
-    // Load specific number of messages at a time to cut down on data and loading time.
+    // Load specific number of messages at a time to cut down on data and loading time (pagination).
     // Allow user to click on a mention in Chat and scroll to that mention for context.
     // Uploading a picture takes a long time.
     // Create timer that kicks people out of a new Chat if they haven't posted within an amount of time?
     // Make a better loading icon, with a progress bar.
-    // Loading icon for Glide images.
+    // Loading icon for Glide images in Chat and DirectMentions, and cut down on loading time.
     // If user is on a point, prevent creating a new one. Deal with overlapping shapes in general. Maybe a warning message?
     // Require picture on creating a shape? Also, long press a shape to see a popup of that picture.
     // Make situations where Firebase circles are added to the map and then polygons are added (like in chatViews) async? Also, do that for changing map and therefore changing shape colors.
     // Panoramic view?
-    // Zoom in further?
-    // Allow user to delete their own content?
     // Show direction camera was facing when taking photo?
-    // Remember the AC: Origins inspiration.
-    // Use airdrop as inspiration - create items in the world.
-    // When sending DMs back and forth, verify that a user was included in the last DM.
-    // Create "my locations" or "my photos" and see friends' locations / follow friends?
+    // Remember the AC: Origins inspiration. Also, airdrop - create items in the world.
     // Users should be given a view of an area when clicking on a circle. Like they've been sent to that area.
+    // Think of way to make "creating a point" more accurate to the user's location.
+    // Make scrollToPosition work in Chat after a restart. Also prevent reloading Chat and DMs every time app restarts.
+    // Find a way to not clear and reload map every time user returns from clicking a shape. Same with DM notification.
+    // When sending DMs back and forth, verify that a user was included in the last DM (as any anonymous UUID could pretend to be the last person).
+    // Create "my locations" or "my photos" and see friends' locations / follow friends?
     // Leave messages in locations that users get notified of when they enter the area by adding geo-fencing..
     // Find a way to add to existing snapshot - then send that snapshot to DirectMentions from Map.
     // Update general look of app.
@@ -167,7 +164,6 @@ public class Map extends FragmentActivity implements
     // Make sure aboutLibraries includes all libraries.
     // Make sure the secret stuff is secret.
     // Switch existing values in Firebase.
-    // Change version to year-month-day.
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -2254,7 +2250,6 @@ public class Map extends FragmentActivity implements
         selectingShape = false;
         chatsSize = 0;
         dmCounter = 0;
-        showedLocationAccuracyWarning = false;
         newCameraCoordinates = false;
         loadedCoordinates.clear();
         oldNearLeft = null;
@@ -2827,7 +2822,7 @@ public class Map extends FragmentActivity implements
 
                     CameraPosition cameraPosition = new CameraPosition.Builder()
                             .target(new LatLng(location.getLatitude(), location.getLongitude()))      // Sets the center of the map to user's location
-                            .zoom(18)                   // Sets the zoom
+                            .zoom(19)                   // Sets the zoom
                             .bearing(0)                // Sets the orientation of the camera
                             .tilt(0)                   // Sets the tilt of the camera
                             .build();                   // Creates a CameraPosition from the builder
@@ -2844,7 +2839,7 @@ public class Map extends FragmentActivity implements
 
                     CameraPosition cameraPosition = new CameraPosition.Builder()
                             .target(new LatLng(location.getLatitude(), location.getLongitude()))      // Sets the center of the map to user's location
-                            .zoom(18)                   // Sets the zoom
+                            .zoom(19)                   // Sets the zoom
                             .bearing(0)                // Sets the orientation of the camera
                             .tilt(0)                   // Sets the tilt of the camera
                             .build();                   // Creates a CameraPosition from the builder
@@ -6572,18 +6567,13 @@ public class Map extends FragmentActivity implements
                         Manifest.permission.ACCESS_FINE_LOCATION)
                         == PackageManager.PERMISSION_GRANTED) {
 
+                    loadingIcon.setVisibility(View.VISIBLE);
+
                     // Create a point and to to Chat.java or SignIn.java.
                     FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
 
                     mFusedLocationClient.getLastLocation()
                             .addOnSuccessListener(Map.this, location -> {
-
-                                if (location.getAccuracy() > 5 && !showedLocationAccuracyWarning) {
-
-                                    toastMessageLong("Waiting a moment should increase your location accuracy. Proceed anyway?");
-                                    showedLocationAccuracyWarning = true;
-                                    return;
-                                }
 
                                 // Remove any other shape before adding the circle to Firebase.
                                 if (newCircle != null) {
@@ -6610,18 +6600,42 @@ public class Map extends FragmentActivity implements
 
                                         Log.i(TAG, "onMenuItemClick() -> create point and enter chat -> user signed in");
 
-                                        // Carry the extras all the way to Chat.java.
+                                        cancelToasts();
+
                                         Intent Activity = new Intent(Map.this, Navigation.class);
                                         // Pass this boolean value to Chat.java.
                                         Activity.putExtra("newShape", true);
+
+                                        // Get a value with 1 decimal point and use it for Firebase.
+                                        double nearLeftPrecisionLat = Math.pow(10, 1);
+                                        // Can't create a firebase path with '.', so get rid of decimal.
+                                        double nearLeftLatTemp = (int) (nearLeftPrecisionLat * location.getLatitude()) / nearLeftPrecisionLat;
+                                        nearLeftLatTemp *= 10;
+                                        int shapeLat = (int) nearLeftLatTemp;
+
+                                        double nearLeftPrecisionLon = Math.pow(10, 1);
+                                        // Can't create a firebase path with '.', so get rid of decimal.
+                                        double nearLeftLonTemp = (int) (nearLeftPrecisionLon * location.getLongitude()) / nearLeftPrecisionLon;
+                                        nearLeftLonTemp *= 10;
+                                        int shapeLon = (int) nearLeftLonTemp;
+
+                                        Activity.putExtra("shapeLat", shapeLat);
+                                        Activity.putExtra("shapeLon", shapeLon);
+                                        // UserLatitude and userLongitude are used in DirectMentions.
+                                        Activity.putExtra("userLatitude", location.getLatitude());
+                                        Activity.putExtra("userLongitude", location.getLongitude());
                                         // Pass this value to Chat.java to identify the shape.
                                         Activity.putExtra("shapeUUID", shapeUUID);
                                         // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
                                         Activity.putExtra("userIsWithinShape", true);
-                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a recyclerviewlayout.
                                         Activity.putExtra("circleLatitude", location.getLatitude());
                                         Activity.putExtra("circleLongitude", location.getLongitude());
                                         Activity.putExtra("radius", 1.0);
+
+                                        clearMap();
+
+                                        loadingIcon.setVisibility(View.GONE);
+
                                         startActivity(Activity);
                                     } else {
 
@@ -6629,18 +6643,42 @@ public class Map extends FragmentActivity implements
 
                                         Log.i(TAG, "onMenuItemClick() -> create point and enter chat -> user NOT signed in");
 
-                                        // Carry the extras all the way to Chat.java.
+                                        cancelToasts();
+
                                         Intent Activity = new Intent(Map.this, SignIn.class);
                                         // Pass this boolean value to Chat.java.
                                         Activity.putExtra("newShape", true);
+
+                                        // Get a value with 1 decimal point and use it for Firebase.
+                                        double nearLeftPrecisionLat = Math.pow(10, 1);
+                                        // Can't create a firebase path with '.', so get rid of decimal.
+                                        double nearLeftLatTemp = (int) (nearLeftPrecisionLat * location.getLatitude()) / nearLeftPrecisionLat;
+                                        nearLeftLatTemp *= 10;
+                                        int shapeLat = (int) nearLeftLatTemp;
+
+                                        double nearLeftPrecisionLon = Math.pow(10, 1);
+                                        // Can't create a firebase path with '.', so get rid of decimal.
+                                        double nearLeftLonTemp = (int) (nearLeftPrecisionLon * location.getLongitude()) / nearLeftPrecisionLon;
+                                        nearLeftLonTemp *= 10;
+                                        int shapeLon = (int) nearLeftLonTemp;
+
+                                        Activity.putExtra("shapeLat", shapeLat);
+                                        Activity.putExtra("shapeLon", shapeLon);
+                                        // UserLatitude and userLongitude are used in DirectMentions.
+                                        Activity.putExtra("userLatitude", location.getLatitude());
+                                        Activity.putExtra("userLongitude", location.getLongitude());
                                         // Pass this value to Chat.java to identify the shape.
                                         Activity.putExtra("shapeUUID", shapeUUID);
                                         // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
                                         Activity.putExtra("userIsWithinShape", true);
-                                        // Pass this information to Chat.java to create a new circle in Firebase after someone writes a recyclerviewlayout.
                                         Activity.putExtra("circleLatitude", location.getLatitude());
                                         Activity.putExtra("circleLongitude", location.getLongitude());
                                         Activity.putExtra("radius", 1.0);
+
+                                        clearMap();
+
+                                        loadingIcon.setVisibility(View.GONE);
+
                                         startActivity(Activity);
                                     }
                                 }
