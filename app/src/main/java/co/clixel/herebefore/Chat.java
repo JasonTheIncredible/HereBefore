@@ -114,13 +114,14 @@ public class Chat extends Fragment implements
     private static final int Request_ID_Take_Photo = 1700, Request_ID_Record_Video = 1800;
     private MentionsEditText mInput;
     private ArrayList<String> mTime, mUser, mImage, mVideo, mText, mSuggestions, allMentions, userUUIDAL, userEmailAL;
+    private ArrayList<Long> userDateAL;
     private ArrayList<Boolean> mUserIsWithinShape;
     private ArrayList<String> removedDuplicatesMentions;
     private RecyclerView chatRecyclerView, mentionsRecyclerView;
     private static int index = -1, top = -1, last;
     private ChildEventListener childEventListener;
     private FloatingActionButton sendButton, mediaButton;
-    private boolean firstLoad, needLoadingIcon = false, reachedEndOfRecyclerView = false, recyclerViewHasScrolled = false, messageSent = false, sendButtonClicked = false, mediaButtonMenuIsOpen, fileIsImage, checkPermissionsPicture,
+    private boolean firstLoad, loadingOlderMessages = false, noMoreMessages = false, needLoadingIcon = false, reachedEndOfRecyclerView = false, recyclerViewHasScrolled = false, messageSent = false, sendButtonClicked = false, mediaButtonMenuIsOpen, fileIsImage, checkPermissionsPicture,
             newShape, threeMarkers, fourMarkers, fiveMarkers, sixMarkers, sevenMarkers, eightMarkers;
     private Boolean userIsWithinShape;
     private View.OnLayoutChangeListener onLayoutChangeListener;
@@ -242,6 +243,7 @@ public class Chat extends Fragment implements
         chatRecyclerViewLinearLayoutManager = new LinearLayoutManager(mActivity);
         mentionsRecyclerViewLinearLayoutManager = new LinearLayoutManager(mActivity);
 
+        userDateAL = new ArrayList<>();
         userUUIDAL = new ArrayList<>();
         userEmailAL = new ArrayList<>();
 
@@ -317,21 +319,59 @@ public class Chat extends Fragment implements
             mentionsRecyclerView.setVisibility(View.GONE);
         }
 
-        DatabaseReference firebaseMessages = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID);
-        firebaseMessages.addListenerForSingleValueEvent(new ValueEventListener() {
+        getFirebaseMessages(null);
 
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
+        // Check RecyclerView scroll state (to allow the layout to move up when keyboard appears).
+        if (chatRecyclerView != null) {
 
-                fillArrayLists(snapshot);
+            chatRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
 
-                fillRecyclerView(snapshot);
-            }
+                @Override
+                public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
 
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-            }
-        });
+                    super.onScrolled(recyclerView, dx, dy);
+
+                    // Get the top visible position. If it is (almost) the last loaded item, load more.
+                    int firstCompletelyVisibleItemPosition = chatRecyclerViewLinearLayoutManager.findFirstCompletelyVisibleItemPosition();
+
+                    if (firstCompletelyVisibleItemPosition == 0 && !noMoreMessages) {
+
+                        loadingIcon.setVisibility(View.VISIBLE);
+                        getFirebaseMessages((long) userDateAL.get(0));
+                        loadingOlderMessages = true;
+                    } else if (firstCompletelyVisibleItemPosition == 0 && noMoreMessages) {
+
+                        cancelToasts();
+                        longToast = Toast.makeText(mContext, "No more messages.", Toast.LENGTH_SHORT);
+                        longToast.setGravity(Gravity.TOP, 0, 750);
+                        longToast.show();
+                    }
+
+                    // If RecyclerView can't be scrolled down, reachedEndOfRecyclerView = true.
+                    reachedEndOfRecyclerView = !recyclerView.canScrollVertically(1);
+
+                    // Used to detect if user has just entered the recyclerviewlayout (so layout needs to move up when keyboard appears).
+                    recyclerViewHasScrolled = true;
+                }
+            });
+
+            // If RecyclerView is scrolled to the bottom, move the layout up when the keyboard appears.
+            chatRecyclerView.addOnLayoutChangeListener(onLayoutChangeListener = (v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
+
+                if (reachedEndOfRecyclerView || !recyclerViewHasScrolled) {
+
+                    if (bottom < oldBottom) {
+
+                        if (chatRecyclerView.getAdapter() != null && chatRecyclerView.getAdapter().getItemCount() > 0) {
+
+                            chatRecyclerView.postDelayed(() -> chatRecyclerView.smoothScrollToPosition(
+
+                                    chatRecyclerView.getAdapter().getItemCount() - 1), 100);
+                        }
+                    }
+                }
+            });
+        }
 
         // Hide the imageView or videoImageView if user presses the delete button.
         mInput.setOnKeyListener((v, keyCode, event) -> {
@@ -413,7 +453,8 @@ public class Chat extends Fragment implements
                     // Upload the image to Firebase if it exists and is not already in the process of sending an image.
                     if (uploadTask != null && uploadTask.isInProgress()) {
 
-                        toastMessageShort("Upload in progress");
+                        cancelToasts();
+                        toastMessageShort("Upload in progress.");
                     } else {
 
                         firebaseUpload();
@@ -529,9 +570,12 @@ public class Chat extends Fragment implements
                         } else {
 
                             // Both radius and polygonArea are null.
+                            cancelToasts();
                             toastMessageLong("Oops! Something went wrong!");
                             return;
                         }
+
+                        newShape = false;
                     }
 
                     String userUUID = UUID.randomUUID().toString();
@@ -639,14 +683,64 @@ public class Chat extends Fragment implements
         });
     }
 
+    private void getFirebaseMessages(Long nodeID) {
+
+        Log.i(TAG, "getFirebaseMessages()");
+
+        Query query0;
+
+        if (nodeID == null) {
+
+            query0 = FirebaseDatabase.getInstance().getReference()
+                    .child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID)
+                    .limitToLast(20);
+        } else {
+
+            query0 = FirebaseDatabase.getInstance().getReference()
+                    .child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID)
+                    .orderByChild("date")
+                    .endAt(nodeID)
+                    .limitToLast(20);
+        }
+
+        query0.addListenerForSingleValueEvent(new ValueEventListener() {
+
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+
+                if (snapshot.getChildrenCount() < 20 && loadingOlderMessages) {
+
+                    noMoreMessages = true;
+                }
+
+                fillArrayLists(snapshot);
+
+                fillRecyclerView(snapshot);
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+            }
+        });
+    }
+
     private void fillArrayLists(DataSnapshot snapshot) {
 
         Log.i(TAG, "fillArrayLists()");
 
+        int i = 0;
         for (DataSnapshot ds : snapshot.getChildren()) {
 
-            userUUIDAL.add((String) ds.child("userUUID").getValue());
-            userEmailAL.add((String) ds.child("email").getValue());
+            userDateAL.add(i, (Long) ds.child("date").getValue());
+            userUUIDAL.add(i, (String) ds.child("userUUID").getValue());
+            userEmailAL.add(i, (String) ds.child("email").getValue());
+            i++;
+
+            // Prevent duplicates.
+            if (i == snapshot.getChildrenCount() - 1) {
+
+                break;
+            }
         }
     }
 
@@ -654,12 +748,13 @@ public class Chat extends Fragment implements
 
         Log.i(TAG, "fillRecyclerView()");
 
+        int i = 0;
         for (DataSnapshot ds : snapshot.getChildren()) {
 
             Long serverDate = (Long) ds.child("date").getValue();
             String user = (String) ds.child("userUUID").getValue();
             // Used when a user mentions another user with "@".
-            mSuggestions.add(user);
+            mSuggestions.add(i, user);
             String imageURL = (String) ds.child("imageURL").getValue();
             String videoURL = (String) ds.child("videoURL").getValue();
             String messageText = (String) ds.child("message").getValue();
@@ -671,16 +766,23 @@ public class Chat extends Fragment implements
 
                 Date netDate = (new Date(serverDate));
                 String messageTime = dateFormat.format(netDate);
-                mTime.add(messageTime);
+                mTime.add(i, messageTime);
             } else {
 
                 Log.e(TAG, "onStart() -> serverDate == null");
             }
-            mUser.add(user);
-            mImage.add(imageURL);
-            mVideo.add(videoURL);
-            mText.add(messageText);
-            mUserIsWithinShape.add(userIsWithinShape);
+            mUser.add(i, user);
+            mImage.add(i, imageURL);
+            mVideo.add(i, videoURL);
+            mText.add(i, messageText);
+            mUserIsWithinShape.add(i, userIsWithinShape);
+            i++;
+
+            // Prevent duplicates.
+            if (i == snapshot.getChildrenCount() - 1) {
+
+                break;
+            }
         }
 
         // Read RecyclerView scroll position (for use in initChatAdapter).
@@ -692,43 +794,18 @@ public class Chat extends Fragment implements
             top = (v == null) ? 0 : (v.getTop() - chatRecyclerView.getPaddingTop());
         }
 
-        addQuery();
+        if (chatRecyclerView.getAdapter() != null && loadingOlderMessages) {
 
-        // Check RecyclerView scroll state (to allow the layout to move up when keyboard appears).
-        if (chatRecyclerView != null) {
-
-            chatRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
-
-                @Override
-                public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
-
-                    super.onScrollStateChanged(recyclerView, newState);
-
-                    // If RecyclerView can't be scrolled down, reachedEndOfRecyclerView = true.
-                    reachedEndOfRecyclerView = !recyclerView.canScrollVertically(1);
-
-                    // Used to detect if user has just entered the recyclerviewlayout (so layout needs to move up when keyboard appears).
-                    recyclerViewHasScrolled = true;
-                }
-            });
-
-            // If RecyclerView is scrolled to the bottom, move the layout up when the keyboard appears.
-            chatRecyclerView.addOnLayoutChangeListener(onLayoutChangeListener = (v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
-
-                if (reachedEndOfRecyclerView || !recyclerViewHasScrolled) {
-
-                    if (bottom < oldBottom) {
-
-                        if (chatRecyclerView.getAdapter() != null && chatRecyclerView.getAdapter().getItemCount() > 0) {
-
-                            chatRecyclerView.postDelayed(() -> chatRecyclerView.smoothScrollToPosition(
-
-                                    chatRecyclerView.getAdapter().getItemCount() - 1), 100);
-                        }
-                    }
-                }
-            });
+            chatRecyclerView.getAdapter().notifyItemRangeInserted(0, (int) snapshot.getChildrenCount() - 1);
+            loadingIcon.setVisibility(View.GONE);
         }
+
+        if (!loadingOlderMessages) {
+
+            addQuery();
+        }
+
+        loadingOlderMessages = false;
     }
 
     // Change to .limitToLast(1) to cut down on data usage. Otherwise, EVERY child at this node will be downloaded every time the child is updated.
@@ -796,6 +873,7 @@ public class Chat extends Fragment implements
                     top = (v == null) ? 0 : (v.getTop() - chatRecyclerView.getPaddingTop());
                 }
 
+                userDateAL.add((Long) snapshot.child("date").getValue());
                 userUUIDAL.add((String) snapshot.child("userUUID").getValue());
                 userEmailAL.add((String) snapshot.child("email").getValue());
 
@@ -817,6 +895,7 @@ public class Chat extends Fragment implements
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
 
+                cancelToasts();
                 toastMessageLong(error.getMessage());
             }
         };
@@ -1537,6 +1616,7 @@ public class Chat extends Fragment implements
                                 DatabaseReference newReportedPost = FirebaseDatabase.getInstance().getReference().child("ReportedPost").push();
                                 newReportedPost.setValue(reportPostInformation);
                                 loadingIcon.setVisibility(View.GONE);
+                                cancelToasts();
                                 toastMessageShort("Post reported. Thank you!");
                                 return;
                             }
@@ -1547,6 +1627,7 @@ public class Chat extends Fragment implements
                 @Override
                 public void onCancelled(@NonNull DatabaseError databaseError) {
 
+                    cancelToasts();
                     toastMessageLong(databaseError.getMessage());
                 }
             });
@@ -1808,6 +1889,7 @@ public class Chat extends Fragment implements
 
                 // Error occurred while creating the File
                 ex.printStackTrace();
+                cancelToasts();
                 toastMessageLong(ex.getMessage());
             }
             // Continue only if the File was successfully created
@@ -1839,6 +1921,7 @@ public class Chat extends Fragment implements
 
                 // Error occurred while creating the File
                 ex.printStackTrace();
+                cancelToasts();
                 toastMessageLong(ex.getMessage());
             }
             // Continue only if the File was successfully created
@@ -2192,6 +2275,7 @@ public class Chat extends Fragment implements
             } catch (IOException ex) {
 
                 ex.printStackTrace();
+                activity.cancelToasts();
                 activity.toastMessageLong(ex.getMessage());
             }
 
@@ -2340,6 +2424,7 @@ public class Chat extends Fragment implements
                     } catch (IOException ex) {
 
                         ex.printStackTrace();
+                        activity.cancelToasts();
                         activity.toastMessageLong(ex.getMessage());
                     }
                     output64.close();
@@ -2357,6 +2442,7 @@ public class Chat extends Fragment implements
                 } catch (IOException ex) {
 
                     ex.printStackTrace();
+                    activity.cancelToasts();
                     activity.toastMessageLong(ex.getMessage());
                 }
             }
@@ -2523,6 +2609,7 @@ public class Chat extends Fragment implements
                     } else {
 
                         // Both radius and polygonArea are null.
+                        cancelToasts();
                         toastMessageLong("Oops! Something went wrong!");
                         return;
                     }
@@ -2627,6 +2714,7 @@ public class Chat extends Fragment implements
 
                         // Handle unsuccessful uploads
                         loadingIcon.setVisibility(View.GONE);
+                        cancelToasts();
                         toastMessageLong(ex.getMessage());
                         Log.e(TAG, "firebaseUpload() -> !fileIsImage -> onFailure -> " + ex.getMessage());
                     });
@@ -2749,6 +2837,7 @@ public class Chat extends Fragment implements
                     } else {
 
                         // Both radius and polygonArea are null.
+                        cancelToasts();
                         toastMessageLong("Oops! Something went wrong!");
                         return;
                     }
@@ -2853,6 +2942,7 @@ public class Chat extends Fragment implements
 
                         // Handle unsuccessful uploads
                         loadingIcon.setVisibility(View.GONE);
+                        cancelToasts();
                         toastMessageLong(ex.getMessage());
                         Log.e(TAG, "firebaseUpload() -> else -> onFailure -> " + ex.getMessage());
                     });

@@ -218,6 +218,7 @@ public class DirectMentions extends Fragment {
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {
 
+                cancelToasts();
                 toastMessageLong(databaseError.getMessage());
             }
         });
@@ -305,6 +306,7 @@ public class DirectMentions extends Fragment {
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
 
+                cancelToasts();
                 toastMessageLong(error.getMessage());
             }
         };
@@ -489,6 +491,7 @@ public class DirectMentions extends Fragment {
                             @Override
                             public void onCancelled(@NonNull DatabaseError error) {
 
+                                cancelToasts();
                                 toastMessageLong(error.getMessage());
                             }
                         });
@@ -584,6 +587,7 @@ public class DirectMentions extends Fragment {
                             public void onCancelled(@NonNull DatabaseError error) {
 
                                 loadingIcon.setVisibility(View.GONE);
+                                cancelToasts();
                                 toastMessageLong(error.getMessage());
                             }
                         });
@@ -818,6 +822,7 @@ public class DirectMentions extends Fragment {
                             public void onCancelled(@NonNull DatabaseError error) {
 
                                 loadingIcon.setVisibility(View.GONE);
+                                cancelToasts();
                                 toastMessageLong(error.getMessage());
                             }
                         });
