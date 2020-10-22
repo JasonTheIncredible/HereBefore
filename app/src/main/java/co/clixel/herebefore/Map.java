@@ -123,7 +123,6 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private final List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // Only call Chat's onScrolled when the user manually scrolls, as old shapes cause duplicates and the toast appears every time a message is sent.
     // Prevent reloading after restart when user paginated in Chat.
     // Implement pagination in DMs.
     // Allow user to click on a mention in Chat and scroll to that mention for context.
@@ -2271,6 +2270,7 @@ public class Map extends FragmentActivity implements
         polygonUUIDListForMapChange.clear();
         circleCenterListForMapChange.clear();
         circleUUIDListForMapChange.clear();
+        cancelToasts();
 
         if (dmButton != null) {
 

@@ -114,14 +114,13 @@ public class Chat extends Fragment implements
     private static final int Request_ID_Take_Photo = 1700, Request_ID_Record_Video = 1800;
     private MentionsEditText mInput;
     private ArrayList<String> mTime, mUser, mImage, mVideo, mText, mSuggestions, allMentions, userUUIDAL, userEmailAL;
-    private ArrayList<Long> userDateAL;
     private ArrayList<Boolean> mUserIsWithinShape;
     private ArrayList<String> removedDuplicatesMentions;
     private RecyclerView chatRecyclerView, mentionsRecyclerView;
     private static int index = -1, top = -1, last;
     private ChildEventListener childEventListener;
     private FloatingActionButton sendButton, mediaButton;
-    private boolean firstLoad, loadingOlderMessages = false, noMoreMessages = false, needLoadingIcon = false, reachedEndOfRecyclerView = false, recyclerViewHasScrolled = false, messageSent = false, sendButtonClicked = false, mediaButtonMenuIsOpen, fileIsImage, checkPermissionsPicture,
+    private boolean firstLoad, loadingOlderMessages, noMoreMessages = false, needLoadingIcon = false, reachedEndOfRecyclerView = false, recyclerViewHasScrolled = false, messageSent = false, sendButtonClicked = false, mediaButtonMenuIsOpen, fileIsImage, checkPermissionsPicture,
             newShape, threeMarkers, fourMarkers, fiveMarkers, sixMarkers, sevenMarkers, eightMarkers;
     private Boolean userIsWithinShape;
     private View.OnLayoutChangeListener onLayoutChangeListener;
@@ -243,7 +242,6 @@ public class Chat extends Fragment implements
         chatRecyclerViewLinearLayoutManager = new LinearLayoutManager(mActivity);
         mentionsRecyclerViewLinearLayoutManager = new LinearLayoutManager(mActivity);
 
-        userDateAL = new ArrayList<>();
         userUUIDAL = new ArrayList<>();
         userEmailAL = new ArrayList<>();
 
@@ -285,6 +283,7 @@ public class Chat extends Fragment implements
 
         // Set to true to scroll to the bottom of chatRecyclerView. Also prevents duplicate items in addQuery.
         firstLoad = true;
+        loadingOlderMessages = false;
 
         // Clear text and prevent keyboard from opening.
         if (mInput != null) {
@@ -327,31 +326,37 @@ public class Chat extends Fragment implements
             chatRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
 
                 @Override
-                public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
 
-                    super.onScrolled(recyclerView, dx, dy);
+                    super.onScrollStateChanged(recyclerView, newState);
 
-                    // Get the top visible position. If it is (almost) the last loaded item, load more.
-                    int firstCompletelyVisibleItemPosition = chatRecyclerViewLinearLayoutManager.findFirstCompletelyVisibleItemPosition();
+                    if (newState ==  RecyclerView.SCROLL_STATE_DRAGGING){
 
-                    if (firstCompletelyVisibleItemPosition == 0 && !noMoreMessages) {
-
-                        loadingIcon.setVisibility(View.VISIBLE);
-                        getFirebaseMessages((long) userDateAL.get(0));
-                        loadingOlderMessages = true;
-                    } else if (firstCompletelyVisibleItemPosition == 0 && noMoreMessages) {
-
-                        cancelToasts();
-                        longToast = Toast.makeText(mContext, "No more messages.", Toast.LENGTH_SHORT);
-                        longToast.setGravity(Gravity.TOP, 0, 750);
-                        longToast.show();
+                        // Used to detect if user has just entered the recyclerviewlayout (so layout needs to move up when keyboard appears).
+                        recyclerViewHasScrolled = true;
                     }
 
-                    // If RecyclerView can't be scrolled down, reachedEndOfRecyclerView = true.
-                    reachedEndOfRecyclerView = !recyclerView.canScrollVertically(1);
+                    if (newState == RecyclerView.SCROLL_STATE_IDLE) {
 
-                    // Used to detect if user has just entered the recyclerviewlayout (so layout needs to move up when keyboard appears).
-                    recyclerViewHasScrolled = true;
+                        // Get the top visible position. If it is (almost) the last loaded item, load more.
+                        int firstCompletelyVisibleItemPosition = chatRecyclerViewLinearLayoutManager.findFirstCompletelyVisibleItemPosition();
+
+                        if (firstCompletelyVisibleItemPosition == 0 && !noMoreMessages) {
+
+                            loadingIcon.setVisibility(View.VISIBLE);
+                            loadingOlderMessages = true;
+                            getFirebaseMessages(userUUIDAL.get(0));
+                        } else if (firstCompletelyVisibleItemPosition == 0) {
+
+                            cancelToasts();
+                            longToast = Toast.makeText(mContext, "No more messages.", Toast.LENGTH_SHORT);
+                            longToast.setGravity(Gravity.TOP, 0, 750);
+                            longToast.show();
+                        }
+
+                        // If RecyclerView can't be scrolled down, reachedEndOfRecyclerView = true.
+                        reachedEndOfRecyclerView = !recyclerView.canScrollVertically(1);
+                    }
                 }
             });
 
@@ -683,7 +688,7 @@ public class Chat extends Fragment implements
         });
     }
 
-    private void getFirebaseMessages(Long nodeID) {
+    private void getFirebaseMessages(String nodeID) {
 
         Log.i(TAG, "getFirebaseMessages()");
 
@@ -714,8 +719,6 @@ public class Chat extends Fragment implements
                 }
 
                 fillArrayLists(snapshot);
-
-                fillRecyclerView(snapshot);
             }
 
             @Override
@@ -731,17 +734,24 @@ public class Chat extends Fragment implements
         int i = 0;
         for (DataSnapshot ds : snapshot.getChildren()) {
 
-            userDateAL.add(i, (Long) ds.child("date").getValue());
+            // Prevent duplicates.
+            if (userUUIDAL.contains(ds.child("userUUID").getValue())) {
+
+                loadingIcon.setVisibility(View.GONE);
+                return;
+            }
             userUUIDAL.add(i, (String) ds.child("userUUID").getValue());
             userEmailAL.add(i, (String) ds.child("email").getValue());
             i++;
 
             // Prevent duplicates.
-            if (i == snapshot.getChildrenCount() - 1) {
+            if (i == snapshot.getChildrenCount() - 1 && !firstLoad) {
 
                 break;
             }
         }
+
+        fillRecyclerView(snapshot);
     }
 
     private void fillRecyclerView(DataSnapshot snapshot) {
@@ -779,7 +789,7 @@ public class Chat extends Fragment implements
             i++;
 
             // Prevent duplicates.
-            if (i == snapshot.getChildrenCount() - 1) {
+            if (i == snapshot.getChildrenCount() - 1 && !firstLoad) {
 
                 break;
             }
@@ -873,7 +883,6 @@ public class Chat extends Fragment implements
                     top = (v == null) ? 0 : (v.getTop() - chatRecyclerView.getPaddingTop());
                 }
 
-                userDateAL.add((Long) snapshot.child("date").getValue());
                 userUUIDAL.add((String) snapshot.child("userUUID").getValue());
                 userEmailAL.add((String) snapshot.child("email").getValue());
 
@@ -1375,8 +1384,6 @@ public class Chat extends Fragment implements
     @Override
     public List<String> onQueryReceived(@NonNull QueryToken queryToken) {
 
-        Log.i(TAG, "onQueryReceived()");
-
         List<String> buckets = Collections.singletonList(BUCKET);
         List<String> suggestions = getSuggestions(queryToken);
 
@@ -1389,8 +1396,6 @@ public class Chat extends Fragment implements
     }
 
     private List<String> getSuggestions(QueryToken queryToken) {
-
-        Log.i(TAG, "getSuggestions()");
 
         if (queryToken.isExplicit()) {
 
