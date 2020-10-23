@@ -123,7 +123,6 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private final List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // Prevent reloading after restart when user paginated in Chat.
     // Implement pagination in DMs.
     // Allow user to click on a mention in Chat and scroll to that mention for context.
     // Uploading a picture takes a long time.
@@ -144,7 +143,7 @@ public class Map extends FragmentActivity implements
     // When sending DMs back and forth, verify that a user was included in the last DM (as any anonymous UUID could pretend to be the last person).
     // Create "my locations" or "my photos" and see friends' locations / follow friends?
     // Leave messages in locations that users get notified of when they enter the area by adding geo-fencing..
-    // Find a way to add to existing snapshot - then send that snapshot to DirectMentions from Map.
+    // Find a way to add to existing snapshot - then send that snapshot to DirectMentions from Map. Also, prevent reloading everything after restart when user paginated (also save scroll position).
     // Update general look of app.
     // After clicking on a DM and going to that Chat, allow user to find that same shape on the map.
     // Create a "general chat" where everyone can chat anonymously, maybe with more specific location rooms too? Delete general chat after x amount of time or # of items.

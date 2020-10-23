@@ -40,3 +40,7 @@
 -keepclassmembers class com.google.android.gms.maps.model.LatLng {
     *;
 }
+# Disable logcat messages.
+-assumenosideeffects class android.util.Log {
+    *;
+}
