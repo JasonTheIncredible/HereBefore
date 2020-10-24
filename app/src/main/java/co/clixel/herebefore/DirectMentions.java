@@ -54,12 +54,12 @@ public class DirectMentions extends Fragment {
     private String userEmailFirebase;
     private ArrayList<String> mTime, mUser, mImage, mVideo, mText, mShapeUUID;
     private ArrayList<Boolean> mUserIsWithinShape, mShapeIsCircle, mSeenByUser;
-    private ArrayList<Long> mPosition, mShapeSize, mShapeLat, mShapeLon;
-    private RecyclerView directMentionsRecyclerView;
+    private ArrayList<Long> mPosition, mShapeSize, mShapeLat, mShapeLon, datesAL;
+    private RecyclerView DMsRecyclerView;
     private static int index = -1, top = -1, last;
     private ChildEventListener childEventListener;
-    private LinearLayoutManager directMentionsRecyclerViewLinearLayoutManager;
-    private boolean firstLoad, userIsWithinShape;
+    private LinearLayoutManager DMsRecyclerViewLinearLayoutManager;
+    private boolean firstLoad, loadingOlderMessages, userIsWithinShape, noMoreMessages = false;
     private int latUser, lonUser;
     private View loadingIcon;
     private Toast longToast;
@@ -88,11 +88,11 @@ public class DirectMentions extends Fragment {
         Log.i(TAG, "onCreateView()");
         rootView = inflater.inflate(R.layout.directmentions, container, false);
 
-        directMentionsRecyclerView = rootView.findViewById(R.id.mentionsList);
+        DMsRecyclerView = rootView.findViewById(R.id.mentionsList);
         loadingIcon = rootView.findViewById(R.id.loadingIcon);
         noDMsTextView = rootView.findViewById(R.id.noDMsTextView);
 
-        directMentionsRecyclerViewLinearLayoutManager = new LinearLayoutManager(mActivity);
+        DMsRecyclerViewLinearLayoutManager = new LinearLayoutManager(mActivity);
 
         mTime = new ArrayList<>();
         mUser = new ArrayList<>();
@@ -107,6 +107,8 @@ public class DirectMentions extends Fragment {
         mShapeLon = new ArrayList<>();
         mPosition = new ArrayList<>();
         mSeenByUser = new ArrayList<>();
+
+        datesAL = new ArrayList<>();
 
         if (mActivity != null) {
 
@@ -154,6 +156,7 @@ public class DirectMentions extends Fragment {
 
         // Set to true to scroll to the bottom of chatRecyclerView. Also prevents duplicate items in addQuery.
         firstLoad = true;
+        loadingOlderMessages = false;
 
         // If user has a Google account, get email one way. Else, get email another way.
         GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
@@ -169,23 +172,71 @@ public class DirectMentions extends Fragment {
         // Firebase does not allow ".", so replace them with ",".
         userEmailFirebase = email.replace(".", ",");
 
-        DatabaseReference DMs = FirebaseDatabase.getInstance().getReference().child("Users").child(userEmailFirebase).child("ReceivedDMs");
-        DMs.addListenerForSingleValueEvent(new ValueEventListener() {
+        getFirebaseDMs(null);
+
+        DMsRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+
+            @Override
+            public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
+
+                super.onScrollStateChanged(recyclerView, newState);
+
+                if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+
+                    // Get the top visible position. If it is (almost) the last loaded item, load more.
+                    int firstCompletelyVisibleItemPosition = DMsRecyclerViewLinearLayoutManager.findFirstCompletelyVisibleItemPosition();
+
+                    if (firstCompletelyVisibleItemPosition == 0 && !noMoreMessages) {
+
+                        loadingIcon.setVisibility(View.VISIBLE);
+                        loadingOlderMessages = true;
+                        getFirebaseDMs(datesAL.get(0));
+                    } else if (firstCompletelyVisibleItemPosition == 0) {
+
+                        cancelToasts();
+                        longToast = Toast.makeText(mContext, "No more messages.", Toast.LENGTH_SHORT);
+                        longToast.setGravity(Gravity.TOP, 0, 750);
+                        longToast.show();
+                    }
+                }
+            }
+        });
+    }
+
+    private void getFirebaseDMs(Long nodeID) {
+
+        Log.i(TAG, "getFirebaseDMs()");
+
+        Query query0;
+
+        if (nodeID == null) {
+
+            query0 = FirebaseDatabase.getInstance().getReference()
+                    .child("Users").child(userEmailFirebase).child("ReceivedDMs")
+                    .limitToLast(20);
+        } else {
+
+            query0 = FirebaseDatabase.getInstance().getReference()
+                    .child("Users").child(userEmailFirebase).child("ReceivedDMs")
+                    .orderByChild("date")
+                    .endAt(nodeID)
+                    .limitToLast(20);
+        }
+
+        query0.addListenerForSingleValueEvent(new ValueEventListener() {
 
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
 
-                // Clear the RecyclerView before adding new entries to prevent duplicates,
-                // and read RecyclerView scroll position (for use in initDirectMentionsAdapter())
-                if (directMentionsRecyclerViewLinearLayoutManager != null) {
+                if (snapshot.getChildrenCount() < 20 && loadingOlderMessages) {
 
-                    index = directMentionsRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
-                    last = directMentionsRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
-                    View v = directMentionsRecyclerView.getChildAt(0);
-                    top = (v == null) ? 0 : (v.getTop() - directMentionsRecyclerView.getPaddingTop());
+                    noMoreMessages = true;
                 }
 
+                int i = 0;
                 for (DataSnapshot ds : snapshot.getChildren()) {
+
+                    datesAL.add(i, (Long) ds.child("date").getValue());
 
                     Long serverDate = (Long) ds.child("date").getValue();
                     DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
@@ -193,32 +244,58 @@ public class DirectMentions extends Fragment {
 
                         Date netDate = (new Date(serverDate));
                         String messageTime = dateFormat.format(netDate);
-                        mTime.add(messageTime);
+                        mTime.add(i, messageTime);
                     } else {
 
                         Log.e(TAG, "fillRecyclerView() -> serverDate == null");
                     }
-                    mUser.add((String) ds.child("userUUID").getValue());
-                    mImage.add((String) ds.child("imageURL").getValue());
-                    mVideo.add((String) ds.child("videoURL").getValue());
-                    mText.add((String) ds.child("message").getValue());
-                    mShapeUUID.add((String) ds.child("shapeUUID").getValue());
-                    mUserIsWithinShape.add((Boolean) ds.child("userIsWithinShape").getValue());
-                    mShapeIsCircle.add((Boolean) ds.child("shapeIsCircle").getValue());
-                    mShapeSize.add((Long) ds.child("size").getValue());
-                    mShapeLat.add((Long) ds.child("lat").getValue());
-                    mShapeLon.add((Long) ds.child("lon").getValue());
-                    mPosition.add((Long) ds.child("position").getValue());
-                    mSeenByUser.add((Boolean) ds.child("seenByUser").getValue());
+                    mUser.add(i, (String) ds.child("userUUID").getValue());
+                    mImage.add(i, (String) ds.child("imageURL").getValue());
+                    mVideo.add(i, (String) ds.child("videoURL").getValue());
+                    mText.add(i, (String) ds.child("message").getValue());
+                    mShapeUUID.add(i, (String) ds.child("shapeUUID").getValue());
+                    mUserIsWithinShape.add(i, (Boolean) ds.child("userIsWithinShape").getValue());
+                    mShapeIsCircle.add(i, (Boolean) ds.child("shapeIsCircle").getValue());
+                    mShapeSize.add(i, (Long) ds.child("size").getValue());
+                    mShapeLat.add(i, (Long) ds.child("lat").getValue());
+                    mShapeLon.add(i, (Long) ds.child("lon").getValue());
+                    mPosition.add(i, (Long) ds.child("position").getValue());
+                    mSeenByUser.add(i, (Boolean) ds.child("seenByUser").getValue());
+                    i++;
+
+                    // Prevent duplicates.
+                    if (i == snapshot.getChildrenCount() - 1 && !firstLoad) {
+
+                        break;
+                    }
                 }
 
-                addQuery();
+                // Read RecyclerView scroll position (for use in initDirectMentionsAdapter())
+                if (DMsRecyclerViewLinearLayoutManager != null) {
+
+                    index = DMsRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
+                    last = DMsRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
+                    View v = DMsRecyclerView.getChildAt(0);
+                    top = (v == null) ? 0 : (v.getTop() - DMsRecyclerView.getPaddingTop());
+                }
+
+                if (DMsRecyclerView.getAdapter() != null && loadingOlderMessages) {
+
+                    DMsRecyclerView.getAdapter().notifyItemRangeInserted(0, (int) snapshot.getChildrenCount() - 1);
+                    loadingIcon.setVisibility(View.GONE);
+                }
+
+                if (!loadingOlderMessages) {
+
+                    addQuery();
+                }
+
+                loadingOlderMessages = false;
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                cancelToasts();
                 toastMessageLong(databaseError.getMessage());
             }
         });
@@ -256,12 +333,12 @@ public class DirectMentions extends Fragment {
                 }
 
                 // Read RecyclerView scroll position (for use in initDirectMentionsAdapter()).
-                if (directMentionsRecyclerViewLinearLayoutManager != null) {
+                if (DMsRecyclerViewLinearLayoutManager != null) {
 
-                    index = directMentionsRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
-                    last = directMentionsRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
-                    View v = directMentionsRecyclerView.getChildAt(0);
-                    top = (v == null) ? 0 : (v.getTop() - directMentionsRecyclerView.getPaddingTop());
+                    index = DMsRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
+                    last = DMsRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
+                    View v = DMsRecyclerView.getChildAt(0);
+                    top = (v == null) ? 0 : (v.getTop() - DMsRecyclerView.getPaddingTop());
                 }
 
                 Long serverDate = (Long) snapshot.child("date").getValue();
@@ -306,7 +383,6 @@ public class DirectMentions extends Fragment {
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
 
-                cancelToasts();
                 toastMessageLong(error.getMessage());
             }
         };
@@ -320,18 +396,18 @@ public class DirectMentions extends Fragment {
         Log.i(TAG, "initDirectMentionsAdapter()");
 
         DirectMentionsAdapter adapter = new DirectMentionsAdapter(mContext, mTime, mUser, mImage, mVideo, mText, mShapeUUID, mUserIsWithinShape, mShapeIsCircle, mShapeSize, mShapeLat, mShapeLon, mPosition, mSeenByUser);
-        directMentionsRecyclerView.setAdapter(adapter);
-        directMentionsRecyclerView.setHasFixedSize(true);
-        directMentionsRecyclerView.setLayoutManager(directMentionsRecyclerViewLinearLayoutManager);
+        DMsRecyclerView.setAdapter(adapter);
+        DMsRecyclerView.setHasFixedSize(true);
+        DMsRecyclerView.setLayoutManager(DMsRecyclerViewLinearLayoutManager);
 
         if (last == (mTime.size() - 2) || firstLoad) {
 
             // Scroll to bottom of recyclerviewlayout after first initialization and after sending a recyclerviewlayout.
-            directMentionsRecyclerView.scrollToPosition(mTime.size() - 1);
+            DMsRecyclerView.scrollToPosition(mTime.size() - 1);
         } else {
 
             // Set RecyclerView scroll position to prevent position change when Firebase gets updated and after screen orientation change.
-            directMentionsRecyclerViewLinearLayoutManager.scrollToPositionWithOffset(index, top);
+            DMsRecyclerViewLinearLayoutManager.scrollToPositionWithOffset(index, top);
         }
 
         // After the initial load, make the loadingIcon invisible.
@@ -361,10 +437,10 @@ public class DirectMentions extends Fragment {
             query.removeEventListener(childEventListener);
         }
 
-        if (directMentionsRecyclerView != null) {
+        if (DMsRecyclerView != null) {
 
-            directMentionsRecyclerView.clearOnScrollListeners();
-            directMentionsRecyclerView.setAdapter(null);
+            DMsRecyclerView.clearOnScrollListeners();
+            DMsRecyclerView.setAdapter(null);
         }
 
         cancelToasts();
@@ -377,9 +453,9 @@ public class DirectMentions extends Fragment {
 
         Log.i(TAG, "onDestroyView()");
 
-        if (directMentionsRecyclerView != null) {
+        if (DMsRecyclerView != null) {
 
-            directMentionsRecyclerView = null;
+            DMsRecyclerView = null;
         }
 
         if (loadingIcon != null) {
@@ -392,9 +468,9 @@ public class DirectMentions extends Fragment {
             noDMsTextView = null;
         }
 
-        if (directMentionsRecyclerViewLinearLayoutManager != null) {
+        if (DMsRecyclerViewLinearLayoutManager != null) {
 
-            directMentionsRecyclerViewLinearLayoutManager = null;
+            DMsRecyclerViewLinearLayoutManager = null;
         }
 
         if (rootView != null) {
@@ -491,7 +567,6 @@ public class DirectMentions extends Fragment {
                             @Override
                             public void onCancelled(@NonNull DatabaseError error) {
 
-                                cancelToasts();
                                 toastMessageLong(error.getMessage());
                             }
                         });
@@ -587,7 +662,6 @@ public class DirectMentions extends Fragment {
                             public void onCancelled(@NonNull DatabaseError error) {
 
                                 loadingIcon.setVisibility(View.GONE);
-                                cancelToasts();
                                 toastMessageLong(error.getMessage());
                             }
                         });
@@ -822,7 +896,6 @@ public class DirectMentions extends Fragment {
                             public void onCancelled(@NonNull DatabaseError error) {
 
                                 loadingIcon.setVisibility(View.GONE);
-                                cancelToasts();
                                 toastMessageLong(error.getMessage());
                             }
                         });
@@ -1089,6 +1162,7 @@ public class DirectMentions extends Fragment {
 
     private void toastMessageLong(String message) {
 
+        cancelToasts();
         longToast = Toast.makeText(mContext, message, Toast.LENGTH_LONG);
         longToast.setGravity(Gravity.CENTER, 0, 0);
         longToast.show();

@@ -113,9 +113,9 @@ public class Chat extends Fragment implements
     private static final String TAG = "Chat";
     private static final int Request_ID_Take_Photo = 1700, Request_ID_Record_Video = 1800;
     private MentionsEditText mInput;
-    private ArrayList<String> mTime, mUser, mImage, mVideo, mText, mSuggestions, allMentions, userUUIDAL, userEmailAL;
+    private ArrayList<String> removedDuplicatesMentions, mTime, mUser, mImage, mVideo, mText, mSuggestions, allMentions, emailsAL;
     private ArrayList<Boolean> mUserIsWithinShape;
-    private ArrayList<String> removedDuplicatesMentions;
+    private ArrayList<Long> datesAL;
     private RecyclerView chatRecyclerView, mentionsRecyclerView;
     private static int index = -1, top = -1, last;
     private ChildEventListener childEventListener;
@@ -242,8 +242,8 @@ public class Chat extends Fragment implements
         chatRecyclerViewLinearLayoutManager = new LinearLayoutManager(mActivity);
         mentionsRecyclerViewLinearLayoutManager = new LinearLayoutManager(mActivity);
 
-        userUUIDAL = new ArrayList<>();
-        userEmailAL = new ArrayList<>();
+        datesAL = new ArrayList<>();
+        emailsAL = new ArrayList<>();
 
         mTime = new ArrayList<>();
         mUser = new ArrayList<>();
@@ -345,7 +345,7 @@ public class Chat extends Fragment implements
 
                             loadingIcon.setVisibility(View.VISIBLE);
                             loadingOlderMessages = true;
-                            getFirebaseMessages(userUUIDAL.get(0));
+                            getFirebaseMessages(datesAL.get(0));
                         } else if (firstCompletelyVisibleItemPosition == 0) {
 
                             cancelToasts();
@@ -458,7 +458,6 @@ public class Chat extends Fragment implements
                     // Upload the image to Firebase if it exists and is not already in the process of sending an image.
                     if (uploadTask != null && uploadTask.isInProgress()) {
 
-                        cancelToasts();
                         toastMessageShort("Upload in progress.");
                     } else {
 
@@ -575,7 +574,6 @@ public class Chat extends Fragment implements
                         } else {
 
                             // Both radius and polygonArea are null.
-                            cancelToasts();
                             toastMessageLong("Oops! Something went wrong!");
                             return;
                         }
@@ -591,15 +589,15 @@ public class Chat extends Fragment implements
                         ArrayList<String> messagedUsersAL = new ArrayList<>();
                         for (String mention : removedDuplicatesMentions) {
 
-                            for (int i = 0; i < userUUIDAL.size(); i++) {
+                            for (int i = 0; i < mUser.size(); i++) {
 
-                                String userEmail = userEmailAL.get(i);
-                                if (userUUIDAL.get(i).equals(mention) && !messagedUsersAL.contains(userEmail)) {
+                                String userEmail = emailsAL.get(i);
+                                if (mUser.get(i).equals(mention) && !messagedUsersAL.contains(userEmail)) {
 
                                     // Prevent sending the same DM to a user multiple times.
                                     messagedUsersAL.add(userEmail);
 
-                                    String email = userEmailAL.get(i);
+                                    String email = emailsAL.get(i);
 
                                     DMInformation dmInformation = new DMInformation();
                                     // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
@@ -688,7 +686,7 @@ public class Chat extends Fragment implements
         });
     }
 
-    private void getFirebaseMessages(String nodeID) {
+    private void getFirebaseMessages(Long nodeID) {
 
         Log.i(TAG, "getFirebaseMessages()");
 
@@ -718,104 +716,75 @@ public class Chat extends Fragment implements
                     noMoreMessages = true;
                 }
 
-                fillArrayLists(snapshot);
+                int i = 0;
+                for (DataSnapshot ds : snapshot.getChildren()) {
+
+                    datesAL.add(i, (Long) ds.child("date").getValue());
+                    emailsAL.add(i, (String) ds.child("email").getValue());
+
+                    Long serverDate = (Long) ds.child("date").getValue();
+                    String user = (String) ds.child("userUUID").getValue();
+                    // Used when a user mentions another user with "@".
+                    mSuggestions.add(i, user);
+                    String imageURL = (String) ds.child("imageURL").getValue();
+                    String videoURL = (String) ds.child("videoURL").getValue();
+                    String messageText = (String) ds.child("message").getValue();
+                    Boolean userIsWithinShape = (Boolean) ds.child("userIsWithinShape").getValue();
+                    DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
+                    // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+                    // This will cause onDataChange to fire twice; optimizations could be made in the future.
+                    if (serverDate != null) {
+
+                        Date netDate = (new Date(serverDate));
+                        String messageTime = dateFormat.format(netDate);
+                        mTime.add(i, messageTime);
+                    } else {
+
+                        Log.e(TAG, "onStart() -> serverDate == null");
+                    }
+                    mUser.add(i, user);
+                    mImage.add(i, imageURL);
+                    mVideo.add(i, videoURL);
+                    mText.add(i, messageText);
+                    mUserIsWithinShape.add(i, userIsWithinShape);
+                    i++;
+
+                    // Prevent duplicates.
+                    if (i == snapshot.getChildrenCount() - 1 && !firstLoad) {
+
+                        break;
+                    }
+                }
+
+                // Read RecyclerView scroll position (for use in initChatAdapter).
+                if (chatRecyclerViewLinearLayoutManager != null && chatRecyclerView != null) {
+
+                    index = chatRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
+                    last = chatRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
+                    View v = chatRecyclerView.getChildAt(0);
+                    top = (v == null) ? 0 : (v.getTop() - chatRecyclerView.getPaddingTop());
+                }
+
+                if (chatRecyclerView.getAdapter() != null && loadingOlderMessages) {
+
+                    chatRecyclerView.getAdapter().notifyItemRangeInserted(0, (int) snapshot.getChildrenCount() - 1);
+                    loadingIcon.setVisibility(View.GONE);
+                }
+
+                if (!loadingOlderMessages) {
+
+                    addQuery();
+                }
+
+                loadingOlderMessages = false;
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
+
+                toastMessageLong(error.getMessage());
             }
         });
-    }
-
-    private void fillArrayLists(DataSnapshot snapshot) {
-
-        Log.i(TAG, "fillArrayLists()");
-
-        int i = 0;
-        for (DataSnapshot ds : snapshot.getChildren()) {
-
-            // Prevent duplicates.
-            if (userUUIDAL.contains(ds.child("userUUID").getValue())) {
-
-                loadingIcon.setVisibility(View.GONE);
-                return;
-            }
-            userUUIDAL.add(i, (String) ds.child("userUUID").getValue());
-            userEmailAL.add(i, (String) ds.child("email").getValue());
-            i++;
-
-            // Prevent duplicates.
-            if (i == snapshot.getChildrenCount() - 1 && !firstLoad) {
-
-                break;
-            }
-        }
-
-        fillRecyclerView(snapshot);
-    }
-
-    private void fillRecyclerView(DataSnapshot snapshot) {
-
-        Log.i(TAG, "fillRecyclerView()");
-
-        int i = 0;
-        for (DataSnapshot ds : snapshot.getChildren()) {
-
-            Long serverDate = (Long) ds.child("date").getValue();
-            String user = (String) ds.child("userUUID").getValue();
-            // Used when a user mentions another user with "@".
-            mSuggestions.add(i, user);
-            String imageURL = (String) ds.child("imageURL").getValue();
-            String videoURL = (String) ds.child("videoURL").getValue();
-            String messageText = (String) ds.child("message").getValue();
-            Boolean userIsWithinShape = (Boolean) ds.child("userIsWithinShape").getValue();
-            DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
-            // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-            // This will cause onDataChange to fire twice; optimizations could be made in the future.
-            if (serverDate != null) {
-
-                Date netDate = (new Date(serverDate));
-                String messageTime = dateFormat.format(netDate);
-                mTime.add(i, messageTime);
-            } else {
-
-                Log.e(TAG, "onStart() -> serverDate == null");
-            }
-            mUser.add(i, user);
-            mImage.add(i, imageURL);
-            mVideo.add(i, videoURL);
-            mText.add(i, messageText);
-            mUserIsWithinShape.add(i, userIsWithinShape);
-            i++;
-
-            // Prevent duplicates.
-            if (i == snapshot.getChildrenCount() - 1 && !firstLoad) {
-
-                break;
-            }
-        }
-
-        // Read RecyclerView scroll position (for use in initChatAdapter).
-        if (chatRecyclerViewLinearLayoutManager != null && chatRecyclerView != null) {
-
-            index = chatRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
-            last = chatRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
-            View v = chatRecyclerView.getChildAt(0);
-            top = (v == null) ? 0 : (v.getTop() - chatRecyclerView.getPaddingTop());
-        }
-
-        if (chatRecyclerView.getAdapter() != null && loadingOlderMessages) {
-
-            chatRecyclerView.getAdapter().notifyItemRangeInserted(0, (int) snapshot.getChildrenCount() - 1);
-            loadingIcon.setVisibility(View.GONE);
-        }
-
-        if (!loadingOlderMessages) {
-
-            addQuery();
-        }
-
-        loadingOlderMessages = false;
     }
 
     // Change to .limitToLast(1) to cut down on data usage. Otherwise, EVERY child at this node will be downloaded every time the child is updated.
@@ -883,8 +852,7 @@ public class Chat extends Fragment implements
                     top = (v == null) ? 0 : (v.getTop() - chatRecyclerView.getPaddingTop());
                 }
 
-                userUUIDAL.add((String) snapshot.child("userUUID").getValue());
-                userEmailAL.add((String) snapshot.child("email").getValue());
+                emailsAL.add((String) snapshot.child("email").getValue());
 
                 initChatAdapter();
             }
@@ -904,7 +872,6 @@ public class Chat extends Fragment implements
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
 
-                cancelToasts();
                 toastMessageLong(error.getMessage());
             }
         };
@@ -1621,7 +1588,6 @@ public class Chat extends Fragment implements
                                 DatabaseReference newReportedPost = FirebaseDatabase.getInstance().getReference().child("ReportedPost").push();
                                 newReportedPost.setValue(reportPostInformation);
                                 loadingIcon.setVisibility(View.GONE);
-                                cancelToasts();
                                 toastMessageShort("Post reported. Thank you!");
                                 return;
                             }
@@ -1632,7 +1598,6 @@ public class Chat extends Fragment implements
                 @Override
                 public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                    cancelToasts();
                     toastMessageLong(databaseError.getMessage());
                 }
             });
@@ -1893,8 +1858,6 @@ public class Chat extends Fragment implements
             } catch (IOException ex) {
 
                 // Error occurred while creating the File
-                ex.printStackTrace();
-                cancelToasts();
                 toastMessageLong(ex.getMessage());
             }
             // Continue only if the File was successfully created
@@ -1925,8 +1888,6 @@ public class Chat extends Fragment implements
             } catch (IOException ex) {
 
                 // Error occurred while creating the File
-                ex.printStackTrace();
-                cancelToasts();
                 toastMessageLong(ex.getMessage());
             }
             // Continue only if the File was successfully created
@@ -2279,8 +2240,6 @@ public class Chat extends Fragment implements
                 }
             } catch (IOException ex) {
 
-                ex.printStackTrace();
-                activity.cancelToasts();
                 activity.toastMessageLong(ex.getMessage());
             }
 
@@ -2341,9 +2300,9 @@ public class Chat extends Fragment implements
             try {
 
                 filePath = SiliCompressor.with(activity.getContext()).compressVideo(paths[0], paths[1], 0, 0, 3000000);
-            } catch (URISyntaxException e) {
+            } catch (URISyntaxException ex) {
 
-                e.printStackTrace();
+                activity.toastMessageLong(ex.getMessage());
             }
 
             // Add uncompressed video to gallery.
@@ -2428,8 +2387,6 @@ public class Chat extends Fragment implements
                         }
                     } catch (IOException ex) {
 
-                        ex.printStackTrace();
-                        activity.cancelToasts();
                         activity.toastMessageLong(ex.getMessage());
                     }
                     output64.close();
@@ -2446,8 +2403,6 @@ public class Chat extends Fragment implements
 
                 } catch (IOException ex) {
 
-                    ex.printStackTrace();
-                    activity.cancelToasts();
                     activity.toastMessageLong(ex.getMessage());
                 }
             }
@@ -2614,7 +2569,6 @@ public class Chat extends Fragment implements
                     } else {
 
                         // Both radius and polygonArea are null.
-                        cancelToasts();
                         toastMessageLong("Oops! Something went wrong!");
                         return;
                     }
@@ -2630,15 +2584,15 @@ public class Chat extends Fragment implements
                     ArrayList<String> messagedUsersAL = new ArrayList<>();
                     for (String mention : removedDuplicatesMentions) {
 
-                        for (int i = 0; i < userUUIDAL.size(); i++) {
+                        for (int i = 0; i < mUser.size(); i++) {
 
-                            String userEmail = userEmailAL.get(i);
-                            if (userUUIDAL.get(i).equals(mention) && !messagedUsersAL.contains(userEmail)) {
+                            String userEmail = emailsAL.get(i);
+                            if (mUser.get(i).equals(mention) && !messagedUsersAL.contains(userEmail)) {
 
                                 // Prevent sending the same DM to a user multiple times.
                                 messagedUsersAL.add(userEmail);
 
-                                String email = userEmailAL.get(i);
+                                String email = emailsAL.get(i);
 
                                 DMInformation dmInformation = new DMInformation();
                                 // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
@@ -2719,7 +2673,6 @@ public class Chat extends Fragment implements
 
                         // Handle unsuccessful uploads
                         loadingIcon.setVisibility(View.GONE);
-                        cancelToasts();
                         toastMessageLong(ex.getMessage());
                         Log.e(TAG, "firebaseUpload() -> !fileIsImage -> onFailure -> " + ex.getMessage());
                     });
@@ -2842,7 +2795,6 @@ public class Chat extends Fragment implements
                     } else {
 
                         // Both radius and polygonArea are null.
-                        cancelToasts();
                         toastMessageLong("Oops! Something went wrong!");
                         return;
                     }
@@ -2858,15 +2810,15 @@ public class Chat extends Fragment implements
                     ArrayList<String> messagedUsersAL = new ArrayList<>();
                     for (String mention : removedDuplicatesMentions) {
 
-                        for (int i = 0; i < userUUIDAL.size(); i++) {
+                        for (int i = 0; i < mUser.size(); i++) {
 
-                            String userEmail = userEmailAL.get(i);
-                            if (userUUIDAL.get(i).equals(mention) && !messagedUsersAL.contains(userEmail)) {
+                            String userEmail = emailsAL.get(i);
+                            if (mUser.get(i).equals(mention) && !messagedUsersAL.contains(userEmail)) {
 
                                 // Prevent sending the same DM to a user multiple times.
                                 messagedUsersAL.add(userEmail);
 
-                                String email = userEmailAL.get(i);
+                                String email = emailsAL.get(i);
 
                                 DMInformation dmInformation = new DMInformation();
                                 // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
@@ -2947,7 +2899,6 @@ public class Chat extends Fragment implements
 
                         // Handle unsuccessful uploads
                         loadingIcon.setVisibility(View.GONE);
-                        cancelToasts();
                         toastMessageLong(ex.getMessage());
                         Log.e(TAG, "firebaseUpload() -> else -> onFailure -> " + ex.getMessage());
                     });
@@ -3008,6 +2959,7 @@ public class Chat extends Fragment implements
 
     private void toastMessageShort(String message) {
 
+        cancelToasts();
         shortToast = Toast.makeText(mContext, message, Toast.LENGTH_SHORT);
         shortToast.setGravity(Gravity.CENTER, 0, 0);
         shortToast.show();
@@ -3015,6 +2967,7 @@ public class Chat extends Fragment implements
 
     private void toastMessageLong(String message) {
 
+        cancelToasts();
         longToast = Toast.makeText(mContext, message, Toast.LENGTH_LONG);
         longToast.setGravity(Gravity.CENTER, 0, 0);
         longToast.show();
