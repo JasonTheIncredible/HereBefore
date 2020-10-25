@@ -27,6 +27,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.os.Environment;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.Parcel;
 import android.provider.MediaStore;
 import android.util.Base64;
@@ -1764,7 +1766,7 @@ public class Chat extends Fragment implements
                                 // Show an explanation to the user *asynchronously* -- don't block
                                 // this thread waiting for the user's response! After the user
                                 // sees the explanation, try again to request the permission.
-                                new cameraPermissionAlertDialog(this).execute(checkPermissionsPicture);
+                                cameraPermissionAlertAsync(checkPermissionsPicture);
                             } else {
 
                                 Log.d(TAG, "Request_ID_Take_Photo -> Storage permissions were not granted. Ask again.");
@@ -1772,7 +1774,7 @@ public class Chat extends Fragment implements
                                 // Show an explanation to the user *asynchronously* -- don't block
                                 // this thread waiting for the user's response! After the user
                                 // sees the explanation, try again to request the permission.
-                                new writeExternalStoragePermissionAlertDialog(this).execute(checkPermissionsPicture);
+                                writeExternalStoragePermissionAlertAsync(checkPermissionsPicture);
                             }
                         }
                     }
@@ -1815,7 +1817,7 @@ public class Chat extends Fragment implements
                                 // Show an explanation to the user *asynchronously* -- don't block
                                 // this thread waiting for the user's response! After the user
                                 // sees the explanation, try again to request the permission.
-                                new cameraPermissionAlertDialog(this).execute(checkPermissionsPicture);
+                                cameraPermissionAlertAsync(checkPermissionsPicture);
                             } else if (externalStoragePermissions != PackageManager.PERMISSION_GRANTED) {
 
                                 Log.d(TAG, "Request_ID_Record_Video -> Storage permissions were not granted. Ask again.");
@@ -1823,7 +1825,7 @@ public class Chat extends Fragment implements
                                 // Show an explanation to the user *asynchronously* -- don't block
                                 // this thread waiting for the user's response! After the user
                                 // sees the explanation, try again to request the permission.
-                                new writeExternalStoragePermissionAlertDialog(this).execute(checkPermissionsPicture);
+                                writeExternalStoragePermissionAlertAsync(checkPermissionsPicture);
                             } else {
 
                                 Log.d(TAG, "Request_ID_Record_Video -> Audio permissions were not granted. Ask again.");
@@ -1831,7 +1833,7 @@ public class Chat extends Fragment implements
                                 // Show an explanation to the user *asynchronously* -- don't block
                                 // this thread waiting for the user's response! After the user
                                 // sees the explanation, try again to request the permission.
-                                new audioPermissionAlertDialog(this).execute(checkPermissionsPicture);
+                                audioPermissionAlertAsync(checkPermissionsPicture);
                             }
                         }
                     }
@@ -1904,182 +1906,103 @@ public class Chat extends Fragment implements
         }
     }
 
-    // Show an explanation as to why permission is necessary.
-    private static class cameraPermissionAlertDialog extends AsyncTask<Boolean, Void, Boolean> {
+    private void cameraPermissionAlertAsync(Boolean checkPermissionsPicture) {
 
-        private final WeakReference<Chat> activityWeakRef;
+        AlertDialog.Builder alert;
+        alert = new AlertDialog.Builder(mContext);
 
-        cameraPermissionAlertDialog(Chat activity) {
+        HandlerThread cameraHandlerThread = new HandlerThread("CameraHandlerThread");
+        cameraHandlerThread.start();
+        Handler mHandler = new Handler(cameraHandlerThread.getLooper());
+        Runnable runnable = () -> {
 
-            activityWeakRef = new WeakReference<>(activity);
-        }
+            // Show an explanation to the user *asynchronously* -- don't block
+            // this thread waiting for the user's response! After the user
+            // sees the explanation, try again to request the permission.
+            alert.setCancelable(false)
+                    .setTitle("Camera Permission Required")
+                    .setMessage("Here Before needs permission to use your camera to take pictures or video. " +
+                            "If you have previously denied this permission, you may need to go to your phone's settings to accept this permission.")
+                    .setPositiveButton("OK", (dialogInterface, i) -> {
 
-        @Override
-        protected void onPreExecute() {
+                        if (checkPermissionsPicture) {
 
-            super.onPreExecute();
-        }
+                            checkPermissionsPicture();
+                        } else {
 
-        @Override
-        protected Boolean doInBackground(Boolean... booleans) {
-
-            Boolean checkPermissionsPicture;
-            checkPermissionsPicture = booleans[0]; // checkPermissionsPicture
-            return checkPermissionsPicture;
-        }
-
-        @Override
-        protected void onPostExecute(final Boolean checkPermissionsPicture) {
-
-            super.onPostExecute(checkPermissionsPicture);
-
-            Log.i(TAG, "cameraPermissionAlertDialog -> onPostExecute()");
-
-            if (activityWeakRef.get() != null) {
-
-                AlertDialog.Builder builder;
-
-                builder = new AlertDialog.Builder(activityWeakRef.get().getContext());
-
-                // Show an explanation to the user *asynchronously* -- don't block
-                // this thread waiting for the user's response! After the user
-                // sees the explanation, try again to request the permission.
-                builder.setCancelable(false)
-                        .setTitle("Camera Permission Required")
-                        .setMessage("Here Before needs permission to use your camera to take pictures or video. " +
-                                "You may need to enable permission manually through the settings menu.")
-                        .setPositiveButton("OK", (dialogInterface, i) -> {
-
-                            if (checkPermissionsPicture) {
-
-                                activityWeakRef.get().checkPermissionsPicture();
-                            } else {
-
-                                activityWeakRef.get().checkPermissionsVideo();
-                            }
-                        })
-                        .create()
-                        .show();
-            }
-        }
+                            checkPermissionsVideo();
+                        }
+                    })
+                    .create()
+                    .show();
+        };
+        mHandler.post(runnable);
     }
 
-    // Show an explanation as to why permission is necessary.
-    private static class writeExternalStoragePermissionAlertDialog extends AsyncTask<Boolean, Void, Boolean> {
+    private void writeExternalStoragePermissionAlertAsync(Boolean checkPermissionsPicture) {
 
-        AlertDialog.Builder builder;
-        private final WeakReference<Chat> activityWeakRef;
+        AlertDialog.Builder alert;
+        alert = new AlertDialog.Builder(mContext);
 
-        writeExternalStoragePermissionAlertDialog(Chat activity) {
+        HandlerThread writeExternalStoragePermissionHandlerThread = new HandlerThread("writeExternalStoragePermissionHandlerThread");
+        writeExternalStoragePermissionHandlerThread.start();
+        Handler mHandler = new Handler(writeExternalStoragePermissionHandlerThread.getLooper());
+        Runnable runnable = () -> {
 
-            activityWeakRef = new WeakReference<>(activity);
-        }
+            // Show an explanation to the user *asynchronously* -- don't block
+            // this thread waiting for the user's response! After the user
+            // sees the explanation, try again to request the permission.
+            alert.setCancelable(false)
+                    .setTitle("Storage Permission Required")
+                    .setMessage("Here Before needs permission to use your storage to save photos or video. " +
+                            "If you have previously denied this permission, you may need to go to your phone's settings to accept this permission.")
+                    .setPositiveButton("OK", (dialogInterface, i) -> {
 
-        @Override
-        protected void onPreExecute() {
+                        if (checkPermissionsPicture) {
 
-            super.onPreExecute();
-        }
+                            checkPermissionsPicture();
+                        } else {
 
-        @Override
-        protected Boolean doInBackground(Boolean... booleans) {
-
-            Boolean checkPermissionsPicture;
-            checkPermissionsPicture = booleans[0]; // checkPermissionsPicture
-            return checkPermissionsPicture;
-        }
-
-        @Override
-        protected void onPostExecute(final Boolean checkPermissionsPicture) {
-
-            super.onPostExecute(checkPermissionsPicture);
-
-            Log.i(TAG, "writeExternalStoragePermissionAlertDialog -> onPostExecute()");
-
-            if (activityWeakRef.get() != null) {
-
-                builder = new AlertDialog.Builder(activityWeakRef.get().getContext());
-
-                // Show an explanation to the user *asynchronously* -- don't block
-                // this thread waiting for the user's response! After the user
-                // sees the explanation, try again to request the permission.
-                builder.setCancelable(false)
-                        .setTitle("Storage Permission Required")
-                        .setMessage("Here Before needs permission to use your storage to save photos or video. " +
-                                "You may need to enable permission manually through the settings menu.")
-                        .setPositiveButton("OK", (dialogInterface, i) -> {
-
-                            if (checkPermissionsPicture) {
-
-                                activityWeakRef.get().checkPermissionsPicture();
-                            } else {
-
-                                activityWeakRef.get().checkPermissionsVideo();
-                            }
-                        })
-                        .create()
-                        .show();
-            }
-        }
+                            checkPermissionsVideo();
+                        }
+                    })
+                    .create()
+                    .show();
+        };
+        mHandler.post(runnable);
     }
 
-    // Show an explanation as to why permission is necessary.
-    private static class audioPermissionAlertDialog extends AsyncTask<Boolean, Void, Boolean> {
+    private void audioPermissionAlertAsync(Boolean checkPermissionsPicture) {
 
-        AlertDialog.Builder builder;
-        private final WeakReference<Chat> activityWeakRef;
+        AlertDialog.Builder alert;
+        alert = new AlertDialog.Builder(mContext);
 
-        audioPermissionAlertDialog(Chat activity) {
+        HandlerThread audioPermissionHandlerThread = new HandlerThread("audioPermissionHandlerThread");
+        audioPermissionHandlerThread.start();
+        Handler mHandler = new Handler(audioPermissionHandlerThread.getLooper());
+        Runnable runnable = () -> {
 
-            activityWeakRef = new WeakReference<>(activity);
-        }
+            // Show an explanation to the user *asynchronously* -- don't block
+            // this thread waiting for the user's response! After the user
+            // sees the explanation, try again to request the permission.
+            alert.setCancelable(false)
+                    .setTitle("Audio Permission Required")
+                    .setMessage("Here Before needs permission to record audio during video recording. " +
+                            "You may need to enable permission manually through the settings menu.")
+                    .setPositiveButton("OK", (dialogInterface, i) -> {
 
-        @Override
-        protected void onPreExecute() {
+                        if (checkPermissionsPicture) {
 
-            super.onPreExecute();
-        }
+                            checkPermissionsPicture();
+                        } else {
 
-        @Override
-        protected Boolean doInBackground(Boolean... booleans) {
-
-            Boolean checkPermissionsPicture;
-            checkPermissionsPicture = booleans[0]; // checkPermissionsPicture
-            return checkPermissionsPicture;
-        }
-
-        @Override
-        protected void onPostExecute(final Boolean checkPermissionsPicture) {
-
-            super.onPostExecute(checkPermissionsPicture);
-
-            Log.i(TAG, "audioPermissionAlertDialog -> onPostExecute()");
-
-            if (activityWeakRef.get() != null) {
-
-                builder = new AlertDialog.Builder(activityWeakRef.get().getContext());
-
-                // Show an explanation to the user *asynchronously* -- don't block
-                // this thread waiting for the user's response! After the user
-                // sees the explanation, try again to request the permission.
-                builder.setCancelable(false)
-                        .setTitle("Audio Permission Required")
-                        .setMessage("Here Before needs permission to record audio during video recording. " +
-                                "You may need to enable permission manually through the settings menu.")
-                        .setPositiveButton("OK", (dialogInterface, i) -> {
-
-                            if (checkPermissionsPicture) {
-
-                                activityWeakRef.get().checkPermissionsPicture();
-                            } else {
-
-                                activityWeakRef.get().checkPermissionsVideo();
-                            }
-                        })
-                        .create()
-                        .show();
-            }
-        }
+                            checkPermissionsVideo();
+                        }
+                    })
+                    .create()
+                    .show();
+        };
+        mHandler.post(runnable);
     }
 
     private File createImageFile() throws IOException {

@@ -123,6 +123,7 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private final List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
+    // Switch all async tasks to handlers.
     // After clicking on a DM, the wrong message is getting highlighted due to pagination. Also, the message should appear without needing to scroll back manually.
     // Allow user to click on a mention in Chat and scroll to that mention for context.
     // Uploading a picture takes a long time.
@@ -136,6 +137,7 @@ public class Map extends FragmentActivity implements
     // Show direction camera was facing when taking photo?
     // Remember the AC: Origins inspiration. Also, airdrop - create items in the world.
     // Prevent data scraping (hide email addresses and other personal information).
+    // Allow private posts or sharing with specific people.
     // Users should be given a view of an area when clicking on a circle. Like they've been sent to that area.
     // Think of way to make "creating a point" more accurate to the user's location.
     // Make scrollToPosition work in Chat after a restart. Also prevent reloading Chat and DMs every time app restarts.
