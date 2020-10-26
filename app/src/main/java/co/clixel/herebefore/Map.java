@@ -1,7 +1,6 @@
 package co.clixel.herebefore;
 
 import android.Manifest;
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
@@ -11,8 +10,9 @@ import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
-import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.Looper;
 import android.provider.Settings;
 import android.util.Log;
@@ -69,7 +69,6 @@ import com.google.maps.android.PolyUtil;
 import com.google.maps.android.SphericalUtil;
 
 import java.io.File;
-import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -123,7 +122,6 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private final List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // Switch all async tasks to handlers.
     // After clicking on a DM, the wrong message is getting highlighted due to pagination. Also, the message should appear without needing to scroll back manually.
     // Allow user to click on a mention in Chat and scroll to that mention for context.
     // Uploading a picture takes a long time.
@@ -164,7 +162,7 @@ public class Map extends FragmentActivity implements
     // Finish setting up Google ads, then add more ads.
     // Adjust AppIntro.
     // Make sure Firebase has enough bandwidth.
-    // Make sure aboutLibraries includes all libraries.
+    // Make sure aboutLibraries includes all libraries, and make sure all licenses are fair use (NOT GPL).
     // Make sure the secret stuff is secret.
     // Switch existing values in Firebase.
 
@@ -2396,8 +2394,7 @@ public class Map extends FragmentActivity implements
 
             if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
 
-                // If GPS is disabled, show an alert dialog and have the user turn GPS on.
-                new buildAlertNoGPS(this).execute();
+                buildAlertNoGPS();
             }
         } else {
 
@@ -2432,54 +2429,27 @@ public class Map extends FragmentActivity implements
         }
     }
 
-    // If GPS is disabled, show an alert dialog and have the user turn GPS on.
-    private static class buildAlertNoGPS extends AsyncTask<Void, Void, Void> {
+    private void buildAlertNoGPS() {
 
-        AlertDialog.Builder builder;
-        private final WeakReference<Map> activityWeakRef;
+        AlertDialog.Builder alert;
+        alert = new AlertDialog.Builder(this);
 
-        buildAlertNoGPS(Map activity) {
+        HandlerThread GPSHandlerThread = new HandlerThread("GPSHandlerThread");
+        GPSHandlerThread.start();
+        Handler mHandler = new Handler(GPSHandlerThread.getLooper());
+        Runnable runnable = () ->
 
-            activityWeakRef = new WeakReference<>(activity);
-        }
+                alert.setCancelable(false)
+                .setTitle("GPS Disabled")
+                .setMessage("Please enable your location services on the following screen.")
+                .setPositiveButton("OK", (dialog, i) -> {
 
-        @Override
-        protected void onPreExecute() {
+                    startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS));
+                })
+                .create()
+                .show();
 
-            super.onPreExecute();
-        }
-
-        @Override
-        protected Void doInBackground(Void... voids) {
-
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(Void results) {
-
-            super.onPostExecute(results);
-
-            Log.i(TAG, "buildAlertNoGPS -> onPostExecute()");
-
-            if (activityWeakRef != null && activityWeakRef.get() != null) {
-
-                builder = new AlertDialog.Builder(activityWeakRef.get());
-
-                // If GPS is disabled, show an alert dialog and have the user turn GPS on.
-                builder.setCancelable(false)
-                        .setTitle("GPS Disabled")
-                        .setMessage("Please enable your location services on the following screen.")
-                        .setPositiveButton("OK", (dialog, i) -> {
-
-                            Activity activity = activityWeakRef.get();
-
-                            activity.startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS));
-                        })
-                        .create()
-                        .show();
-            }
-        }
+        mHandler.post(runnable);
     }
 
     @Override
@@ -2662,10 +2632,7 @@ public class Map extends FragmentActivity implements
         } else if (ActivityCompat.shouldShowRequestPermissionRationale(this,
                 Manifest.permission.ACCESS_FINE_LOCATION)) {
 
-            // Show an explanation to the user *asynchronously* -- don't block
-            // this thread waiting for the user's response! After the user
-            // sees the explanation, try again to request the permission.
-            new locationPermissionAlertDialog(this).execute();
+            locationPermissionAlertAsync();
         }
     }
 
@@ -2690,10 +2657,7 @@ public class Map extends FragmentActivity implements
             } else if (ActivityCompat.shouldShowRequestPermissionRationale(this,
                     Manifest.permission.ACCESS_FINE_LOCATION)) {
 
-                // Show an explanation to the user *asynchronously* -- don't block
-                // this thread waiting for the user's response! After the user
-                // sees the explanation, try again to request the permission.
-                new locationPermissionAlertDialog(this).execute();
+                locationPermissionAlertAsync();
             } else if (grantResults.length > 0
                     && grantResults[0] != PackageManager.PERMISSION_GRANTED) {
 
@@ -2703,57 +2667,29 @@ public class Map extends FragmentActivity implements
         }
     }
 
-    // Show an explanation as to why location permission is necessary.
-    private static class locationPermissionAlertDialog extends AsyncTask<Void, Void, Void> {
+    private void locationPermissionAlertAsync() {
 
-        AlertDialog.Builder builder;
-        private final WeakReference<Map> activityWeakRef;
+        AlertDialog.Builder alert;
+        alert = new AlertDialog.Builder(this);
 
-        locationPermissionAlertDialog(Map activity) {
+        HandlerThread locationPermissionHandlerThread = new HandlerThread("locationPermissionHandlerThread");
+        locationPermissionHandlerThread.start();
+        Handler mHandler = new Handler(locationPermissionHandlerThread.getLooper());
+        Runnable runnable = () ->
 
-            activityWeakRef = new WeakReference<>(activity);
-        }
+                alert.setCancelable(false)
+                .setTitle("Device Location Required")
+                .setMessage("Here Before needs permission to use your location to find chat areas around you.")
+                .setPositiveButton("OK", (dialogInterface, i) -> {
 
-        @Override
-        protected void onPreExecute() {
+                    ActivityCompat.requestPermissions(this,
+                            new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                            Request_User_Location_Code);
+                })
+                .create()
+                .show();
 
-            super.onPreExecute();
-        }
-
-        @Override
-        protected Void doInBackground(Void... voids) {
-
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(Void result) {
-
-            super.onPostExecute(result);
-
-            Log.i(TAG, "locationPermissionAlertDialog -> onPostExecute()");
-
-            if (activityWeakRef != null && activityWeakRef.get() != null) {
-
-                builder = new AlertDialog.Builder(activityWeakRef.get());
-
-                // Show an explanation to the user *asynchronously* -- don't block
-                // this thread waiting for the user's response! After the user
-                // sees the explanation, try again to request the permission.
-                builder.setCancelable(false)
-                        .setTitle("Device Location Required")
-                        .setMessage("Here Before needs permission to use your location to find chat areas around you.")
-                        .setPositiveButton("OK", (dialogInterface, i) -> {
-
-                            //Prompt the user once explanation has been shown
-                            ActivityCompat.requestPermissions(activityWeakRef.get(),
-                                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                                    Request_User_Location_Code);
-                        })
-                        .create()
-                        .show();
-            }
-        }
+        mHandler.post(runnable);
     }
 
     protected void startLocationUpdates() {

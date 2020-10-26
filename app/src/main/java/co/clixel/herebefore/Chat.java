@@ -14,7 +14,6 @@ import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
@@ -29,6 +28,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.Looper;
 import android.os.Parcel;
 import android.provider.MediaStore;
 import android.util.Base64;
@@ -74,7 +74,6 @@ import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.StorageTask;
-import com.iceteck.silicompressorr.SiliCompressor;
 import com.linkedin.android.spyglass.mentions.Mentionable;
 import com.linkedin.android.spyglass.suggestions.interfaces.SuggestionsVisibilityManager;
 import com.linkedin.android.spyglass.tokenization.QueryToken;
@@ -82,6 +81,9 @@ import com.linkedin.android.spyglass.tokenization.impl.WordTokenizer;
 import com.linkedin.android.spyglass.tokenization.impl.WordTokenizerConfig;
 import com.linkedin.android.spyglass.tokenization.interfaces.QueryTokenReceiver;
 import com.linkedin.android.spyglass.ui.MentionsEditText;
+import com.otaliastudios.transcoder.Transcoder;
+import com.otaliastudios.transcoder.TranscoderListener;
+import com.otaliastudios.transcoder.strategy.DefaultVideoStrategies;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -89,8 +91,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.ref.WeakReference;
-import java.net.URISyntaxException;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -332,7 +332,7 @@ public class Chat extends Fragment implements
 
                     super.onScrollStateChanged(recyclerView, newState);
 
-                    if (newState ==  RecyclerView.SCROLL_STATE_DRAGGING){
+                    if (newState == RecyclerView.SCROLL_STATE_DRAGGING) {
 
                         // Used to detect if user has just entered the recyclerviewlayout (so layout needs to move up when keyboard appears).
                         recyclerViewHasScrolled = true;
@@ -1763,17 +1763,11 @@ public class Chat extends Fragment implements
 
                                 Log.d(TAG, "Request_ID_Take_Photo -> Camera permissions were not granted. Ask again.");
 
-                                // Show an explanation to the user *asynchronously* -- don't block
-                                // this thread waiting for the user's response! After the user
-                                // sees the explanation, try again to request the permission.
                                 cameraPermissionAlertAsync(checkPermissionsPicture);
                             } else {
 
                                 Log.d(TAG, "Request_ID_Take_Photo -> Storage permissions were not granted. Ask again.");
 
-                                // Show an explanation to the user *asynchronously* -- don't block
-                                // this thread waiting for the user's response! After the user
-                                // sees the explanation, try again to request the permission.
                                 writeExternalStoragePermissionAlertAsync(checkPermissionsPicture);
                             }
                         }
@@ -1814,25 +1808,16 @@ public class Chat extends Fragment implements
 
                                 Log.d(TAG, "Request_ID_Record_Video -> Camera permissions were not granted. Ask again.");
 
-                                // Show an explanation to the user *asynchronously* -- don't block
-                                // this thread waiting for the user's response! After the user
-                                // sees the explanation, try again to request the permission.
                                 cameraPermissionAlertAsync(checkPermissionsPicture);
                             } else if (externalStoragePermissions != PackageManager.PERMISSION_GRANTED) {
 
                                 Log.d(TAG, "Request_ID_Record_Video -> Storage permissions were not granted. Ask again.");
 
-                                // Show an explanation to the user *asynchronously* -- don't block
-                                // this thread waiting for the user's response! After the user
-                                // sees the explanation, try again to request the permission.
                                 writeExternalStoragePermissionAlertAsync(checkPermissionsPicture);
                             } else {
 
                                 Log.d(TAG, "Request_ID_Record_Video -> Audio permissions were not granted. Ask again.");
 
-                                // Show an explanation to the user *asynchronously* -- don't block
-                                // this thread waiting for the user's response! After the user
-                                // sees the explanation, try again to request the permission.
                                 audioPermissionAlertAsync(checkPermissionsPicture);
                             }
                         }
@@ -1914,28 +1899,25 @@ public class Chat extends Fragment implements
         HandlerThread cameraHandlerThread = new HandlerThread("CameraHandlerThread");
         cameraHandlerThread.start();
         Handler mHandler = new Handler(cameraHandlerThread.getLooper());
-        Runnable runnable = () -> {
+        Runnable runnable = () ->
 
-            // Show an explanation to the user *asynchronously* -- don't block
-            // this thread waiting for the user's response! After the user
-            // sees the explanation, try again to request the permission.
-            alert.setCancelable(false)
-                    .setTitle("Camera Permission Required")
-                    .setMessage("Here Before needs permission to use your camera to take pictures or video. " +
-                            "If you have previously denied this permission, you may need to go to your phone's settings to accept this permission.")
-                    .setPositiveButton("OK", (dialogInterface, i) -> {
+                alert.setCancelable(false)
+                        .setTitle("Camera Permission Required")
+                        .setMessage("Here Before needs permission to use your camera to take pictures or video. " +
+                                "If you have previously denied this permission, you may need to go to your phone's settings to accept this permission.")
+                        .setPositiveButton("OK", (dialogInterface, i) -> {
 
-                        if (checkPermissionsPicture) {
+                            if (checkPermissionsPicture) {
 
-                            checkPermissionsPicture();
-                        } else {
+                                checkPermissionsPicture();
+                            } else {
 
-                            checkPermissionsVideo();
-                        }
-                    })
-                    .create()
-                    .show();
-        };
+                                checkPermissionsVideo();
+                            }
+                        })
+                        .create()
+                        .show();
+
         mHandler.post(runnable);
     }
 
@@ -1944,31 +1926,28 @@ public class Chat extends Fragment implements
         AlertDialog.Builder alert;
         alert = new AlertDialog.Builder(mContext);
 
-        HandlerThread writeExternalStoragePermissionHandlerThread = new HandlerThread("writeExternalStoragePermissionHandlerThread");
+        HandlerThread writeExternalStoragePermissionHandlerThread = new HandlerThread("writeExternalStorageHandlerThread");
         writeExternalStoragePermissionHandlerThread.start();
         Handler mHandler = new Handler(writeExternalStoragePermissionHandlerThread.getLooper());
-        Runnable runnable = () -> {
+        Runnable runnable = () ->
 
-            // Show an explanation to the user *asynchronously* -- don't block
-            // this thread waiting for the user's response! After the user
-            // sees the explanation, try again to request the permission.
-            alert.setCancelable(false)
-                    .setTitle("Storage Permission Required")
-                    .setMessage("Here Before needs permission to use your storage to save photos or video. " +
-                            "If you have previously denied this permission, you may need to go to your phone's settings to accept this permission.")
-                    .setPositiveButton("OK", (dialogInterface, i) -> {
+                alert.setCancelable(false)
+                        .setTitle("Storage Permission Required")
+                        .setMessage("Here Before needs permission to use your storage to save photos or video. " +
+                                "If you have previously denied this permission, you may need to go to your phone's settings to accept this permission.")
+                        .setPositiveButton("OK", (dialogInterface, i) -> {
 
-                        if (checkPermissionsPicture) {
+                            if (checkPermissionsPicture) {
 
-                            checkPermissionsPicture();
-                        } else {
+                                checkPermissionsPicture();
+                            } else {
 
-                            checkPermissionsVideo();
-                        }
-                    })
-                    .create()
-                    .show();
-        };
+                                checkPermissionsVideo();
+                            }
+                        })
+                        .create()
+                        .show();
+
         mHandler.post(runnable);
     }
 
@@ -1977,31 +1956,28 @@ public class Chat extends Fragment implements
         AlertDialog.Builder alert;
         alert = new AlertDialog.Builder(mContext);
 
-        HandlerThread audioPermissionHandlerThread = new HandlerThread("audioPermissionHandlerThread");
+        HandlerThread audioPermissionHandlerThread = new HandlerThread("audioHandlerThread");
         audioPermissionHandlerThread.start();
         Handler mHandler = new Handler(audioPermissionHandlerThread.getLooper());
-        Runnable runnable = () -> {
+        Runnable runnable = () ->
 
-            // Show an explanation to the user *asynchronously* -- don't block
-            // this thread waiting for the user's response! After the user
-            // sees the explanation, try again to request the permission.
-            alert.setCancelable(false)
-                    .setTitle("Audio Permission Required")
-                    .setMessage("Here Before needs permission to record audio during video recording. " +
-                            "You may need to enable permission manually through the settings menu.")
-                    .setPositiveButton("OK", (dialogInterface, i) -> {
+                alert.setCancelable(false)
+                        .setTitle("Audio Permission Required")
+                        .setMessage("Here Before needs permission to record audio during video recording. " +
+                                "You may need to enable permission manually through the settings menu.")
+                        .setPositiveButton("OK", (dialogInterface, i) -> {
 
-                        if (checkPermissionsPicture) {
+                            if (checkPermissionsPicture) {
 
-                            checkPermissionsPicture();
-                        } else {
+                                checkPermissionsPicture();
+                            } else {
 
-                            checkPermissionsVideo();
-                        }
-                    })
-                    .create()
-                    .show();
-        };
+                                checkPermissionsVideo();
+                            }
+                        })
+                        .create()
+                        .show();
+
         mHandler.post(runnable);
     }
 
@@ -2073,7 +2049,7 @@ public class Chat extends Fragment implements
             params.addRule(RelativeLayout.END_OF, R.id.imageView);
             mInput.setLayoutParams(params);
 
-            new imageCompressAndAddToGalleryAsyncTask(this).execute();
+            imageCompressAndAddToGalleryAsync();
         }
 
         if (requestCode == 4 && resultCode == RESULT_OK) {
@@ -2102,268 +2078,244 @@ public class Chat extends Fragment implements
 
             fileIsImage = false;
 
-            new videoCompressAndAddToGalleryAsyncTask(this).execute(video.getAbsolutePath(), video.getParent());
+            videoCompressAndAddToGalleryAsync();
         }
     }
 
-    private static class imageCompressAndAddToGalleryAsyncTask extends AsyncTask<String, String, String> {
+    // Save a non-compressed version to the gallery and add a compressed version to the imageView.
+    private void imageCompressAndAddToGalleryAsync() {
 
-        private WeakReference<Chat> activityWeakRef;
+        loadingIcon.setVisibility(View.VISIBLE);
 
-        private imageCompressAndAddToGalleryAsyncTask(Chat activity) {
+        HandlerThread imageCompressAndAddToGalleryHandlerThread = new HandlerThread("imageCompressAndAddToGalleryHandlerThread");
+        imageCompressAndAddToGalleryHandlerThread.start();
+        Handler mHandler = new Handler(imageCompressAndAddToGalleryHandlerThread.getLooper());
+        Runnable runnable = () -> {
 
-            activityWeakRef = new WeakReference<>(activity);
-        }
-
-        @Override
-        protected void onPreExecute() {
-
-            super.onPreExecute();
-
-            Chat activity = activityWeakRef.get();
-            if (activity == null || activity.isRemoving()) return;
-
-            // Show the loading icon while the image is being compressed.
-            activity.loadingIcon.setVisibility(View.VISIBLE);
-        }
-
-        @Override
-        protected String doInBackground(String... paths) {
-
-            Chat activity = activityWeakRef.get();
-            if (activity == null || activity.isRemoving()) return "2";
-
+            // Save a non-compressed image to the gallery.
             try {
 
-                if (activity.getContext() != null) {
+                Bitmap imageBitmapFull = new Compressor(mContext)
+                        .setMaxWidth(10000)
+                        .setMaxHeight(10000)
+                        .setQuality(100)
+                        .setCompressFormat(Bitmap.CompressFormat.PNG)
+                        .setDestinationDirectoryPath(Environment.getExternalStoragePublicDirectory(
+                                Environment.DIRECTORY_PICTURES).getAbsolutePath())
+                        .compressToBitmap(image);
 
-                    // Save a non-compressed image to the gallery.
-                    Bitmap imageBitmapFull = new Compressor(activity.getContext())
-                            .setMaxWidth(10000)
-                            .setMaxHeight(10000)
-                            .setQuality(100)
-                            .setCompressFormat(Bitmap.CompressFormat.PNG)
-                            .setDestinationDirectoryPath(Environment.getExternalStoragePublicDirectory(
-                                    Environment.DIRECTORY_PICTURES).getAbsolutePath())
-                            .compressToBitmap(activity.image);
-                    MediaStore.Images.Media.insertImage(activity.getContext().getContentResolver(), imageBitmapFull, "HereBefore_" + System.currentTimeMillis() + "_PNG", null);
+                MediaStore.Images.Media.insertImage(mContext.getContentResolver(), imageBitmapFull, "HereBefore_" + System.currentTimeMillis() + "_PNG", null);
 
-                    // Create a compressed image.
-                    Bitmap mImageBitmap = new Compressor(activity.getContext())
-                            .setMaxWidth(480)
-                            .setMaxHeight(640)
-                            .setQuality(50)
-                            .setCompressFormat(Bitmap.CompressFormat.JPEG)
-                            .compressToBitmap(activity.image);
+                // Create a compressed image.
+                Bitmap mImageBitmap = new Compressor(mContext)
+                        .setMaxWidth(480)
+                        .setMaxHeight(640)
+                        .setQuality(50)
+                        .setCompressFormat(Bitmap.CompressFormat.JPEG)
+                        .compressToBitmap(image);
 
-                    // Convert the bitmap to a byteArray for use in uploadImage().
-                    ByteArrayOutputStream buffer = new ByteArrayOutputStream(mImageBitmap.getWidth() * mImageBitmap.getHeight());
-                    mImageBitmap.compress(Bitmap.CompressFormat.JPEG, 100, buffer);
-                    activity.byteArray = buffer.toByteArray();
-                }
+                // Convert the bitmap to a byteArray for use in uploadImage().
+                ByteArrayOutputStream buffer = new ByteArrayOutputStream(mImageBitmap.getWidth() * mImageBitmap.getHeight());
+                mImageBitmap.compress(Bitmap.CompressFormat.JPEG, 100, buffer);
+                byteArray = buffer.toByteArray();
+
+                // Update UI thread.
+                new Handler(Looper.getMainLooper()).post(() -> {
+
+                    Glide.with(mContext)
+                            .load(byteArray)
+                            .apply(new RequestOptions().override(480, 5000).placeholder(R.drawable.ic_recyclerview_image_placeholder))
+                            .into(imageView);
+
+                    imageView.setVisibility(View.VISIBLE);
+                    loadingIcon.setVisibility(View.INVISIBLE);
+                    // Allow initChatAdapter() to get rid of the loadingIcon with this boolean.
+                    needLoadingIcon = false;
+                });
             } catch (IOException ex) {
 
-                activity.toastMessageLong(ex.getMessage());
+                toastMessageLong(ex.getMessage());
             }
+        };
 
-            return "2";
-        }
-
-        @Override
-        protected void onPostExecute(String meaninglessString) {
-
-            super.onPostExecute(meaninglessString);
-
-            Chat activity = activityWeakRef.get();
-            if (activity == null || activity.isRemoving()) return;
-
-            Glide.with(activity)
-                    .load(activity.byteArray)
-                    .apply(new RequestOptions().override(480, 5000).placeholder(R.drawable.ic_recyclerview_image_placeholder))
-                    .into(activity.imageView);
-
-            activity.imageView.setVisibility(View.VISIBLE);
-            activity.loadingIcon.setVisibility(View.INVISIBLE);
-            // Allow initChatAdapter() to get rid of the loadingIcon with this boolean.
-            activity.needLoadingIcon = false;
-        }
+        mHandler.post(runnable);
     }
 
-    private static class videoCompressAndAddToGalleryAsyncTask extends AsyncTask<String, String, String> {
+    // Save a non-compressed version to the gallery and add a compressed version to the imageView.
+    private void videoCompressAndAddToGalleryAsync() {
 
-        private final WeakReference<Chat> activityWeakRef;
-        private Bitmap mBmp;
-        private int mBmpWidth;
-        private int mBmpHeight;
+        loadingIcon.setVisibility(View.VISIBLE);
 
-        private videoCompressAndAddToGalleryAsyncTask(Chat activity) {
+        HandlerThread videoCompressAndAddToGalleryHandlerThread = new HandlerThread("videoCompressAndAddToGalleryHandlerThread");
+        videoCompressAndAddToGalleryHandlerThread.start();
+        Handler mHandler = new Handler(videoCompressAndAddToGalleryHandlerThread.getLooper());
+        Runnable runnable = () -> {
 
-            activityWeakRef = new WeakReference<>(activity);
-        }
-
-        @Override
-        protected void onPreExecute() {
-
-            super.onPreExecute();
-
-            Chat activity = activityWeakRef.get();
-            if (activity == null || activity.isRemoving()) return;
-
-            // Show the loading icon while the video is being compressed.
-            activity.loadingIcon.setVisibility(View.VISIBLE);
-        }
-
-        @Override
-        protected String doInBackground(String... paths) {
-
-            Chat activity = activityWeakRef.get();
-            if (activity == null || activity.isRemoving()) return "2";
-
-            String filePath = null;
+            File videoTemp = null;
+            String filePathTemp = "HereBefore_" + System.currentTimeMillis() + "_mp4";
+            File storageDir = mActivity.getCacheDir();
             try {
-
-                filePath = SiliCompressor.with(activity.getContext()).compressVideo(paths[0], paths[1], 0, 0, 3000000);
-            } catch (URISyntaxException ex) {
-
-                activity.toastMessageLong(ex.getMessage());
+                videoTemp = File.createTempFile(
+                        filePathTemp,   /* prefix */
+                        ".mp4",  /* suffix */
+                        storageDir     /* directory */
+                );
+            } catch (IOException e) {
+                e.printStackTrace();
             }
+
+            String filePath = videoTemp.getAbsolutePath();
+
+            Transcoder.into(filePath)
+                    .addDataSource(video.getAbsolutePath())
+                    .setVideoTrackStrategy(DefaultVideoStrategies.for720x1280())
+                    .setListener(new TranscoderListener() {
+
+                        public void onTranscodeProgress(double progress) {
+                        }
+
+                        public void onTranscodeCompleted(int successCode) {
+
+                            Bitmap mBitmap = null;
+                            int mBitmapWidth = 0;
+                            int mBitmapHeight = 0;
+
+                            // Turn the compressed video into a bitmap.
+                            File videoFile = new File(filePath);
+
+                            float length = videoFile.length() / 1024f; // Size in KB
+                            String value;
+                            if (length >= 1024) {
+
+                                value = length / 1024f + " MB";
+                            } else {
+
+                                value = length + " KB";
+                            }
+
+                            String text = String.format(Locale.US, "%s\nName: %s\nSize: %s", "Video compression complete", videoFile.getName(), value);
+                            Log.e(TAG, "text: " + text);
+                            Log.e(TAG, "imageFile.getName(): " + videoFile.getName());
+                            Log.e(TAG, "Path 0: " + filePath);
+
+                            try {
+
+                                File file = new File(filePath);
+                                InputStream inputStream; //You can get an inputStream using any IO API
+                                inputStream = new FileInputStream(file.getAbsolutePath());
+                                byte[] buffer = new byte[8192];
+                                int bytesRead;
+                                ByteArrayOutputStream output = new ByteArrayOutputStream();
+                                Base64OutputStream output64 = new Base64OutputStream(output, Base64.DEFAULT);
+                                videoURI = Uri.fromFile(videoFile);
+                                try {
+
+                                    while ((bytesRead = inputStream.read(buffer)) != -1) {
+
+                                        output64.write(buffer, 0, bytesRead);
+                                    }
+                                } catch (IOException ex) {
+
+                                    toastMessageLong(ex.getMessage());
+                                }
+                                output64.close();
+
+                                // Change the videoImageView's orientation depending on the orientation of the video.
+                                MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+                                // Set the video Uri as data source for MediaMetadataRetriever
+                                retriever.setDataSource(filePath);
+                                // Get one "frame"/bitmap - * NOTE - no time was set, so the first available frame will be used
+                                mBitmap = retriever.getFrameAtTime(1);
+                                // Get the bitmap width and height
+                                mBitmapWidth = mBitmap.getWidth();
+                                mBitmapHeight = mBitmap.getHeight();
+
+                            } catch (IOException ex) {
+
+                                toastMessageLong(ex.getMessage());
+                            }
+
+                            // Update UI thread.
+                            Bitmap finalBitmap = mBitmap;
+                            int finalBitmapHeight = mBitmapHeight;
+                            int finalBitmapWidth = mBitmapWidth;
+
+                            new Handler(Looper.getMainLooper()).post(() -> {
+
+                                if (finalBitmap != null && finalBitmapHeight != 0 && finalBitmapWidth != 0) {
+
+                                    // Change textView to be to the right of videoImageView.
+                                    RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams) mInput.getLayoutParams();
+                                    params.addRule(RelativeLayout.END_OF, R.id.videoImageView);
+                                    mInput.setLayoutParams(params);
+
+                                    final float scale = getResources().getDisplayMetrics().density;
+                                    if (finalBitmapWidth > finalBitmapHeight) {
+
+                                        videoImageView.getLayoutParams().width = (int) (50 * scale + 0.5f); // Convert 50dp to px.
+                                    } else {
+
+                                        videoImageView.getLayoutParams().width = (int) (30 * scale + 0.5f); // Convert 30dp to px.
+                                    }
+
+                                    videoImageView.setImageBitmap(finalBitmap);
+                                    videoImageView.setVisibility(View.VISIBLE);
+                                }
+
+                                loadingIcon.setVisibility(View.GONE);
+                                // Allow initChatAdapter() to get rid of the loadingIcon with this boolean.
+                                needLoadingIcon = false;
+                            });
+                        }
+
+                        public void onTranscodeCanceled() {
+                        }
+
+                        public void onTranscodeFailed(@NonNull Throwable exception) {
+                        }
+                    }).transcode();
 
             // Add uncompressed video to gallery.
             // Save the name and description of a video in a ContentValues map.
             ContentValues values = new ContentValues(3);
             values.put(MediaStore.Video.Media.TITLE, "Here_Before_" + System.currentTimeMillis());
             values.put(MediaStore.Video.Media.MIME_TYPE, "video/mp4");
-            values.put(MediaStore.Video.Media.DATA, activity.video.getAbsolutePath());
+            values.put(MediaStore.Video.Media.DATA, video.getAbsolutePath());
 
-            if (activity.getContext() != null) {
+            // Add a new record (identified by uri) without the video, but with the values just set.
+            Uri uri = mContext.getContentResolver().insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values);
 
-                // Add a new record (identified by uri) without the video, but with the values just set.
-                Uri uri = activity.getContext().getContentResolver().insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values);
+            // Now get a handle to the file for that record, and save the data into it.
+            try {
 
-                // Now get a handle to the file for that record, and save the data into it.
-                try {
+                InputStream is = new FileInputStream(video);
+                if (uri != null) {
 
-                    InputStream is = new FileInputStream(activity.video);
-                    if (uri != null) {
-
-                        OutputStream os = activity.getContext().getContentResolver().openOutputStream(uri);
-                        byte[] buffer = new byte[4096]; // tweaking this number may increase performance
-                        int len;
-                        while ((len = is.read(buffer)) != -1) {
-                            if (os != null) {
-
-                                os.write(buffer, 0, len);
-                                os.flush();
-                            }
-                        }
-                        is.close();
+                    OutputStream os = mContext.getContentResolver().openOutputStream(uri);
+                    byte[] buffer = new byte[4096]; // tweaking this number may increase performance
+                    int len;
+                    while ((len = is.read(buffer)) != -1) {
                         if (os != null) {
 
-                            os.close();
+                            os.write(buffer, 0, len);
+                            os.flush();
                         }
                     }
-                } catch (Exception e) {
+                    is.close();
+                    if (os != null) {
 
-                    Log.e(TAG, "Exception while writing video: ", e);
-                }
-
-                activity.getContext().sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, uri));
-
-                if (filePath == null) {
-
-                    return "2";
-                }
-
-                // Turn the compressed video into a bitmap.
-                File videoFile = new File(filePath);
-
-                float length = videoFile.length() / 1024f; // Size in KB
-                String value;
-                if (length >= 1024) {
-
-                    value = length / 1024f + " MB";
-                } else {
-
-                    value = length + " KB";
-                }
-
-                String text = String.format(Locale.US, "%s\nName: %s\nSize: %s", "Video compression complete", videoFile.getName(), value);
-                Log.e(TAG, "text: " + text);
-                Log.e(TAG, "imageFile.getName(): " + videoFile.getName());
-                Log.e(TAG, "Path 0: " + filePath);
-
-                try {
-
-                    File file = new File(filePath);
-                    InputStream inputStream; //You can get an inputStream using any IO API
-                    inputStream = new FileInputStream(file.getAbsolutePath());
-                    byte[] buffer = new byte[8192];
-                    int bytesRead;
-                    ByteArrayOutputStream output = new ByteArrayOutputStream();
-                    Base64OutputStream output64 = new Base64OutputStream(output, Base64.DEFAULT);
-                    activity.videoURI = Uri.fromFile(videoFile);
-                    try {
-
-                        while ((bytesRead = inputStream.read(buffer)) != -1) {
-
-                            output64.write(buffer, 0, bytesRead);
-                        }
-                    } catch (IOException ex) {
-
-                        activity.toastMessageLong(ex.getMessage());
+                        os.close();
                     }
-                    output64.close();
-
-                    // Change the videoImageView's orientation depending on the orientation of the video.
-                    MediaMetadataRetriever retriever = new MediaMetadataRetriever();
-                    // Set the video Uri as data source for MediaMetadataRetriever
-                    retriever.setDataSource(filePath);
-                    // Get one "frame"/bitmap - * NOTE - no time was set, so the first available frame will be used
-                    mBmp = retriever.getFrameAtTime(1);
-                    // Get the bitmap width and height
-                    mBmpWidth = mBmp.getWidth();
-                    mBmpHeight = mBmp.getHeight();
-
-                } catch (IOException ex) {
-
-                    activity.toastMessageLong(ex.getMessage());
                 }
-            }
-            return "2";
-        }
+            } catch (Exception e) {
 
-        @Override
-        protected void onPostExecute(String meaninglessString) {
-
-            super.onPostExecute(meaninglessString);
-
-            Chat activity = activityWeakRef.get();
-            if (activity == null || activity.isRemoving()) return;
-
-            if (mBmp != null && mBmpHeight != 0 && mBmpWidth != 0) {
-
-                // Change textView to be to the right of videoImageView.
-                RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams) activity.mInput.getLayoutParams();
-                params.addRule(RelativeLayout.END_OF, R.id.videoImageView);
-                activity.mInput.setLayoutParams(params);
-
-                final float scale = activity.getResources().getDisplayMetrics().density;
-                if (mBmpWidth > mBmpHeight) {
-
-                    activity.videoImageView.getLayoutParams().width = (int) (50 * scale + 0.5f); // Convert 50dp to px.
-                } else {
-
-                    activity.videoImageView.getLayoutParams().width = (int) (30 * scale + 0.5f); // Convert 30dp to px.
-                }
-
-                activity.videoImageView.setImageBitmap(mBmp);
-                activity.videoImageView.setVisibility(View.VISIBLE);
+                Log.e(TAG, "Exception while writing video: ", e);
             }
 
-            activity.loadingIcon.setVisibility(View.INVISIBLE);
-            // Allow initChatAdapter() to get rid of the loadingIcon with this boolean.
-            activity.needLoadingIcon = false;
-        }
+            mContext.sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, uri));
+        };
+
+        mHandler.post(runnable);
     }
 
     private void firebaseUpload() {
