@@ -122,10 +122,9 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private final List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // After clicking on a DM, the wrong message is getting highlighted due to pagination. Also, the message should appear without needing to scroll back manually.
+    // Don't use the compressed video if it is bigger than the original video.
     // Allow user to click on a mention in Chat and scroll to that mention for context.
     // Uploading a picture takes a long time.
-    // Create timer that kicks people out of a new Chat if they haven't posted within an amount of time?
     // Make a better loading icon, with a progress bar.
     // Loading icon for Glide images in Chat and DirectMentions, and cut down on loading time.
     // If user is on a point, prevent creating a new one. Deal with overlapping shapes in general. Maybe a warning message?
@@ -133,10 +132,13 @@ public class Map extends FragmentActivity implements
     // Make situations where Firebase circles are added to the map and then polygons are added (like in chatViews) async? Also, do that for changing map and therefore changing shape colors.
     // Panoramic view?
     // Show direction camera was facing when taking photo?
+    // Get rid of "larger" shapes and only allow points? (Or make allowable shapes smaller?)
     // Remember the AC: Origins inspiration. Also, airdrop - create items in the world.
     // Prevent data scraping (hide email addresses and other personal information).
+    // Create timer that kicks people out of a new Chat if they haven't posted within an amount of time, or keep updating their location.
     // Allow private posts or sharing with specific people.
-    // Users should be given a view of an area when clicking on a circle. Like they've been sent to that area.
+    // Prevent spamming messages.
+    // Let users allow specific other users to see their name.
     // Think of way to make "creating a point" more accurate to the user's location.
     // Make scrollToPosition work in Chat after a restart. Also prevent reloading Chat and DMs every time app restarts.
     // Find a way to not clear and reload map every time user returns from clicking a shape. Same with DM notification.
@@ -405,7 +407,6 @@ public class Map extends FragmentActivity implements
             if (newCircle != null || newPolygon != null) {
 
                 popupCreateChat.getMenu().findItem(R.id.createPolygon).setVisible(false);
-                popupCreateChat.getMenu().findItem(R.id.createCircle).setVisible(false);
             } else {
 
                 popupCreateChat.getMenu().findItem(R.id.removeShape).setVisible(false);
@@ -6160,275 +6161,6 @@ public class Map extends FragmentActivity implements
                                 } else {
 
                                     Log.e(TAG, "createPolygon -> location == null");
-                                    toastMessageLong("An error occurred: your location is null.");
-                                }
-                            });
-                } else {
-
-                    checkLocationPermissions();
-                }
-
-                break;
-
-            // createchat_menu
-            case R.id.createCircle:
-
-                Log.i(TAG, "onMenuItemClick() -> createCircle");
-
-                // Gets rid of the shapeTemps if the user wants to make a new shape.
-                if (selectingShape) {
-
-                    if (circleTemp != null) {
-
-                        circleTemp.remove();
-                    }
-
-                    if (polygonTemp != null) {
-
-                        polygonTemp.remove();
-                    }
-
-                    selectingShape = false;
-
-                    // Change the circle color depending on the map type.
-                    if (mMap.getMapType() == 2 || mMap.getMapType() == 4) {
-
-                        for (int i = 0; i < overlappingShapesCircleLocation.size(); i++) {
-
-                            Circle circle0 = mMap.addCircle(
-                                    new CircleOptions()
-                                            .center(overlappingShapesCircleLocation.get(i))
-                                            .clickable(true)
-                                            .radius(overlappingShapesCircleRadius.get(i))
-                                            .strokeColor(Color.rgb(255, 255, 0))
-                                            .strokeWidth(3f)
-                                            .zIndex(0)
-                            );
-
-                            circle0.setTag(overlappingShapesCircleUUID.get(i));
-                        }
-
-                        for (int i = 0; i < overlappingShapesPolygonVertices.size(); i++) {
-
-                            Polygon polygon0 = mMap.addPolygon(
-                                    new PolygonOptions()
-                                            .clickable(true)
-                                            .addAll(overlappingShapesPolygonVertices.get(i))
-                                            .strokeColor(Color.rgb(255, 255, 0))
-                                            .strokeWidth(3f)
-                                            .zIndex(0)
-                            );
-
-                            polygon0.setTag(overlappingShapesPolygonUUID.get(i));
-                        }
-                    } else {
-
-                        for (int i = 0; i < overlappingShapesUUID.size(); i++) {
-
-                            Circle circle0 = mMap.addCircle(
-                                    new CircleOptions()
-                                            .center(overlappingShapesCircleLocation.get(i))
-                                            .clickable(true)
-                                            .radius(overlappingShapesCircleRadius.get(i))
-                                            .strokeColor(Color.rgb(255, 0, 255))
-                                            .strokeWidth(3f)
-                                            .zIndex(0)
-                            );
-
-                            circle0.setTag(overlappingShapesCircleUUID.get(i));
-                        }
-
-                        for (int i = 0; i < overlappingShapesPolygonVertices.size(); i++) {
-
-                            Polygon polygon0 = mMap.addPolygon(
-                                    new PolygonOptions()
-                                            .clickable(true)
-                                            .addAll(overlappingShapesPolygonVertices.get(i))
-                                            .strokeColor(Color.rgb(255, 0, 255))
-                                            .strokeWidth(3f)
-                                            .zIndex(0)
-                            );
-
-                            polygon0.setTag(overlappingShapesPolygonUUID.get(i));
-                        }
-                    }
-
-                    overlappingShapesUUID = new ArrayList<>();
-                    overlappingShapesCircleUUID = new ArrayList<>();
-                    overlappingShapesPolygonUUID = new ArrayList<>();
-                    overlappingShapesCircleLocation = new ArrayList<>();
-                    overlappingShapesCircleRadius = new ArrayList<>();
-                    overlappingShapesPolygonVertices = new ArrayList<>();
-
-                    chatSelectorSeekBar.setVisibility(View.INVISIBLE);
-                    chatSizeSeekBar.setVisibility(View.VISIBLE);
-                    chatSizeSeekBar.setProgress(0);
-                    chatSelectorSeekBar.setProgress(0);
-
-                    chatsSize = 0;
-                }
-
-                // Remove the polygon and markers.
-                if (newPolygon != null) {
-
-                    newPolygon.remove();
-                    marker0.remove();
-                    marker1.remove();
-                    marker2.remove();
-                    newPolygon = null;
-                    marker0 = null;
-                    marker1 = null;
-                    marker2 = null;
-                    marker0Position = null;
-                    marker1Position = null;
-                    marker2Position = null;
-                    marker0ID = null;
-                    marker1ID = null;
-                    marker2ID = null;
-
-                    if (marker3 != null) {
-
-                        marker3.remove();
-                        marker3 = null;
-                        marker3Position = null;
-                        marker3ID = null;
-                    }
-
-                    if (marker4 != null) {
-
-                        marker4.remove();
-                        marker4 = null;
-                        marker4Position = null;
-                        marker4ID = null;
-                    }
-
-                    if (marker5 != null) {
-
-                        marker5.remove();
-                        marker5 = null;
-                        marker5Position = null;
-                        marker5ID = null;
-                    }
-
-                    if (marker6 != null) {
-
-                        marker6.remove();
-                        marker6 = null;
-                        marker6Position = null;
-                        marker6ID = null;
-                    }
-
-                    if (marker7 != null) {
-
-                        marker7.remove();
-                        marker7 = null;
-                        marker7Position = null;
-                        marker7ID = null;
-                    }
-                }
-
-                // Remove the circle and markers.
-                if (newCircle != null) {
-
-                    newCircle.remove();
-                    marker0.remove();
-                    marker1.remove();
-                    newCircle = null;
-                    marker0 = null;
-                    marker1 = null;
-                    marker0Position = null;
-                    marker1Position = null;
-                    marker0ID = null;
-                    marker1ID = null;
-                }
-
-                // Check location permissions.
-                if (ContextCompat.checkSelfPermission(getBaseContext(),
-                        Manifest.permission.ACCESS_FINE_LOCATION)
-                        == PackageManager.PERMISSION_GRANTED) {
-
-                    // Creates circle.
-                    FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
-
-                    mFusedLocationClient.getLastLocation()
-                            .addOnSuccessListener(Map.this, location -> {
-                                // Get last known location. In some rare situations, this can be null.
-                                if (location != null) {
-
-                                    // Load different colored shapes depending on the map type.
-                                    if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
-
-                                        chatSizeSeekBar.setProgress(88);
-
-                                        // Logic to handle location object.
-                                        LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-                                        marker1Position = new LatLng(location.getLatitude() + 0.0001, location.getLongitude());
-                                        float circleRadius = distanceGivenLatLng(location.getLatitude(), location.getLongitude(), marker1Position.latitude, marker1Position.longitude);
-                                        CircleOptions circleOptions =
-                                                new CircleOptions()
-                                                        .center(latLng)
-                                                        .clickable(true)
-                                                        .radius(circleRadius)
-                                                        .strokeColor(Color.YELLOW)
-                                                        .strokeWidth(3f);
-
-                                        // Create a marker in the center of the circle to allow for dragging.
-                                        MarkerOptions markerOptionsCenter = new MarkerOptions()
-                                                .position(latLng)
-                                                .draggable(true);
-
-                                        MarkerOptions markerOptionsEdge = new MarkerOptions()
-                                                .position(marker1Position)
-                                                .draggable(true);
-
-                                        marker0 = mMap.addMarker(markerOptionsCenter);
-                                        marker1 = mMap.addMarker(markerOptionsEdge);
-
-                                        // Update the global variable to compare with the marker the user clicks on during the dragging process.
-                                        marker0ID = marker0.getId();
-                                        marker1ID = marker1.getId();
-
-                                        newCircle = mMap.addCircle(circleOptions);
-                                        chatSizeSeekBar.setProgress((int) distanceGivenLatLng(location.getLatitude(), location.getLongitude(), marker1Position.latitude, marker1Position.longitude));
-                                    } else {
-
-                                        // Set seekBar to be within 75 and 100, as there are 4 markers.
-                                        chatSizeSeekBar.setProgress(88);
-
-                                        // Logic to handle location object.
-                                        LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-                                        marker1Position = new LatLng(location.getLatitude() + 0.0001, location.getLongitude());
-                                        float circleRadius = distanceGivenLatLng(location.getLatitude(), location.getLongitude(), marker1Position.latitude, marker1Position.longitude);
-                                        CircleOptions circleOptions =
-                                                new CircleOptions()
-                                                        .center(latLng)
-                                                        .clickable(true)
-                                                        .radius(circleRadius)
-                                                        .strokeColor(Color.rgb(255, 0, 255))
-                                                        .strokeWidth(3f);
-
-                                        // Create a marker in the center of the circle to allow for dragging.
-                                        MarkerOptions markerOptionsCenter = new MarkerOptions()
-                                                .position(latLng)
-                                                .draggable(true);
-
-                                        MarkerOptions markerOptionsEdge = new MarkerOptions()
-                                                .position(marker1Position)
-                                                .draggable(true);
-
-                                        marker0 = mMap.addMarker(markerOptionsCenter);
-                                        marker1 = mMap.addMarker(markerOptionsEdge);
-
-                                        // Update the global variable to compare with the marker the user clicks on during the dragging process.
-                                        marker0ID = marker0.getId();
-                                        marker1ID = marker1.getId();
-
-                                        newCircle = mMap.addCircle(circleOptions);
-                                        chatSizeSeekBar.setProgress((int) distanceGivenLatLng(location.getLatitude(), location.getLongitude(), marker1Position.latitude, marker1Position.longitude));
-                                    }
-                                } else {
-
-                                    Log.e(TAG, "createCircle -> location == null");
                                     toastMessageLong("An error occurred: your location is null.");
                                 }
                             });

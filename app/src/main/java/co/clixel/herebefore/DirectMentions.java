@@ -54,7 +54,8 @@ public class DirectMentions extends Fragment {
     private String userEmailFirebase;
     private ArrayList<String> mTime, mUser, mImage, mVideo, mText, mShapeUUID;
     private ArrayList<Boolean> mUserIsWithinShape, mShapeIsCircle, mSeenByUser;
-    private ArrayList<Long> mPosition, mShapeSize, mShapeLat, mShapeLon, datesAL;
+    private ArrayList<Long> mShapeSize, mShapeLat, mShapeLon, datesAL;
+    private ArrayList<Integer> mPosition;
     private RecyclerView DMsRecyclerView;
     private static int index = -1, top = -1, last;
     private ChildEventListener childEventListener;
@@ -259,7 +260,7 @@ public class DirectMentions extends Fragment {
                     mShapeSize.add(i, (Long) ds.child("size").getValue());
                     mShapeLat.add(i, (Long) ds.child("lat").getValue());
                     mShapeLon.add(i, (Long) ds.child("lon").getValue());
-                    mPosition.add(i, (Long) ds.child("position").getValue());
+                    mPosition.add(i, ((Long) ds.child("position").getValue()).intValue());
                     mSeenByUser.add(i, (Boolean) ds.child("seenByUser").getValue());
                     i++;
 
@@ -362,7 +363,7 @@ public class DirectMentions extends Fragment {
                 mShapeSize.add((Long) snapshot.child("size").getValue());
                 mShapeLat.add((Long) snapshot.child("lat").getValue());
                 mShapeLon.add((Long) snapshot.child("lon").getValue());
-                mPosition.add((Long) snapshot.child("position").getValue());
+                mPosition.add(((Long) snapshot.child("position").getValue()).intValue());
                 mSeenByUser.add((Boolean) snapshot.child("seenByUser").getValue());
 
                 initDirectMentionsAdapter();
@@ -504,7 +505,8 @@ public class DirectMentions extends Fragment {
         private final Context mContext;
         private final ArrayList<String> mMessageTime, mMessageUser, mMessageImage, mMessageImageVideo, mMessageText, mShapeUUID;
         private final ArrayList<Boolean> mUserIsWithinShape, mShapeIsCircle, mSeenByUser;
-        private final ArrayList<Long> mPosition, mShapeSize, mShapeLat, mShapeLon;
+        private final ArrayList<Long> mShapeSize, mShapeLat, mShapeLon;
+        private final ArrayList<Integer> mPosition;
         private boolean theme;
 
         class ViewHolder extends RecyclerView.ViewHolder {
@@ -627,6 +629,8 @@ public class DirectMentions extends Fragment {
                                                     Activity.putExtra("userIsWithinShape", userIsWithinShape);
                                                     Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()).intValue());
                                                     Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()).intValue());
+                                                    Activity.putExtra("userLatitude", userLatitude);
+                                                    Activity.putExtra("userLongitude", userLongitude);
 
                                                     loadingIcon.setVisibility(View.GONE);
 
@@ -650,6 +654,8 @@ public class DirectMentions extends Fragment {
                                 Activity.putExtra("userIsWithinShape", false);
                                 Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()).intValue());
                                 Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()).intValue());
+                                Activity.putExtra("userLatitude", userLatitude);
+                                Activity.putExtra("userLongitude", userLongitude);
 
                                 loadingIcon.setVisibility(View.GONE);
 
@@ -737,6 +743,8 @@ public class DirectMentions extends Fragment {
                                                 Activity.putExtra("userIsWithinShape", userIsWithinShape);
                                                 Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()).intValue());
                                                 Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()).intValue());
+                                                Activity.putExtra("userLatitude", userLatitude);
+                                                Activity.putExtra("userLongitude", userLongitude);
 
                                                 loadingIcon.setVisibility(View.GONE);
 
@@ -764,6 +772,8 @@ public class DirectMentions extends Fragment {
                                                 Activity.putExtra("userIsWithinShape", userIsWithinShape);
                                                 Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()).intValue());
                                                 Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()).intValue());
+                                                Activity.putExtra("userLatitude", userLatitude);
+                                                Activity.putExtra("userLongitude", userLongitude);
 
                                                 loadingIcon.setVisibility(View.GONE);
 
@@ -790,6 +800,8 @@ public class DirectMentions extends Fragment {
                                                 Activity.putExtra("userIsWithinShape", userIsWithinShape);
                                                 Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()).intValue());
                                                 Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()).intValue());
+                                                Activity.putExtra("userLatitude", userLatitude);
+                                                Activity.putExtra("userLongitude", userLongitude);
 
                                                 loadingIcon.setVisibility(View.GONE);
 
@@ -815,6 +827,8 @@ public class DirectMentions extends Fragment {
                                                 Activity.putExtra("userIsWithinShape", userIsWithinShape);
                                                 Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()).intValue());
                                                 Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()).intValue());
+                                                Activity.putExtra("userLatitude", userLatitude);
+                                                Activity.putExtra("userLongitude", userLongitude);
 
                                                 loadingIcon.setVisibility(View.GONE);
 
@@ -839,6 +853,8 @@ public class DirectMentions extends Fragment {
                                                 Activity.putExtra("userIsWithinShape", userIsWithinShape);
                                                 Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()).intValue());
                                                 Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()).intValue());
+                                                Activity.putExtra("userLatitude", userLatitude);
+                                                Activity.putExtra("userLongitude", userLongitude);
 
                                                 loadingIcon.setVisibility(View.GONE);
 
@@ -862,6 +878,8 @@ public class DirectMentions extends Fragment {
                                                 Activity.putExtra("userIsWithinShape", userIsWithinShape);
                                                 Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()).intValue());
                                                 Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()).intValue());
+                                                Activity.putExtra("userLatitude", userLatitude);
+                                                Activity.putExtra("userLongitude", userLongitude);
 
                                                 loadingIcon.setVisibility(View.GONE);
 
@@ -884,6 +902,8 @@ public class DirectMentions extends Fragment {
                                 Activity.putExtra("userIsWithinShape", false);
                                 Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()).intValue());
                                 Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()).intValue());
+                                Activity.putExtra("userLatitude", userLatitude);
+                                Activity.putExtra("userLongitude", userLongitude);
 
                                 loadingIcon.setVisibility(View.GONE);
 
@@ -956,7 +976,7 @@ public class DirectMentions extends Fragment {
             }
         }
 
-        DirectMentionsAdapter(Context context, ArrayList<String> mMessageTime, ArrayList<String> mMessageUser, ArrayList<String> mMessageImage, ArrayList<String> mMessageImageVideo, ArrayList<String> mMessageText, ArrayList<String> mShapeUUID, ArrayList<Boolean> mUserIsWithinShape, ArrayList<Boolean> mShapeIsCircle, ArrayList<Long> mShapeSize, ArrayList<Long> mShapeLat, ArrayList<Long> mShapeLon, ArrayList<Long> mPosition, ArrayList<Boolean> mSeenByUser) {
+        DirectMentionsAdapter(Context context, ArrayList<String> mMessageTime, ArrayList<String> mMessageUser, ArrayList<String> mMessageImage, ArrayList<String> mMessageImageVideo, ArrayList<String> mMessageText, ArrayList<String> mShapeUUID, ArrayList<Boolean> mUserIsWithinShape, ArrayList<Boolean> mShapeIsCircle, ArrayList<Long> mShapeSize, ArrayList<Long> mShapeLat, ArrayList<Long> mShapeLon, ArrayList<Integer> mPosition, ArrayList<Boolean> mSeenByUser) {
 
             this.mContext = context;
             this.mMessageTime = mMessageTime;

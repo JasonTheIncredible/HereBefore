@@ -117,6 +117,7 @@ public class Chat extends Fragment implements
     private MentionsEditText mInput;
     private ArrayList<String> removedDuplicatesMentions, mTime, mUser, mImage, mVideo, mText, mSuggestions, allMentions, emailsAL;
     private ArrayList<Boolean> mUserIsWithinShape;
+    private ArrayList<Integer> mPosition;
     private ArrayList<Long> datesAL;
     private RecyclerView chatRecyclerView, mentionsRecyclerView;
     private static int index = -1, top = -1, last;
@@ -127,7 +128,7 @@ public class Chat extends Fragment implements
     private Boolean userIsWithinShape;
     private View.OnLayoutChangeListener onLayoutChangeListener;
     private String shapeUUID, reportedUser;
-    private double directMentionsPosition, polygonArea, circleLatitude, circleLongitude, radius,
+    private double polygonArea, circleLatitude, circleLongitude, radius,
             marker0Latitude, marker0Longitude, marker1Latitude, marker1Longitude, marker2Latitude, marker2Longitude, marker3Latitude, marker3Longitude, marker4Latitude, marker4Longitude, marker5Latitude, marker5Longitude, marker6Latitude, marker6Longitude, marker7Latitude, marker7Longitude;
     private PopupMenu mediaButtonMenu;
     private ImageView imageView, videoImageView;
@@ -146,7 +147,7 @@ public class Chat extends Fragment implements
     private AdView bannerAd;
     private Query query;
     private Drawable imageDrawable, videoDrawable;
-    private int latFirebaseValue, lonFirebaseValue;
+    private int latFirebaseValue, lonFirebaseValue, directMentionsPosition;
     private final WordTokenizerConfig tokenizerConfig = new WordTokenizerConfig
             .Builder()
             .setWordBreakChars(", ")
@@ -169,7 +170,7 @@ public class Chat extends Fragment implements
             Bundle extras = mActivity.getIntent().getExtras();
             if (extras != null) {
 
-                directMentionsPosition = extras.getLong("directMentionsPosition");
+                directMentionsPosition = extras.getInt("directMentionsPosition");
                 newShape = extras.getBoolean("newShape");
                 latFirebaseValue = extras.getInt("shapeLat");
                 lonFirebaseValue = extras.getInt("shapeLon");
@@ -255,6 +256,10 @@ public class Chat extends Fragment implements
         mSuggestions = new ArrayList<>();
         allMentions = new ArrayList<>();
         mUserIsWithinShape = new ArrayList<>();
+        // No need to create the arrayList if user did not click from DM.
+        if (directMentionsPosition != 0) {
+            mPosition = new ArrayList<>();
+        }
         // Prevents clearing this list if user adds a DM and takes a picture.
         if (removedDuplicatesMentions == null) {
             removedDuplicatesMentions = new ArrayList<>();
@@ -348,12 +353,6 @@ public class Chat extends Fragment implements
                             loadingIcon.setVisibility(View.VISIBLE);
                             loadingOlderMessages = true;
                             getFirebaseMessages(datesAL.get(0));
-                        } else if (firstCompletelyVisibleItemPosition == 0) {
-
-                            cancelToasts();
-                            longToast = Toast.makeText(mContext, "No more messages.", Toast.LENGTH_SHORT);
-                            longToast.setGravity(Gravity.TOP, 0, 750);
-                            longToast.show();
                         }
 
                         // If RecyclerView can't be scrolled down, reachedEndOfRecyclerView = true.
@@ -692,28 +691,72 @@ public class Chat extends Fragment implements
 
         Log.i(TAG, "getFirebaseMessages()");
 
-        Query query0;
+        final Query[] query0 = new Query[1];
+        final int[] latestPosition = {0};
 
         if (nodeID == null) {
 
-            query0 = FirebaseDatabase.getInstance().getReference()
-                    .child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID)
-                    .limitToLast(20);
+            if (directMentionsPosition != 0) {
+
+                // Get the latest item and check the position. This will let us know how far back to paginate.
+                query0[0] = FirebaseDatabase.getInstance().getReference()
+                        .child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID)
+                        .limitToLast(1);
+
+                query0[0].addListenerForSingleValueEvent(new ValueEventListener() {
+
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+
+                        for (DataSnapshot ds : snapshot.getChildren()) {
+
+                            latestPosition[0] = ((Long) ds.child("position").getValue()).intValue();
+                            int loadMessagesFromDM = (latestPosition[0] - directMentionsPosition) + 20;
+
+                            query0[0] = FirebaseDatabase.getInstance().getReference()
+                                    .child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID)
+                                    .limitToLast(loadMessagesFromDM);
+
+                            fillRecyclerView(query0[0], loadMessagesFromDM);
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {
+
+                        toastMessageLong(error.getMessage());
+                    }
+                });
+            } else {
+
+                query0[0] = FirebaseDatabase.getInstance().getReference()
+                        .child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID)
+                        .limitToLast(20);
+
+                fillRecyclerView(query0[0], 0);
+            }
         } else {
 
-            query0 = FirebaseDatabase.getInstance().getReference()
+            query0[0] = FirebaseDatabase.getInstance().getReference()
                     .child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID)
                     .orderByChild("date")
                     .endAt(nodeID)
                     .limitToLast(20);
+
+            fillRecyclerView(query0[0], 0);
         }
+    }
+
+    private void fillRecyclerView(Query query0, int loadMessagesFromDM) {
+
+        Log.i(TAG, "fillRecyclerView()");
 
         query0.addListenerForSingleValueEvent(new ValueEventListener() {
 
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
 
-                if (snapshot.getChildrenCount() < 20 && loadingOlderMessages) {
+                if (directMentionsPosition == 0 && snapshot.getChildrenCount() < 20 || directMentionsPosition != 0 && snapshot.getChildrenCount() < (loadMessagesFromDM)) {
 
                     noMoreMessages = true;
                 }
@@ -732,6 +775,7 @@ public class Chat extends Fragment implements
                     String videoURL = (String) ds.child("videoURL").getValue();
                     String messageText = (String) ds.child("message").getValue();
                     Boolean userIsWithinShape = (Boolean) ds.child("userIsWithinShape").getValue();
+                    Integer position = ((Long) ds.child("position").getValue()).intValue();
                     DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
                     // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
                     // This will cause onDataChange to fire twice; optimizations could be made in the future.
@@ -749,6 +793,10 @@ public class Chat extends Fragment implements
                     mVideo.add(i, videoURL);
                     mText.add(i, messageText);
                     mUserIsWithinShape.add(i, userIsWithinShape);
+                    // No need to fill the arrayList if user did not click from DM.
+                    if (directMentionsPosition != 0) {
+                        mPosition.add(i, position);
+                    }
                     i++;
 
                     // Prevent duplicates.
@@ -1016,16 +1064,22 @@ public class Chat extends Fragment implements
         // Initialize the RecyclerView.
         Log.i(TAG, "initChatAdapter()");
 
-        ChatAdapter adapter = new ChatAdapter(mContext, mTime, mUser, mImage, mVideo, mText, mUserIsWithinShape);
+        ChatAdapter adapter = new ChatAdapter(mContext, mTime, mUser, mImage, mVideo, mText, mUserIsWithinShape, mPosition);
         if (chatRecyclerView != null) {
 
             chatRecyclerView.setAdapter(adapter);
             chatRecyclerView.setHasFixedSize(true);
             chatRecyclerView.setLayoutManager(chatRecyclerViewLinearLayoutManager);
 
-            if (directMentionsPosition != 0 && !firstLoad) {
+            if (directMentionsPosition != 0) {
 
-                chatRecyclerView.scrollToPosition((int) directMentionsPosition);
+                // Show a couple messages above the position, as this seems to be better visually.
+                int scrollPosition = directMentionsPosition - 5;
+                if (scrollPosition < 0) {
+
+                    scrollPosition = 0;
+                }
+                chatRecyclerView.scrollToPosition(scrollPosition);
             } else if (last == (mUser.size() - 2) || firstLoad || messageSent) {
 
                 // Scroll to bottom of recyclerviewlayout after first initialization and after sending a recyclerviewlayout.
@@ -1051,6 +1105,7 @@ public class Chat extends Fragment implements
         private final Context mContext;
         private final ArrayList<String> mMessageTime, mMessageUser, mMessageImage, mMessageImageVideo, mMessageText;
         private final ArrayList<Boolean> mUserIsWithinShape;
+        private final ArrayList<Integer> mPosition;
         private boolean theme;
 
         class ViewHolder extends RecyclerView.ViewHolder {
@@ -1148,7 +1203,7 @@ public class Chat extends Fragment implements
             }
         }
 
-        ChatAdapter(Context context, ArrayList<String> mMessageTime, ArrayList<String> mMessageUser, ArrayList<String> mMessageImage, ArrayList<String> mMessageImageVideo, ArrayList<String> mMessageText, ArrayList<Boolean> mUserIsWithinShape) {
+        ChatAdapter(Context context, ArrayList<String> mMessageTime, ArrayList<String> mMessageUser, ArrayList<String> mMessageImage, ArrayList<String> mMessageImageVideo, ArrayList<String> mMessageText, ArrayList<Boolean> mUserIsWithinShape, ArrayList<Integer> mPosition) {
 
             this.mContext = context;
             this.mMessageTime = mMessageTime;
@@ -1157,6 +1212,7 @@ public class Chat extends Fragment implements
             this.mMessageImageVideo = mMessageImageVideo;
             this.mMessageText = mMessageText;
             this.mUserIsWithinShape = mUserIsWithinShape;
+            this.mPosition = mPosition;
         }
 
         @NonNull
@@ -1167,15 +1223,6 @@ public class Chat extends Fragment implements
 
             loadPreferences();
 
-            Bundle extras = mActivity.getIntent().getExtras();
-            if (extras != null) {
-
-                directMentionsPosition = extras.getLong("directMentionsPosition");
-            } else {
-
-                Log.e(TAG, "ChatAdapter -> extras == null");
-            }
-
             return new ViewHolder(view);
         }
 
@@ -1184,6 +1231,15 @@ public class Chat extends Fragment implements
 
             // Set the left side if the user sent the message from inside the shape.
             if (mUserIsWithinShape.get(position)) {
+
+                // Prevent overlapping while paginating.
+                holder.messageTimeOutside.setVisibility(View.GONE);
+                holder.messageUserOutside.setVisibility(View.GONE);
+                holder.messageImageOutside.setVisibility(View.GONE);
+                holder.messageImageVideoOutside.setVisibility(View.GONE);
+                holder.messageTextOutside.setVisibility(View.GONE);
+                holder.messageTimeInside.setVisibility(View.VISIBLE);
+                holder.messageUserInside.setVisibility(View.VISIBLE);
 
                 holder.messageTimeInside.setText(mMessageTime.get(position));
 
@@ -1236,6 +1292,15 @@ public class Chat extends Fragment implements
                     holder.messageTextInside.setVisibility(View.VISIBLE);
                 }
             } else {
+
+                // Prevent overlapping while paginating.
+                holder.messageTimeInside.setVisibility(View.GONE);
+                holder.messageUserInside.setVisibility(View.GONE);
+                holder.messageImageInside.setVisibility(View.GONE);
+                holder.messageImageVideoInside.setVisibility(View.GONE);
+                holder.messageTextInside.setVisibility(View.GONE);
+                holder.messageTimeOutside.setVisibility(View.VISIBLE);
+                holder.messageUserOutside.setVisibility(View.VISIBLE);
 
                 // User sent the message from outside the shape. Setup the right side.
                 holder.messageTimeOutside.setText(mMessageTime.get(position));
@@ -1315,7 +1380,7 @@ public class Chat extends Fragment implements
             // "Highlight" the directMention message.
             if (directMentionsPosition != 0) {
 
-                if (position == directMentionsPosition) {
+                if (mPosition.get(position) == directMentionsPosition) {
 
                     if (theme) {
 
@@ -1324,6 +1389,8 @@ public class Chat extends Fragment implements
 
                         holder.itemView.setBackgroundColor(Color.parseColor("#1338BE"));
                     }
+
+                    directMentionsPosition = 0;
                 }
             }
         }

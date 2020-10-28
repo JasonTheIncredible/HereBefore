@@ -4,9 +4,6 @@
     <item android:id="@+id/createPolygon"
         android:title="@string/create_a_polygon"/>
 
-    <item android:id="@+id/createCircle"
-        android:title="@string/create_a_circle"/>
-
     <item android:id="@+id/removeShape"
         android:title="@string/remove_new_shape"/>
 
