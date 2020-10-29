@@ -123,7 +123,7 @@ public class Chat extends Fragment implements
     private static int index = -1, top = -1, last;
     private ChildEventListener childEventListener;
     private FloatingActionButton sendButton, mediaButton;
-    private boolean firstLoad, loadingOlderMessages, noMoreMessages = false, needLoadingIcon = false, reachedEndOfRecyclerView = false, recyclerViewHasScrolled = false, messageSent = false, sendButtonClicked = false, mediaButtonMenuIsOpen, fileIsImage, checkPermissionsPicture,
+    private boolean firstLoad, loadingOlderMessages, stoppedRunnable = false, noMoreMessages = false, needLoadingIcon = false, reachedEndOfRecyclerView = false, recyclerViewHasScrolled = false, messageSent = false, sendButtonClicked = false, mediaButtonMenuIsOpen, fileIsImage, checkPermissionsPicture,
             newShape, threeMarkers, fourMarkers, fiveMarkers, sixMarkers, sevenMarkers, eightMarkers;
     private Boolean userIsWithinShape;
     private View.OnLayoutChangeListener onLayoutChangeListener;
@@ -280,6 +280,15 @@ public class Chat extends Fragment implements
         }
 
         return rootView;
+    }
+
+    @Override
+    public void onResume() {
+
+        super.onResume();
+        Log.i(TAG, "onResume()");
+
+        stoppedRunnable = false;
     }
 
     @Override
@@ -927,6 +936,17 @@ public class Chat extends Fragment implements
         };
 
         query.addChildEventListener(childEventListener);
+    }
+
+    @Override
+    public void onPause() {
+
+        Log.i(TAG, "onPause()");
+
+        stoppedRunnable = true;
+        loadingIcon.setVisibility(View.GONE);
+
+        super.onPause();
     }
 
     @Override
@@ -2215,7 +2235,7 @@ public class Chat extends Fragment implements
 
         HandlerThread videoCompressAndAddToGalleryHandlerThread = new HandlerThread("videoCompressAndAddToGalleryHandlerThread");
         videoCompressAndAddToGalleryHandlerThread.start();
-        Handler mHandler = new Handler(videoCompressAndAddToGalleryHandlerThread.getLooper());
+        Handler handler = new Handler(videoCompressAndAddToGalleryHandlerThread.getLooper());
         Runnable runnable = () -> {
 
             File videoTemp = null;
@@ -2243,102 +2263,32 @@ public class Chat extends Fragment implements
 
                         public void onTranscodeCompleted(int successCode) {
 
-                            Bitmap mBitmap = null;
-                            int mBitmapWidth = 0;
-                            int mBitmapHeight = 0;
+                            if (successCode == Transcoder.SUCCESS_TRANSCODED) {
 
-                            // Turn the compressed video into a bitmap.
-                            File videoFile = new File(filePath);
+                                // Prevents doing unnecessary work if the user backed out of activity while video was compressing. In the future, transcoder should just be stopped before this point.
+                                if (!stoppedRunnable) {
 
-                            float length = videoFile.length() / 1024f; // Size in KB
-                            String value;
-                            if (length >= 1024) {
-
-                                value = length / 1024f + " MB";
-                            } else {
-
-                                value = length + " KB";
-                            }
-
-                            String text = String.format(Locale.US, "%s\nName: %s\nSize: %s", "Video compression complete", videoFile.getName(), value);
-                            Log.e(TAG, "text: " + text);
-                            Log.e(TAG, "imageFile.getName(): " + videoFile.getName());
-                            Log.e(TAG, "Path 0: " + filePath);
-
-                            try {
-
-                                File file = new File(filePath);
-                                InputStream inputStream; //You can get an inputStream using any IO API
-                                inputStream = new FileInputStream(file.getAbsolutePath());
-                                byte[] buffer = new byte[8192];
-                                int bytesRead;
-                                ByteArrayOutputStream output = new ByteArrayOutputStream();
-                                Base64OutputStream output64 = new Base64OutputStream(output, Base64.DEFAULT);
-                                videoURI = Uri.fromFile(videoFile);
-                                try {
-
-                                    while ((bytesRead = inputStream.read(buffer)) != -1) {
-
-                                        output64.write(buffer, 0, bytesRead);
-                                    }
-                                } catch (IOException ex) {
-
-                                    toastMessageLong(ex.getMessage());
+                                    Log.i(TAG, "Transcoder.SUCCESS_TRANSCODED");
+                                    onTranscodeFinished(filePath);
                                 }
-                                output64.close();
+                            } else if (successCode == Transcoder.SUCCESS_NOT_NEEDED) {
 
-                                // Change the videoImageView's orientation depending on the orientation of the video.
-                                MediaMetadataRetriever retriever = new MediaMetadataRetriever();
-                                // Set the video Uri as data source for MediaMetadataRetriever
-                                retriever.setDataSource(filePath);
-                                // Get one "frame"/bitmap - * NOTE - no time was set, so the first available frame will be used
-                                mBitmap = retriever.getFrameAtTime(1);
-                                // Get the bitmap width and height
-                                mBitmapWidth = mBitmap.getWidth();
-                                mBitmapHeight = mBitmap.getHeight();
+                                // Prevents doing unnecessary work if the user backed out of activity while video was compressing. In the future, transcoder should just be stopped before this point.
+                                if (!stoppedRunnable) {
 
-                            } catch (IOException ex) {
-
-                                toastMessageLong(ex.getMessage());
-                            }
-
-                            // Update UI thread.
-                            Bitmap finalBitmap = mBitmap;
-                            int finalBitmapHeight = mBitmapHeight;
-                            int finalBitmapWidth = mBitmapWidth;
-
-                            new Handler(Looper.getMainLooper()).post(() -> {
-
-                                if (finalBitmap != null && finalBitmapHeight != 0 && finalBitmapWidth != 0) {
-
-                                    // Change textView to be to the right of videoImageView.
-                                    RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams) mInput.getLayoutParams();
-                                    params.addRule(RelativeLayout.END_OF, R.id.videoImageView);
-                                    mInput.setLayoutParams(params);
-
-                                    final float scale = getResources().getDisplayMetrics().density;
-                                    if (finalBitmapWidth > finalBitmapHeight) {
-
-                                        videoImageView.getLayoutParams().width = (int) (50 * scale + 0.5f); // Convert 50dp to px.
-                                    } else {
-
-                                        videoImageView.getLayoutParams().width = (int) (30 * scale + 0.5f); // Convert 30dp to px.
-                                    }
-
-                                    videoImageView.setImageBitmap(finalBitmap);
-                                    videoImageView.setVisibility(View.VISIBLE);
+                                    Log.i(TAG, "Transcoder.SUCCESS_NOT_NEEDED");
+                                    onTranscodeFinished(video.getAbsolutePath());
                                 }
-
-                                loadingIcon.setVisibility(View.GONE);
-                                // Allow initChatAdapter() to get rid of the loadingIcon with this boolean.
-                                needLoadingIcon = false;
-                            });
+                            }
                         }
 
                         public void onTranscodeCanceled() {
                         }
 
                         public void onTranscodeFailed(@NonNull Throwable exception) {
+
+                            Log.e(TAG, "Transcoder error occurred: " + exception.getMessage());
+                            toastMessageLong("Error compressing video: " + exception.getMessage());
                         }
                     }).transcode();
 
@@ -2382,7 +2332,92 @@ public class Chat extends Fragment implements
             mContext.sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, uri));
         };
 
-        mHandler.post(runnable);
+        handler.post(runnable);
+    }
+
+    private void onTranscodeFinished(String absolutePath) {
+
+        Log.i(TAG, "onTranscodeFinished()");
+
+        Bitmap mBitmap = null;
+        int mBitmapWidth = 0;
+        int mBitmapHeight = 0;
+
+        // Turn the compressed video into a bitmap.
+        File videoFile = new File(absolutePath);
+
+        try {
+
+            File file = new File(absolutePath);
+            InputStream inputStream;
+            inputStream = new FileInputStream(file.getAbsolutePath());
+            byte[] buffer = new byte[8192];
+            int bytesRead;
+            ByteArrayOutputStream output = new ByteArrayOutputStream();
+            Base64OutputStream output64 = new Base64OutputStream(output, Base64.DEFAULT);
+            videoURI = Uri.fromFile(videoFile);
+            try {
+
+                while ((bytesRead = inputStream.read(buffer)) != -1) {
+
+                    output64.write(buffer, 0, bytesRead);
+                }
+            } catch (IOException ex) {
+
+                toastMessageLong(ex.getMessage());
+            }
+            output64.close();
+
+            // Change the videoImageView's orientation depending on the orientation of the video.
+            MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+            // Set the video Uri as data source for MediaMetadataRetriever
+            retriever.setDataSource(absolutePath);
+            // Get one "frame"/bitmap - * NOTE - no time was set, so the first available frame will be used
+            mBitmap = retriever.getFrameAtTime(1);
+            // Get the bitmap width and height
+            mBitmapWidth = mBitmap.getWidth();
+            mBitmapHeight = mBitmap.getHeight();
+
+        } catch (IOException ex) {
+
+                toastMessageLong(ex.getMessage());
+        }
+
+        // Update UI thread.
+        Bitmap finalBitmap = mBitmap;
+        int finalBitmapHeight = mBitmapHeight;
+        int finalBitmapWidth = mBitmapWidth;
+
+        new Handler(Looper.getMainLooper()).post(() -> {
+
+            // Prevents a crash if the user backed out of activity while video was compressing.
+            if (mActivity != null) {
+
+                if (finalBitmap != null && finalBitmapHeight != 0 && finalBitmapWidth != 0) {
+
+                    // Change textView to be to the right of videoImageView.
+                    RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams) mInput.getLayoutParams();
+                    params.addRule(RelativeLayout.END_OF, R.id.videoImageView);
+                    mInput.setLayoutParams(params);
+
+                    final float scale = getResources().getDisplayMetrics().density;
+                    if (finalBitmapWidth > finalBitmapHeight) {
+
+                        videoImageView.getLayoutParams().width = (int) (50 * scale + 0.5f); // Convert 50dp to px.
+                    } else {
+
+                        videoImageView.getLayoutParams().width = (int) (30 * scale + 0.5f); // Convert 30dp to px.
+                    }
+
+                    videoImageView.setImageBitmap(finalBitmap);
+                    videoImageView.setVisibility(View.VISIBLE);
+                }
+
+                loadingIcon.setVisibility(View.GONE);
+                // Allow initChatAdapter() to get rid of the loadingIcon with this boolean.
+                needLoadingIcon = false;
+            }
+        });
     }
 
     private void firebaseUpload() {
@@ -2901,17 +2936,25 @@ public class Chat extends Fragment implements
 
     private void toastMessageShort(String message) {
 
-        cancelToasts();
-        shortToast = Toast.makeText(mContext, message, Toast.LENGTH_SHORT);
-        shortToast.setGravity(Gravity.CENTER, 0, 0);
-        shortToast.show();
+        // Prevents a crash if the user backed out of activity and a toast message occurs from another thread.
+        if (mActivity != null) {
+
+            cancelToasts();
+            shortToast = Toast.makeText(mContext, message, Toast.LENGTH_SHORT);
+            shortToast.setGravity(Gravity.CENTER, 0, 0);
+            shortToast.show();
+        }
     }
 
     private void toastMessageLong(String message) {
 
-        cancelToasts();
-        longToast = Toast.makeText(mContext, message, Toast.LENGTH_LONG);
-        longToast.setGravity(Gravity.CENTER, 0, 0);
-        longToast.show();
+        // Prevents a crash if the user backed out of activity and a toast message occurs from another thread.
+        if (mActivity != null) {
+
+            cancelToasts();
+            longToast = Toast.makeText(mContext, message, Toast.LENGTH_LONG);
+            longToast.setGravity(Gravity.CENTER, 0, 0);
+            longToast.show();
+        }
     }
 }
