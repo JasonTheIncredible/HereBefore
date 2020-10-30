@@ -123,7 +123,8 @@ public class Map extends FragmentActivity implements
     private final List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
     // Allow user to click on a mention in Chat and scroll to that mention for context.
-    // Uploading a picture takes a long time.
+    // When message is deleted, update DirectMention's position.
+    // Taking and uploading a picture takes a long time.
     // Make a better loading icon, with a progress bar.
     // Loading icon for Glide images in Chat and DirectMentions, and cut down on loading time.
     // If user is on a point, prevent creating a new one. Deal with overlapping shapes in general. Maybe a warning message?
@@ -131,7 +132,7 @@ public class Map extends FragmentActivity implements
     // Make situations where Firebase circles are added to the map and then polygons are added (like in chatViews) async? Also, do that for changing map and therefore changing shape colors.
     // Panoramic view?
     // Show direction camera was facing when taking photo?
-    // Get rid of "larger" shapes and only allow points? (Or make allowable shapes smaller?)
+    // Get rid of "larger" shapes and only allow points? (Or make allowable shapes smaller?). Track where user is while taking the original video or picture and make the shape that big?
     // Remember the AC: Origins inspiration. Also, airdrop - create items in the world.
     // Prevent data scraping (hide email addresses and other personal information).
     // Create timer that kicks people out of a new Chat if they haven't posted within an amount of time, or keep updating their location.
@@ -3494,7 +3495,7 @@ public class Map extends FragmentActivity implements
                                 userIsWithinShape = PolyUtil.containsLocation(location.getLatitude(), location.getLongitude(), polygon.getPoints(), false);
 
                                 // Check if the user is already signed in.
-                                if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) instanceof GoogleSignInAccount) {
+                                if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) != null) {
 
                                     Log.i(TAG, "onMapReadyAndRestart() -> onPolygonClick -> User selected a polygon -> User signed in");
 
@@ -4086,7 +4087,7 @@ public class Map extends FragmentActivity implements
                                 userIsWithinShape = !(distance[0] > circle.getRadius());
 
                                 // Check if the user is already signed in.
-                                if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) instanceof GoogleSignInAccount) {
+                                if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) != null) {
 
                                     // User signed in.
 
@@ -4373,7 +4374,7 @@ public class Map extends FragmentActivity implements
                                     userIsWithinShape = !(distance[0] > mCircle.getRadius());
 
                                     // Check if the user is already signed in.
-                                    if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) instanceof GoogleSignInAccount) {
+                                    if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) != null) {
 
                                         // User signed in.
 
@@ -4440,7 +4441,7 @@ public class Map extends FragmentActivity implements
                                     userIsWithinShape = PolyUtil.containsLocation(location.getLatitude(), location.getLongitude(), mPolygon.getPoints(), false);
 
                                     // Check if the user is already signed in.
-                                    if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) instanceof GoogleSignInAccount) {
+                                    if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) != null) {
 
                                         Log.i(TAG, "onMapReadyAndRestart() -> onMapClick -> User selected a polygon -> User signed in");
 
@@ -5549,850 +5550,799 @@ public class Map extends FragmentActivity implements
     @Override
     public boolean onMenuItemClick(MenuItem menuItem) {
 
-        switch (menuItem.getItemId()) {
+        int id = menuItem.getItemId();
 
-            // maptype_menu
-            case R.id.roadmap:
+        if (id == R.id.roadmap) {
 
-                // Use the "road map" map type if the map is not null.
-                if (mMap != null) {
+            // Use the "road map" map type if the map is not null.
+            if (mMap != null) {
 
-                    // getMapType() returns 1 if the map type is set to "road map".
-                    if (mMap.getMapType() != 1) {
+                // getMapType() returns 1 if the map type is set to "road map".
+                if (mMap.getMapType() != 1) {
 
-                        // Make adjustments to colors only if they're needed.
-                        if (mMap.getMapType() == 3) {
+                    // Make adjustments to colors only if they're needed.
+                    if (mMap.getMapType() == 3) {
 
-                            Log.i(TAG, "onMenuItemClick -> Road Map");
+                        Log.i(TAG, "onMenuItemClick -> Road Map");
 
-                            mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
-                        } else {
-
-                            Log.i(TAG, "onMenuItemClick -> Road Map");
-
-                            mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
-
-                            mapChanged = true;
-
-                            adjustMapColors();
-                        }
-                    }
-                } else {
-
-                    Log.e(TAG, "onMenuItemClick -> Road Map -> mMap == null");
-                    toastMessageLong("An error occurred while loading the map.");
-                }
-
-                break;
-
-            // maptype_menu
-            case R.id.satellite:
-
-                // Use the "satellite" map type if the map is not null.
-                if (mMap != null) {
-
-                    // getMapType() returns 2 if the map type is set to "satellite".
-                    if (mMap.getMapType() != 2) {
-
-                        // Make adjustments to colors only if they're needed.
-                        if (mMap.getMapType() == 4) {
-
-                            Log.i(TAG, "onMenuItemClick -> Satellite Map");
-
-                            mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
-                        } else {
-
-                            Log.i(TAG, "onMenuItemClick -> Satellite Map");
-
-                            mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
-
-                            mapChanged = true;
-
-                            adjustMapColors();
-                        }
-                    }
-                } else {
-
-                    Log.e(TAG, "onMenuItemClick -> Satellite Map -> mMap == null");
-                    toastMessageLong("An error occurred while loading the map.");
-                }
-
-                break;
-
-            // maptype_menu
-            case R.id.hybrid:
-
-                // Use the "hybrid" map type if the map is not null.
-                if (mMap != null) {
-
-                    // getMapType() returns 4 if the map type is set to "hybrid".
-                    if (mMap.getMapType() != 4) {
-
-                        // Make adjustments to colors only if they're needed.
-                        if (mMap.getMapType() == 2) {
-
-                            Log.i(TAG, "onMenuItemClick -> Hybrid Map");
-
-                            mMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
-                        } else {
-
-                            Log.i(TAG, "onMenuItemClick -> Hybrid Map");
-
-                            mMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
-
-                            mapChanged = true;
-
-                            adjustMapColors();
-                        }
-                    }
-                } else {
-
-                    Log.e(TAG, "onMenuItemClick -> Hybrid Map -> mMap == null");
-                    toastMessageLong("An error occurred while loading the map.");
-                }
-
-                break;
-
-            // maptype_menu
-            case R.id.terrain:
-
-                // Use the "terrain" map type if the map is not null.
-                if (mMap != null) {
-
-                    // getMapType() returns 3 if the map type is set to "terrain".
-                    if (mMap.getMapType() != 3) {
-
-                        // Make adjustments to colors only if they're needed.
-                        if (mMap.getMapType() == 1) {
-
-                            Log.i(TAG, "onMenuItemClick -> Terrain Map");
-
-                            mMap.setMapType(GoogleMap.MAP_TYPE_TERRAIN);
-                        } else {
-
-                            Log.i(TAG, "onMenuItemClick -> Terrain Map");
-
-                            mMap.setMapType(GoogleMap.MAP_TYPE_TERRAIN);
-
-                            mapChanged = true;
-
-                            adjustMapColors();
-                        }
-                    }
-                } else {
-
-                    Log.e(TAG, "onMenuItemClick -> Terrain Map -> mMap == null");
-                    toastMessageLong("An error occurred while loading the map.");
-                }
-
-                break;
-
-            // chatviews_menu
-            case R.id.showEverything:
-
-                Log.i(TAG, "onMenuItemClick() -> showEverything");
-
-                // Tells loadShapes which shapes to load.
-                showEverything = true;
-                showLarge = false;
-                showMedium = false;
-                showSmall = false;
-                showPoints = false;
-
-                // Prevent multiple listeners.
-                if (queryShapesLarge != null && childEventListenerShapesLarge != null) {
-                    queryShapesLarge.removeEventListener(childEventListenerShapesLarge);
-                }
-                if (queryShapesMedium != null && childEventListenerShapesMedium != null) {
-                    queryShapesMedium.removeEventListener(childEventListenerShapesMedium);
-                }
-                if (queryShapesSmall != null && childEventListenerShapesSmall != null) {
-                    queryShapesSmall.removeEventListener(childEventListenerShapesSmall);
-                }
-                if (queryShapesPoints != null && childEventListenerShapesPoints != null) {
-                    queryShapesPoints.removeEventListener(childEventListenerShapesPoints);
-                }
-
-                // Prevents doing a bunch of unnecessary work.
-                if (!showingEverything) {
-
-                    loadShapes();
-                }
-
-                break;
-
-            // chatviews_menu
-            case R.id.showLargeChats:
-
-                Log.i(TAG, "onMenuItemClick() -> showLargeChats");
-
-                // Tells loadShapes which shapes to load.
-                showLarge = true;
-                showEverything = false;
-                showMedium = false;
-                showSmall = false;
-                showPoints = false;
-
-                // Prevent multiple listeners.
-                if (queryShapesLarge != null && childEventListenerShapesLarge != null) {
-                    queryShapesLarge.removeEventListener(childEventListenerShapesLarge);
-                }
-                if (queryShapesMedium != null && childEventListenerShapesMedium != null) {
-                    queryShapesMedium.removeEventListener(childEventListenerShapesMedium);
-                }
-                if (queryShapesSmall != null && childEventListenerShapesSmall != null) {
-                    queryShapesSmall.removeEventListener(childEventListenerShapesSmall);
-                }
-                if (queryShapesPoints != null && childEventListenerShapesPoints != null) {
-                    queryShapesPoints.removeEventListener(childEventListenerShapesPoints);
-                }
-
-                // Prevents doing a bunch of unnecessary work.
-                if (!showingLarge) {
-
-                    loadShapes();
-                }
-
-                break;
-
-            // chatviews_menu
-            case R.id.showMediumChats:
-
-                Log.i(TAG, "onMenuItemClick() -> showMediumChats");
-
-                // Tells loadShapes which shapes to load.
-                showMedium = true;
-                showEverything = false;
-                showLarge = false;
-                showSmall = false;
-                showPoints = false;
-
-                // Prevent multiple listeners.
-                if (queryShapesLarge != null && childEventListenerShapesLarge != null) {
-                    queryShapesLarge.removeEventListener(childEventListenerShapesLarge);
-                }
-                if (queryShapesMedium != null && childEventListenerShapesMedium != null) {
-                    queryShapesMedium.removeEventListener(childEventListenerShapesMedium);
-                }
-                if (queryShapesSmall != null && childEventListenerShapesSmall != null) {
-                    queryShapesSmall.removeEventListener(childEventListenerShapesSmall);
-                }
-                if (queryShapesPoints != null && childEventListenerShapesPoints != null) {
-                    queryShapesPoints.removeEventListener(childEventListenerShapesPoints);
-                }
-
-                // Prevents doing a bunch of unnecessary work.
-                if (!showingMedium) {
-
-                    loadShapes();
-                }
-
-                break;
-
-            // chatviews_menu
-            case R.id.showSmallChats:
-
-                Log.i(TAG, "onMenuItemClick() -> showSmallChats");
-
-                // Tells loadShapes which shapes to load.
-                showSmall = true;
-                showEverything = false;
-                showLarge = false;
-                showMedium = false;
-                showPoints = false;
-
-                // Prevent multiple listeners.
-                if (queryShapesLarge != null && childEventListenerShapesLarge != null) {
-                    queryShapesLarge.removeEventListener(childEventListenerShapesLarge);
-                }
-                if (queryShapesMedium != null && childEventListenerShapesMedium != null) {
-                    queryShapesMedium.removeEventListener(childEventListenerShapesMedium);
-                }
-                if (queryShapesSmall != null && childEventListenerShapesSmall != null) {
-                    queryShapesSmall.removeEventListener(childEventListenerShapesSmall);
-                }
-                if (queryShapesPoints != null && childEventListenerShapesPoints != null) {
-                    queryShapesPoints.removeEventListener(childEventListenerShapesPoints);
-                }
-
-                // Prevents doing a bunch of unnecessary work.
-                if (!showingSmall) {
-
-                    loadShapes();
-                }
-
-                break;
-
-            // chatviews_menu
-            case R.id.showPoints:
-
-                Log.i(TAG, "onMenuItemClick() -> showPoints");
-
-                // Tells loadShapes which shapes to load.
-                showPoints = true;
-                showEverything = false;
-                showLarge = false;
-                showMedium = false;
-                showSmall = false;
-
-                // Prevent multiple listeners.
-                if (queryShapesLarge != null && childEventListenerShapesLarge != null) {
-                    queryShapesLarge.removeEventListener(childEventListenerShapesLarge);
-                }
-                if (queryShapesMedium != null && childEventListenerShapesMedium != null) {
-                    queryShapesMedium.removeEventListener(childEventListenerShapesMedium);
-                }
-                if (queryShapesSmall != null && childEventListenerShapesSmall != null) {
-                    queryShapesSmall.removeEventListener(childEventListenerShapesSmall);
-                }
-                if (queryShapesPoints != null && childEventListenerShapesPoints != null) {
-                    queryShapesPoints.removeEventListener(childEventListenerShapesPoints);
-                }
-
-                // Prevents doing a bunch of unnecessary work.
-                if (!showingPoints) {
-
-                    loadShapes();
-                }
-
-                break;
-
-            // createchat_menu
-            case R.id.createPolygon:
-
-                Log.i(TAG, "onMenuItemClick() -> createPolygon");
-
-                // Gets rid of the shapeTemps if the user wants to make a new shape.
-                if (selectingShape) {
-
-                    if (circleTemp != null) {
-
-                        circleTemp.remove();
-                    }
-
-                    if (polygonTemp != null) {
-
-                        polygonTemp.remove();
-                    }
-
-                    selectingShape = false;
-
-                    // Change the circle color depending on the map type.
-                    if (mMap.getMapType() == 2 || mMap.getMapType() == 4) {
-
-                        for (int i = 0; i < overlappingShapesCircleLocation.size(); i++) {
-
-                            Circle circle0 = mMap.addCircle(
-                                    new CircleOptions()
-                                            .center(overlappingShapesCircleLocation.get(i))
-                                            .clickable(true)
-                                            .radius(overlappingShapesCircleRadius.get(i))
-                                            .strokeColor(Color.rgb(255, 255, 0))
-                                            .strokeWidth(3f)
-                                            .zIndex(0)
-                            );
-
-                            circle0.setTag(overlappingShapesCircleUUID.get(i));
-                        }
-
-                        for (int i = 0; i < overlappingShapesPolygonVertices.size(); i++) {
-
-                            Polygon polygon0 = mMap.addPolygon(
-                                    new PolygonOptions()
-                                            .clickable(true)
-                                            .addAll(overlappingShapesPolygonVertices.get(i))
-                                            .strokeColor(Color.rgb(255, 255, 0))
-                                            .strokeWidth(3f)
-                                            .zIndex(0)
-                            );
-
-                            polygon0.setTag(overlappingShapesPolygonUUID.get(i));
-                        }
+                        mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
                     } else {
 
-                        for (int i = 0; i < overlappingShapesUUID.size(); i++) {
+                        Log.i(TAG, "onMenuItemClick -> Road Map");
 
-                            Circle circle0 = mMap.addCircle(
-                                    new CircleOptions()
-                                            .center(overlappingShapesCircleLocation.get(i))
-                                            .clickable(true)
-                                            .radius(overlappingShapesCircleRadius.get(i))
-                                            .strokeColor(Color.rgb(255, 0, 255))
-                                            .strokeWidth(3f)
-                                            .zIndex(0)
-                            );
+                        mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
 
-                            circle0.setTag(overlappingShapesCircleUUID.get(i));
-                        }
+                        mapChanged = true;
 
-                        for (int i = 0; i < overlappingShapesPolygonVertices.size(); i++) {
-
-                            Polygon polygon0 = mMap.addPolygon(
-                                    new PolygonOptions()
-                                            .clickable(true)
-                                            .addAll(overlappingShapesPolygonVertices.get(i))
-                                            .strokeColor(Color.rgb(255, 0, 255))
-                                            .strokeWidth(3f)
-                                            .zIndex(0)
-                            );
-
-                            polygon0.setTag(overlappingShapesPolygonUUID.get(i));
-                        }
-                    }
-
-                    overlappingShapesUUID = new ArrayList<>();
-                    overlappingShapesCircleUUID = new ArrayList<>();
-                    overlappingShapesPolygonUUID = new ArrayList<>();
-                    overlappingShapesCircleLocation = new ArrayList<>();
-                    overlappingShapesCircleRadius = new ArrayList<>();
-                    overlappingShapesPolygonVertices = new ArrayList<>();
-
-                    chatSelectorSeekBar.setVisibility(View.INVISIBLE);
-                    chatSizeSeekBar.setVisibility(View.VISIBLE);
-                    chatSizeSeekBar.setProgress(0);
-                    chatSelectorSeekBar.setProgress(0);
-
-                    chatsSize = 0;
-                }
-
-                // Remove the polygon and markers.
-                if (newPolygon != null) {
-
-                    newPolygon.remove();
-                    marker0.remove();
-                    marker1.remove();
-                    marker2.remove();
-                    newPolygon = null;
-                    marker0 = null;
-                    marker1 = null;
-                    marker2 = null;
-                    marker0Position = null;
-                    marker1Position = null;
-                    marker2Position = null;
-                    marker0ID = null;
-                    marker1ID = null;
-                    marker2ID = null;
-
-                    if (marker3 != null) {
-
-                        marker3.remove();
-                        marker3 = null;
-                        marker3Position = null;
-                        marker3ID = null;
-                    }
-
-                    if (marker4 != null) {
-
-                        marker4.remove();
-                        marker4 = null;
-                        marker4Position = null;
-                        marker4ID = null;
-                    }
-
-                    if (marker5 != null) {
-
-                        marker5.remove();
-                        marker5 = null;
-                        marker5Position = null;
-                        marker5ID = null;
-                    }
-
-                    if (marker6 != null) {
-
-                        marker6.remove();
-                        marker6 = null;
-                        marker6Position = null;
-                        marker6ID = null;
-                    }
-
-                    if (marker7 != null) {
-
-                        marker7.remove();
-                        marker7 = null;
-                        marker7Position = null;
-                        marker7ID = null;
+                        adjustMapColors();
                     }
                 }
+            } else {
 
-                // Remove the circle and markers.
-                if (newCircle != null) {
+                Log.e(TAG, "onMenuItemClick -> Road Map -> mMap == null");
+                toastMessageLong("An error occurred while loading the map.");
+            }
+        } else if (id == R.id.satellite) {
 
-                    newCircle.remove();
-                    marker0.remove();
-                    marker1.remove();
-                    newCircle = null;
-                    marker0 = null;
-                    marker1 = null;
-                    marker0Position = null;
-                    marker1Position = null;
-                    marker0ID = null;
-                    marker1ID = null;
+            // Use the "satellite" map type if the map is not null.
+            if (mMap != null) {
+
+                // getMapType() returns 2 if the map type is set to "satellite".
+                if (mMap.getMapType() != 2) {
+
+                    // Make adjustments to colors only if they're needed.
+                    if (mMap.getMapType() == 4) {
+
+                        Log.i(TAG, "onMenuItemClick -> Satellite Map");
+
+                        mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
+                    } else {
+
+                        Log.i(TAG, "onMenuItemClick -> Satellite Map");
+
+                        mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
+
+                        mapChanged = true;
+
+                        adjustMapColors();
+                    }
+                }
+            } else {
+
+                Log.e(TAG, "onMenuItemClick -> Satellite Map -> mMap == null");
+                toastMessageLong("An error occurred while loading the map.");
+            }
+        } else if (id == R.id.hybrid) {
+
+            // Use the "hybrid" map type if the map is not null.
+            if (mMap != null) {
+
+                // getMapType() returns 4 if the map type is set to "hybrid".
+                if (mMap.getMapType() != 4) {
+
+                    // Make adjustments to colors only if they're needed.
+                    if (mMap.getMapType() == 2) {
+
+                        Log.i(TAG, "onMenuItemClick -> Hybrid Map");
+
+                        mMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
+                    } else {
+
+                        Log.i(TAG, "onMenuItemClick -> Hybrid Map");
+
+                        mMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
+
+                        mapChanged = true;
+
+                        adjustMapColors();
+                    }
+                }
+            } else {
+
+                Log.e(TAG, "onMenuItemClick -> Hybrid Map -> mMap == null");
+                toastMessageLong("An error occurred while loading the map.");
+            }
+        } else if (id == R.id.terrain) {
+
+            // Use the "terrain" map type if the map is not null.
+            if (mMap != null) {
+
+                // getMapType() returns 3 if the map type is set to "terrain".
+                if (mMap.getMapType() != 3) {
+
+                    // Make adjustments to colors only if they're needed.
+                    if (mMap.getMapType() == 1) {
+
+                        Log.i(TAG, "onMenuItemClick -> Terrain Map");
+
+                        mMap.setMapType(GoogleMap.MAP_TYPE_TERRAIN);
+                    } else {
+
+                        Log.i(TAG, "onMenuItemClick -> Terrain Map");
+
+                        mMap.setMapType(GoogleMap.MAP_TYPE_TERRAIN);
+
+                        mapChanged = true;
+
+                        adjustMapColors();
+                    }
+                }
+            } else {
+
+                Log.e(TAG, "onMenuItemClick -> Terrain Map -> mMap == null");
+                toastMessageLong("An error occurred while loading the map.");
+            }
+        } else if (id == R.id.showEverything) {
+
+            Log.i(TAG, "onMenuItemClick() -> showEverything");
+
+            // Tells loadShapes which shapes to load.
+            showEverything = true;
+            showLarge = false;
+            showMedium = false;
+            showSmall = false;
+            showPoints = false;
+
+            // Prevent multiple listeners.
+            if (queryShapesLarge != null && childEventListenerShapesLarge != null) {
+                queryShapesLarge.removeEventListener(childEventListenerShapesLarge);
+            }
+            if (queryShapesMedium != null && childEventListenerShapesMedium != null) {
+                queryShapesMedium.removeEventListener(childEventListenerShapesMedium);
+            }
+            if (queryShapesSmall != null && childEventListenerShapesSmall != null) {
+                queryShapesSmall.removeEventListener(childEventListenerShapesSmall);
+            }
+            if (queryShapesPoints != null && childEventListenerShapesPoints != null) {
+                queryShapesPoints.removeEventListener(childEventListenerShapesPoints);
+            }
+
+            // Prevents doing a bunch of unnecessary work.
+            if (!showingEverything) {
+
+                loadShapes();
+            }
+        } else if (id == R.id.showLargeChats) {
+
+            Log.i(TAG, "onMenuItemClick() -> showLargeChats");
+
+            // Tells loadShapes which shapes to load.
+            showLarge = true;
+            showEverything = false;
+            showMedium = false;
+            showSmall = false;
+            showPoints = false;
+
+            // Prevent multiple listeners.
+            if (queryShapesLarge != null && childEventListenerShapesLarge != null) {
+                queryShapesLarge.removeEventListener(childEventListenerShapesLarge);
+            }
+            if (queryShapesMedium != null && childEventListenerShapesMedium != null) {
+                queryShapesMedium.removeEventListener(childEventListenerShapesMedium);
+            }
+            if (queryShapesSmall != null && childEventListenerShapesSmall != null) {
+                queryShapesSmall.removeEventListener(childEventListenerShapesSmall);
+            }
+            if (queryShapesPoints != null && childEventListenerShapesPoints != null) {
+                queryShapesPoints.removeEventListener(childEventListenerShapesPoints);
+            }
+
+            // Prevents doing a bunch of unnecessary work.
+            if (!showingLarge) {
+
+                loadShapes();
+            }
+        } else if (id == R.id.showMediumChats) {
+
+            Log.i(TAG, "onMenuItemClick() -> showMediumChats");
+
+            // Tells loadShapes which shapes to load.
+            showMedium = true;
+            showEverything = false;
+            showLarge = false;
+            showSmall = false;
+            showPoints = false;
+
+            // Prevent multiple listeners.
+            if (queryShapesLarge != null && childEventListenerShapesLarge != null) {
+                queryShapesLarge.removeEventListener(childEventListenerShapesLarge);
+            }
+            if (queryShapesMedium != null && childEventListenerShapesMedium != null) {
+                queryShapesMedium.removeEventListener(childEventListenerShapesMedium);
+            }
+            if (queryShapesSmall != null && childEventListenerShapesSmall != null) {
+                queryShapesSmall.removeEventListener(childEventListenerShapesSmall);
+            }
+            if (queryShapesPoints != null && childEventListenerShapesPoints != null) {
+                queryShapesPoints.removeEventListener(childEventListenerShapesPoints);
+            }
+
+            // Prevents doing a bunch of unnecessary work.
+            if (!showingMedium) {
+
+                loadShapes();
+            }
+        } else if (id == R.id.showSmallChats) {
+
+            Log.i(TAG, "onMenuItemClick() -> showSmallChats");
+
+            // Tells loadShapes which shapes to load.
+            showSmall = true;
+            showEverything = false;
+            showLarge = false;
+            showMedium = false;
+            showPoints = false;
+
+            // Prevent multiple listeners.
+            if (queryShapesLarge != null && childEventListenerShapesLarge != null) {
+                queryShapesLarge.removeEventListener(childEventListenerShapesLarge);
+            }
+            if (queryShapesMedium != null && childEventListenerShapesMedium != null) {
+                queryShapesMedium.removeEventListener(childEventListenerShapesMedium);
+            }
+            if (queryShapesSmall != null && childEventListenerShapesSmall != null) {
+                queryShapesSmall.removeEventListener(childEventListenerShapesSmall);
+            }
+            if (queryShapesPoints != null && childEventListenerShapesPoints != null) {
+                queryShapesPoints.removeEventListener(childEventListenerShapesPoints);
+            }
+
+            // Prevents doing a bunch of unnecessary work.
+            if (!showingSmall) {
+
+                loadShapes();
+            }
+        } else if (id == R.id.showPoints) {
+
+            Log.i(TAG, "onMenuItemClick() -> showPoints");
+
+            // Tells loadShapes which shapes to load.
+            showPoints = true;
+            showEverything = false;
+            showLarge = false;
+            showMedium = false;
+            showSmall = false;
+
+            // Prevent multiple listeners.
+            if (queryShapesLarge != null && childEventListenerShapesLarge != null) {
+                queryShapesLarge.removeEventListener(childEventListenerShapesLarge);
+            }
+            if (queryShapesMedium != null && childEventListenerShapesMedium != null) {
+                queryShapesMedium.removeEventListener(childEventListenerShapesMedium);
+            }
+            if (queryShapesSmall != null && childEventListenerShapesSmall != null) {
+                queryShapesSmall.removeEventListener(childEventListenerShapesSmall);
+            }
+            if (queryShapesPoints != null && childEventListenerShapesPoints != null) {
+                queryShapesPoints.removeEventListener(childEventListenerShapesPoints);
+            }
+
+            // Prevents doing a bunch of unnecessary work.
+            if (!showingPoints) {
+
+                loadShapes();
+            }
+        } else if (id == R.id.createPolygon) {
+
+            Log.i(TAG, "onMenuItemClick() -> createPolygon");
+
+            // Gets rid of the shapeTemps if the user wants to make a new shape.
+            if (selectingShape) {
+
+                if (circleTemp != null) {
+
+                    circleTemp.remove();
                 }
 
-                // Check location permissions.
-                if (ContextCompat.checkSelfPermission(getBaseContext(),
-                        Manifest.permission.ACCESS_FINE_LOCATION)
-                        == PackageManager.PERMISSION_GRANTED) {
+                if (polygonTemp != null) {
 
-                    // Creates a polygon.
-                    FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
+                    polygonTemp.remove();
+                }
 
-                    mFusedLocationClient.getLastLocation()
-                            .addOnSuccessListener(Map.this, location -> {
+                selectingShape = false;
 
-                                // Get last known location. In some rare situations, this can be null.
-                                if (location != null) {
+                // Change the circle color depending on the map type.
+                if (mMap.getMapType() == 2 || mMap.getMapType() == 4) {
 
-                                    // Load different colored shapes depending on the map type.
-                                    if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
+                    for (int i = 0; i < overlappingShapesCircleLocation.size(); i++) {
 
-                                        // Global variable used in chatSizeSeekBar's onProgressChanged().
-                                        mlocation = location;
+                        Circle circle0 = mMap.addCircle(
+                                new CircleOptions()
+                                        .center(overlappingShapesCircleLocation.get(i))
+                                        .clickable(true)
+                                        .radius(overlappingShapesCircleRadius.get(i))
+                                        .strokeColor(Color.rgb(255, 255, 0))
+                                        .strokeWidth(3f)
+                                        .zIndex(0)
+                        );
 
-                                        // Update the global variable - used in chatSeekBarChangeListener.
-                                        fourMarkers = true;
+                        circle0.setTag(overlappingShapesCircleUUID.get(i));
+                    }
 
-                                        // Set seekBar to be the same as the polygon's arbitrary size.
-                                        chatSizeSeekBar.setProgress(50);
+                    for (int i = 0; i < overlappingShapesPolygonVertices.size(); i++) {
 
-                                        // Logic to handle location object.
-                                        marker0Position = new LatLng(location.getLatitude() - 0.0001, location.getLongitude());
-                                        marker1Position = new LatLng(location.getLatitude(), location.getLongitude() - 0.0001);
-                                        marker2Position = new LatLng(location.getLatitude() + 0.0001, location.getLongitude());
-                                        marker3Position = new LatLng(location.getLatitude(), location.getLongitude() + 0.0001);
-                                        PolygonOptions polygonOptions =
-                                                new PolygonOptions()
-                                                        .add(marker0Position, marker1Position, marker2Position, marker3Position)
-                                                        .clickable(true)
-                                                        .strokeColor(Color.YELLOW)
-                                                        .strokeWidth(3f);
+                        Polygon polygon0 = mMap.addPolygon(
+                                new PolygonOptions()
+                                        .clickable(true)
+                                        .addAll(overlappingShapesPolygonVertices.get(i))
+                                        .strokeColor(Color.rgb(255, 255, 0))
+                                        .strokeWidth(3f)
+                                        .zIndex(0)
+                        );
 
-                                        // Create markers when creating the polygon to allow for dragging of the center and vertices.
-                                        MarkerOptions markerOptions0 = new MarkerOptions()
-                                                .position(marker0Position)
-                                                .draggable(true);
+                        polygon0.setTag(overlappingShapesPolygonUUID.get(i));
+                    }
+                } else {
 
-                                        MarkerOptions markerOptions1 = new MarkerOptions()
-                                                .position(marker1Position)
-                                                .draggable(true);
+                    for (int i = 0; i < overlappingShapesUUID.size(); i++) {
 
-                                        MarkerOptions markerOptions2 = new MarkerOptions()
-                                                .position(marker2Position)
-                                                .draggable(true);
+                        Circle circle0 = mMap.addCircle(
+                                new CircleOptions()
+                                        .center(overlappingShapesCircleLocation.get(i))
+                                        .clickable(true)
+                                        .radius(overlappingShapesCircleRadius.get(i))
+                                        .strokeColor(Color.rgb(255, 0, 255))
+                                        .strokeWidth(3f)
+                                        .zIndex(0)
+                        );
 
-                                        MarkerOptions markerOptions3 = new MarkerOptions()
-                                                .position(marker3Position)
-                                                .draggable(true);
+                        circle0.setTag(overlappingShapesCircleUUID.get(i));
+                    }
 
-                                        marker0 = mMap.addMarker(markerOptions0);
-                                        marker1 = mMap.addMarker(markerOptions1);
-                                        marker2 = mMap.addMarker(markerOptions2);
-                                        marker3 = mMap.addMarker(markerOptions3);
+                    for (int i = 0; i < overlappingShapesPolygonVertices.size(); i++) {
 
-                                        // Update the global variable to compare with the marker the user clicks on during the dragging process.
-                                        marker0ID = marker0.getId();
-                                        marker1ID = marker1.getId();
-                                        marker2ID = marker2.getId();
-                                        marker3ID = marker3.getId();
+                        Polygon polygon0 = mMap.addPolygon(
+                                new PolygonOptions()
+                                        .clickable(true)
+                                        .addAll(overlappingShapesPolygonVertices.get(i))
+                                        .strokeColor(Color.rgb(255, 0, 255))
+                                        .strokeWidth(3f)
+                                        .zIndex(0)
+                        );
 
-                                        // Update the global variable for use when a user clicks on the polygon to go to recyclerviewlayout without updating the marker locations.
-                                        LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position};
-                                        polygonPointsList = Arrays.asList(polygonPoints);
+                        polygon0.setTag(overlappingShapesPolygonUUID.get(i));
+                    }
+                }
 
-                                        newPolygon = mMap.addPolygon(polygonOptions);
-                                    } else {
+                overlappingShapesUUID = new ArrayList<>();
+                overlappingShapesCircleUUID = new ArrayList<>();
+                overlappingShapesPolygonUUID = new ArrayList<>();
+                overlappingShapesCircleLocation = new ArrayList<>();
+                overlappingShapesCircleRadius = new ArrayList<>();
+                overlappingShapesPolygonVertices = new ArrayList<>();
 
-                                        // Global variable used in chatSizeSeekBar's onProgressChanged().
-                                        mlocation = location;
+                chatSelectorSeekBar.setVisibility(View.INVISIBLE);
+                chatSizeSeekBar.setVisibility(View.VISIBLE);
+                chatSizeSeekBar.setProgress(0);
+                chatSelectorSeekBar.setProgress(0);
 
-                                        // Update the global variable - used in chatSeekBarChangeListener.
-                                        fourMarkers = true;
+                chatsSize = 0;
+            }
 
-                                        // Set seekBar to be the same as the polygon's arbitrary size.
-                                        chatSizeSeekBar.setProgress(50);
+            // Remove the polygon and markers.
+            if (newPolygon != null) {
 
-                                        // Logic to handle location object.
-                                        marker0Position = new LatLng(location.getLatitude() - 0.0001, location.getLongitude());
-                                        marker1Position = new LatLng(location.getLatitude(), location.getLongitude() - 0.0001);
-                                        marker2Position = new LatLng(location.getLatitude() + 0.0001, location.getLongitude());
-                                        marker3Position = new LatLng(location.getLatitude(), location.getLongitude() + 0.0001);
-                                        PolygonOptions polygonOptions =
-                                                new PolygonOptions()
-                                                        .add(marker0Position, marker1Position, marker2Position, marker3Position)
-                                                        .clickable(true)
-                                                        .strokeColor(Color.rgb(255, 0, 255))
-                                                        .strokeWidth(3f);
+                newPolygon.remove();
+                marker0.remove();
+                marker1.remove();
+                marker2.remove();
+                newPolygon = null;
+                marker0 = null;
+                marker1 = null;
+                marker2 = null;
+                marker0Position = null;
+                marker1Position = null;
+                marker2Position = null;
+                marker0ID = null;
+                marker1ID = null;
+                marker2ID = null;
 
-                                        // Create markers when creating the polygon to allow for dragging of the center and vertices.
-                                        MarkerOptions markerOptions0 = new MarkerOptions()
-                                                .position(marker0Position)
-                                                .draggable(true);
+                if (marker3 != null) {
 
-                                        MarkerOptions markerOptions1 = new MarkerOptions()
-                                                .position(marker1Position)
-                                                .draggable(true);
+                    marker3.remove();
+                    marker3 = null;
+                    marker3Position = null;
+                    marker3ID = null;
+                }
 
-                                        MarkerOptions markerOptions2 = new MarkerOptions()
-                                                .position(marker2Position)
-                                                .draggable(true);
+                if (marker4 != null) {
 
-                                        MarkerOptions markerOptions3 = new MarkerOptions()
-                                                .position(marker3Position)
-                                                .draggable(true);
+                    marker4.remove();
+                    marker4 = null;
+                    marker4Position = null;
+                    marker4ID = null;
+                }
 
-                                        marker0 = mMap.addMarker(markerOptions0);
-                                        marker1 = mMap.addMarker(markerOptions1);
-                                        marker2 = mMap.addMarker(markerOptions2);
-                                        marker3 = mMap.addMarker(markerOptions3);
+                if (marker5 != null) {
 
-                                        // Update the global variable to compare with the marker the user clicks on during the dragging process.
-                                        marker0ID = marker0.getId();
-                                        marker1ID = marker1.getId();
-                                        marker2ID = marker2.getId();
-                                        marker3ID = marker3.getId();
+                    marker5.remove();
+                    marker5 = null;
+                    marker5Position = null;
+                    marker5ID = null;
+                }
 
-                                        // Update the global variable for use when a user clicks on the polygon to go to recyclerviewlayout without updating the marker locations.
-                                        LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position};
-                                        polygonPointsList = Arrays.asList(polygonPoints);
+                if (marker6 != null) {
 
-                                        newPolygon = mMap.addPolygon(polygonOptions);
-                                    }
+                    marker6.remove();
+                    marker6 = null;
+                    marker6Position = null;
+                    marker6ID = null;
+                }
+
+                if (marker7 != null) {
+
+                    marker7.remove();
+                    marker7 = null;
+                    marker7Position = null;
+                    marker7ID = null;
+                }
+            }
+
+            // Remove the circle and markers.
+            if (newCircle != null) {
+
+                newCircle.remove();
+                marker0.remove();
+                marker1.remove();
+                newCircle = null;
+                marker0 = null;
+                marker1 = null;
+                marker0Position = null;
+                marker1Position = null;
+                marker0ID = null;
+                marker1ID = null;
+            }
+
+            // Check location permissions.
+            if (ContextCompat.checkSelfPermission(getBaseContext(),
+                    Manifest.permission.ACCESS_FINE_LOCATION)
+                    == PackageManager.PERMISSION_GRANTED) {
+
+                // Creates a polygon.
+                FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
+
+                mFusedLocationClient.getLastLocation()
+                        .addOnSuccessListener(Map.this, location -> {
+
+                            // Get last known location. In some rare situations, this can be null.
+                            if (location != null) {
+
+                                // Load different colored shapes depending on the map type.
+                                if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
+
+                                    // Global variable used in chatSizeSeekBar's onProgressChanged().
+                                    mlocation = location;
+
+                                    // Update the global variable - used in chatSeekBarChangeListener.
+                                    fourMarkers = true;
+
+                                    // Set seekBar to be the same as the polygon's arbitrary size.
+                                    chatSizeSeekBar.setProgress(50);
+
+                                    // Logic to handle location object.
+                                    marker0Position = new LatLng(location.getLatitude() - 0.0001, location.getLongitude());
+                                    marker1Position = new LatLng(location.getLatitude(), location.getLongitude() - 0.0001);
+                                    marker2Position = new LatLng(location.getLatitude() + 0.0001, location.getLongitude());
+                                    marker3Position = new LatLng(location.getLatitude(), location.getLongitude() + 0.0001);
+                                    PolygonOptions polygonOptions =
+                                            new PolygonOptions()
+                                                    .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                                    .clickable(true)
+                                                    .strokeColor(Color.YELLOW)
+                                                    .strokeWidth(3f);
+
+                                    // Create markers when creating the polygon to allow for dragging of the center and vertices.
+                                    MarkerOptions markerOptions0 = new MarkerOptions()
+                                            .position(marker0Position)
+                                            .draggable(true);
+
+                                    MarkerOptions markerOptions1 = new MarkerOptions()
+                                            .position(marker1Position)
+                                            .draggable(true);
+
+                                    MarkerOptions markerOptions2 = new MarkerOptions()
+                                            .position(marker2Position)
+                                            .draggable(true);
+
+                                    MarkerOptions markerOptions3 = new MarkerOptions()
+                                            .position(marker3Position)
+                                            .draggable(true);
+
+                                    marker0 = mMap.addMarker(markerOptions0);
+                                    marker1 = mMap.addMarker(markerOptions1);
+                                    marker2 = mMap.addMarker(markerOptions2);
+                                    marker3 = mMap.addMarker(markerOptions3);
+
+                                    // Update the global variable to compare with the marker the user clicks on during the dragging process.
+                                    marker0ID = marker0.getId();
+                                    marker1ID = marker1.getId();
+                                    marker2ID = marker2.getId();
+                                    marker3ID = marker3.getId();
+
+                                    // Update the global variable for use when a user clicks on the polygon to go to recyclerviewlayout without updating the marker locations.
+                                    LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position};
+                                    polygonPointsList = Arrays.asList(polygonPoints);
+
+                                    newPolygon = mMap.addPolygon(polygonOptions);
                                 } else {
 
-                                    Log.e(TAG, "createPolygon -> location == null");
-                                    toastMessageLong("An error occurred: your location is null.");
-                                }
-                            });
-                } else {
+                                    // Global variable used in chatSizeSeekBar's onProgressChanged().
+                                    mlocation = location;
 
-                    checkLocationPermissions();
+                                    // Update the global variable - used in chatSeekBarChangeListener.
+                                    fourMarkers = true;
+
+                                    // Set seekBar to be the same as the polygon's arbitrary size.
+                                    chatSizeSeekBar.setProgress(50);
+
+                                    // Logic to handle location object.
+                                    marker0Position = new LatLng(location.getLatitude() - 0.0001, location.getLongitude());
+                                    marker1Position = new LatLng(location.getLatitude(), location.getLongitude() - 0.0001);
+                                    marker2Position = new LatLng(location.getLatitude() + 0.0001, location.getLongitude());
+                                    marker3Position = new LatLng(location.getLatitude(), location.getLongitude() + 0.0001);
+                                    PolygonOptions polygonOptions =
+                                            new PolygonOptions()
+                                                    .add(marker0Position, marker1Position, marker2Position, marker3Position)
+                                                    .clickable(true)
+                                                    .strokeColor(Color.rgb(255, 0, 255))
+                                                    .strokeWidth(3f);
+
+                                    // Create markers when creating the polygon to allow for dragging of the center and vertices.
+                                    MarkerOptions markerOptions0 = new MarkerOptions()
+                                            .position(marker0Position)
+                                            .draggable(true);
+
+                                    MarkerOptions markerOptions1 = new MarkerOptions()
+                                            .position(marker1Position)
+                                            .draggable(true);
+
+                                    MarkerOptions markerOptions2 = new MarkerOptions()
+                                            .position(marker2Position)
+                                            .draggable(true);
+
+                                    MarkerOptions markerOptions3 = new MarkerOptions()
+                                            .position(marker3Position)
+                                            .draggable(true);
+
+                                    marker0 = mMap.addMarker(markerOptions0);
+                                    marker1 = mMap.addMarker(markerOptions1);
+                                    marker2 = mMap.addMarker(markerOptions2);
+                                    marker3 = mMap.addMarker(markerOptions3);
+
+                                    // Update the global variable to compare with the marker the user clicks on during the dragging process.
+                                    marker0ID = marker0.getId();
+                                    marker1ID = marker1.getId();
+                                    marker2ID = marker2.getId();
+                                    marker3ID = marker3.getId();
+
+                                    // Update the global variable for use when a user clicks on the polygon to go to recyclerviewlayout without updating the marker locations.
+                                    LatLng[] polygonPoints = new LatLng[]{marker0Position, marker1Position, marker2Position};
+                                    polygonPointsList = Arrays.asList(polygonPoints);
+
+                                    newPolygon = mMap.addPolygon(polygonOptions);
+                                }
+                            } else {
+
+                                Log.e(TAG, "createPolygon -> location == null");
+                                toastMessageLong("An error occurred: your location is null.");
+                            }
+                        });
+            } else {
+
+                checkLocationPermissions();
+            }
+        } else if (id == R.id.removeShape) {
+
+            Log.i(TAG, "onMenuItemClick() -> removeShape");
+
+            // Remove the polygon and markers.
+            if (newPolygon != null) {
+
+                newPolygon.remove();
+                marker0.remove();
+                marker1.remove();
+                marker2.remove();
+                newPolygon = null;
+                marker0 = null;
+                marker1 = null;
+                marker2 = null;
+                marker0Position = null;
+                marker1Position = null;
+                marker2Position = null;
+                marker0ID = null;
+                marker1ID = null;
+                marker2ID = null;
+
+                if (marker3 != null) {
+
+                    marker3.remove();
+                    marker3 = null;
+                    marker3Position = null;
+                    marker3ID = null;
                 }
 
-                break;
+                if (marker4 != null) {
 
-            // createchat_menu
-            case R.id.removeShape:
-
-                Log.i(TAG, "onMenuItemClick() -> removeShape");
-
-                // Remove the polygon and markers.
-                if (newPolygon != null) {
-
-                    newPolygon.remove();
-                    marker0.remove();
-                    marker1.remove();
-                    marker2.remove();
-                    newPolygon = null;
-                    marker0 = null;
-                    marker1 = null;
-                    marker2 = null;
-                    marker0Position = null;
-                    marker1Position = null;
-                    marker2Position = null;
-                    marker0ID = null;
-                    marker1ID = null;
-                    marker2ID = null;
-
-                    if (marker3 != null) {
-
-                        marker3.remove();
-                        marker3 = null;
-                        marker3Position = null;
-                        marker3ID = null;
-                    }
-
-                    if (marker4 != null) {
-
-                        marker4.remove();
-                        marker4 = null;
-                        marker4Position = null;
-                        marker4ID = null;
-                    }
-
-                    if (marker5 != null) {
-
-                        marker5.remove();
-                        marker5 = null;
-                        marker5Position = null;
-                        marker5ID = null;
-                    }
-
-                    if (marker6 != null) {
-
-                        marker6.remove();
-                        marker6 = null;
-                        marker6Position = null;
-                        marker6ID = null;
-                    }
-
-                    if (marker7 != null) {
-
-                        marker7.remove();
-                        marker7 = null;
-                        marker7Position = null;
-                        marker7ID = null;
-                    }
-
-                    mlocation = null;
+                    marker4.remove();
+                    marker4 = null;
+                    marker4Position = null;
+                    marker4ID = null;
                 }
 
-                // Remove the circle and markers.
-                if (newCircle != null) {
+                if (marker5 != null) {
 
-                    newCircle.remove();
-                    marker0.remove();
-                    marker1.remove();
-                    newCircle = null;
-                    marker0 = null;
-                    marker1 = null;
-                    marker0Position = null;
-                    marker1Position = null;
-                    marker0ID = null;
-                    marker1ID = null;
+                    marker5.remove();
+                    marker5 = null;
+                    marker5Position = null;
+                    marker5ID = null;
                 }
 
-                chatSizeSeekBar.setProgress(0);
-                relativeAngle = 0.0;
-                usedSeekBar = false;
+                if (marker6 != null) {
 
-                break;
-
-            // createchat_menu
-            case R.id.createPoint:
-
-                Log.i(TAG, "onMenuItemClick() -> createPoint");
-
-                // Check location permissions.
-                if (ContextCompat.checkSelfPermission(getBaseContext(),
-                        Manifest.permission.ACCESS_FINE_LOCATION)
-                        == PackageManager.PERMISSION_GRANTED) {
-
-                    loadingIcon.setVisibility(View.VISIBLE);
-
-                    // Create a point and to to Chat.java or SignIn.java.
-                    FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
-
-                    mFusedLocationClient.getLastLocation()
-                            .addOnSuccessListener(Map.this, location -> {
-
-                                // Remove any other shape before adding the circle to Firebase.
-                                if (newCircle != null) {
-
-                                    newCircle.remove();
-                                    newCircle = null;
-                                }
-
-                                if (newPolygon != null) {
-
-                                    newPolygon.remove();
-                                    newPolygon = null;
-                                }
-
-                                // Add circle to the map and go to recyclerviewlayout.
-                                if (mMap != null) {
-
-                                    shapeUUID = UUID.randomUUID().toString();
-
-                                    // Check if the user is already signed in.
-                                    if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) instanceof GoogleSignInAccount) {
-
-                                        // User signed in.
-
-                                        Log.i(TAG, "onMenuItemClick() -> create point and enter chat -> user signed in");
-
-                                        cancelToasts();
-
-                                        Intent Activity = new Intent(Map.this, Navigation.class);
-                                        // Pass this boolean value to Chat.java.
-                                        Activity.putExtra("newShape", true);
-
-                                        // Get a value with 1 decimal point and use it for Firebase.
-                                        double nearLeftPrecisionLat = Math.pow(10, 1);
-                                        // Can't create a firebase path with '.', so get rid of decimal.
-                                        double nearLeftLatTemp = (int) (nearLeftPrecisionLat * location.getLatitude()) / nearLeftPrecisionLat;
-                                        nearLeftLatTemp *= 10;
-                                        int shapeLat = (int) nearLeftLatTemp;
-
-                                        double nearLeftPrecisionLon = Math.pow(10, 1);
-                                        // Can't create a firebase path with '.', so get rid of decimal.
-                                        double nearLeftLonTemp = (int) (nearLeftPrecisionLon * location.getLongitude()) / nearLeftPrecisionLon;
-                                        nearLeftLonTemp *= 10;
-                                        int shapeLon = (int) nearLeftLonTemp;
-
-                                        Activity.putExtra("shapeLat", shapeLat);
-                                        Activity.putExtra("shapeLon", shapeLon);
-                                        // UserLatitude and userLongitude are used in DirectMentions.
-                                        Activity.putExtra("userLatitude", location.getLatitude());
-                                        Activity.putExtra("userLongitude", location.getLongitude());
-                                        // Pass this value to Chat.java to identify the shape.
-                                        Activity.putExtra("shapeUUID", shapeUUID);
-                                        // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
-                                        Activity.putExtra("userIsWithinShape", true);
-                                        Activity.putExtra("circleLatitude", location.getLatitude());
-                                        Activity.putExtra("circleLongitude", location.getLongitude());
-                                        Activity.putExtra("radius", 1.0);
-
-                                        clearMap();
-
-                                        loadingIcon.setVisibility(View.GONE);
-
-                                        startActivity(Activity);
-                                    } else {
-
-                                        // User NOT signed in.
-
-                                        Log.i(TAG, "onMenuItemClick() -> create point and enter chat -> user NOT signed in");
-
-                                        cancelToasts();
-
-                                        Intent Activity = new Intent(Map.this, SignIn.class);
-                                        // Pass this boolean value to Chat.java.
-                                        Activity.putExtra("newShape", true);
-
-                                        // Get a value with 1 decimal point and use it for Firebase.
-                                        double nearLeftPrecisionLat = Math.pow(10, 1);
-                                        // Can't create a firebase path with '.', so get rid of decimal.
-                                        double nearLeftLatTemp = (int) (nearLeftPrecisionLat * location.getLatitude()) / nearLeftPrecisionLat;
-                                        nearLeftLatTemp *= 10;
-                                        int shapeLat = (int) nearLeftLatTemp;
-
-                                        double nearLeftPrecisionLon = Math.pow(10, 1);
-                                        // Can't create a firebase path with '.', so get rid of decimal.
-                                        double nearLeftLonTemp = (int) (nearLeftPrecisionLon * location.getLongitude()) / nearLeftPrecisionLon;
-                                        nearLeftLonTemp *= 10;
-                                        int shapeLon = (int) nearLeftLonTemp;
-
-                                        Activity.putExtra("shapeLat", shapeLat);
-                                        Activity.putExtra("shapeLon", shapeLon);
-                                        // UserLatitude and userLongitude are used in DirectMentions.
-                                        Activity.putExtra("userLatitude", location.getLatitude());
-                                        Activity.putExtra("userLongitude", location.getLongitude());
-                                        // Pass this value to Chat.java to identify the shape.
-                                        Activity.putExtra("shapeUUID", shapeUUID);
-                                        // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
-                                        Activity.putExtra("userIsWithinShape", true);
-                                        Activity.putExtra("circleLatitude", location.getLatitude());
-                                        Activity.putExtra("circleLongitude", location.getLongitude());
-                                        Activity.putExtra("radius", 1.0);
-
-                                        clearMap();
-
-                                        loadingIcon.setVisibility(View.GONE);
-
-                                        startActivity(Activity);
-                                    }
-                                }
-                            });
-                } else {
-
-                    checkLocationPermissions();
+                    marker6.remove();
+                    marker6 = null;
+                    marker6Position = null;
+                    marker6ID = null;
                 }
 
-                break;
+                if (marker7 != null) {
 
-            default:
+                    marker7.remove();
+                    marker7 = null;
+                    marker7Position = null;
+                    marker7ID = null;
+                }
 
-                break;
+                mlocation = null;
+            }
+
+            // Remove the circle and markers.
+            if (newCircle != null) {
+
+                newCircle.remove();
+                marker0.remove();
+                marker1.remove();
+                newCircle = null;
+                marker0 = null;
+                marker1 = null;
+                marker0Position = null;
+                marker1Position = null;
+                marker0ID = null;
+                marker1ID = null;
+            }
+
+            chatSizeSeekBar.setProgress(0);
+            relativeAngle = 0.0;
+            usedSeekBar = false;
+        } else if (id == R.id.createPoint) {
+
+            Log.i(TAG, "onMenuItemClick() -> createPoint");
+
+            // Check location permissions.
+            if (ContextCompat.checkSelfPermission(getBaseContext(),
+                    Manifest.permission.ACCESS_FINE_LOCATION)
+                    == PackageManager.PERMISSION_GRANTED) {
+
+                loadingIcon.setVisibility(View.VISIBLE);
+
+                // Create a point and to to Chat.java or SignIn.java.
+                FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
+
+                mFusedLocationClient.getLastLocation()
+                        .addOnSuccessListener(Map.this, location -> {
+
+                            // Remove any other shape before adding the circle to Firebase.
+                            if (newCircle != null) {
+
+                                newCircle.remove();
+                                newCircle = null;
+                            }
+
+                            if (newPolygon != null) {
+
+                                newPolygon.remove();
+                                newPolygon = null;
+                            }
+
+                            // Add circle to the map and go to recyclerviewlayout.
+                            if (mMap != null) {
+
+                                shapeUUID = UUID.randomUUID().toString();
+
+                                // Check if the user is already signed in.
+                                if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) instanceof GoogleSignInAccount) {
+
+                                    // User signed in.
+
+                                    Log.i(TAG, "onMenuItemClick() -> create point and enter chat -> user signed in");
+
+                                    cancelToasts();
+
+                                    Intent Activity = new Intent(Map.this, Navigation.class);
+                                    // Pass this boolean value to Chat.java.
+                                    Activity.putExtra("newShape", true);
+
+                                    // Get a value with 1 decimal point and use it for Firebase.
+                                    double nearLeftPrecisionLat = Math.pow(10, 1);
+                                    // Can't create a firebase path with '.', so get rid of decimal.
+                                    double nearLeftLatTemp = (int) (nearLeftPrecisionLat * location.getLatitude()) / nearLeftPrecisionLat;
+                                    nearLeftLatTemp *= 10;
+                                    int shapeLat = (int) nearLeftLatTemp;
+
+                                    double nearLeftPrecisionLon = Math.pow(10, 1);
+                                    // Can't create a firebase path with '.', so get rid of decimal.
+                                    double nearLeftLonTemp = (int) (nearLeftPrecisionLon * location.getLongitude()) / nearLeftPrecisionLon;
+                                    nearLeftLonTemp *= 10;
+                                    int shapeLon = (int) nearLeftLonTemp;
+
+                                    Activity.putExtra("shapeLat", shapeLat);
+                                    Activity.putExtra("shapeLon", shapeLon);
+                                    // UserLatitude and userLongitude are used in DirectMentions.
+                                    Activity.putExtra("userLatitude", location.getLatitude());
+                                    Activity.putExtra("userLongitude", location.getLongitude());
+                                    // Pass this value to Chat.java to identify the shape.
+                                    Activity.putExtra("shapeUUID", shapeUUID);
+                                    // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
+                                    Activity.putExtra("userIsWithinShape", true);
+                                    Activity.putExtra("circleLatitude", location.getLatitude());
+                                    Activity.putExtra("circleLongitude", location.getLongitude());
+                                    Activity.putExtra("radius", 1.0);
+
+                                    clearMap();
+
+                                    loadingIcon.setVisibility(View.GONE);
+
+                                    startActivity(Activity);
+                                } else {
+
+                                    // User NOT signed in.
+
+                                    Log.i(TAG, "onMenuItemClick() -> create point and enter chat -> user NOT signed in");
+
+                                    cancelToasts();
+
+                                    Intent Activity = new Intent(Map.this, SignIn.class);
+                                    // Pass this boolean value to Chat.java.
+                                    Activity.putExtra("newShape", true);
+
+                                    // Get a value with 1 decimal point and use it for Firebase.
+                                    double nearLeftPrecisionLat = Math.pow(10, 1);
+                                    // Can't create a firebase path with '.', so get rid of decimal.
+                                    double nearLeftLatTemp = (int) (nearLeftPrecisionLat * location.getLatitude()) / nearLeftPrecisionLat;
+                                    nearLeftLatTemp *= 10;
+                                    int shapeLat = (int) nearLeftLatTemp;
+
+                                    double nearLeftPrecisionLon = Math.pow(10, 1);
+                                    // Can't create a firebase path with '.', so get rid of decimal.
+                                    double nearLeftLonTemp = (int) (nearLeftPrecisionLon * location.getLongitude()) / nearLeftPrecisionLon;
+                                    nearLeftLonTemp *= 10;
+                                    int shapeLon = (int) nearLeftLonTemp;
+
+                                    Activity.putExtra("shapeLat", shapeLat);
+                                    Activity.putExtra("shapeLon", shapeLon);
+                                    // UserLatitude and userLongitude are used in DirectMentions.
+                                    Activity.putExtra("userLatitude", location.getLatitude());
+                                    Activity.putExtra("userLongitude", location.getLongitude());
+                                    // Pass this value to Chat.java to identify the shape.
+                                    Activity.putExtra("shapeUUID", shapeUUID);
+                                    // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
+                                    Activity.putExtra("userIsWithinShape", true);
+                                    Activity.putExtra("circleLatitude", location.getLatitude());
+                                    Activity.putExtra("circleLongitude", location.getLongitude());
+                                    Activity.putExtra("radius", 1.0);
+
+                                    clearMap();
+
+                                    loadingIcon.setVisibility(View.GONE);
+
+                                    startActivity(Activity);
+                                }
+                            }
+                        });
+            } else {
+
+                checkLocationPermissions();
+            }
         }
 
         return false;

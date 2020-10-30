@@ -1711,42 +1711,35 @@ public class Chat extends Fragment implements
     @Override
     public boolean onMenuItemClick(MenuItem menuItem) {
 
-        switch (menuItem.getItemId()) {
+        int id = menuItem.getItemId();
 
-            case R.id.takePhoto:
+        if (id == R.id.takePhoto) {
 
-                Log.i(TAG, "onMenuItemClick() -> takePhoto");
+            Log.i(TAG, "onMenuItemClick() -> takePhoto");
 
-                if (checkPermissionsPicture()) {
+            if (checkPermissionsPicture()) {
 
-                    cancelToasts();
+                cancelToasts();
 
-                    startActivityTakePhoto();
-                }
+                startActivityTakePhoto();
+            }
 
-                mediaButtonMenuIsOpen = false;
+            mediaButtonMenuIsOpen = false;
+        } else if (id == R.id.recordVideo) {
 
-                return true;
+            Log.i(TAG, "onMenuItemClick() -> recordVideo");
 
-            case R.id.recordVideo:
+            if (checkPermissionsVideo()) {
 
-                Log.i(TAG, "onMenuItemClick() -> recordVideo");
+                cancelToasts();
 
-                if (checkPermissionsVideo()) {
+                startActivityRecordVideo();
+            }
 
-                    cancelToasts();
-
-                    startActivityRecordVideo();
-                }
-
-                mediaButtonMenuIsOpen = false;
-
-                return true;
-
-            default:
-
-                return false;
+            mediaButtonMenuIsOpen = false;
         }
+
+        return false;
     }
 
     private boolean checkPermissionsPicture() {
@@ -2380,7 +2373,7 @@ public class Chat extends Fragment implements
 
         } catch (IOException ex) {
 
-                toastMessageLong(ex.getMessage());
+            toastMessageLong(ex.getMessage());
         }
 
         // Update UI thread.

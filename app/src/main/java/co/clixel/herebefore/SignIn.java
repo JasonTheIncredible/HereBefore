@@ -28,7 +28,7 @@ import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.GoogleAuthProvider;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.iid.FirebaseInstanceId;
+import com.google.firebase.messaging.FirebaseMessaging;
 
 public class SignIn extends AppCompatActivity {
 
@@ -184,66 +184,82 @@ public class SignIn extends AppCompatActivity {
 
                 if (task.isSuccessful()) {
 
-                    // Go to Chat.java with the extras.
                     Toast signedInToast = Toast.makeText(SignIn.this, "Signed in", Toast.LENGTH_SHORT);
                     signedInToast.show();
 
                     // Get Firebase FCM token and save it to preferences and Firebase.
-                    FirebaseInstanceId.getInstance().getInstanceId().addOnSuccessListener(SignIn.this, instanceIdResult -> {
+                    SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(SignIn.this);
 
-                        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(SignIn.this);
+                    FirebaseMessaging.getInstance().getToken().addOnCompleteListener(task1 -> {
 
-                        String token = instanceIdResult.getToken();
+                        if (task1.isSuccessful()) {
 
-                        SharedPreferences.Editor editor = sharedPreferences.edit()
-                                .putString("userToken", email)
-                                .putString("passToken", pass)
-                                .putString("FIREBASE_TOKEN", token);
-                        editor.apply();
+                            String token = task1.getResult();
 
-                        // Firebase does not allow ".", so replace them with ",".
-                        String userEmailFirebase = email.replace(".", ",");
+                            SharedPreferences.Editor editor = sharedPreferences.edit()
+                                    .putString("userToken", email)
+                                    .putString("passToken", pass)
+                                    .putString("FIREBASE_TOKEN", String.valueOf(token));
+                            editor.apply();
 
-                        FirebaseDatabase.getInstance().getReference().child("Users").child(userEmailFirebase).child("Token").setValue(token);
+                            // Firebase does not allow ".", so replace them with ",".
+                            String userEmailFirebase = email.replace(".", ",");
 
-                        Intent Activity = new Intent(SignIn.this, Navigation.class);
-                        Activity.putExtra("newShape", newShape);
-                        Activity.putExtra("shapeLat", shapeLat);
-                        Activity.putExtra("shapeLon", shapeLon);
-                        // UserLatitude and userLongitude are used in DirectMentions.
-                        Activity.putExtra("userLatitude", userLatitude);
-                        Activity.putExtra("userLongitude", userLongitude);
-                        Activity.putExtra("shapeUUID", shapeUUID);
-                        Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                        Activity.putExtra("circleLatitude", circleLatitude);
-                        Activity.putExtra("circleLongitude", circleLongitude);
-                        Activity.putExtra("radius", radius);
-                        Activity.putExtra("polygonArea", polygonArea);
-                        Activity.putExtra("threeMarkers", threeMarkers);
-                        Activity.putExtra("fourMarkers", fourMarkers);
-                        Activity.putExtra("fiveMarkers", fiveMarkers);
-                        Activity.putExtra("sixMarkers", sixMarkers);
-                        Activity.putExtra("sevenMarkers", sevenMarkers);
-                        Activity.putExtra("eightMarkers", eightMarkers);
-                        Activity.putExtra("marker0Latitude", marker0Latitude);
-                        Activity.putExtra("marker0Longitude", marker0Longitude);
-                        Activity.putExtra("marker1Latitude", marker1Latitude);
-                        Activity.putExtra("marker1Longitude", marker1Longitude);
-                        Activity.putExtra("marker2Latitude", marker2Latitude);
-                        Activity.putExtra("marker2Longitude", marker2Longitude);
-                        Activity.putExtra("marker3Latitude", marker3Latitude);
-                        Activity.putExtra("marker3Longitude", marker3Longitude);
-                        Activity.putExtra("marker4Latitude", marker4Latitude);
-                        Activity.putExtra("marker4Longitude", marker4Longitude);
-                        Activity.putExtra("marker5Latitude", marker5Latitude);
-                        Activity.putExtra("marker5Longitude", marker5Longitude);
-                        Activity.putExtra("marker6Latitude", marker6Latitude);
-                        Activity.putExtra("marker6Longitude", marker6Longitude);
-                        Activity.putExtra("marker7Latitude", marker7Latitude);
-                        Activity.putExtra("marker7Longitude", marker7Longitude);
-                        loadingIcon.setVisibility(View.GONE);
-                        startActivity(Activity);
-                        finish();
+                            FirebaseDatabase.getInstance().getReference().child("Users").child(userEmailFirebase).child("Token").setValue(token);
+
+                            // Go to Chat.java with the extras.
+                            Intent Activity = new Intent(SignIn.this, Navigation.class);
+                            Activity.putExtra("newShape", newShape);
+                            Activity.putExtra("shapeLat", shapeLat);
+                            Activity.putExtra("shapeLon", shapeLon);
+                            // UserLatitude and userLongitude are used in DirectMentions.
+                            Activity.putExtra("userLatitude", userLatitude);
+                            Activity.putExtra("userLongitude", userLongitude);
+                            Activity.putExtra("shapeUUID", shapeUUID);
+                            Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                            Activity.putExtra("circleLatitude", circleLatitude);
+                            Activity.putExtra("circleLongitude", circleLongitude);
+                            Activity.putExtra("radius", radius);
+                            Activity.putExtra("polygonArea", polygonArea);
+                            Activity.putExtra("threeMarkers", threeMarkers);
+                            Activity.putExtra("fourMarkers", fourMarkers);
+                            Activity.putExtra("fiveMarkers", fiveMarkers);
+                            Activity.putExtra("sixMarkers", sixMarkers);
+                            Activity.putExtra("sevenMarkers", sevenMarkers);
+                            Activity.putExtra("eightMarkers", eightMarkers);
+                            Activity.putExtra("marker0Latitude", marker0Latitude);
+                            Activity.putExtra("marker0Longitude", marker0Longitude);
+                            Activity.putExtra("marker1Latitude", marker1Latitude);
+                            Activity.putExtra("marker1Longitude", marker1Longitude);
+                            Activity.putExtra("marker2Latitude", marker2Latitude);
+                            Activity.putExtra("marker2Longitude", marker2Longitude);
+                            Activity.putExtra("marker3Latitude", marker3Latitude);
+                            Activity.putExtra("marker3Longitude", marker3Longitude);
+                            Activity.putExtra("marker4Latitude", marker4Latitude);
+                            Activity.putExtra("marker4Longitude", marker4Longitude);
+                            Activity.putExtra("marker5Latitude", marker5Latitude);
+                            Activity.putExtra("marker5Longitude", marker5Longitude);
+                            Activity.putExtra("marker6Latitude", marker6Latitude);
+                            Activity.putExtra("marker6Longitude", marker6Longitude);
+                            Activity.putExtra("marker7Latitude", marker7Latitude);
+                            Activity.putExtra("marker7Longitude", marker7Longitude);
+                            loadingIcon.setVisibility(View.GONE);
+                            startActivity(Activity);
+                            finish();
+                        }
+
+                        if (!task1.isSuccessful() && task1.getException() != null) {
+
+                            // Tell the user what happened.
+                            loadingIcon.setVisibility(View.GONE);
+                            toastMessageLong(task1.getException().getMessage());
+                        } else if (!task1.isSuccessful() && task1.getException() == null) {
+
+                            // Tell the user something happened.
+                            loadingIcon.setVisibility(View.GONE);
+                            toastMessageLong("An unknown error occurred. Please try again.");
+                            Log.e(TAG, "onStart() -> signInButton -> OnClick -> FirebaseAuth -> task1.getException == null");
+                        }
                     });
                 }
 
@@ -251,7 +267,7 @@ public class SignIn extends AppCompatActivity {
 
                     // Tell the user what happened.
                     loadingIcon.setVisibility(View.GONE);
-                    toastMessageLong("User Authentication Failed: " + task.getException().getMessage());
+                    toastMessageLong("User authentication failed: " + task.getException().getMessage());
                 } else if (!task.isSuccessful() && task.getException() == null) {
 
                     // Tell the user something happened.
@@ -376,21 +392,6 @@ public class SignIn extends AppCompatActivity {
         super.onStop();
     }
 
-    private void cancelToasts() {
-
-        // Do not cancel signedInToast, as the activity is always changed right afterward.
-
-        if (shortToast != null) {
-
-            shortToast.cancel();
-        }
-
-        if (longToast != null) {
-
-            longToast.cancel();
-        }
-    }
-
     // Sign in using Google.
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -418,13 +419,12 @@ public class SignIn extends AppCompatActivity {
             } catch (ApiException e) {
 
                 // Google sign in failed, update UI appropriately
-                Log.w(TAG, "Google sign in failed: " + e);
-                toastMessageLong("Google sign in failed: " + e);
+                Log.w(TAG, "Google sign-in failed: " + e);
+                toastMessageLong("Google sign-in failed: " + e);
             }
         }
     }
 
-    // Used by onActivityResult().
     private void firebaseAuthWithGoogle(GoogleSignInAccount acct) {
 
         Log.d(TAG, "firebaseAuthWithGoogle: " + acct.getId());
@@ -435,86 +435,122 @@ public class SignIn extends AppCompatActivity {
 
                     if (task.isSuccessful()) {
 
-                        // Get Firebase FCM token and save it to preferences and Firebase.
-                        FirebaseInstanceId.getInstance().getInstanceId().addOnSuccessListener(SignIn.this, instanceIdResult -> {
+                        // Save token to sharedPreferences.
+                        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(SignIn.this);
 
-                            // Sign-in success, update UI with the signed-in user's information
-                            Log.d(TAG, "signInWithCredential:success");
+                        FirebaseMessaging.getInstance().getToken().addOnCompleteListener(task1 -> {
 
-                            // Save token to sharedPreferences.
-                            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(SignIn.this);
+                            if (task1.isSuccessful()) {
 
-                            String token = instanceIdResult.getToken();
+                                String token = task1.getResult();
 
-                            SharedPreferences.Editor editor = sharedPreferences.edit()
-                                    .putString("googleIdToken", googleAccount.getIdToken())
-                                    .putString("FIREBASE_TOKEN", token);
-                            editor.apply();
+                                SharedPreferences.Editor editor = sharedPreferences.edit()
+                                        .putString("googleIdToken", googleAccount.getIdToken())
+                                        .putString("FIREBASE_TOKEN", String.valueOf(token));
+                                editor.apply();
 
-                            // Firebase does not allow ".", so replace them with ",".
-                            String userEmailFirebase = googleAccount.getEmail().replace(".", ",");
+                                // Firebase does not allow ".", so replace them with ",".
+                                String userEmailFirebase = googleAccount.getEmail().replace(".", ",");
 
-                            FirebaseDatabase.getInstance().getReference().child("Users").child(userEmailFirebase).child("Token").setValue(token);
+                                FirebaseDatabase.getInstance().getReference().child("Users").child(userEmailFirebase).child("Token").setValue(token);
 
-                            // Go to Chat.java with the extras.
-                            toastMessageShort("Signed in");
-                            Intent Activity = new Intent(SignIn.this, Navigation.class);
-                            Activity.putExtra("newShape", newShape);
-                            Activity.putExtra("shapeLat", shapeLat);
-                            Activity.putExtra("shapeLon", shapeLon);
-                            // UserLatitude and userLongitude are used in DirectMentions.
-                            Activity.putExtra("userLatitude", userLatitude);
-                            Activity.putExtra("userLongitude", userLongitude);
-                            Activity.putExtra("shapeUUID", shapeUUID);
-                            Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                            Activity.putExtra("circleLatitude", circleLatitude);
-                            Activity.putExtra("circleLongitude", circleLongitude);
-                            Activity.putExtra("radius", radius);
-                            Activity.putExtra("polygonArea", polygonArea);
-                            Activity.putExtra("threeMarkers", threeMarkers);
-                            Activity.putExtra("fourMarkers", fourMarkers);
-                            Activity.putExtra("fiveMarkers", fiveMarkers);
-                            Activity.putExtra("sixMarkers", sixMarkers);
-                            Activity.putExtra("sevenMarkers", sevenMarkers);
-                            Activity.putExtra("eightMarkers", eightMarkers);
-                            Activity.putExtra("marker0Latitude", marker0Latitude);
-                            Activity.putExtra("marker0Longitude", marker0Longitude);
-                            Activity.putExtra("marker1Latitude", marker1Latitude);
-                            Activity.putExtra("marker1Longitude", marker1Longitude);
-                            Activity.putExtra("marker2Latitude", marker2Latitude);
-                            Activity.putExtra("marker2Longitude", marker2Longitude);
-                            Activity.putExtra("marker3Latitude", marker3Latitude);
-                            Activity.putExtra("marker3Longitude", marker3Longitude);
-                            Activity.putExtra("marker4Latitude", marker4Latitude);
-                            Activity.putExtra("marker4Longitude", marker4Longitude);
-                            Activity.putExtra("marker5Latitude", marker5Latitude);
-                            Activity.putExtra("marker5Longitude", marker5Longitude);
-                            Activity.putExtra("marker6Latitude", marker6Latitude);
-                            Activity.putExtra("marker6Longitude", marker6Longitude);
-                            Activity.putExtra("marker7Latitude", marker7Latitude);
-                            Activity.putExtra("marker7Longitude", marker7Longitude);
-                            loadingIcon.setVisibility(View.GONE);
-                            startActivity(Activity);
-                            finish();
+                                // Go to Chat.java with the extras.
+                                toastMessageShort("Signed in");
+                                Intent Activity = new Intent(SignIn.this, Navigation.class);
+                                Activity.putExtra("newShape", newShape);
+                                Activity.putExtra("shapeLat", shapeLat);
+                                Activity.putExtra("shapeLon", shapeLon);
+                                // UserLatitude and userLongitude are used in DirectMentions.
+                                Activity.putExtra("userLatitude", userLatitude);
+                                Activity.putExtra("userLongitude", userLongitude);
+                                Activity.putExtra("shapeUUID", shapeUUID);
+                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                Activity.putExtra("circleLatitude", circleLatitude);
+                                Activity.putExtra("circleLongitude", circleLongitude);
+                                Activity.putExtra("radius", radius);
+                                Activity.putExtra("polygonArea", polygonArea);
+                                Activity.putExtra("threeMarkers", threeMarkers);
+                                Activity.putExtra("fourMarkers", fourMarkers);
+                                Activity.putExtra("fiveMarkers", fiveMarkers);
+                                Activity.putExtra("sixMarkers", sixMarkers);
+                                Activity.putExtra("sevenMarkers", sevenMarkers);
+                                Activity.putExtra("eightMarkers", eightMarkers);
+                                Activity.putExtra("marker0Latitude", marker0Latitude);
+                                Activity.putExtra("marker0Longitude", marker0Longitude);
+                                Activity.putExtra("marker1Latitude", marker1Latitude);
+                                Activity.putExtra("marker1Longitude", marker1Longitude);
+                                Activity.putExtra("marker2Latitude", marker2Latitude);
+                                Activity.putExtra("marker2Longitude", marker2Longitude);
+                                Activity.putExtra("marker3Latitude", marker3Latitude);
+                                Activity.putExtra("marker3Longitude", marker3Longitude);
+                                Activity.putExtra("marker4Latitude", marker4Latitude);
+                                Activity.putExtra("marker4Longitude", marker4Longitude);
+                                Activity.putExtra("marker5Latitude", marker5Latitude);
+                                Activity.putExtra("marker5Longitude", marker5Longitude);
+                                Activity.putExtra("marker6Latitude", marker6Latitude);
+                                Activity.putExtra("marker6Longitude", marker6Longitude);
+                                Activity.putExtra("marker7Latitude", marker7Latitude);
+                                Activity.putExtra("marker7Longitude", marker7Longitude);
+                                loadingIcon.setVisibility(View.GONE);
+                                startActivity(Activity);
+                                finish();
+                            }
+
+                            if (!task1.isSuccessful() && task1.getException() != null) {
+
+                                // Tell the user what happened.
+                                loadingIcon.setVisibility(View.GONE);
+                                toastMessageLong(task1.getException().getMessage());
+                            } else if (!task1.isSuccessful() && task1.getException() == null) {
+
+                                // Tell the user something happened.
+                                loadingIcon.setVisibility(View.GONE);
+                                toastMessageLong("An unknown error occurred. Please try again.");
+                                Log.e(TAG, "firebaseAuthWithGoogle() -> task.getException == null");
+                            }
                         });
-                    } else {
+                    }
 
-                        // If sign in fails, display a recyclerviewlayout to the user.
+                    if (!task.isSuccessful() && task.getException() != null) {
+
+                        // Tell the user what happened.
                         loadingIcon.setVisibility(View.GONE);
-                        Log.w(TAG, "firebaseAuthWithGoogle() -> failed: " + task.getException());
-                        toastMessageLong("Authentication failed. Try again later.");
+                        toastMessageLong("Google sign-in failed: " + task.getException().getMessage());
+                    } else if (!task.isSuccessful() && task.getException() == null) {
+
+                        // Tell the user something happened.
+                        loadingIcon.setVisibility(View.GONE);
+                        toastMessageLong("An unknown error occurred. Please try again.");
+                        Log.e(TAG, "firebaseAuthWithGoogle() -> task.getException == null");
                     }
                 });
     }
 
+    private void cancelToasts() {
+
+        // Do not cancel signedInToast, as the activity is always changed right afterward.
+
+        if (shortToast != null) {
+
+            shortToast.cancel();
+        }
+
+        if (longToast != null) {
+
+            longToast.cancel();
+        }
+    }
+
     private void toastMessageShort(String message) {
 
+        cancelToasts();
         shortToast = Toast.makeText(this, message, Toast.LENGTH_SHORT);
         shortToast.show();
     }
 
     private void toastMessageLong(String message) {
 
+        cancelToasts();
         longToast = Toast.makeText(this, message, Toast.LENGTH_LONG);
         longToast.show();
     }
