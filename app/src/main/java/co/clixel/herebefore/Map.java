@@ -122,18 +122,15 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private final List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // Allow user to click on a mention in Chat and scroll to that mention for context.
-    // When message is deleted, update DirectMention's position.
-    // Taking and uploading a picture takes a long time.
-    // Make a better loading icon, with a progress bar.
-    // Loading icon for Glide images in Chat and DirectMentions, and cut down on loading time.
-    // If user is on a point, prevent creating a new one. Deal with overlapping shapes in general. Maybe a warning message?
-    // Require picture on creating a shape? Also, long press a shape to see a popup of that picture.
-    // Make situations where Firebase circles are added to the map and then polygons are added (like in chatViews) async? Also, do that for changing map and therefore changing shape colors.
-    // Panoramic view?
-    // Show direction camera was facing when taking photo?
+    // Load user-specific shared preferences - looks like it might require saving info to database; is this worth it?
+    // Add preference for shape color, then update buttons to be same color.
     // Get rid of "larger" shapes and only allow points? (Or make allowable shapes smaller?). Track where user is while taking the original video or picture and make the shape that big?
-    // Remember the AC: Origins inspiration. Also, airdrop - create items in the world.
+    // Make a better loading icon, with a progress bar.
+    // Allow user to click on a mention in Chat and scroll to that mention for context.
+    // When message is deleted, update Chat and DirectMention's position.
+    // New icon for Glide images in Chat and DirectMentions (maybe just text that says "loading...")?
+    // If user is on a point, prevent creating a new one. Deal with overlapping shapes in general.
+    // Panoramic view?
     // Prevent data scraping (hide email addresses and other personal information).
     // Create timer that kicks people out of a new Chat if they haven't posted within an amount of time, or keep updating their location.
     // Allow private posts or sharing with specific people.
@@ -144,20 +141,22 @@ public class Map extends FragmentActivity implements
     // Find a way to not clear and reload map every time user returns from clicking a shape. Same with DM notification.
     // When sending DMs back and forth, verify that a user was included in the last DM (as any anonymous UUID could pretend to be the last person).
     // Create "my locations" or "my photos" and see friends' locations / follow friends?
-    // Leave messages in locations that users get notified of when they enter the area by adding geo-fencing..
     // Find a way to add to existing snapshot - then send that snapshot to DirectMentions from Map. Also, prevent reloading everything after restart when user paginated (also save scroll position).
-    // Update general look of app.
     // After clicking on a DM and going to that Chat, allow user to find that same shape on the map.
-    // Create a "general chat" where everyone can chat anonymously, maybe with more specific location rooms too? Delete general chat after x amount of time or # of items.
-    // Add some version of the random button, or allow users to click on a circle in a far away area while zoomed out on map.
     // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.
-    // Add preference for shape color.
-    //// Add ability to add images and video to general chat and Chat from gallery. Distinguish them from media added from location. Github 8/29.
     // Add ability to add both picture and video to firebase at the same time.
-    // Increase viral potential - make it easier to share?
-    // Add ability to filter recyclerView by type of content (recorded at the scene...).
-    // Load preferences after logging out and back in - looks like it will require saving info to database; is this worth it?
 
+    // Require picture on creating a shape? Also, long press a shape to see a popup of that picture.
+    // Add ability to filter recyclerView by type of content (recorded at the scene...).
+    // Add some version of the random button, or allow users to click on a circle in a far away area while zoomed out on map.
+    // Create a "general chat" where everyone can chat anonymously, maybe with more specific location rooms too? Delete general chat after x amount of time or # of items.
+    //// Add ability to add images and video to general chat and Chat from gallery. Distinguish them from media added from location. Github 8/29.
+    // Leave messages in locations that users get notified of when they enter the area by adding geo-fencing.
+    // Increase viral potential - make it easier to share?
+    // Update general look of app.
+
+    // Remember the AC: Origins inspiration. Also, airdrop - create items in the world.
+    // Unit testing.
     // Decrease app size (compress repeating code into methods) / Check on accumulation of size over time.
     // Work on deprecated methods.
     // Check warning messages.

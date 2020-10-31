@@ -824,10 +824,14 @@ public class Chat extends Fragment implements
                     top = (v == null) ? 0 : (v.getTop() - chatRecyclerView.getPaddingTop());
                 }
 
-                if (chatRecyclerView.getAdapter() != null && loadingOlderMessages) {
+                // Prevents crash when user toggles between light / dark mode.
+                if (chatRecyclerView != null) {
 
-                    chatRecyclerView.getAdapter().notifyItemRangeInserted(0, (int) snapshot.getChildrenCount() - 1);
-                    loadingIcon.setVisibility(View.GONE);
+                    if (chatRecyclerView.getAdapter() != null && loadingOlderMessages) {
+
+                        chatRecyclerView.getAdapter().notifyItemRangeInserted(0, (int) snapshot.getChildrenCount() - 1);
+                        loadingIcon.setVisibility(View.GONE);
+                    }
                 }
 
                 if (!loadingOlderMessages) {
@@ -1084,33 +1088,36 @@ public class Chat extends Fragment implements
         // Initialize the RecyclerView.
         Log.i(TAG, "initChatAdapter()");
 
+        // Prevents crash when user toggles between light / dark mode.
+        if (chatRecyclerView == null) {
+
+            return;
+        }
+
         ChatAdapter adapter = new ChatAdapter(mContext, mTime, mUser, mImage, mVideo, mText, mUserIsWithinShape, mPosition);
-        if (chatRecyclerView != null) {
+        chatRecyclerView.setAdapter(adapter);
+        chatRecyclerView.setHasFixedSize(true);
+        chatRecyclerView.setLayoutManager(chatRecyclerViewLinearLayoutManager);
 
-            chatRecyclerView.setAdapter(adapter);
-            chatRecyclerView.setHasFixedSize(true);
-            chatRecyclerView.setLayoutManager(chatRecyclerViewLinearLayoutManager);
+        if (directMentionsPosition != 0) {
 
-            if (directMentionsPosition != 0) {
+            // Show a couple messages above the position, as this seems to be better visually.
+            int scrollPosition = directMentionsPosition - 5;
+            if (scrollPosition < 0) {
 
-                // Show a couple messages above the position, as this seems to be better visually.
-                int scrollPosition = directMentionsPosition - 5;
-                if (scrollPosition < 0) {
-
-                    scrollPosition = 0;
-                }
-                chatRecyclerView.scrollToPosition(scrollPosition);
-            } else if (last == (mUser.size() - 2) || firstLoad || messageSent) {
-
-                // Scroll to bottom of recyclerviewlayout after first initialization and after sending a recyclerviewlayout.
-                chatRecyclerView.scrollToPosition(mUser.size() - 1);
-                messageSent = false;
-                firstLoad = false;
-            } else {
-
-                // Set RecyclerView scroll position to prevent position change when Firebase gets updated and after screen orientation change.
-                chatRecyclerViewLinearLayoutManager.scrollToPositionWithOffset(index, top);
+                scrollPosition = 0;
             }
+            chatRecyclerView.scrollToPosition(scrollPosition);
+        } else if (last == (mUser.size() - 2) || firstLoad || messageSent) {
+
+            // Scroll to bottom of recyclerviewlayout after first initialization and after sending a recyclerviewlayout.
+            chatRecyclerView.scrollToPosition(mUser.size() - 1);
+            messageSent = false;
+            firstLoad = false;
+        } else {
+
+            // Set RecyclerView scroll position to prevent position change when Firebase gets updated and after screen orientation change.
+            chatRecyclerViewLinearLayoutManager.scrollToPositionWithOffset(index, top);
         }
 
         // After the initial load, make the loadingIcon invisible.
@@ -2196,7 +2203,7 @@ public class Chat extends Fragment implements
 
                 // Convert the bitmap to a byteArray for use in uploadImage().
                 ByteArrayOutputStream buffer = new ByteArrayOutputStream(mImageBitmap.getWidth() * mImageBitmap.getHeight());
-                mImageBitmap.compress(Bitmap.CompressFormat.JPEG, 100, buffer);
+                mImageBitmap.compress(Bitmap.CompressFormat.JPEG, 50, buffer);
                 byteArray = buffer.toByteArray();
 
                 // Update UI thread.
@@ -2415,7 +2422,7 @@ public class Chat extends Fragment implements
 
     private void firebaseUpload() {
 
-        Log.i(TAG, "firebaseUploadImage()");
+        Log.i(TAG, "firebaseUpload()");
 
         // Show the loading icon while the image is being uploaded to Firebase.
         loadingIcon.setVisibility(View.VISIBLE);
@@ -2428,7 +2435,7 @@ public class Chat extends Fragment implements
 
             storageReferenceVideo.putFile(videoURI).addOnSuccessListener(taskSnapshot -> storageReferenceVideo.getDownloadUrl().addOnSuccessListener(uri -> {
 
-                Log.i(TAG, "uploadImage() -> onSuccess");
+                Log.i(TAG, "firebaseUpload() -> onSuccess");
 
                 // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter()).
                 messageSent = true;

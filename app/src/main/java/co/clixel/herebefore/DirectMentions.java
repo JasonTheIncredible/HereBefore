@@ -192,12 +192,6 @@ public class DirectMentions extends Fragment {
                         loadingIcon.setVisibility(View.VISIBLE);
                         loadingOlderMessages = true;
                         getFirebaseDMs(datesAL.get(0));
-                    } else if (firstCompletelyVisibleItemPosition == 0) {
-
-                        cancelToasts();
-                        longToast = Toast.makeText(mContext, "No more messages.", Toast.LENGTH_SHORT);
-                        longToast.setGravity(Gravity.TOP, 0, 750);
-                        longToast.show();
                     }
                 }
             }
@@ -280,10 +274,14 @@ public class DirectMentions extends Fragment {
                     top = (v == null) ? 0 : (v.getTop() - DMsRecyclerView.getPaddingTop());
                 }
 
-                if (DMsRecyclerView.getAdapter() != null && loadingOlderMessages) {
+                // Prevents crash when user toggles between light / dark mode.
+                if (DMsRecyclerView != null) {
 
-                    DMsRecyclerView.getAdapter().notifyItemRangeInserted(0, (int) snapshot.getChildrenCount() - 1);
-                    loadingIcon.setVisibility(View.GONE);
+                    if (DMsRecyclerView.getAdapter() != null && loadingOlderMessages) {
+
+                        DMsRecyclerView.getAdapter().notifyItemRangeInserted(0, (int) snapshot.getChildrenCount() - 1);
+                        loadingIcon.setVisibility(View.GONE);
+                    }
                 }
 
                 if (!loadingOlderMessages) {
@@ -395,6 +393,12 @@ public class DirectMentions extends Fragment {
 
         // Initialize the RecyclerView.
         Log.i(TAG, "initDirectMentionsAdapter()");
+
+        // Prevents crash when user toggles between light / dark mode.
+        if (DMsRecyclerView == null) {
+
+            return;
+        }
 
         DirectMentionsAdapter adapter = new DirectMentionsAdapter(mContext, mTime, mUser, mImage, mVideo, mText, mShapeUUID, mUserIsWithinShape, mShapeIsCircle, mShapeSize, mShapeLat, mShapeLon, mPosition, mSeenByUser);
         DMsRecyclerView.setAdapter(adapter);
