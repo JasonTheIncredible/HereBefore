@@ -122,19 +122,15 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private final List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // Load user-specific shared preferences - looks like it might require saving info to database; is this worth it?
-    // Add preference for shape color, then update buttons to be same color.
-    // Get rid of "larger" shapes and only allow points? (Or make allowable shapes smaller?). Track where user is while taking the original video or picture and make the shape that big?
-    // Make a better loading icon, with a progress bar.
-    // Allow user to click on a mention in Chat and scroll to that mention for context.
     // When message is deleted, update Chat and DirectMention's position.
-    // New icon for Glide images in Chat and DirectMentions (maybe just text that says "loading...")?
+    // Make a better loading icon, with a progress bar.
+    // Get rid of "larger" shapes and only allow points? (Or make allowable shapes smaller?). Track where user is while taking the original video or picture and make the shape that big?
+    // Allow user to click on a mention in Chat and scroll to that mention for context.
     // If user is on a point, prevent creating a new one. Deal with overlapping shapes in general.
     // Panoramic view?
     // Prevent data scraping (hide email addresses and other personal information).
     // Create timer that kicks people out of a new Chat if they haven't posted within an amount of time, or keep updating their location.
     // Allow private posts or sharing with specific people.
-    // Prevent spamming messages.
     // Let users allow specific other users to see their name.
     // Think of way to make "creating a point" more accurate to the user's location.
     // Make scrollToPosition work in Chat after a restart. Also prevent reloading Chat and DMs every time app restarts.
@@ -152,6 +148,8 @@ public class Map extends FragmentActivity implements
     // Create a "general chat" where everyone can chat anonymously, maybe with more specific location rooms too? Delete general chat after x amount of time or # of items.
     //// Add ability to add images and video to general chat and Chat from gallery. Distinguish them from media added from location. Github 8/29.
     // Leave messages in locations that users get notified of when they enter the area by adding geo-fencing.
+    // Prevent spamming messages.
+    // Load user-specific shared preferences - looks like it might require saving info to database; is this worth it?
     // Increase viral potential - make it easier to share?
     // Update general look of app.
 

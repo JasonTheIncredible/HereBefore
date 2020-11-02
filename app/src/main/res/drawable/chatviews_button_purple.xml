@@ -33,7 +33,7 @@
                         android:height="40dp" />
                     <stroke
                         android:width="7dp"
-                        android:color="#00ff00d7" />
+                        android:color="#00ff00ff" />
                 </shape>
             </item>
 
