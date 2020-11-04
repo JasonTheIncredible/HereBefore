@@ -122,7 +122,9 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private final List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // When message is deleted, update Chat and DirectMention's position.
+    // Delete DM if message is deleted.
+    // Update Chat, DirectMention, and Map if a message is deleted.
+    // Make loading icon work while loading shapes on map.
     // Make a better loading icon, with a progress bar.
     // Get rid of "larger" shapes and only allow points? (Or make allowable shapes smaller?). Track where user is while taking the original video or picture and make the shape that big?
     // Allow user to click on a mention in Chat and scroll to that mention for context.
