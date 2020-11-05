@@ -2,7 +2,7 @@ package co.clixel.herebefore;
 
 import androidx.annotation.Keep;
 
-public class DMInformation {
+public class DmInformation {
 
     public String userUUID, message, shapeUUID, imageURL, videoURL;
     public Object date;
@@ -12,7 +12,7 @@ public class DMInformation {
     public double lat, lon;
 
     @Keep
-    DMInformation() {
+    DmInformation() {
     }
 
     public void setDate(Object date) {

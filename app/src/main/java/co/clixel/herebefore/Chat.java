@@ -609,7 +609,7 @@ public class Chat extends Fragment implements
 
                                     String email = emailsAL.get(i);
 
-                                    DMInformation dmInformation = new DMInformation();
+                                    DmInformation dmInformation = new DmInformation();
                                     // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
                                     // This will cause onDataChange to fire twice; optimizations could be made in the future.
                                     Object date = ServerValue.TIMESTAMP;
@@ -632,8 +632,8 @@ public class Chat extends Fragment implements
 
                                     // Firebase does not allow ".", so replace them with ",".
                                     String receiverEmailFirebase = email.replace(".", ",");
-                                    DatabaseReference newDM = FirebaseDatabase.getInstance().getReference().child("Users").child(receiverEmailFirebase).child("ReceivedDMs").push();
-                                    newDM.setValue(dmInformation);
+                                    DatabaseReference newDm = FirebaseDatabase.getInstance().getReference().child("Users").child(receiverEmailFirebase).child("ReceivedDms").push();
+                                    newDm.setValue(dmInformation);
                                     break;
                                 }
                             }
@@ -720,13 +720,13 @@ public class Chat extends Fragment implements
                         for (DataSnapshot ds : snapshot.getChildren()) {
 
                             latestPosition[0] = ((Long) ds.child("position").getValue()).intValue();
-                            int loadMessagesFromDM = (latestPosition[0] - directMentionsPosition) + 20;
+                            int loadMessagesFromDm = (latestPosition[0] - directMentionsPosition) + 20;
 
                             query0[0] = FirebaseDatabase.getInstance().getReference()
                                     .child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID)
-                                    .limitToLast(loadMessagesFromDM);
+                                    .limitToLast(loadMessagesFromDm);
 
-                            fillRecyclerView(query0[0], loadMessagesFromDM);
+                            fillRecyclerView(query0[0], loadMessagesFromDm);
                         }
                     }
 
@@ -756,7 +756,7 @@ public class Chat extends Fragment implements
         }
     }
 
-    private void fillRecyclerView(Query query0, int loadMessagesFromDM) {
+    private void fillRecyclerView(Query query0, int loadMessagesFromDm) {
 
         Log.i(TAG, "fillRecyclerView()");
 
@@ -765,7 +765,7 @@ public class Chat extends Fragment implements
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
 
-                if (directMentionsPosition == 0 && snapshot.getChildrenCount() < 20 || directMentionsPosition != 0 && snapshot.getChildrenCount() < (loadMessagesFromDM)) {
+                if (directMentionsPosition == 0 && snapshot.getChildrenCount() < 20 || directMentionsPosition != 0 && snapshot.getChildrenCount() < (loadMessagesFromDm)) {
 
                     noMoreMessages = true;
                 }
@@ -2571,7 +2571,7 @@ public class Chat extends Fragment implements
 
                                 String email = emailsAL.get(i);
 
-                                DMInformation dmInformation = new DMInformation();
+                                DmInformation dmInformation = new DmInformation();
                                 // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
                                 // This will cause onDataChange to fire twice; optimizations could be made in the future.
                                 Object date = ServerValue.TIMESTAMP;
@@ -2597,8 +2597,8 @@ public class Chat extends Fragment implements
 
                                 // Firebase does not allow ".", so replace them with ",".
                                 String receiverEmailFirebase = email.replace(".", ",");
-                                DatabaseReference newDM = FirebaseDatabase.getInstance().getReference().child("Users").child(receiverEmailFirebase).child("ReceivedDMs").push();
-                                newDM.setValue(dmInformation);
+                                DatabaseReference newDm = FirebaseDatabase.getInstance().getReference().child("Users").child(receiverEmailFirebase).child("ReceivedDms").push();
+                                newDm.setValue(dmInformation);
                                 break;
                             }
                         }
@@ -2797,7 +2797,7 @@ public class Chat extends Fragment implements
 
                                 String email = emailsAL.get(i);
 
-                                DMInformation dmInformation = new DMInformation();
+                                DmInformation dmInformation = new DmInformation();
                                 // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
                                 // This will cause onDataChange to fire twice; optimizations could be made in the future.
                                 Object date = ServerValue.TIMESTAMP;
@@ -2823,8 +2823,8 @@ public class Chat extends Fragment implements
 
                                 // Firebase does not allow ".", so replace them with ",".
                                 String receiverEmailFirebase = email.replace(".", ",");
-                                DatabaseReference newDM = FirebaseDatabase.getInstance().getReference().child("Users").child(receiverEmailFirebase).child("ReceivedDMs").push();
-                                newDM.setValue(dmInformation);
+                                DatabaseReference newDm = FirebaseDatabase.getInstance().getReference().child("Users").child(receiverEmailFirebase).child("ReceivedDms").push();
+                                newDm.setValue(dmInformation);
                                 break;
                             }
                         }

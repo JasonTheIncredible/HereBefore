@@ -90,12 +90,12 @@ public class Map extends FragmentActivity implements
     private Marker marker0, marker1, marker2, marker3, marker4, marker5, marker6, marker7;
     private Circle newCircle, circleTemp, mCircle = null;
     private Polygon newPolygon, polygonTemp, mPolygon = null;
-    private ChildEventListener childEventListenerDMs, childEventListenerShapesLarge, childEventListenerShapesMedium, childEventListenerShapesSmall, childEventListenerShapesPoints;
+    private ChildEventListener childEventListenerDms, childEventListenerShapesLarge, childEventListenerShapesMedium, childEventListenerShapesSmall, childEventListenerShapesPoints;
     private SeekBar chatSizeSeekBar, chatSelectorSeekBar;
     private String userEmailFirebase, shapeUUID, marker0ID, marker1ID, marker2ID, marker3ID, marker4ID, marker5ID, marker6ID, marker7ID, selectedOverlappingShapeUUID;
     private Button createChatButton, chatViewsButton, mapTypeButton, settingsButton;
     private PopupMenu popupMapType, popupChatViews, popupCreateChat;
-    private boolean locationProviderDisabled = false, firstLoadCamera = true, firstLoadShapes = true, firstLoadDMs = true, dmExists = false, largeExists = false, mediumExists = false, smallExists = false, pointsExist = false, mapChanged, cameraMoved = false, waitingForBetterLocationAccuracy = false, badAccuracy = false,
+    private boolean locationProviderDisabled = false, firstLoadCamera = true, firstLoadShapes = true, firstLoadDms = true, dmExists = false, largeExists = false, mediumExists = false, smallExists = false, pointsExist = false, mapChanged, cameraMoved = false, waitingForBetterLocationAccuracy = false, badAccuracy = false,
             waitingForClicksToProcess = false, waitingForShapeInformationToProcess = false, markerOutsidePolygon = false, usedSeekBar = false,
             userIsWithinShape, selectingShape = false, threeMarkers = false, fourMarkers = false, fiveMarkers = false, sixMarkers = false, sevenMarkers = false, eightMarkers = false,
             restarted = false, newCameraCoordinates = false, showEverything = true, showLarge = false, showMedium = false, showSmall = false, showPoints = false, mapCleared = false;
@@ -118,11 +118,11 @@ public class Map extends FragmentActivity implements
     private View loadingIcon;
     private CounterFab dmButton;
     private LocationManager locationManager;
-    private Query queryDMs, queryShapesLarge, queryShapesMedium, queryShapesSmall, queryShapesPoints;
+    private Query queryDms, queryShapesLarge, queryShapesMedium, queryShapesSmall, queryShapesPoints;
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private final List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // Delete DM if message is deleted.
+    // Delete picture or video on message deletion, and make sure functions scale.
     // Update Chat, DirectMention, and Map if a message is deleted.
     // Make loading icon work while loading shapes on map.
     // Make a better loading icon, with a progress bar.
@@ -309,15 +309,15 @@ public class Map extends FragmentActivity implements
             // Firebase does not allow ".", so replace them with ",".
             userEmailFirebase = email.replace(".", ",");
 
-            DatabaseReference DMs = FirebaseDatabase.getInstance().getReference().child("Users").child(userEmailFirebase).child("ReceivedDMs");
-            DMs.addListenerForSingleValueEvent(new ValueEventListener() {
+            DatabaseReference Dms = FirebaseDatabase.getInstance().getReference().child("Users").child(userEmailFirebase).child("ReceivedDMs");
+            Dms.addListenerForSingleValueEvent(new ValueEventListener() {
 
                 @Override
                 public void onDataChange(@NonNull DataSnapshot snapshot) {
 
                     for (DataSnapshot ds : snapshot.getChildren()) {
 
-                        // Used in addDMsQuery to allow the child to be called the first time if no child exists and prevent double posts if a child exists.
+                        // Used in addDmsQuery to allow the child to be called the first time if no child exists and prevent double posts if a child exists.
                         dmExists = true;
 
                         if (!(Boolean) ds.child("seenByUser").getValue()) {
@@ -327,7 +327,7 @@ public class Map extends FragmentActivity implements
                     }
 
                     dmButton.setCount(dmCounter);
-                    addDMsQuery();
+                    addDmsQuery();
                 }
 
                 @Override
@@ -376,7 +376,7 @@ public class Map extends FragmentActivity implements
                                 Activity.putExtra("userLongitude", location.getLongitude());
 
                                 Activity.putExtra("noChat", true);
-                                Activity.putExtra("fromDMs", true);
+                                Activity.putExtra("fromDms", true);
 
                                 loadingIcon.setVisibility(View.GONE);
 
@@ -2193,20 +2193,20 @@ public class Map extends FragmentActivity implements
     }
 
     // Change to .limitToLast(1) to cut down on data usage. Otherwise, EVERY child at this node will be downloaded every time the child is updated.
-    private void addDMsQuery() {
+    private void addDmsQuery() {
 
-        queryDMs = FirebaseDatabase.getInstance().getReference().child("Users").child(userEmailFirebase).child("ReceivedDMs").limitToLast(1);
-        childEventListenerDMs = new ChildEventListener() {
+        queryDms = FirebaseDatabase.getInstance().getReference().child("Users").child(userEmailFirebase).child("ReceivedDms").limitToLast(1);
+        childEventListenerDms = new ChildEventListener() {
 
             @Override
             public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
 
-                Log.i(TAG, "addDMQuery()");
+                Log.i(TAG, "addDmQuery()");
 
                 // If this is the first time calling this eventListener, prevent double posts (as onStart() already added the last item).
-                if (firstLoadDMs && dmExists) {
+                if (firstLoadDms && dmExists) {
 
-                    firstLoadDMs = false;
+                    firstLoadDms = false;
                     return;
                 }
 
@@ -2233,7 +2233,7 @@ public class Map extends FragmentActivity implements
             }
         };
 
-        queryDMs.addChildEventListener(childEventListenerDMs);
+        queryDms.addChildEventListener(childEventListenerDms);
     }
 
     @Override
@@ -2245,7 +2245,7 @@ public class Map extends FragmentActivity implements
         restarted = true;
         firstLoadCamera = false;
         firstLoadShapes = true;
-        firstLoadDMs = true;
+        firstLoadDms = true;
         waitingForShapeInformationToProcess = false;
         waitingForClicksToProcess = false;
         selectingShape = false;
@@ -2516,15 +2516,15 @@ public class Map extends FragmentActivity implements
             dmButton.setOnClickListener(null);
         }
 
-        if (queryDMs != null) {
+        if (queryDms != null) {
 
-            queryDMs.removeEventListener(childEventListenerDMs);
-            queryDMs = null;
+            queryDms.removeEventListener(childEventListenerDms);
+            queryDms = null;
         }
 
-        if (childEventListenerDMs != null) {
+        if (childEventListenerDms != null) {
 
-            childEventListenerDMs = null;
+            childEventListenerDms = null;
         }
 
         if (queryShapesLarge != null) {

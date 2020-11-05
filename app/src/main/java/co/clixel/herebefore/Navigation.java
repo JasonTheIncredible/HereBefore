@@ -29,7 +29,7 @@ import com.google.firebase.database.ValueEventListener;
 
 public class Navigation extends AppCompatActivity {
 
-    static public boolean noChat = false, fromDMs = false;
+    static public boolean noChat = false, fromDms = false;
     private ViewPager viewPager;
     public BubbleNavigationConstraintView bubbleNavigationConstraintView;
     private ViewPager.OnPageChangeListener pagerListener;
@@ -55,7 +55,7 @@ public class Navigation extends AppCompatActivity {
 
             // If noChat is true, hide Chat, as user entered this activity without clicking a shape.
             noChat = extras.getBoolean("noChat");
-            fromDMs = extras.getBoolean("fromDMs");
+            fromDms = extras.getBoolean("fromDms");
 
             if (noChat) {
 
@@ -158,8 +158,8 @@ public class Navigation extends AppCompatActivity {
         // Firebase does not allow ".", so replace them with ",".
         userEmailFirebase = email.replace(".", ",");
 
-        DatabaseReference DMs = FirebaseDatabase.getInstance().getReference().child("Users").child(userEmailFirebase).child("ReceivedDMs");
-        DMs.addListenerForSingleValueEvent(new ValueEventListener() {
+        DatabaseReference Dms = FirebaseDatabase.getInstance().getReference().child("Users").child(userEmailFirebase).child("ReceivedDms");
+        Dms.addListenerForSingleValueEvent(new ValueEventListener() {
 
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
@@ -178,7 +178,7 @@ public class Navigation extends AppCompatActivity {
                 // Set the DM tab's badge value.
                 if (dmCounter == 0) {
                     // Do nothing.
-                } else if (!Navigation.fromDMs && !Navigation.noChat) {
+                } else if (!Navigation.fromDms && !Navigation.noChat) {
 
                     bubbleNavigationConstraintView.setBadgeValue(1, String.valueOf(dmCounter));
                 } else {
@@ -202,13 +202,13 @@ public class Navigation extends AppCompatActivity {
         }
 
         // The following is used if the user "reloads" the activity after clicking the toggle theme button in Settings.
-        if (!fromDMs && !noChat && SettingsFragment.themeToggled) {
+        if (!fromDms && !noChat && SettingsFragment.themeToggled) {
 
             viewPager.setCurrentItem(2, false);
             bubbleNavigationConstraintView.setCurrentActiveItem(2);
             currentItem = 2;
             SettingsFragment.themeToggled = false;
-        } else if ((!fromDMs && noChat) || (noChat && SettingsFragment.themeToggled)) {
+        } else if ((!fromDms && noChat) || (noChat && SettingsFragment.themeToggled)) {
 
             viewPager.setCurrentItem(1, false);
             bubbleNavigationConstraintView.setCurrentActiveItem(1);
@@ -228,7 +228,7 @@ public class Navigation extends AppCompatActivity {
             query.removeEventListener(childEventListener);
         }
 
-        query = FirebaseDatabase.getInstance().getReference().child("Users").child(userEmailFirebase).child("ReceivedDMs").limitToLast(1);
+        query = FirebaseDatabase.getInstance().getReference().child("Users").child(userEmailFirebase).child("ReceivedDms").limitToLast(1);
         childEventListener = new ChildEventListener() {
 
             @Override
@@ -244,7 +244,7 @@ public class Navigation extends AppCompatActivity {
                 dmCounter++;
 
                 // Set the DM tab's badge value.
-                if (!Navigation.fromDMs && !Navigation.noChat) {
+                if (!Navigation.fromDms && !Navigation.noChat) {
 
                     bubbleNavigationConstraintView.setBadgeValue(1, String.valueOf(dmCounter));
                 } else {
