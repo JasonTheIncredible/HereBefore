@@ -4,7 +4,7 @@ import androidx.annotation.Keep;
 
 public class DmInformation {
 
-    public String userUUID, message, shapeUUID, imageURL, videoURL;
+    public String userUUID, message, shapeUUID, imageUrl, videoUrl;
     public Object date;
     public Boolean userIsWithinShape, seenByUser, shapeIsCircle;
     public int position;
@@ -19,8 +19,8 @@ public class DmInformation {
         this.date = date;
     }
 
-    public void setImageURL(String imageURL) {
-        this.imageURL = imageURL;
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 
     public void setLat(double lat) {
@@ -63,7 +63,7 @@ public class DmInformation {
         this.userUUID = userUUID;
     }
 
-    public void setVideoURL(String videoURL) {
-        this.videoURL = videoURL;
+    public void setVideoUrl(String videoUrl) {
+        this.videoUrl = videoUrl;
     }
 }

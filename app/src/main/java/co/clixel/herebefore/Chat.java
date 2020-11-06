@@ -485,7 +485,7 @@ public class Chat extends Fragment implements
 
                             // Shape is a circle.
 
-                            // Since the uuid doesn't already exist in Firebase, add the circle.
+                            // Since the UUID doesn't already exist in Firebase, add the circle.
                             CircleOptions circleOptions = new CircleOptions()
                                     .center(new LatLng(circleLatitude, circleLongitude))
                                     .clickable(true)
@@ -518,7 +518,7 @@ public class Chat extends Fragment implements
 
                             PolygonOptions polygonOptions = null;
 
-                            // Since the uuid doesn't already exist in Firebase, add the circle.
+                            // Since the UUID doesn't already exist in Firebase, add the circle.
                             if (threeMarkers) {
 
                                 polygonOptions = new PolygonOptions()
@@ -680,7 +680,7 @@ public class Chat extends Fragment implements
             cancelToasts();
 
             Intent Activity = new Intent(mContext, PhotoView.class);
-            Activity.putExtra("imgURL", imageURI.toString());
+            Activity.putExtra("imgUrl", imageURI.toString());
             Chat.this.startActivity(Activity);
         });
 
@@ -691,7 +691,7 @@ public class Chat extends Fragment implements
             cancelToasts();
 
             Intent Activity = new Intent(mContext, VideoView.class);
-            Activity.putExtra("videoURL", videoURI.toString());
+            Activity.putExtra("videoUrl", videoURI.toString());
             Chat.this.startActivity(Activity);
         });
     }
@@ -780,8 +780,8 @@ public class Chat extends Fragment implements
                     String user = (String) ds.child("userUUID").getValue();
                     // Used when a user mentions another user with "@".
                     mSuggestions.add(i, user);
-                    String imageURL = (String) ds.child("imageURL").getValue();
-                    String videoURL = (String) ds.child("videoURL").getValue();
+                    String imageUrl = (String) ds.child("imageUrl").getValue();
+                    String videoUrl = (String) ds.child("videoUrl").getValue();
                     String messageText = (String) ds.child("message").getValue();
                     Boolean userIsWithinShape = (Boolean) ds.child("userIsWithinShape").getValue();
                     Integer position = ((Long) ds.child("position").getValue()).intValue();
@@ -798,8 +798,8 @@ public class Chat extends Fragment implements
                         Log.e(TAG, "onStart() -> serverDate == null");
                     }
                     mUser.add(i, user);
-                    mImage.add(i, imageURL);
-                    mVideo.add(i, videoURL);
+                    mImage.add(i, imageUrl);
+                    mVideo.add(i, videoUrl);
                     mText.add(i, messageText);
                     mUserIsWithinShape.add(i, userIsWithinShape);
                     // No need to fill the arrayList if user did not click from DM.
@@ -884,8 +884,8 @@ public class Chat extends Fragment implements
                 String user = (String) snapshot.child("userUUID").getValue();
                 // Used when a user mentions another user with "@".
                 mSuggestions.add(user);
-                String imageURL = (String) snapshot.child("imageURL").getValue();
-                String videoURL = (String) snapshot.child("videoURL").getValue();
+                String imageUrl = (String) snapshot.child("imageUrl").getValue();
+                String videoUrl = (String) snapshot.child("videoUrl").getValue();
                 String messageText = (String) snapshot.child("message").getValue();
                 Boolean userIsWithinShape = (Boolean) snapshot.child("userIsWithinShape").getValue();
                 DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
@@ -901,8 +901,8 @@ public class Chat extends Fragment implements
                     Log.e(TAG, "onStart() -> serverDate == null");
                 }
                 mUser.add(user);
-                mImage.add(imageURL);
-                mVideo.add(videoURL);
+                mImage.add(imageUrl);
+                mVideo.add(videoUrl);
                 mText.add(messageText);
                 mUserIsWithinShape.add(userIsWithinShape);
 
@@ -1173,7 +1173,7 @@ public class Chat extends Fragment implements
                     messageImageInside.setOnClickListener(v -> {
 
                         Intent Activity = new Intent(mContext, PhotoView.class);
-                        Activity.putExtra("imgURL", mMessageImage.get(getAdapterPosition()));
+                        Activity.putExtra("imgUrl", mMessageImage.get(getAdapterPosition()));
                         mContext.startActivity(Activity);
                     });
                 }
@@ -1183,7 +1183,7 @@ public class Chat extends Fragment implements
                     messageImageOutside.setOnClickListener(v -> {
 
                         Intent Activity = new Intent(mContext, PhotoView.class);
-                        Activity.putExtra("imgURL", mMessageImage.get(getAdapterPosition()));
+                        Activity.putExtra("imgUrl", mMessageImage.get(getAdapterPosition()));
                         mContext.startActivity(Activity);
                     });
                 }
@@ -1193,7 +1193,7 @@ public class Chat extends Fragment implements
                     messageImageVideoInside.setOnClickListener(v -> {
 
                         Intent Activity = new Intent(mContext, VideoView.class);
-                        Activity.putExtra("videoURL", mMessageImageVideo.get(getAdapterPosition()));
+                        Activity.putExtra("videoUrl", mMessageImageVideo.get(getAdapterPosition()));
                         mContext.startActivity(Activity);
                     });
                 }
@@ -1203,7 +1203,7 @@ public class Chat extends Fragment implements
                     messageImageVideoOutside.setOnClickListener(v -> {
 
                         Intent Activity = new Intent(mContext, VideoView.class);
-                        Activity.putExtra("videoURL", mMessageImageVideo.get(getAdapterPosition()));
+                        Activity.putExtra("videoUrl", mMessageImageVideo.get(getAdapterPosition()));
                         mContext.startActivity(Activity);
                     });
                 }
@@ -1213,7 +1213,7 @@ public class Chat extends Fragment implements
                     playButtonInside.setOnClickListener(v -> {
 
                         Intent Activity = new Intent(mContext, VideoView.class);
-                        Activity.putExtra("videoURL", mMessageImageVideo.get(getAdapterPosition()));
+                        Activity.putExtra("videoUrl", mMessageImageVideo.get(getAdapterPosition()));
                         mContext.startActivity(Activity);
                     });
                 }
@@ -1223,7 +1223,7 @@ public class Chat extends Fragment implements
                     playButtonOutside.setOnClickListener(v -> {
 
                         Intent Activity = new Intent(mContext, VideoView.class);
-                        Activity.putExtra("videoURL", mMessageImageVideo.get(getAdapterPosition()));
+                        Activity.putExtra("videoUrl", mMessageImageVideo.get(getAdapterPosition()));
                         mContext.startActivity(Activity);
                     });
                 }
@@ -2430,7 +2430,7 @@ public class Chat extends Fragment implements
         if (!fileIsImage) {
 
             // Video.
-            final StorageReference storageReferenceVideo = FirebaseStorage.getInstance().getReference("Video").child(String.valueOf(System.currentTimeMillis()));
+            final StorageReference storageReferenceVideo = FirebaseStorage.getInstance().getReference("Videos").child(String.valueOf(System.currentTimeMillis()));
             uploadTask = storageReferenceVideo.putFile(videoURI);
 
             storageReferenceVideo.putFile(videoURI).addOnSuccessListener(taskSnapshot -> storageReferenceVideo.getDownloadUrl().addOnSuccessListener(uri -> {
@@ -2447,7 +2447,7 @@ public class Chat extends Fragment implements
 
                         // Shape is a circle.
 
-                        // Since the uuid doesn't already exist in Firebase, add the circle.
+                        // Since the UUID doesn't already exist in Firebase, add the circle.
                         CircleOptions circleOptions = new CircleOptions()
                                 .center(new LatLng(circleLatitude, circleLongitude))
                                 .clickable(true)
@@ -2480,7 +2480,7 @@ public class Chat extends Fragment implements
 
                         PolygonOptions polygonOptions = null;
 
-                        // Since the uuid doesn't already exist in Firebase, add the circle.
+                        // Since the UUID doesn't already exist in Firebase, add the circle.
                         if (threeMarkers) {
 
                             polygonOptions = new PolygonOptions()
@@ -2593,7 +2593,7 @@ public class Chat extends Fragment implements
                                 dmInformation.setShapeUUID(shapeUUID);
                                 dmInformation.setUserIsWithinShape(userIsWithinShape);
                                 dmInformation.setUserUUID(userUUID);
-                                dmInformation.setVideoURL(uri.toString());
+                                dmInformation.setVideoUrl(uri.toString());
 
                                 // Firebase does not allow ".", so replace them with ",".
                                 String receiverEmailFirebase = email.replace(".", ",");
@@ -2627,7 +2627,7 @@ public class Chat extends Fragment implements
                 messageInformation.setPosition(mUser.size());
                 messageInformation.setUserIsWithinShape(userIsWithinShape);
                 messageInformation.setUserUUID(userUUID);
-                messageInformation.setVideoURL(uri.toString());
+                messageInformation.setVideoUrl(uri.toString());
                 DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID).push();
                 newMessage.setValue(messageInformation);
 
@@ -2673,7 +2673,7 @@ public class Chat extends Fragment implements
 
                         // Shape is a circle.
 
-                        // Since the uuid doesn't already exist in Firebase, add the circle.
+                        // Since the UUID doesn't already exist in Firebase, add the circle.
                         CircleOptions circleOptions = new CircleOptions()
                                 .center(new LatLng(circleLatitude, circleLongitude))
                                 .clickable(true)
@@ -2706,7 +2706,7 @@ public class Chat extends Fragment implements
 
                         PolygonOptions polygonOptions = null;
 
-                        // Since the uuid doesn't already exist in Firebase, add the circle.
+                        // Since the UUID doesn't already exist in Firebase, add the circle.
                         if (threeMarkers) {
 
                             polygonOptions = new PolygonOptions()
@@ -2802,7 +2802,7 @@ public class Chat extends Fragment implements
                                 // This will cause onDataChange to fire twice; optimizations could be made in the future.
                                 Object date = ServerValue.TIMESTAMP;
                                 dmInformation.setDate(date);
-                                dmInformation.setImageURL(uri.toString());
+                                dmInformation.setImageUrl(uri.toString());
                                 dmInformation.setLat(latFirebaseValue);
                                 dmInformation.setLon(lonFirebaseValue);
                                 if (mInput.getText().toString().trim().length() != 0) {
@@ -2846,7 +2846,7 @@ public class Chat extends Fragment implements
                     email = sharedPreferences.getString("userToken", "null");
                 }
                 messageInformation.setEmail(email);
-                messageInformation.setImageURL(uri.toString());
+                messageInformation.setImageUrl(uri.toString());
                 if (mInput.getText().toString().trim().length() != 0) {
 
                     messageInformation.setMessage(mInput.getText().toString());

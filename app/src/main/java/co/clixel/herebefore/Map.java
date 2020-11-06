@@ -122,8 +122,10 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private final List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // Delete picture or video on message deletion, and make sure functions scale.
-    // Update Chat, DirectMention, and Map if a message is deleted.
+    // Make sure functions scale.
+    // Scale picture and video storage, then adjust Firebase functions accordingly.
+    // Update Chat, DirectMention, and Map if a message is deleted - deleting a message causes the last message to appear again.
+    // Chat leaking - record video then return.
     // Make loading icon work while loading shapes on map.
     // Make a better loading icon, with a progress bar.
     // Get rid of "larger" shapes and only allow points? (Or make allowable shapes smaller?). Track where user is while taking the original video or picture and make the shape that big?
@@ -2986,7 +2988,7 @@ public class Map extends FragmentActivity implements
                         return false;
                     }
 
-                    // Generate a uuid, as the shape is new.
+                    // Generate a UUID, as the shape is new.
                     shapeUUID = UUID.randomUUID().toString();
 
                     // Check if user is within the circle before going to the recyclerviewlayout.
@@ -3025,7 +3027,7 @@ public class Map extends FragmentActivity implements
 
                                             Log.i(TAG, "onMapReadyAndRestart() -> onMarkerClick -> user signed in -> circle -> marker0");
 
-                                            // uuid does not already exist in Firebase. Go to Chat.java with the uuid.
+                                            // UUID does not already exist in Firebase. Go to Chat.java with the UUID.
 
                                             // Carry the extras all the way to Chat.java.
                                             Intent Activity = new Intent(Map.this, Navigation.class);
@@ -3273,7 +3275,7 @@ public class Map extends FragmentActivity implements
                     return;
                 }
 
-                // Generate a uuid, as the shape is new.
+                // Generate a UUID, as the shape is new.
                 shapeUUID = UUID.randomUUID().toString();
 
                 // Check location permissions.
@@ -3855,7 +3857,7 @@ public class Map extends FragmentActivity implements
                     return;
                 }
 
-                // Generate a uuid, as the shape is new.
+                // Generate a UUID, as the shape is new.
                 shapeUUID = UUID.randomUUID().toString();
 
                 // Check location permissions.
@@ -6819,7 +6821,7 @@ public class Map extends FragmentActivity implements
                                             .strokeWidth(3f)
                             );
 
-                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                            // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
                             shapeUUID = (String) dss.child("shapeUUID").getValue();
 
                             circle.setTag(shapeUUID);
@@ -6843,7 +6845,7 @@ public class Map extends FragmentActivity implements
                                             .strokeWidth(3f)
                             );
 
-                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                            // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
                             shapeUUID = (String) dss.child("shapeUUID").getValue();
 
                             circle.setTag(shapeUUID);
@@ -6901,7 +6903,7 @@ public class Map extends FragmentActivity implements
                                                 .strokeWidth(3f)
                                 );
 
-                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                                 shapeUUID = (String) dss.child("shapeUUID").getValue();
 
                                 polygon.setTag(shapeUUID);
@@ -6926,7 +6928,7 @@ public class Map extends FragmentActivity implements
                                                 .strokeWidth(3f)
                                 );
 
-                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                                 shapeUUID = (String) dss.child("shapeUUID").getValue();
 
                                 polygon.setTag(shapeUUID);
@@ -6950,7 +6952,7 @@ public class Map extends FragmentActivity implements
                                                 .strokeWidth(3f)
                                 );
 
-                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                                 shapeUUID = (String) dss.child("shapeUUID").getValue();
 
                                 polygon.setTag(shapeUUID);
@@ -6973,7 +6975,7 @@ public class Map extends FragmentActivity implements
                                                 .strokeWidth(3f)
                                 );
 
-                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                                 shapeUUID = (String) dss.child("shapeUUID").getValue();
 
                                 polygon.setTag(shapeUUID);
@@ -6995,7 +6997,7 @@ public class Map extends FragmentActivity implements
                                                 .strokeWidth(3f)
                                 );
 
-                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                                 shapeUUID = (String) dss.child("shapeUUID").getValue();
 
                                 polygon.setTag(shapeUUID);
@@ -7016,7 +7018,7 @@ public class Map extends FragmentActivity implements
                                                 .strokeWidth(3f)
                                 );
 
-                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                                 shapeUUID = (String) dss.child("shapeUUID").getValue();
 
                                 polygon.setTag(shapeUUID);
@@ -7069,7 +7071,7 @@ public class Map extends FragmentActivity implements
                                                 .strokeWidth(3f)
                                 );
 
-                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                                 shapeUUID = (String) dss.child("shapeUUID").getValue();
 
                                 polygon.setTag(shapeUUID);
@@ -7094,7 +7096,7 @@ public class Map extends FragmentActivity implements
                                                 .strokeWidth(3f)
                                 );
 
-                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                                 shapeUUID = (String) dss.child("shapeUUID").getValue();
 
                                 polygon.setTag(shapeUUID);
@@ -7118,7 +7120,7 @@ public class Map extends FragmentActivity implements
                                                 .strokeWidth(3f)
                                 );
 
-                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                                 shapeUUID = (String) dss.child("shapeUUID").getValue();
 
                                 polygon.setTag(shapeUUID);
@@ -7141,7 +7143,7 @@ public class Map extends FragmentActivity implements
                                                 .strokeWidth(3f)
                                 );
 
-                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                                 shapeUUID = (String) dss.child("shapeUUID").getValue();
 
                                 polygon.setTag(shapeUUID);
@@ -7163,7 +7165,7 @@ public class Map extends FragmentActivity implements
                                                 .strokeWidth(3f)
                                 );
 
-                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                                 shapeUUID = (String) dss.child("shapeUUID").getValue();
 
                                 polygon.setTag(shapeUUID);
@@ -7184,7 +7186,7 @@ public class Map extends FragmentActivity implements
                                                 .strokeWidth(3f)
                                 );
 
-                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                                 shapeUUID = (String) dss.child("shapeUUID").getValue();
 
                                 polygon.setTag(shapeUUID);
@@ -7236,7 +7238,7 @@ public class Map extends FragmentActivity implements
                                             .strokeWidth(3f)
                             );
 
-                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                            // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
                             shapeUUID = (String) ds.child("shapeUUID").getValue();
 
                             circle.setTag(shapeUUID);
@@ -7264,7 +7266,7 @@ public class Map extends FragmentActivity implements
                                             .strokeWidth(3f)
                             );
 
-                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                            // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
                             shapeUUID = (String) ds.child("shapeUUID").getValue();
 
                             circle.setTag(shapeUUID);
@@ -7326,7 +7328,7 @@ public class Map extends FragmentActivity implements
                                                 .strokeWidth(3f)
                                 );
 
-                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                                 shapeUUID = (String) ds.child("shapeUUID").getValue();
 
                                 polygon.setTag(shapeUUID);
@@ -7351,7 +7353,7 @@ public class Map extends FragmentActivity implements
                                                 .strokeWidth(3f)
                                 );
 
-                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                                 shapeUUID = (String) ds.child("shapeUUID").getValue();
 
                                 polygon.setTag(shapeUUID);
@@ -7375,7 +7377,7 @@ public class Map extends FragmentActivity implements
                                                 .strokeWidth(3f)
                                 );
 
-                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                                 shapeUUID = (String) ds.child("shapeUUID").getValue();
 
                                 polygon.setTag(shapeUUID);
@@ -7398,7 +7400,7 @@ public class Map extends FragmentActivity implements
                                                 .strokeWidth(3f)
                                 );
 
-                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                                 shapeUUID = (String) ds.child("shapeUUID").getValue();
 
                                 polygon.setTag(shapeUUID);
@@ -7420,7 +7422,7 @@ public class Map extends FragmentActivity implements
                                                 .strokeWidth(3f)
                                 );
 
-                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                                 shapeUUID = (String) ds.child("shapeUUID").getValue();
 
                                 polygon.setTag(shapeUUID);
@@ -7441,7 +7443,7 @@ public class Map extends FragmentActivity implements
                                                 .strokeWidth(3f)
                                 );
 
-                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                                 shapeUUID = (String) ds.child("shapeUUID").getValue();
 
                                 polygon.setTag(shapeUUID);
@@ -7498,7 +7500,7 @@ public class Map extends FragmentActivity implements
                                                 .strokeWidth(3f)
                                 );
 
-                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                                 shapeUUID = (String) ds.child("shapeUUID").getValue();
 
                                 polygon.setTag(shapeUUID);
@@ -7523,7 +7525,7 @@ public class Map extends FragmentActivity implements
                                                 .strokeWidth(3f)
                                 );
 
-                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                                 shapeUUID = (String) ds.child("shapeUUID").getValue();
 
                                 polygon.setTag(shapeUUID);
@@ -7547,7 +7549,7 @@ public class Map extends FragmentActivity implements
                                                 .strokeWidth(3f)
                                 );
 
-                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                                 shapeUUID = (String) ds.child("shapeUUID").getValue();
 
                                 polygon.setTag(shapeUUID);
@@ -7570,7 +7572,7 @@ public class Map extends FragmentActivity implements
                                                 .strokeWidth(3f)
                                 );
 
-                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                                 shapeUUID = (String) ds.child("shapeUUID").getValue();
 
                                 polygon.setTag(shapeUUID);
@@ -7592,7 +7594,7 @@ public class Map extends FragmentActivity implements
                                                 .strokeWidth(3f)
                                 );
 
-                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                                 shapeUUID = (String) ds.child("shapeUUID").getValue();
 
                                 polygon.setTag(shapeUUID);
@@ -7613,7 +7615,7 @@ public class Map extends FragmentActivity implements
                                                 .strokeWidth(3f)
                                 );
 
-                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                                 shapeUUID = (String) ds.child("shapeUUID").getValue();
 
                                 polygon.setTag(shapeUUID);
@@ -7665,7 +7667,7 @@ public class Map extends FragmentActivity implements
                                             .strokeWidth(3f)
                             );
 
-                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                            // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
                             shapeUUID = (String) ds.child("shapeUUID").getValue();
 
                             circle.setTag(shapeUUID);
@@ -7693,7 +7695,7 @@ public class Map extends FragmentActivity implements
                                             .strokeWidth(3f)
                             );
 
-                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                            // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
                             shapeUUID = (String) ds.child("shapeUUID").getValue();
 
                             circle.setTag(shapeUUID);
@@ -7755,7 +7757,7 @@ public class Map extends FragmentActivity implements
                                                 .strokeWidth(3f)
                                 );
 
-                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                                 shapeUUID = (String) ds.child("shapeUUID").getValue();
 
                                 polygon.setTag(shapeUUID);
@@ -7780,7 +7782,7 @@ public class Map extends FragmentActivity implements
                                                 .strokeWidth(3f)
                                 );
 
-                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                                 shapeUUID = (String) ds.child("shapeUUID").getValue();
 
                                 polygon.setTag(shapeUUID);
@@ -7804,7 +7806,7 @@ public class Map extends FragmentActivity implements
                                                 .strokeWidth(3f)
                                 );
 
-                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                                 shapeUUID = (String) ds.child("shapeUUID").getValue();
 
                                 polygon.setTag(shapeUUID);
@@ -7827,7 +7829,7 @@ public class Map extends FragmentActivity implements
                                                 .strokeWidth(3f)
                                 );
 
-                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                                 shapeUUID = (String) ds.child("shapeUUID").getValue();
 
                                 polygon.setTag(shapeUUID);
@@ -7849,7 +7851,7 @@ public class Map extends FragmentActivity implements
                                                 .strokeWidth(3f)
                                 );
 
-                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                                 shapeUUID = (String) ds.child("shapeUUID").getValue();
 
                                 polygon.setTag(shapeUUID);
@@ -7870,7 +7872,7 @@ public class Map extends FragmentActivity implements
                                                 .strokeWidth(3f)
                                 );
 
-                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                                 shapeUUID = (String) ds.child("shapeUUID").getValue();
 
                                 polygon.setTag(shapeUUID);
@@ -7927,7 +7929,7 @@ public class Map extends FragmentActivity implements
                                                 .strokeWidth(3f)
                                 );
 
-                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                                 shapeUUID = (String) ds.child("shapeUUID").getValue();
 
                                 polygon.setTag(shapeUUID);
@@ -7952,7 +7954,7 @@ public class Map extends FragmentActivity implements
                                                 .strokeWidth(3f)
                                 );
 
-                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                                 shapeUUID = (String) ds.child("shapeUUID").getValue();
 
                                 polygon.setTag(shapeUUID);
@@ -7976,7 +7978,7 @@ public class Map extends FragmentActivity implements
                                                 .strokeWidth(3f)
                                 );
 
-                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                                 shapeUUID = (String) ds.child("shapeUUID").getValue();
 
                                 polygon.setTag(shapeUUID);
@@ -7999,7 +8001,7 @@ public class Map extends FragmentActivity implements
                                                 .strokeWidth(3f)
                                 );
 
-                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                                 shapeUUID = (String) ds.child("shapeUUID").getValue();
 
                                 polygon.setTag(shapeUUID);
@@ -8021,7 +8023,7 @@ public class Map extends FragmentActivity implements
                                                 .strokeWidth(3f)
                                 );
 
-                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                                 shapeUUID = (String) ds.child("shapeUUID").getValue();
 
                                 polygon.setTag(shapeUUID);
@@ -8042,7 +8044,7 @@ public class Map extends FragmentActivity implements
                                                 .strokeWidth(3f)
                                 );
 
-                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                                 shapeUUID = (String) ds.child("shapeUUID").getValue();
 
                                 polygon.setTag(shapeUUID);
@@ -8094,7 +8096,7 @@ public class Map extends FragmentActivity implements
                                             .strokeWidth(3f)
                             );
 
-                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                            // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
                             shapeUUID = (String) ds.child("shapeUUID").getValue();
 
                             circle.setTag(shapeUUID);
@@ -8122,7 +8124,7 @@ public class Map extends FragmentActivity implements
                                             .strokeWidth(3f)
                             );
 
-                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                            // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
                             shapeUUID = (String) ds.child("shapeUUID").getValue();
 
                             circle.setTag(shapeUUID);
@@ -8184,7 +8186,7 @@ public class Map extends FragmentActivity implements
                                                 .strokeWidth(3f)
                                 );
 
-                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                                 shapeUUID = (String) ds.child("shapeUUID").getValue();
 
                                 polygon.setTag(shapeUUID);
@@ -8209,7 +8211,7 @@ public class Map extends FragmentActivity implements
                                                 .strokeWidth(3f)
                                 );
 
-                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                                 shapeUUID = (String) ds.child("shapeUUID").getValue();
 
                                 polygon.setTag(shapeUUID);
@@ -8233,7 +8235,7 @@ public class Map extends FragmentActivity implements
                                                 .strokeWidth(3f)
                                 );
 
-                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                                 shapeUUID = (String) ds.child("shapeUUID").getValue();
 
                                 polygon.setTag(shapeUUID);
@@ -8256,7 +8258,7 @@ public class Map extends FragmentActivity implements
                                                 .strokeWidth(3f)
                                 );
 
-                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                                 shapeUUID = (String) ds.child("shapeUUID").getValue();
 
                                 polygon.setTag(shapeUUID);
@@ -8278,7 +8280,7 @@ public class Map extends FragmentActivity implements
                                                 .strokeWidth(3f)
                                 );
 
-                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                                 shapeUUID = (String) ds.child("shapeUUID").getValue();
 
                                 polygon.setTag(shapeUUID);
@@ -8299,7 +8301,7 @@ public class Map extends FragmentActivity implements
                                                 .strokeWidth(3f)
                                 );
 
-                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                                 shapeUUID = (String) ds.child("shapeUUID").getValue();
 
                                 polygon.setTag(shapeUUID);
@@ -8356,7 +8358,7 @@ public class Map extends FragmentActivity implements
                                                 .strokeWidth(3f)
                                 );
 
-                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                                 shapeUUID = (String) ds.child("shapeUUID").getValue();
 
                                 polygon.setTag(shapeUUID);
@@ -8381,7 +8383,7 @@ public class Map extends FragmentActivity implements
                                                 .strokeWidth(3f)
                                 );
 
-                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                                 shapeUUID = (String) ds.child("shapeUUID").getValue();
 
                                 polygon.setTag(shapeUUID);
@@ -8405,7 +8407,7 @@ public class Map extends FragmentActivity implements
                                                 .strokeWidth(3f)
                                 );
 
-                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                                 shapeUUID = (String) ds.child("shapeUUID").getValue();
 
                                 polygon.setTag(shapeUUID);
@@ -8428,7 +8430,7 @@ public class Map extends FragmentActivity implements
                                                 .strokeWidth(3f)
                                 );
 
-                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                                 shapeUUID = (String) ds.child("shapeUUID").getValue();
 
                                 polygon.setTag(shapeUUID);
@@ -8450,7 +8452,7 @@ public class Map extends FragmentActivity implements
                                                 .strokeWidth(3f)
                                 );
 
-                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                                 shapeUUID = (String) ds.child("shapeUUID").getValue();
 
                                 polygon.setTag(shapeUUID);
@@ -8471,7 +8473,7 @@ public class Map extends FragmentActivity implements
                                                 .strokeWidth(3f)
                                 );
 
-                                // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                                // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                                 shapeUUID = (String) ds.child("shapeUUID").getValue();
 
                                 polygon.setTag(shapeUUID);
@@ -8523,7 +8525,7 @@ public class Map extends FragmentActivity implements
                                             .strokeWidth(3f)
                             );
 
-                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                            // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
                             shapeUUID = (String) ds.child("shapeUUID").getValue();
 
                             circle.setTag(shapeUUID);
@@ -8551,7 +8553,7 @@ public class Map extends FragmentActivity implements
                                             .strokeWidth(3f)
                             );
 
-                            // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                            // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
                             shapeUUID = (String) ds.child("shapeUUID").getValue();
 
                             circle.setTag(shapeUUID);
@@ -8774,7 +8776,7 @@ public class Map extends FragmentActivity implements
                                     .strokeWidth(3f)
                     );
 
-                    // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                    // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
                     shapeUUID = (String) snapshot.child("shapeUUID").getValue();
 
                     circle.setTag(shapeUUID);
@@ -8802,7 +8804,7 @@ public class Map extends FragmentActivity implements
                                     .strokeWidth(3f)
                     );
 
-                    // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                    // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
                     shapeUUID = (String) snapshot.child("shapeUUID").getValue();
 
                     circle.setTag(shapeUUID);
@@ -8864,7 +8866,7 @@ public class Map extends FragmentActivity implements
                                         .strokeWidth(3f)
                         );
 
-                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                        // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                         shapeUUID = (String) snapshot.child("shapeUUID").getValue();
 
                         polygon.setTag(shapeUUID);
@@ -8889,7 +8891,7 @@ public class Map extends FragmentActivity implements
                                         .strokeWidth(3f)
                         );
 
-                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                        // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                         shapeUUID = (String) snapshot.child("shapeUUID").getValue();
 
                         polygon.setTag(shapeUUID);
@@ -8913,7 +8915,7 @@ public class Map extends FragmentActivity implements
                                         .strokeWidth(3f)
                         );
 
-                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                        // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                         shapeUUID = (String) snapshot.child("shapeUUID").getValue();
 
                         polygon.setTag(shapeUUID);
@@ -8936,7 +8938,7 @@ public class Map extends FragmentActivity implements
                                         .strokeWidth(3f)
                         );
 
-                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                        // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                         shapeUUID = (String) snapshot.child("shapeUUID").getValue();
 
                         polygon.setTag(shapeUUID);
@@ -8958,7 +8960,7 @@ public class Map extends FragmentActivity implements
                                         .strokeWidth(3f)
                         );
 
-                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                        // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                         shapeUUID = (String) snapshot.child("shapeUUID").getValue();
 
                         polygon.setTag(shapeUUID);
@@ -8979,7 +8981,7 @@ public class Map extends FragmentActivity implements
                                         .strokeWidth(3f)
                         );
 
-                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                        // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                         shapeUUID = (String) snapshot.child("shapeUUID").getValue();
 
                         polygon.setTag(shapeUUID);
@@ -9036,7 +9038,7 @@ public class Map extends FragmentActivity implements
                                         .strokeWidth(3f)
                         );
 
-                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                        // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                         shapeUUID = (String) snapshot.child("shapeUUID").getValue();
 
                         polygon.setTag(shapeUUID);
@@ -9061,7 +9063,7 @@ public class Map extends FragmentActivity implements
                                         .strokeWidth(3f)
                         );
 
-                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                        // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                         shapeUUID = (String) snapshot.child("shapeUUID").getValue();
 
                         polygon.setTag(shapeUUID);
@@ -9085,7 +9087,7 @@ public class Map extends FragmentActivity implements
                                         .strokeWidth(3f)
                         );
 
-                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                        // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                         shapeUUID = (String) snapshot.child("shapeUUID").getValue();
 
                         polygon.setTag(shapeUUID);
@@ -9108,7 +9110,7 @@ public class Map extends FragmentActivity implements
                                         .strokeWidth(3f)
                         );
 
-                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                        // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                         shapeUUID = (String) snapshot.child("shapeUUID").getValue();
 
                         polygon.setTag(shapeUUID);
@@ -9130,7 +9132,7 @@ public class Map extends FragmentActivity implements
                                         .strokeWidth(3f)
                         );
 
-                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                        // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                         shapeUUID = (String) snapshot.child("shapeUUID").getValue();
 
                         polygon.setTag(shapeUUID);
@@ -9151,7 +9153,7 @@ public class Map extends FragmentActivity implements
                                         .strokeWidth(3f)
                         );
 
-                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                        // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                         shapeUUID = (String) snapshot.child("shapeUUID").getValue();
 
                         polygon.setTag(shapeUUID);
@@ -9199,7 +9201,7 @@ public class Map extends FragmentActivity implements
                                     .strokeWidth(3f)
                     );
 
-                    // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                    // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
                     shapeUUID = (String) snapshot.child("shapeUUID").getValue();
 
                     circle.setTag(shapeUUID);
@@ -9227,7 +9229,7 @@ public class Map extends FragmentActivity implements
                                     .strokeWidth(3f)
                     );
 
-                    // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                    // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
                     shapeUUID = (String) snapshot.child("shapeUUID").getValue();
 
                     circle.setTag(shapeUUID);
@@ -9289,7 +9291,7 @@ public class Map extends FragmentActivity implements
                                         .strokeWidth(3f)
                         );
 
-                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                        // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                         shapeUUID = (String) snapshot.child("shapeUUID").getValue();
 
                         polygon.setTag(shapeUUID);
@@ -9314,7 +9316,7 @@ public class Map extends FragmentActivity implements
                                         .strokeWidth(3f)
                         );
 
-                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                        // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                         shapeUUID = (String) snapshot.child("shapeUUID").getValue();
 
                         polygon.setTag(shapeUUID);
@@ -9338,7 +9340,7 @@ public class Map extends FragmentActivity implements
                                         .strokeWidth(3f)
                         );
 
-                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                        // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                         shapeUUID = (String) snapshot.child("shapeUUID").getValue();
 
                         polygon.setTag(shapeUUID);
@@ -9361,7 +9363,7 @@ public class Map extends FragmentActivity implements
                                         .strokeWidth(3f)
                         );
 
-                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                        // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                         shapeUUID = (String) snapshot.child("shapeUUID").getValue();
 
                         polygon.setTag(shapeUUID);
@@ -9383,7 +9385,7 @@ public class Map extends FragmentActivity implements
                                         .strokeWidth(3f)
                         );
 
-                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                        // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                         shapeUUID = (String) snapshot.child("shapeUUID").getValue();
 
                         polygon.setTag(shapeUUID);
@@ -9404,7 +9406,7 @@ public class Map extends FragmentActivity implements
                                         .strokeWidth(3f)
                         );
 
-                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                        // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                         shapeUUID = (String) snapshot.child("shapeUUID").getValue();
 
                         polygon.setTag(shapeUUID);
@@ -9461,7 +9463,7 @@ public class Map extends FragmentActivity implements
                                         .strokeWidth(3f)
                         );
 
-                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                        // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                         shapeUUID = (String) snapshot.child("shapeUUID").getValue();
 
                         polygon.setTag(shapeUUID);
@@ -9486,7 +9488,7 @@ public class Map extends FragmentActivity implements
                                         .strokeWidth(3f)
                         );
 
-                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                        // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                         shapeUUID = (String) snapshot.child("shapeUUID").getValue();
 
                         polygon.setTag(shapeUUID);
@@ -9510,7 +9512,7 @@ public class Map extends FragmentActivity implements
                                         .strokeWidth(3f)
                         );
 
-                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                        // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                         shapeUUID = (String) snapshot.child("shapeUUID").getValue();
 
                         polygon.setTag(shapeUUID);
@@ -9533,7 +9535,7 @@ public class Map extends FragmentActivity implements
                                         .strokeWidth(3f)
                         );
 
-                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                        // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                         shapeUUID = (String) snapshot.child("shapeUUID").getValue();
 
                         polygon.setTag(shapeUUID);
@@ -9555,7 +9557,7 @@ public class Map extends FragmentActivity implements
                                         .strokeWidth(3f)
                         );
 
-                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                        // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                         shapeUUID = (String) snapshot.child("shapeUUID").getValue();
 
                         polygon.setTag(shapeUUID);
@@ -9576,7 +9578,7 @@ public class Map extends FragmentActivity implements
                                         .strokeWidth(3f)
                         );
 
-                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                        // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                         shapeUUID = (String) snapshot.child("shapeUUID").getValue();
 
                         polygon.setTag(shapeUUID);
@@ -9624,7 +9626,7 @@ public class Map extends FragmentActivity implements
                                     .strokeWidth(3f)
                     );
 
-                    // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                    // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
                     shapeUUID = (String) snapshot.child("shapeUUID").getValue();
 
                     circle.setTag(shapeUUID);
@@ -9652,7 +9654,7 @@ public class Map extends FragmentActivity implements
                                     .strokeWidth(3f)
                     );
 
-                    // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                    // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
                     shapeUUID = (String) snapshot.child("shapeUUID").getValue();
 
                     circle.setTag(shapeUUID);
@@ -9714,7 +9716,7 @@ public class Map extends FragmentActivity implements
                                         .strokeWidth(3f)
                         );
 
-                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                        // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                         shapeUUID = (String) snapshot.child("shapeUUID").getValue();
 
                         polygon.setTag(shapeUUID);
@@ -9739,7 +9741,7 @@ public class Map extends FragmentActivity implements
                                         .strokeWidth(3f)
                         );
 
-                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                        // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                         shapeUUID = (String) snapshot.child("shapeUUID").getValue();
 
                         polygon.setTag(shapeUUID);
@@ -9763,7 +9765,7 @@ public class Map extends FragmentActivity implements
                                         .strokeWidth(3f)
                         );
 
-                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                        // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                         shapeUUID = (String) snapshot.child("shapeUUID").getValue();
 
                         polygon.setTag(shapeUUID);
@@ -9786,7 +9788,7 @@ public class Map extends FragmentActivity implements
                                         .strokeWidth(3f)
                         );
 
-                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                        // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                         shapeUUID = (String) snapshot.child("shapeUUID").getValue();
 
                         polygon.setTag(shapeUUID);
@@ -9808,7 +9810,7 @@ public class Map extends FragmentActivity implements
                                         .strokeWidth(3f)
                         );
 
-                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                        // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                         shapeUUID = (String) snapshot.child("shapeUUID").getValue();
 
                         polygon.setTag(shapeUUID);
@@ -9829,7 +9831,7 @@ public class Map extends FragmentActivity implements
                                         .strokeWidth(3f)
                         );
 
-                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                        // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                         shapeUUID = (String) snapshot.child("shapeUUID").getValue();
 
                         polygon.setTag(shapeUUID);
@@ -9886,7 +9888,7 @@ public class Map extends FragmentActivity implements
                                         .strokeWidth(3f)
                         );
 
-                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                        // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                         shapeUUID = (String) snapshot.child("shapeUUID").getValue();
 
                         polygon.setTag(shapeUUID);
@@ -9911,7 +9913,7 @@ public class Map extends FragmentActivity implements
                                         .strokeWidth(3f)
                         );
 
-                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                        // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                         shapeUUID = (String) snapshot.child("shapeUUID").getValue();
 
                         polygon.setTag(shapeUUID);
@@ -9935,7 +9937,7 @@ public class Map extends FragmentActivity implements
                                         .strokeWidth(3f)
                         );
 
-                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                        // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                         shapeUUID = (String) snapshot.child("shapeUUID").getValue();
 
                         polygon.setTag(shapeUUID);
@@ -9958,7 +9960,7 @@ public class Map extends FragmentActivity implements
                                         .strokeWidth(3f)
                         );
 
-                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                        // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                         shapeUUID = (String) snapshot.child("shapeUUID").getValue();
 
                         polygon.setTag(shapeUUID);
@@ -9980,7 +9982,7 @@ public class Map extends FragmentActivity implements
                                         .strokeWidth(3f)
                         );
 
-                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                        // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                         shapeUUID = (String) snapshot.child("shapeUUID").getValue();
 
                         polygon.setTag(shapeUUID);
@@ -10001,7 +10003,7 @@ public class Map extends FragmentActivity implements
                                         .strokeWidth(3f)
                         );
 
-                        // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
+                        // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the shape.
                         shapeUUID = (String) snapshot.child("shapeUUID").getValue();
 
                         polygon.setTag(shapeUUID);
@@ -10049,7 +10051,7 @@ public class Map extends FragmentActivity implements
                                     .strokeWidth(3f)
                     );
 
-                    // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                    // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
                     shapeUUID = (String) snapshot.child("shapeUUID").getValue();
 
                     circle.setTag(shapeUUID);
@@ -10077,7 +10079,7 @@ public class Map extends FragmentActivity implements
                                     .strokeWidth(3f)
                     );
 
-                    // Set the Tag using the uuid in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
+                    // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady() to identify the chatCircle.
                     shapeUUID = (String) snapshot.child("shapeUUID").getValue();
 
                     circle.setTag(shapeUUID);

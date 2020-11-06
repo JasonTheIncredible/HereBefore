@@ -18,7 +18,7 @@ public class PhotoView extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.photoview);
 
-        String url = getIntent().getStringExtra("imgURL");
+        String url = getIntent().getStringExtra("imgUrl");
 
         // Sets each picture's size relative to the screen (used in onBindViewHolder().
         int measuredWidth;

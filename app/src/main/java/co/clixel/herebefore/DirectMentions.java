@@ -245,8 +245,8 @@ public class DirectMentions extends Fragment {
                         Log.e(TAG, "fillRecyclerView() -> serverDate == null");
                     }
                     mUser.add(i, (String) ds.child("userUUID").getValue());
-                    mImage.add(i, (String) ds.child("imageURL").getValue());
-                    mVideo.add(i, (String) ds.child("videoURL").getValue());
+                    mImage.add(i, (String) ds.child("imageUrl").getValue());
+                    mVideo.add(i, (String) ds.child("videoUrl").getValue());
                     mText.add(i, (String) ds.child("message").getValue());
                     mShapeUUID.add(i, (String) ds.child("shapeUUID").getValue());
                     mUserIsWithinShape.add(i, (Boolean) ds.child("userIsWithinShape").getValue());
@@ -352,8 +352,8 @@ public class DirectMentions extends Fragment {
                     Log.e(TAG, "fillRecyclerView() -> serverDate == null");
                 }
                 mUser.add((String) snapshot.child("userUUID").getValue());
-                mImage.add((String) snapshot.child("imageURL").getValue());
-                mVideo.add((String) snapshot.child("videoURL").getValue());
+                mImage.add((String) snapshot.child("imageUrl").getValue());
+                mVideo.add((String) snapshot.child("videoUrl").getValue());
                 mText.add((String) snapshot.child("message").getValue());
                 mShapeUUID.add((String) snapshot.child("shapeUUID").getValue());
                 mUserIsWithinShape.add((Boolean) snapshot.child("userIsWithinShape").getValue());
@@ -933,7 +933,7 @@ public class DirectMentions extends Fragment {
                         cancelToasts();
 
                         Intent Activity = new Intent(mContext, PhotoView.class);
-                        Activity.putExtra("imgURL", mImage.get(getAdapterPosition()));
+                        Activity.putExtra("imgUrl", mImage.get(getAdapterPosition()));
 
                         mContext.startActivity(Activity);
                     });
@@ -946,7 +946,7 @@ public class DirectMentions extends Fragment {
                         cancelToasts();
 
                         Intent Activity = new Intent(mContext, PhotoView.class);
-                        Activity.putExtra("imgURL", mImage.get(getAdapterPosition()));
+                        Activity.putExtra("imgUrl", mImage.get(getAdapterPosition()));
 
                         mContext.startActivity(Activity);
                     });
@@ -959,7 +959,7 @@ public class DirectMentions extends Fragment {
                         cancelToasts();
 
                         Intent Activity = new Intent(mContext, VideoView.class);
-                        Activity.putExtra("videoURL", mVideo.get(getAdapterPosition()));
+                        Activity.putExtra("videoUrl", mVideo.get(getAdapterPosition()));
 
                         mContext.startActivity(Activity);
                     });
@@ -972,7 +972,7 @@ public class DirectMentions extends Fragment {
                         cancelToasts();
 
                         Intent Activity = new Intent(mContext, VideoView.class);
-                        Activity.putExtra("videoURL", mVideo.get(getAdapterPosition()));
+                        Activity.putExtra("videoUrl", mVideo.get(getAdapterPosition()));
 
                         mContext.startActivity(Activity);
                     });

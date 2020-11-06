@@ -27,7 +27,7 @@ public class VideoView extends AppCompatActivity {
 
         playerView = findViewById(R.id.playerView);
 
-        url = getIntent().getStringExtra("videoURL");
+        url = getIntent().getStringExtra("videoUrl");
     }
 
     @Override
