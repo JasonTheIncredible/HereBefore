@@ -123,7 +123,7 @@ public class Chat extends Fragment implements
     private static int index = -1, top = -1, last;
     private ChildEventListener childEventListener;
     private FloatingActionButton sendButton, mediaButton;
-    private boolean firstLoad, loadingOlderMessages, stoppedRunnable = false, noMoreMessages = false, needLoadingIcon = false, reachedEndOfRecyclerView = false, recyclerViewHasScrolled = false, messageSent = false, sendButtonClicked = false, mediaButtonMenuIsOpen, fileIsImage, checkPermissionsPicture,
+    private boolean firstLoad, loadingOlderMessages, stoppedRunnable = false, noMoreMessages = false, needLoadingIcon = false, reachedEndOfRecyclerView = false, recyclerViewHasScrolled = false, messageSent = false, sendButtonClicked = false, fileIsImage, checkPermissionsPicture,
             newShape, threeMarkers, fourMarkers, fiveMarkers, sixMarkers, sevenMarkers, eightMarkers;
     private Boolean userIsWithinShape;
     private View.OnLayoutChangeListener onLayoutChangeListener;
@@ -412,20 +412,10 @@ public class Chat extends Fragment implements
 
             Log.i(TAG, "onStart() -> mediaButton -> onClick");
 
-            mediaButtonMenu = new PopupMenu(mContext, mediaButton);
+            mediaButtonMenu = new PopupMenu(mActivity, mediaButton);
             mediaButtonMenu.setOnMenuItemClickListener(Chat.this);
             mediaButtonMenu.inflate(R.menu.mediabutton_menu);
             mediaButtonMenu.show();
-            mediaButtonMenuIsOpen = true;
-
-            // Changes boolean value (used in OnConfigurationChanged) to determine whether menu is currently open.
-            mediaButtonMenu.setOnDismissListener(popupMenu -> {
-
-                Log.i(TAG, "onStart() -> mediaButton -> onDismiss");
-
-                mediaButtonMenuIsOpen = false;
-                mediaButtonMenu.setOnDismissListener(null);
-            });
         });
 
         // onClickListener for sending recyclerviewlayout to Firebase.
@@ -991,6 +981,8 @@ public class Chat extends Fragment implements
 
         if (mediaButtonMenu != null) {
 
+            // dismiss and null (seemingly) needs to be called to prevent a leak (possibly due to it being a fragment?).
+            mediaButtonMenu.dismiss();
             mediaButtonMenu.setOnMenuItemClickListener(null);
             mediaButtonMenu = null;
         }
@@ -1731,7 +1723,6 @@ public class Chat extends Fragment implements
                 startActivityTakePhoto();
             }
 
-            mediaButtonMenuIsOpen = false;
         } else if (id == R.id.recordVideo) {
 
             Log.i(TAG, "onMenuItemClick() -> recordVideo");
@@ -1742,8 +1733,6 @@ public class Chat extends Fragment implements
 
                 startActivityRecordVideo();
             }
-
-            mediaButtonMenuIsOpen = false;
         }
 
         return false;
@@ -2912,25 +2901,6 @@ public class Chat extends Fragment implements
             if (file.delete()) {
             } else {
             }
-        }
-    }
-
-    @Override
-    public void onConfigurationChanged(@NonNull Configuration newConfig) {
-
-        // Called when the orientation of the screen changes.
-        super.onConfigurationChanged(newConfig);
-        Log.i(TAG, "onConfigurationChanged()");
-
-        // Reloads the popup when the orientation changes to prevent viewing issues.
-        if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE && mediaButtonMenuIsOpen) {
-
-            mediaButtonMenu.dismiss();
-            mediaButton.performClick();
-        } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT && mediaButtonMenuIsOpen) {
-
-            mediaButtonMenu.dismiss();
-            mediaButton.performClick();
         }
     }
 

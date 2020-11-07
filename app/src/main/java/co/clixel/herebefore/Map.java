@@ -125,7 +125,6 @@ public class Map extends FragmentActivity implements
     // Make sure functions scale.
     // Scale picture and video storage, then adjust Firebase functions accordingly.
     // Update Chat, DirectMention, and Map if a message is deleted - deleting a message causes the last message to appear again.
-    // Chat leaking - record video then return.
     // Make loading icon work while loading shapes on map.
     // Make a better loading icon, with a progress bar.
     // Get rid of "larger" shapes and only allow points? (Or make allowable shapes smaller?). Track where user is while taking the original video or picture and make the shape that big?
@@ -2498,19 +2497,9 @@ public class Map extends FragmentActivity implements
             settingsButton.setOnClickListener(null);
         }
 
-        if (popupMapType != null) {
-
-            popupMapType.setOnDismissListener(null);
-        }
-
         if (chatViewsButton != null) {
 
             chatViewsButton.setOnClickListener(null);
-        }
-
-        if (popupChatViews != null) {
-
-            popupChatViews.setOnDismissListener(null);
         }
 
         if (dmButton != null) {
@@ -2576,11 +2565,6 @@ public class Map extends FragmentActivity implements
         if (createChatButton != null) {
 
             createChatButton.setOnClickListener(null);
-        }
-
-        if (popupCreateChat != null) {
-
-            popupCreateChat.setOnDismissListener(null);
         }
 
         if (chatSizeSeekBar != null) {
