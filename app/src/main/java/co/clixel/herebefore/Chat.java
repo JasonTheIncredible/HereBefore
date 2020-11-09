@@ -2419,7 +2419,7 @@ public class Chat extends Fragment implements
         if (!fileIsImage) {
 
             // Video.
-            final StorageReference storageReferenceVideo = FirebaseStorage.getInstance().getReference("Videos").child(String.valueOf(System.currentTimeMillis()));
+            final StorageReference storageReferenceVideo = FirebaseStorage.getInstance().getReference("Videos").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(String.valueOf(System.currentTimeMillis()));
             uploadTask = storageReferenceVideo.putFile(videoURI);
 
             storageReferenceVideo.putFile(videoURI).addOnSuccessListener(taskSnapshot -> storageReferenceVideo.getDownloadUrl().addOnSuccessListener(uri -> {
@@ -2645,7 +2645,7 @@ public class Chat extends Fragment implements
         } else {
 
             // byteArray and image.
-            final StorageReference storageReferenceImage = FirebaseStorage.getInstance().getReference("Images").child(String.valueOf(System.currentTimeMillis()));
+            final StorageReference storageReferenceImage = FirebaseStorage.getInstance().getReference("Images").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(String.valueOf(System.currentTimeMillis()));
             uploadTask = storageReferenceImage.putBytes(byteArray);
 
             storageReferenceImage.putBytes(byteArray).addOnSuccessListener(taskSnapshot -> storageReferenceImage.getDownloadUrl().addOnSuccessListener(uri -> {

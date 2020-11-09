@@ -122,8 +122,6 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private final List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // Make sure functions scale.
-    // Scale picture and video storage, then adjust Firebase functions accordingly.
     // Update Chat, DirectMention, and Map if a message is deleted - deleting a message causes the last message to appear again.
     // Make loading icon work while loading shapes on map.
     // Make a better loading icon, with a progress bar.
@@ -166,7 +164,7 @@ public class Map extends FragmentActivity implements
     // Make sure Firebase has enough bandwidth.
     // Make sure aboutLibraries includes all libraries, and make sure all licenses are fair use (NOT GPL).
     // Make sure the secret stuff is secret.
-    // Switch existing values in Firebase.
+    // Switch existing values in Firebase (including storage).
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
