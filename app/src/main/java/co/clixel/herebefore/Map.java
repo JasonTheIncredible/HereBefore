@@ -122,7 +122,7 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private final List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // Update Chat, DirectMention, and Map if a message is deleted - deleting a message causes the last message to appear again.
+    // Update Chat, DirectMentions, and Map if database item was deleted - possibly switch from query to valueEventListener?
     // Make loading icon work while loading shapes on map.
     // Make a better loading icon, with a progress bar.
     // Get rid of "larger" shapes and only allow points? (Or make allowable shapes smaller?). Track where user is while taking the original video or picture and make the shape that big?
@@ -308,7 +308,7 @@ public class Map extends FragmentActivity implements
             // Firebase does not allow ".", so replace them with ",".
             userEmailFirebase = email.replace(".", ",");
 
-            DatabaseReference Dms = FirebaseDatabase.getInstance().getReference().child("Users").child(userEmailFirebase).child("ReceivedDMs");
+            DatabaseReference Dms = FirebaseDatabase.getInstance().getReference().child("Users").child(userEmailFirebase).child("ReceivedDms");
             Dms.addListenerForSingleValueEvent(new ValueEventListener() {
 
                 @Override

@@ -1681,11 +1681,16 @@ public class Chat extends Fragment implements
                             }
                         }
                     }
+
+                    // Edge case: user tries to delete a post that has already been manually deleted.
+                    loadingIcon.setVisibility(View.GONE);
+                    toastMessageShort("Post already deleted. Thank you!");
                 }
 
                 @Override
                 public void onCancelled(@NonNull DatabaseError databaseError) {
 
+                    loadingIcon.setVisibility(View.GONE);
                     toastMessageLong(databaseError.getMessage());
                 }
             });
