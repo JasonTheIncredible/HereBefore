@@ -122,12 +122,6 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private final List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // Save position while paginating, then test to make sure it doesn't scroll to the bottom while adding message.
-    // Prevent flashing when updating recyclerView, and taking too long to update recyclerView.
-    // Update functions for onChildChanged.
-    // Update Chat, DirectMentions, and Map if database item was deleted - possibly switch from query to childEventListener?
-    // sendButton stops working after trying to send an empty string.
-    // Add a check if emailsAL is "removed" in Chat.
     // Make loading icon work while loading shapes on map.
     // Make a better loading icon, with a progress bar.
     // Get rid of "larger" shapes and only allow points? (Or make allowable shapes smaller?). Track where user is while taking the original video or picture and make the shape that big?

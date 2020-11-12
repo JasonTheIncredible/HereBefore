@@ -122,7 +122,7 @@ public class Chat extends Fragment implements
     private static int index = -1, top = -1, last;
     private ChildEventListener childEventListener;
     private FloatingActionButton sendButton, mediaButton;
-    private boolean firstLoad, firstChildWhilePaginating, stoppedRunnable = false, noMoreMessages = false, needLoadingIcon = false, reachedEndOfRecyclerView = false, recyclerViewHasScrolled = false, messageSent = false, sendButtonClicked = false, fileIsImage, checkPermissionsPicture,
+    private boolean firstLoad, loadingOlderMessages, stoppedRunnable = false, noMoreMessages = false, needLoadingIcon = false, reachedEndOfRecyclerView = false, recyclerViewHasScrolled = false, messageSent = false, sendButtonClicked = false, fileIsImage, checkPermissionsPicture,
             newShape, threeMarkers, fourMarkers, fiveMarkers, sixMarkers, sevenMarkers, eightMarkers;
     private Boolean userIsWithinShape;
     private View.OnLayoutChangeListener onLayoutChangeListener;
@@ -146,7 +146,7 @@ public class Chat extends Fragment implements
     private AdView bannerAd;
     private Query query;
     private Drawable imageDrawable, videoDrawable;
-    private int latFirebaseValue, lonFirebaseValue, directMentionsPosition, insertPosition, firstItemPosition;
+    private int latFirebaseValue, lonFirebaseValue, directMentionsPosition;
     private final WordTokenizerConfig tokenizerConfig = new WordTokenizerConfig
             .Builder()
             .setWordBreakChars(", ")
@@ -255,8 +255,10 @@ public class Chat extends Fragment implements
         mSuggestions = new ArrayList<>();
         allMentions = new ArrayList<>();
         mUserIsWithinShape = new ArrayList<>();
-        mPosition = new ArrayList<>();
-
+        // No need to create the arrayList if user did not click from DM.
+        if (directMentionsPosition != 0) {
+            mPosition = new ArrayList<>();
+        }
         // Prevents clearing this list if user adds a DM and takes a picture.
         if (removedDuplicatesMentions == null) {
             removedDuplicatesMentions = new ArrayList<>();
@@ -296,6 +298,7 @@ public class Chat extends Fragment implements
 
         // Set to true to scroll to the bottom of chatRecyclerView. Also prevents duplicate items in addQuery.
         firstLoad = true;
+        loadingOlderMessages = false;
 
         // Clear text and prevent keyboard from opening.
         if (mInput != null) {
@@ -346,7 +349,6 @@ public class Chat extends Fragment implements
 
                         // Used to detect if user has just entered the recyclerviewlayout (so layout needs to move up when keyboard appears).
                         recyclerViewHasScrolled = true;
-                        reachedEndOfRecyclerView = false;
                     }
 
                     if (newState == RecyclerView.SCROLL_STATE_IDLE) {
@@ -357,7 +359,7 @@ public class Chat extends Fragment implements
                         if (firstCompletelyVisibleItemPosition == 0 && !noMoreMessages) {
 
                             loadingIcon.setVisibility(View.VISIBLE);
-                            firstChildWhilePaginating = true;
+                            loadingOlderMessages = true;
                             getFirebaseMessages(datesAL.get(0));
                         }
 
@@ -443,12 +445,12 @@ public class Chat extends Fragment implements
                 return;
             }
 
-            sendButtonClicked = true;
-
             String input = mInput.getText().toString().trim();
 
             // Send recyclerviewlayout to Firebase.
             if (!input.equals("") || imageView.getVisibility() != View.GONE || videoImageView.getVisibility() != View.GONE) {
+
+                sendButtonClicked = true;
 
                 if (imageView.getVisibility() != View.GONE || videoImageView.getVisibility() != View.GONE) {
 
@@ -604,11 +606,7 @@ public class Chat extends Fragment implements
                                     dmInformation.setLat(latFirebaseValue);
                                     dmInformation.setLon(lonFirebaseValue);
                                     dmInformation.setMessage(input);
-                                    if (chatRecyclerView.getAdapter().getItemCount() == 0) {
-                                        dmInformation.setPosition(0);
-                                    } else {
-                                        dmInformation.setPosition(mPosition.get(chatRecyclerView.getAdapter().getItemCount() - 1) + 1);
-                                    }
+                                    dmInformation.setPosition(mUser.size());
                                     dmInformation.setSeenByUser(false);
                                     if (radius != 0) {
                                         dmInformation.setSize(radius);
@@ -647,11 +645,7 @@ public class Chat extends Fragment implements
                     }
                     messageInformation.setEmail(email);
                     messageInformation.setMessage(input);
-                    if (chatRecyclerView.getAdapter().getItemCount() == 0) {
-                        messageInformation.setPosition(0);
-                    } else {
-                        messageInformation.setPosition(mPosition.get(chatRecyclerView.getAdapter().getItemCount() - 1) + 1);
-                    }
+                    messageInformation.setPosition(mUser.size());
                     messageInformation.setUserIsWithinShape(userIsWithinShape);
                     messageInformation.setUserUUID(userUUID);
                     DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID).push();
@@ -695,19 +689,19 @@ public class Chat extends Fragment implements
 
         Log.i(TAG, "getFirebaseMessages()");
 
+        final Query[] query0 = new Query[1];
         final int[] latestPosition = {0};
-        insertPosition = 0;
 
         if (nodeID == null) {
 
             if (directMentionsPosition != 0) {
 
                 // Get the latest item and check the position. This will let us know how far back to paginate.
-                query = FirebaseDatabase.getInstance().getReference()
+                query0[0] = FirebaseDatabase.getInstance().getReference()
                         .child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID)
                         .limitToLast(1);
 
-                query.addListenerForSingleValueEvent(new ValueEventListener() {
+                query0[0].addListenerForSingleValueEvent(new ValueEventListener() {
 
                     @Override
                     public void onDataChange(@NonNull DataSnapshot snapshot) {
@@ -717,11 +711,11 @@ public class Chat extends Fragment implements
                             latestPosition[0] = ((Long) ds.child("position").getValue()).intValue();
                             int loadMessagesFromDm = (latestPosition[0] - directMentionsPosition) + 20;
 
-                            query = FirebaseDatabase.getInstance().getReference()
+                            query0[0] = FirebaseDatabase.getInstance().getReference()
                                     .child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID)
                                     .limitToLast(loadMessagesFromDm);
 
-                            fillRecyclerView();
+                            fillRecyclerView(query0[0], loadMessagesFromDm);
                         }
                     }
 
@@ -733,116 +727,149 @@ public class Chat extends Fragment implements
                 });
             } else {
 
-                query = FirebaseDatabase.getInstance().getReference()
+                query0[0] = FirebaseDatabase.getInstance().getReference()
                         .child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID)
                         .limitToLast(20);
 
-                fillRecyclerView();
+                fillRecyclerView(query0[0], 0);
             }
         } else {
 
-            query = FirebaseDatabase.getInstance().getReference()
+            query0[0] = FirebaseDatabase.getInstance().getReference()
                     .child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID)
                     .orderByChild("date")
                     .endAt(nodeID)
                     .limitToLast(20);
 
-            fillRecyclerView();
+            fillRecyclerView(query0[0], 0);
         }
     }
 
-    private void fillRecyclerView() {
+    private void fillRecyclerView(Query query0, int loadMessagesFromDm) {
 
-        initChatAdapter();
+        Log.i(TAG, "fillRecyclerView()");
 
+        query0.addListenerForSingleValueEvent(new ValueEventListener() {
+
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+
+                if (directMentionsPosition == 0 && snapshot.getChildrenCount() < 20 || directMentionsPosition != 0 && snapshot.getChildrenCount() < (loadMessagesFromDm)) {
+
+                    noMoreMessages = true;
+                }
+
+                int i = 0;
+                for (DataSnapshot ds : snapshot.getChildren()) {
+
+                    datesAL.add(i, (Long) ds.child("date").getValue());
+                    emailsAL.add(i, (String) ds.child("email").getValue());
+
+                    Long serverDate = (Long) ds.child("date").getValue();
+                    String user = (String) ds.child("userUUID").getValue();
+                    // Used when a user mentions another user with "@".
+                    mSuggestions.add(i, user);
+                    String imageUrl = (String) ds.child("imageUrl").getValue();
+                    String videoUrl = (String) ds.child("videoUrl").getValue();
+                    String messageText = (String) ds.child("message").getValue();
+                    Boolean userIsWithinShape = (Boolean) ds.child("userIsWithinShape").getValue();
+                    Integer position = ((Long) ds.child("position").getValue()).intValue();
+                    DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
+                    // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+                    // This will cause onDataChange to fire twice; optimizations could be made in the future.
+                    if (serverDate != null) {
+
+                        Date netDate = (new Date(serverDate));
+                        String messageTime = dateFormat.format(netDate);
+                        mTime.add(i, messageTime);
+                    } else {
+
+                        Log.e(TAG, "onStart() -> serverDate == null");
+                    }
+                    mUser.add(i, user);
+                    mImage.add(i, imageUrl);
+                    mVideo.add(i, videoUrl);
+                    mText.add(i, messageText);
+                    mUserIsWithinShape.add(i, userIsWithinShape);
+                    // No need to fill the arrayList if user did not click from DM.
+                    if (directMentionsPosition != 0) {
+                        mPosition.add(i, position);
+                    }
+                    i++;
+
+                    // Prevent duplicates.
+                    if (i == snapshot.getChildrenCount() - 1 && !firstLoad) {
+
+                        break;
+                    }
+                }
+
+                // Read RecyclerView scroll position (for use in initChatAdapter).
+                if (chatRecyclerViewLinearLayoutManager != null && chatRecyclerView != null) {
+
+                    index = chatRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
+                    last = chatRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
+                    View v = chatRecyclerView.getChildAt(0);
+                    top = (v == null) ? 0 : (v.getTop() - chatRecyclerView.getPaddingTop());
+                }
+
+                // Prevents crash when user toggles between light / dark mode.
+                if (chatRecyclerView != null) {
+
+                    if (chatRecyclerView.getAdapter() != null && loadingOlderMessages) {
+
+                        chatRecyclerView.getAdapter().notifyItemRangeInserted(0, (int) snapshot.getChildrenCount() - 1);
+                        loadingIcon.setVisibility(View.GONE);
+                    }
+                }
+
+                if (!loadingOlderMessages) {
+
+                    addQuery();
+                }
+
+                loadingOlderMessages = false;
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+
+                toastMessageLong(error.getMessage());
+            }
+        });
+    }
+
+    // Change to .limitToLast(1) to cut down on data usage. Otherwise, EVERY child at this node will be downloaded every time the child is updated.
+    private void addQuery() {
+
+        // This prevents duplicates when loading into Settings fragment then switched back into Chat (as onStop is never called but onStart is called).
+        if (query != null) {
+
+            query.removeEventListener(childEventListener);
+        }
+
+        // If this is the first time calling this eventListener and it's a new shape, initialize the adapter (but don't return, as the childEventListener should still be added), as onChildAdded won't be called the first time.
+        if (firstLoad && newShape) {
+
+            initChatAdapter();
+        }
+
+        query = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID).limitToLast(1);
         childEventListener = new ChildEventListener() {
 
             @Override
             public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
 
-                Log.i(TAG, "fillRecyclerView() -> onChildAdded");
+                Log.i(TAG, "addQuery()");
 
-                if (firstLoad && newShape) {
+                // If this is the first time calling this eventListener, prevent double posts (as onStart() already added the last item).
+                if (firstLoad) {
 
+                    initChatAdapter();
                     return;
                 }
 
-                int position = ((Long) snapshot.child("position").getValue()).intValue();
-
-                if (firstChildWhilePaginating) {
-
-                    firstItemPosition = position;
-                    firstChildWhilePaginating = false;
-                }
-
-                // Used when paginating.
-                if (!mPosition.isEmpty()) {
-
-                    // Prevents duplicates while paginating.
-                    if (mUser.contains(snapshot.child("userUUID").getValue())) {
-
-                        return;
-                    }
-
-                    if (position < mPosition.get(0) || position == firstItemPosition + insertPosition) {
-
-                        Long serverDate = (Long) snapshot.child("date").getValue();
-
-                        datesAL.add(insertPosition, serverDate);
-                        emailsAL.add((String) snapshot.child("email").getValue());
-
-                        String user = (String) snapshot.child("userUUID").getValue();
-                        // Used when a user mentions another user with "@".
-                        mSuggestions.add(insertPosition, user);
-                        String imageUrl = (String) snapshot.child("imageUrl").getValue();
-                        String videoUrl = (String) snapshot.child("videoUrl").getValue();
-                        String messageText = (String) snapshot.child("message").getValue();
-                        Boolean userIsWithinShape = (Boolean) snapshot.child("userIsWithinShape").getValue();
-                        DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
-                        // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                        // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                        if (serverDate != null) {
-
-                            Date netDate = (new Date(serverDate));
-                            String messageTime = dateFormat.format(netDate);
-                            mTime.add(insertPosition, messageTime);
-                        } else {
-
-                            Log.e(TAG, "onStart() -> serverDate == null");
-                        }
-                        mUser.add(insertPosition, user);
-                        mImage.add(insertPosition, imageUrl);
-                        mVideo.add(insertPosition, videoUrl);
-                        mText.add(insertPosition, messageText);
-                        mUserIsWithinShape.add(insertPosition, userIsWithinShape);
-                        mPosition.add(insertPosition, position);
-
-                        if (chatRecyclerView != null) {
-
-                            if (chatRecyclerView.getAdapter() != null) {
-
-                                chatRecyclerView.getAdapter().notifyItemInserted(insertPosition);
-                            }
-                        }
-
-                        insertPosition++;
-
-                        if (mPosition.get(0) == 0) {
-
-                            noMoreMessages = true;
-                        }
-
-                        return;
-                    }
-                }
-
-                int index = chatRecyclerView.getAdapter().getItemCount();
-
                 Long serverDate = (Long) snapshot.child("date").getValue();
-
-                datesAL.add(serverDate);
-                emailsAL.add((String) snapshot.child("email").getValue());
-
                 String user = (String) snapshot.child("userUUID").getValue();
                 // Used when a user mentions another user with "@".
                 mSuggestions.add(user);
@@ -867,42 +894,23 @@ public class Chat extends Fragment implements
                 mVideo.add(videoUrl);
                 mText.add(messageText);
                 mUserIsWithinShape.add(userIsWithinShape);
-                mPosition.add(position);
 
-                if (!recyclerViewHasScrolled) {
+                // Read RecyclerView scroll position (for use in initChatAdapter).
+                if (chatRecyclerViewLinearLayoutManager != null) {
 
-                    chatRecyclerView.scrollToPosition(index);
+                    index = chatRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
+                    last = chatRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
+                    View v = chatRecyclerView.getChildAt(0);
+                    top = (v == null) ? 0 : (v.getTop() - chatRecyclerView.getPaddingTop());
                 }
 
-                chatRecyclerView.getAdapter().notifyItemInserted(position);
+                emailsAL.add((String) snapshot.child("email").getValue());
 
-                if (mPosition.get(0) == 0) {
-
-                    noMoreMessages = true;
-                }
+                initChatAdapter();
             }
 
             @Override
             public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-
-                Log.i(TAG, "fillRecyclerView() -> onChildChanged");
-
-                int index = mUser.indexOf(snapshot.child("userUUID").getValue());
-
-                emailsAL.set(index, (String) snapshot.child("email").getValue());
-                mSuggestions.set(index, (String) snapshot.child("userUUID").getValue());
-                mUser.set(index, (String) snapshot.child("userUUID").getValue());
-                mImage.set(index, (String) snapshot.child("imageUrl").getValue());
-                mVideo.set(index, (String) snapshot.child("videoUrl").getValue());
-                mText.set(index, (String) snapshot.child("message").getValue());
-
-                if (chatRecyclerView != null) {
-
-                    if (chatRecyclerView.getAdapter() != null) {
-
-                        chatRecyclerView.getAdapter().notifyItemChanged(index);
-                    }
-                }
             }
 
             @Override
@@ -1082,15 +1090,6 @@ public class Chat extends Fragment implements
         chatRecyclerView.setHasFixedSize(true);
         chatRecyclerView.setLayoutManager(chatRecyclerViewLinearLayoutManager);
 
-        // Read RecyclerView scroll position (for use in initChatAdapter).
-        if (chatRecyclerViewLinearLayoutManager != null && chatRecyclerView != null) {
-
-            index = chatRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
-            last = chatRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
-            View v = chatRecyclerView.getChildAt(0);
-            top = (v == null) ? 0 : (v.getTop() - chatRecyclerView.getPaddingTop());
-        }
-
         if (directMentionsPosition != 0) {
 
             // Show a couple messages above the position, as this seems to be better visually.
@@ -1246,7 +1245,7 @@ public class Chat extends Fragment implements
         }
 
         @Override
-        public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+        public void onBindViewHolder(@NonNull ViewHolder holder, final int position) {
 
             // Set the left side if the user sent the message from inside the shape.
             if (mUserIsWithinShape.get(position)) {
@@ -2575,11 +2574,7 @@ public class Chat extends Fragment implements
                                 if (mInput.getText().toString().trim().length() != 0) {
                                     dmInformation.setMessage(mInput.getText().toString().trim());
                                 }
-                                if (chatRecyclerView.getAdapter().getItemCount() == 0) {
-                                    dmInformation.setPosition(0);
-                                } else {
-                                    dmInformation.setPosition(mPosition.get(chatRecyclerView.getAdapter().getItemCount() - 1) + 1);
-                                }
+                                dmInformation.setPosition(mUser.size());
                                 dmInformation.setSeenByUser(false);
                                 if (radius != 0) {
                                     dmInformation.setSize(radius);
@@ -2622,11 +2617,7 @@ public class Chat extends Fragment implements
 
                     messageInformation.setMessage(mInput.getText().toString());
                 }
-                if (chatRecyclerView.getAdapter().getItemCount() == 0) {
-                    messageInformation.setPosition(0);
-                } else {
-                    messageInformation.setPosition(mPosition.get(chatRecyclerView.getAdapter().getItemCount() - 1) + 1);
-                }
+                messageInformation.setPosition(mUser.size());
                 messageInformation.setUserIsWithinShape(userIsWithinShape);
                 messageInformation.setUserUUID(userUUID);
                 messageInformation.setVideoUrl(uri.toString());
@@ -2810,11 +2801,7 @@ public class Chat extends Fragment implements
                                 if (mInput.getText().toString().trim().length() != 0) {
                                     dmInformation.setMessage(mInput.getText().toString().trim());
                                 }
-                                if (chatRecyclerView.getAdapter().getItemCount() == 0) {
-                                    dmInformation.setPosition(0);
-                                } else {
-                                    dmInformation.setPosition(mPosition.get(chatRecyclerView.getAdapter().getItemCount() - 1) + 1);
-                                }
+                                dmInformation.setPosition(mUser.size());
                                 dmInformation.setSeenByUser(false);
                                 if (radius != 0) {
                                     dmInformation.setSize(radius);
@@ -2857,11 +2844,7 @@ public class Chat extends Fragment implements
 
                     messageInformation.setMessage(mInput.getText().toString());
                 }
-                if (chatRecyclerView.getAdapter().getItemCount() == 0) {
-                    messageInformation.setPosition(0);
-                } else {
-                    messageInformation.setPosition(mPosition.get(chatRecyclerView.getAdapter().getItemCount() - 1) + 1);
-                }
+                messageInformation.setPosition(mUser.size());
                 messageInformation.setUserIsWithinShape(userIsWithinShape);
                 messageInformation.setUserUUID(userUUID);
                 DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID).push();
