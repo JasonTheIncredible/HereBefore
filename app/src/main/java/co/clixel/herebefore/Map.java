@@ -122,8 +122,9 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private final List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // Make loading icon work while loading shapes on map.
+    // Leak in Navigation when switching between light / dark mode.
     // Make a better loading icon, with a progress bar.
+    // Add a function for changing children.
     // Get rid of "larger" shapes and only allow points? (Or make allowable shapes smaller?). Track where user is while taking the original video or picture and make the shape that big?
     // Allow user to click on a mention in Chat and scroll to that mention for context.
     // If user is on a point, prevent creating a new one. Deal with overlapping shapes in general.
@@ -2779,10 +2780,6 @@ public class Map extends FragmentActivity implements
                 checkLocationPermissions();
             }
         }
-    }
-
-    @Override
-    public void onStatusChanged(String provider, int status, Bundle extras) {
     }
 
     @Override
@@ -6537,6 +6534,8 @@ public class Map extends FragmentActivity implements
 
             Log.i(TAG, "loadShapes()");
 
+            loadingIcon.setVisibility(View.VISIBLE);
+
             // Don't load more than 7 areas at a time.
             if (loadedCoordinates.size() == 7) {
 
@@ -8723,8 +8722,6 @@ public class Map extends FragmentActivity implements
 
     private void addShapesQueryLarge(DataSnapshot snapshot) {
 
-        loadingIcon.setVisibility(View.VISIBLE);
-
         if (snapshot.child("circleOptions").exists()) {
 
             // Shape is a circle.
@@ -9147,8 +9144,6 @@ public class Map extends FragmentActivity implements
     }
 
     private void addShapesQueryMedium(DataSnapshot snapshot) {
-
-        loadingIcon.setVisibility(View.VISIBLE);
 
         if (snapshot.child("circleOptions").exists()) {
 
@@ -9573,8 +9568,6 @@ public class Map extends FragmentActivity implements
 
     private void addShapesQuerySmall(DataSnapshot snapshot) {
 
-        loadingIcon.setVisibility(View.VISIBLE);
-
         if (snapshot.child("circleOptions").exists()) {
 
             // Shape is a circle.
@@ -9997,8 +9990,6 @@ public class Map extends FragmentActivity implements
     }
 
     private void addShapesQueryPoints(DataSnapshot snapshot) {
-
-        loadingIcon.setVisibility(View.VISIBLE);
 
         if (snapshot.child("circleOptions").exists()) {
 

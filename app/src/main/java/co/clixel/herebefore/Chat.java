@@ -754,6 +754,14 @@ public class Chat extends Fragment implements
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
 
+                // Edge case where user clicks into a shape that no longer exists.
+                if (snapshot.getChildrenCount() == 0 && !newShape) {
+
+                    loadingIcon.setVisibility(View.GONE);
+                    mInput.setFocusable(false);
+                    toastMessageLong("Shape was deleted. Please return to map.");
+                }
+
                 if (directMentionsPosition == 0 && snapshot.getChildrenCount() < 20 || directMentionsPosition != 0 && snapshot.getChildrenCount() < (loadMessagesFromDm)) {
 
                     noMoreMessages = true;
@@ -869,8 +877,13 @@ public class Chat extends Fragment implements
                     return;
                 }
 
-                Long serverDate = (Long) snapshot.child("date").getValue();
                 String user = (String) snapshot.child("userUUID").getValue();
+                // Prevents duplicates when user adds a message to a new shape then switches between light / dark mode.
+                if (mUser.contains(user)) {
+
+                    return;
+                }
+                Long serverDate = (Long) snapshot.child("date").getValue();
                 // Used when a user mentions another user with "@".
                 mSuggestions.add(user);
                 String imageUrl = (String) snapshot.child("imageUrl").getValue();
