@@ -58,6 +58,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.PopupMenu;
+import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -122,7 +123,7 @@ public class Chat extends Fragment implements
     private static int index = -1, top = -1, last;
     private ChildEventListener childEventListener;
     private FloatingActionButton sendButton, mediaButton;
-    private boolean firstLoad, loadingOlderMessages, stoppedRunnable = false, noMoreMessages = false, needLoadingIcon = false, reachedEndOfRecyclerView = false, recyclerViewHasScrolled = false, messageSent = false, sendButtonClicked = false, fileIsImage, checkPermissionsPicture,
+    private boolean firstLoad, loadingOlderMessages, stoppedRunnable = false, noMoreMessages = false, fromVideo, needLoadingIcon, reachedEndOfRecyclerView = false, recyclerViewHasScrolled = false, messageSent = false, sendButtonClicked = false, fileIsImage, checkPermissionsPicture,
             newShape, threeMarkers, fourMarkers, fiveMarkers, sixMarkers, sevenMarkers, eightMarkers;
     private Boolean userIsWithinShape;
     private View.OnLayoutChangeListener onLayoutChangeListener;
@@ -138,6 +139,7 @@ public class Chat extends Fragment implements
     private File image, video;
     private byte[] byteArray;
     private View loadingIcon;
+    private ProgressBar progressIcon;
     private Toast shortToast, longToast;
     private static final String BUCKET = "text-suggestions";
     public View rootView;
@@ -240,6 +242,7 @@ public class Chat extends Fragment implements
         chatRecyclerView = rootView.findViewById(R.id.messageList);
         mentionsRecyclerView = rootView.findViewById(R.id.suggestionsList);
         loadingIcon = rootView.findViewById(R.id.loadingIcon);
+        progressIcon = rootView.findViewById(R.id.progressIcon);
 
         chatRecyclerViewLinearLayoutManager = new LinearLayoutManager(mActivity);
         mentionsRecyclerViewLinearLayoutManager = new LinearLayoutManager(mActivity);
@@ -265,10 +268,12 @@ public class Chat extends Fragment implements
         }
 
         // Make the loadingIcon visible upon the first load, as it can sometimes take a while to show anything. It should be made invisible in initChatAdapter().
-        if (loadingIcon != null) {
+        if (loadingIcon != null && !fromVideo) {
 
             loadingIcon.setVisibility(View.VISIBLE);
         }
+
+        fromVideo = false;
 
         if (userIsWithinShape) {
 
@@ -1127,7 +1132,7 @@ public class Chat extends Fragment implements
         // After the initial load, make the loadingIcon invisible.
         if (loadingIcon != null && !needLoadingIcon) {
 
-            loadingIcon.setVisibility(View.INVISIBLE);
+            loadingIcon.setVisibility(View.GONE);
         }
     }
 
@@ -1982,6 +1987,8 @@ public class Chat extends Fragment implements
                 startActivityForResult(videoIntent, 4);
             }
         }
+
+        fromVideo = true;
     }
 
     private void cameraPermissionAlertAsync(Boolean checkPermissionsPicture) {
@@ -2166,9 +2173,6 @@ public class Chat extends Fragment implements
             imageDrawable = null;
             videoDrawable = null;
 
-            // Prevents the loadingIcon from being removed by initChatAdapter().
-            needLoadingIcon = true;
-
             fileIsImage = false;
 
             videoCompressAndAddToGalleryAsync();
@@ -2237,7 +2241,8 @@ public class Chat extends Fragment implements
     // Save a non-compressed version to the gallery and add a compressed version to the imageView.
     private void videoCompressAndAddToGalleryAsync() {
 
-        loadingIcon.setVisibility(View.VISIBLE);
+        progressIcon.setProgress(0);
+        progressIcon.setVisibility(View.VISIBLE);
 
         HandlerThread videoCompressAndAddToGalleryHandlerThread = new HandlerThread("videoCompressAndAddToGalleryHandlerThread");
         videoCompressAndAddToGalleryHandlerThread.start();
@@ -2265,6 +2270,10 @@ public class Chat extends Fragment implements
                     .setListener(new TranscoderListener() {
 
                         public void onTranscodeProgress(double progress) {
+
+                            int progress0 = (int) (progress * 100);
+
+                            progressIcon.setProgress(progress0, true);
                         }
 
                         public void onTranscodeCompleted(int successCode) {
@@ -2419,9 +2428,7 @@ public class Chat extends Fragment implements
                     videoImageView.setVisibility(View.VISIBLE);
                 }
 
-                loadingIcon.setVisibility(View.GONE);
-                // Allow initChatAdapter() to get rid of the loadingIcon with this boolean.
-                needLoadingIcon = false;
+                progressIcon.setVisibility(View.GONE);
             }
         });
     }

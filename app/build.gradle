@@ -8,7 +8,7 @@ android {
     compileSdkVersion 30
     defaultConfig {
         applicationId "co.clixel.herebefore"
-        minSdkVersion 21
+        minSdkVersion 24
         targetSdkVersion 30
         versionCode 1
         versionName "2020-10-17"
@@ -90,6 +90,8 @@ dependencies {
     implementation 'com.github.andremion:counterfab:1.2.2'
 
     implementation 'com.github.AppIntro:AppIntro:6.0.0'
+
+    implementation 'me.zhanghai.android.materialprogressbar:library:1.6.1'
 
     // debugImplementation because LeakCanary should only run in debug builds.
     debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.5'

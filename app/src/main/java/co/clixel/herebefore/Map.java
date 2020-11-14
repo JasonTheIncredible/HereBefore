@@ -122,8 +122,7 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private final List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // Leak in Navigation when switching between light / dark mode.
-    // Make a better loading icon, with a progress bar.
+    // Replace all loading icons with a progress bar.
     // Add a function for changing children.
     // Get rid of "larger" shapes and only allow points? (Or make allowable shapes smaller?). Track where user is while taking the original video or picture and make the shape that big?
     // Allow user to click on a mention in Chat and scroll to that mention for context.
