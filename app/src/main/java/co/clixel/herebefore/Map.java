@@ -122,8 +122,7 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private final List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // Replace all loading icons with a progress bar.
-    // Add a function for changing children.
+    // Add a function for changing children, and adjust the deleting functions to work with large number of deletions.
     // Get rid of "larger" shapes and only allow points? (Or make allowable shapes smaller?). Track where user is while taking the original video or picture and make the shape that big?
     // Allow user to click on a mention in Chat and scroll to that mention for context.
     // If user is on a point, prevent creating a new one. Deal with overlapping shapes in general.
@@ -2372,9 +2371,9 @@ public class Map extends FragmentActivity implements
         overlappingShapesPolygonVertices = new ArrayList<>();
 
         // Get rid of the chatSelectorSeekBar.
-        if (chatSelectorSeekBar.getVisibility() != View.INVISIBLE) {
+        if (chatSelectorSeekBar.getVisibility() != View.GONE) {
 
-            chatSelectorSeekBar.setVisibility(View.INVISIBLE);
+            chatSelectorSeekBar.setVisibility(View.GONE);
             chatSizeSeekBar.setVisibility(View.VISIBLE);
         }
     }
@@ -3127,7 +3126,7 @@ public class Map extends FragmentActivity implements
                 overlappingShapesCircleRadius = new ArrayList<>();
                 overlappingShapesPolygonVertices = new ArrayList<>();
 
-                chatSelectorSeekBar.setVisibility(View.INVISIBLE);
+                chatSelectorSeekBar.setVisibility(View.GONE);
                 chatSizeSeekBar.setVisibility(View.VISIBLE);
                 chatSizeSeekBar.setProgress(0);
                 chatSelectorSeekBar.setProgress(0);
@@ -3709,7 +3708,7 @@ public class Map extends FragmentActivity implements
                 overlappingShapesCircleRadius = new ArrayList<>();
                 overlappingShapesPolygonVertices = new ArrayList<>();
 
-                chatSelectorSeekBar.setVisibility(View.INVISIBLE);
+                chatSelectorSeekBar.setVisibility(View.GONE);
                 chatSizeSeekBar.setVisibility(View.VISIBLE);
                 chatSizeSeekBar.setProgress(0);
                 chatSelectorSeekBar.setProgress(0);
@@ -4303,7 +4302,7 @@ public class Map extends FragmentActivity implements
                 overlappingShapesCircleRadius = new ArrayList<>();
                 overlappingShapesPolygonVertices = new ArrayList<>();
 
-                chatSelectorSeekBar.setVisibility(View.INVISIBLE);
+                chatSelectorSeekBar.setVisibility(View.GONE);
                 chatSizeSeekBar.setVisibility(View.VISIBLE);
                 chatSizeSeekBar.setProgress(0);
                 chatSelectorSeekBar.setProgress(0);
@@ -5889,7 +5888,7 @@ public class Map extends FragmentActivity implements
                 overlappingShapesCircleRadius = new ArrayList<>();
                 overlappingShapesPolygonVertices = new ArrayList<>();
 
-                chatSelectorSeekBar.setVisibility(View.INVISIBLE);
+                chatSelectorSeekBar.setVisibility(View.GONE);
                 chatSizeSeekBar.setVisibility(View.VISIBLE);
                 chatSizeSeekBar.setProgress(0);
                 chatSelectorSeekBar.setProgress(0);
@@ -10144,9 +10143,9 @@ public class Map extends FragmentActivity implements
         overlappingShapesPolygonVertices = new ArrayList<>();
 
         // Get rid of the chatSelectorSeekBar.
-        if (chatSelectorSeekBar.getVisibility() != View.INVISIBLE) {
+        if (chatSelectorSeekBar.getVisibility() != View.GONE) {
 
-            chatSelectorSeekBar.setVisibility(View.INVISIBLE);
+            chatSelectorSeekBar.setVisibility(View.GONE);
             chatSizeSeekBar.setVisibility(View.VISIBLE);
         }
 
