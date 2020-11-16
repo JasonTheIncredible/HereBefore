@@ -1,7 +1,6 @@
 <resources>
     <string name="app_name">Here Before</string>
     <string name="title_activity_maps">Here Before</string>
-    <string name="message">Message&#8230;</string>
     <string name="email_address">Email Address</string>
     <string name="password">Password</string>
     <string name="sign_in">Sign In</string>
@@ -18,10 +17,8 @@
     <string name="use_terrain_view">Use terrain view</string>
     <string name="create_a_point">Create a point and enter chat</string>
     <string name="create_a_polygon">Create a polygon</string>
-    <string name="create_a_circle">Create a circle</string>
     <string name="remove_new_shape">Remove new shape</string>
     <string name="take_photo">Take photo</string>
-    <string name="zoom_touch_close">zoom_touch_close</string>
     <string name="record_video">Record video</string>
     <string name="play_icon">Play_icon</string>
     <string name="hybrid_view">Hybrid view"</string>

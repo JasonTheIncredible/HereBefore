@@ -13,7 +13,7 @@ import com.github.appintro.AppIntroFragment;
 
 public class MyAppIntro extends AppIntro {
 
-    private static final String TAG = "AppIntro";;
+    private static final String TAG = "AppIntro";
     private SharedPreferences sharedPreferences;
 
     @Override

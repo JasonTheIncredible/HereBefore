@@ -122,9 +122,8 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private final List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // Add a function for changing children, and adjust the deleting functions to work with large number of deletions.
+    // Allow user to click on a mention in Chat and scroll to that mention for context - spannable string.
     // Get rid of "larger" shapes and only allow points? (Or make allowable shapes smaller?). Track where user is while taking the original video or picture and make the shape that big?
-    // Allow user to click on a mention in Chat and scroll to that mention for context.
     // If user is on a point, prevent creating a new one. Deal with overlapping shapes in general.
     // Panoramic view?
     // Prevent data scraping (hide email addresses and other personal information).
@@ -148,6 +147,7 @@ public class Map extends FragmentActivity implements
     //// Add ability to add images and video to general chat and Chat from gallery. Distinguish them from media added from location. Github 8/29.
     // Leave messages in locations that users get notified of when they enter the area by adding geo-fencing.
     // Prevent spamming messages.
+    // Add a function for deleting / decreasing position of DMs after deleting / updating messageThreads - problem: need to store the name of the person being DM'ed, but that's a lot of useless information and possibly increases security risk.
     // Load user-specific shared preferences - looks like it might require saving info to database; is this worth it?
     // Increase viral potential - make it easier to share?
     // Update general look of app.
@@ -2439,10 +2439,7 @@ public class Map extends FragmentActivity implements
                 alert.setCancelable(false)
                 .setTitle("GPS Disabled")
                 .setMessage("Please enable your location services on the following screen.")
-                .setPositiveButton("OK", (dialog, i) -> {
-
-                    startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS));
-                })
+                .setPositiveButton("OK", (dialog, i) -> startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)))
                 .create()
                 .show();
 
@@ -2662,12 +2659,9 @@ public class Map extends FragmentActivity implements
                 alert.setCancelable(false)
                 .setTitle("Device Location Required")
                 .setMessage("Here Before needs permission to use your location to find chat areas around you.")
-                .setPositiveButton("OK", (dialogInterface, i) -> {
-
-                    ActivityCompat.requestPermissions(this,
-                            new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                            Request_User_Location_Code);
-                })
+                .setPositiveButton("OK", (dialogInterface, i) -> ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                        Request_User_Location_Code))
                 .create()
                 .show();
 

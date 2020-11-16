@@ -52,12 +52,6 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         FirebaseDatabase.getInstance().getReference().child("Users").child(userEmailFirebase).child("Token").setValue("token", token);
     }
 
-    @Override
-    public void onDeletedMessages() {
-
-        super.onDeletedMessages();
-    }
-
     /**
      * Called when message is received.
      *

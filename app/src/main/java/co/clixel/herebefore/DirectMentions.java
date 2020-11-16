@@ -515,10 +515,10 @@ public class DirectMentions extends Fragment {
 
         class ViewHolder extends RecyclerView.ViewHolder {
 
-            TextView messageTimeInside, messageTimeOutside, messageUserInside, messageUserOutside, messageTextInside, messageTextOutside;
-            ImageView messageImageInside, messageImageOutside, messageImageVideoInside, messageImageVideoOutside;
-            FrameLayout videoFrameInside, videoFrameOutside;
-            RelativeLayout messageItem;
+            final TextView messageTimeInside, messageTimeOutside, messageUserInside, messageUserOutside, messageTextInside, messageTextOutside;
+            final ImageView messageImageInside, messageImageOutside, messageImageVideoInside, messageImageVideoOutside;
+            final FrameLayout videoFrameInside, videoFrameOutside;
+            final RelativeLayout messageItem;
 
             ViewHolder(@NonNull final View itemView) {
 

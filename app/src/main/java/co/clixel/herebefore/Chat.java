@@ -1117,10 +1117,9 @@ public class Chat extends Fragment implements
 
         class ViewHolder extends RecyclerView.ViewHolder {
 
-            TextView messageTimeInside, messageTimeOutside, messageUserInside, messageUserOutside, messageTextInside, messageTextOutside;
-            ImageView messageImageInside, messageImageOutside, messageImageVideoInside, messageImageVideoOutside;
-            FrameLayout videoFrameInside, videoFrameOutside;
-            RelativeLayout messageItem;
+            final TextView messageTimeInside, messageTimeOutside, messageUserInside, messageUserOutside, messageTextInside, messageTextOutside;
+            final ImageView messageImageInside, messageImageOutside, messageImageVideoInside, messageImageVideoOutside;
+            final FrameLayout videoFrameInside, videoFrameOutside;
 
             ViewHolder(@NonNull final View itemView) {
 
@@ -1139,7 +1138,6 @@ public class Chat extends Fragment implements
                 ImageButton playButtonOutside = itemView.findViewById(R.id.playButtonOutside);
                 messageTextInside = itemView.findViewById(R.id.messageTextInside);
                 messageTextOutside = itemView.findViewById(R.id.messageTextOutside);
-                messageItem = itemView.findViewById(R.id.message);
 
                 itemView.setOnCreateContextMenuListener((menu, v, menuInfo) -> {
 
@@ -1505,7 +1503,7 @@ public class Chat extends Fragment implements
 
         class ViewHolder extends RecyclerView.ViewHolder {
 
-            TextView suggestion;
+            final TextView suggestion;
 
             ViewHolder(@NonNull View itemView) {
 
