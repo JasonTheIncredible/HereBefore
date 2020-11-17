@@ -1901,7 +1901,7 @@ public class Chat extends Fragment implements
         Log.i(TAG, "startActivityTakePhoto()");
 
         // Permission was granted, yay! Do the task you need to do.
-        Intent cameraIntent = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
+        Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         if (cameraIntent.resolveActivity(mActivity.getPackageManager()) != null) {
 
             // Create the File where the photo should go

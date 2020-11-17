@@ -1,10 +1,10 @@
 package co.clixel.herebefore;
 
-import android.net.Uri;
 import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.android.exoplayer2.MediaItem;
 import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.source.ProgressiveMediaSource;
@@ -46,9 +46,11 @@ public class VideoView extends AppCompatActivity {
         // This is the MediaSource representing the media to be played.
         MediaSource videoSource =
                 new ProgressiveMediaSource.Factory(dataSourceFactory)
-                        .createMediaSource(Uri.parse(url));
+                        .createMediaSource(MediaItem.fromUri(url));
+
+        player.setMediaSource(videoSource);
         // Prepare the player with the source.
-        player.prepare(videoSource);
+        player.prepare();
     }
 
     @Override

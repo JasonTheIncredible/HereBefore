@@ -518,7 +518,6 @@ public class DirectMentions extends Fragment {
             final TextView messageTimeInside, messageTimeOutside, messageUserInside, messageUserOutside, messageTextInside, messageTextOutside;
             final ImageView messageImageInside, messageImageOutside, messageImageVideoInside, messageImageVideoOutside;
             final FrameLayout videoFrameInside, videoFrameOutside;
-            final RelativeLayout messageItem;
 
             ViewHolder(@NonNull final View itemView) {
 
@@ -537,7 +536,6 @@ public class DirectMentions extends Fragment {
                 ImageButton playButtonOutside = itemView.findViewById(R.id.playButtonOutside);
                 messageTextInside = itemView.findViewById(R.id.messageTextInside);
                 messageTextOutside = itemView.findViewById(R.id.messageTextOutside);
-                messageItem = itemView.findViewById(R.id.message);
 
                 itemView.setOnClickListener(v -> {
 

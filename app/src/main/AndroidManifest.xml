@@ -16,6 +16,14 @@
     <uses-permission
         android:name="android.permission.RECORD_AUDIO"
         android:required="false" />
+    <queries>
+        <intent>
+            <action android:name="android.provider.MediaStore.ACTION_IMAGE_CAPTURE" />
+        </intent>
+        <intent>
+            <action android:name="android.provider.MediaStore.ACTION_VIDEO_CAPTURE" />
+        </intent>
+    </queries>
 
     <uses-feature
         android:name="android.hardware.camera"

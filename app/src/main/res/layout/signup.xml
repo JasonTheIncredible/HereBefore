@@ -47,7 +47,6 @@
                 android:layout_marginLeft="50dp"
                 android:layout_marginRight="50dp"
                 android:hint="@string/email_address"
-                android:importantForAutofill="no"
                 android:inputType="textEmailAddress"
                 android:singleLine="true" />
 
