@@ -123,18 +123,14 @@ public class Map extends FragmentActivity implements
     private final List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
     // Allow user to click on a mention in Chat and scroll to that mention for context - spannable string.
-    // Get rid of "larger" shapes and only allow points? (Or make allowable shapes smaller?). Track where user is while taking the original video or picture and make the shape that big?
-    // If user is on a point, prevent creating a new one. Deal with overlapping shapes in general.
-    // Panoramic view?
-    // Prevent data scraping (hide email addresses and other personal information).
-    // Create timer that kicks people out of a new Chat if they haven't posted within an amount of time, or keep updating their location.
-    // Allow private posts or sharing with specific people.
-    // Let users allow specific other users to see their name.
-    // Think of way to make "creating a point" more accurate to the user's location.
     // Make scrollToPosition work in Chat after a restart. Also prevent reloading Chat and DMs every time app restarts.
     // Find a way to not clear and reload map every time user returns from clicking a shape. Same with DM notification.
+    // Make "creating a point" more accurate to the user's location.
+    // Get rid of "larger" shapes and only allow points? (Or make allowable shapes smaller?). Track where user is while taking the original video or picture and make the shape that big?
+    // If user is on a point, prevent creating a new one. Deal with overlapping shapes in general.
+    // Prevent data scraping (hide email addresses and other personal information).
+    // Create timer that kicks people out of a new Chat if they haven't posted within an amount of time (or take the photo/video before entering Chat), or keep updating their location.
     // When sending DMs back and forth, verify that a user was included in the last DM (as any anonymous UUID could pretend to be the last person).
-    // Create "my locations" or "my photos" and see friends' locations / follow friends?
     // Find a way to add to existing snapshot - then send that snapshot to DirectMentions from Map. Also, prevent reloading everything after restart when user paginated (also save scroll position).
     // After clicking on a DM and going to that Chat, allow user to find that same shape on the map.
     // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.
@@ -142,6 +138,9 @@ public class Map extends FragmentActivity implements
 
     // Require picture on creating a shape? Also, long press a shape to see a popup of that picture.
     // Add ability to filter recyclerView by type of content (recorded at the scene...).
+    // Allow private posts or sharing with specific people.
+    // Let users allow specific other users to see their name.
+    // Create "my locations" or "my photos" and see friends' locations / follow friends?
     // Add some version of the random button, or allow users to click on a circle in a far away area while zoomed out on map.
     // Create a "general chat" where everyone can chat anonymously, maybe with more specific location rooms too? Delete general chat after x amount of time or # of items.
     //// Add ability to add images and video to general chat and Chat from gallery. Distinguish them from media added from location. Github 8/29.
@@ -151,8 +150,9 @@ public class Map extends FragmentActivity implements
     // Load user-specific shared preferences - looks like it might require saving info to database; is this worth it?
     // Increase viral potential - make it easier to share?
     // Update general look of app.
+    // Panoramic view, like gMaps.
 
-    // Remember the AC: Origins inspiration. Also, airdrop - create items in the world.
+    // Remember the AC: Origins inspiration. Also, airdrop - create items in the world. Also, gMaps drag and drop.
     // Unit testing.
     // Decrease app size (compress repeating code into methods) / Check on accumulation of size over time.
     // Work on deprecated methods.
