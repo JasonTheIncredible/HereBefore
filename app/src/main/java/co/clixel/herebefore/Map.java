@@ -122,6 +122,8 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private final List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
+    // Show full userUUID in mention suggestion on long press (or just show full userUUID).
+    // Research dp vs sp, and possibly change appropriate textViews from dp to sp.
     // Allow user to click on a mention in Chat and scroll to that mention for context - spannable string.
     // Make scrollToPosition work in Chat after a restart. Also prevent reloading Chat and DMs every time app restarts.
     // Find a way to not clear and reload map every time user returns from clicking a shape. Same with DM notification.

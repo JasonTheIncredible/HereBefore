@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
@@ -1145,6 +1146,44 @@ public class Chat extends Fragment implements
                     reportedUser = mMessageUser.get(getAdapterPosition());
                     menu.add(0, R.string.report_post, 0, R.string.report_post);
                 });
+
+                if (messageUserInside != null) {
+
+                    messageUserInside.setOnClickListener(v -> {
+
+                        ViewGroup.LayoutParams params = messageUserInside.getLayoutParams();
+                        int screenWidth = Resources.getSystem().getDisplayMetrics().widthPixels;
+
+                        if (params.width == screenWidth) {
+
+                            // params is in pixels, so convert it to dp.
+                            params.width = (int) (120 * (itemView.getContext().getResources().getDisplayMetrics().density));
+                        } else {
+
+                            params.width = screenWidth;
+                        }
+                        messageUserInside.setLayoutParams(params);
+                    });
+                }
+
+                if (messageUserOutside != null) {
+
+                    messageUserOutside.setOnClickListener(v -> {
+
+                        ViewGroup.LayoutParams params = messageUserOutside.getLayoutParams();
+                        int screenWidth = Resources.getSystem().getDisplayMetrics().widthPixels;
+
+                        if (params.width == screenWidth) {
+
+                            // params is in pixels, so convert it to dp.
+                            params.width = (int) (120 * (itemView.getContext().getResources().getDisplayMetrics().density));
+                        } else {
+
+                            params.width = screenWidth;
+                        }
+                        messageUserOutside.setLayoutParams(params);
+                    });
+                }
 
                 if (messageImageInside != null) {
 
