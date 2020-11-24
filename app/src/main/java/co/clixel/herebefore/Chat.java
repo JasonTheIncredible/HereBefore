@@ -34,6 +34,7 @@ import android.provider.MediaStore;
 import android.util.Base64;
 import android.util.Base64OutputStream;
 import android.util.Log;
+import android.util.Pair;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -120,6 +121,7 @@ public class Chat extends Fragment implements
     private ArrayList<Boolean> mUserIsWithinShape;
     private ArrayList<Integer> mPosition;
     private ArrayList<Long> datesAL;
+    private ArrayList<Pair<String, Integer>> mentionableAL;
     private RecyclerView chatRecyclerView, mentionsRecyclerView;
     private static int index = -1, top = -1, last;
     private ChildEventListener childEventListener;
@@ -148,6 +150,7 @@ public class Chat extends Fragment implements
     private AdView bannerAd;
     private Query query;
     private Drawable imageDrawable, videoDrawable;
+    private MentionsEditText.MentionWatcher mentionWatcher;
     private int latFirebaseValue, lonFirebaseValue, directMentionsPosition;
     private final WordTokenizerConfig tokenizerConfig = new WordTokenizerConfig
             .Builder()
@@ -210,6 +213,8 @@ public class Chat extends Fragment implements
                 Log.e(TAG, "onCreateView() -> extras == null");
             }
         }
+
+        mentionableAL = new ArrayList<>();
     }
 
     @NonNull
@@ -666,6 +671,48 @@ public class Chat extends Fragment implements
             Activity.putExtra("videoUrl", videoURI.toString());
             Chat.this.startActivity(Activity);
         });
+
+        mentionWatcher = new MentionsEditText.MentionWatcher() {
+
+            @Override
+            public void onMentionAdded(@NonNull Mentionable mention, @NonNull String text, int start, int end) {
+
+                String mentionableUUID = mention.getSuggestiblePrimaryText();
+
+                Integer mentionablePosition = mUser.indexOf(mentionableUUID);
+
+                Pair<String, Integer> mentionablePair = new Pair<>(mentionableUUID, mentionablePosition);
+
+                if (mentionableAL != null) {
+
+                    mentionableAL.add(mentionableAL.size(), mentionablePair);
+                }
+            }
+
+            @Override
+            public void onMentionDeleted(@NonNull Mentionable mention, @NonNull String text, int start, int end) {
+
+                if (mentionableAL != null) {
+
+                    for (int i = 0; i < mentionableAL.size(); i++) {
+
+                        Pair<String, Integer> pair = mentionableAL.get(i);
+
+                        if (pair.first.equals(mention.getSuggestiblePrimaryText())) {
+
+                            mentionableAL.remove(i);
+                            return;
+                        }
+                    }
+                }
+            }
+
+            @Override
+            public void onMentionPartiallyDeleted(@NonNull Mentionable mention, @NonNull String text, int start, int end) {
+            }
+        };
+
+        mInput.addMentionWatcher(mentionWatcher);
     }
 
     private void getFirebaseMessages(Long nodeID) {
@@ -989,6 +1036,11 @@ public class Chat extends Fragment implements
         if (videoImageView != null) {
 
             videoDrawable = videoImageView.getDrawable();
+        }
+
+        if (mInput != null) {
+
+            mInput.removeMentionWatcher(mentionWatcher);
         }
 
         cancelToasts();
@@ -1618,6 +1670,21 @@ public class Chat extends Fragment implements
                     public void writeToParcel(Parcel dest, int flags) {
                     }
                 };
+
+                // Don't add the mentionable if it already exists.
+                if (mentionableAL != null) {
+
+                    for (int i = 0; i < mentionableAL.size(); i++) {
+
+                        Pair<String, Integer> pair = mentionableAL.get(i);
+
+                        if (pair.first.equals(mentionable.getSuggestiblePrimaryText())) {
+
+                            toastMessageShort("User has already been mentioned.");
+                            return;
+                        }
+                    }
+                }
 
                 mInput.insertMention(mentionable);
 

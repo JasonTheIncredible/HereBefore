@@ -122,6 +122,7 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private final List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
+    // Send mentionsAL to Firebase, then add spannable to mentions when adding to Chat's recyclerView.
     // Allow user to click on a mention in Chat and scroll to that mention for context - spannable string.
     // Make scrollToPosition work in Chat after a restart. Also prevent reloading Chat and DMs every time app restarts.
     // Find a way to not clear and reload map every time user returns from clicking a shape. Same with DM notification.
@@ -130,7 +131,6 @@ public class Map extends FragmentActivity implements
     // If user is on a point, prevent creating a new one. Deal with overlapping shapes in general.
     // Prevent data scraping (hide email addresses and other personal information).
     // Create timer that kicks people out of a new Chat if they haven't posted within an amount of time (or take the photo/video before entering Chat), or keep updating their location.
-    // When sending DMs back and forth, verify that a user was included in the last DM (as any anonymous UUID could pretend to be the last person).
     // Find a way to add to existing snapshot - then send that snapshot to DirectMentions from Map. Also, prevent reloading everything after restart when user paginated (also save scroll position).
     // After clicking on a DM and going to that Chat, allow user to find that same shape on the map.
     // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.
