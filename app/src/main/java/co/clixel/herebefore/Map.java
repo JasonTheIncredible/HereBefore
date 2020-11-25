@@ -122,7 +122,8 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private final List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // Send mentionsAL to Firebase, then add spannable to mentions when adding to Chat's recyclerView.
+    // Add spannable to mentions when adding to Chat's recyclerView.
+    // Add functions to adjust spannable string when changing a messageThread.
     // Allow user to click on a mention in Chat and scroll to that mention for context - spannable string.
     // Make scrollToPosition work in Chat after a restart. Also prevent reloading Chat and DMs every time app restarts.
     // Find a way to not clear and reload map every time user returns from clicking a shape. Same with DM notification.
@@ -140,6 +141,7 @@ public class Map extends FragmentActivity implements
     // Add ability to filter recyclerView by type of content (recorded at the scene...).
     // Allow private posts or sharing with specific people.
     // Let users allow specific other users to see their name.
+    // Send the shape creator notifications about all comments from a shape?
     // Create "my locations" or "my photos" and see friends' locations / follow friends?
     // Add some version of the random button, or allow users to click on a circle in a far away area while zoomed out on map.
     // Create a "general chat" where everyone can chat anonymously, maybe with more specific location rooms too? Delete general chat after x amount of time or # of items.
@@ -157,7 +159,7 @@ public class Map extends FragmentActivity implements
     // Decrease app size (compress repeating code into methods) / Check on accumulation of size over time.
     // Work on deprecated methods.
     // Check warning messages.
-    // Finish setting up Google ads, then add more ads.
+    // Finish setting up Google ads, then add more ads. Then get rid of testID in Chat.
     // Adjust AppIntro.
     // Make sure Firebase has enough bandwidth.
     // Make sure aboutLibraries includes all libraries, and make sure all licenses are fair use (NOT GPL).

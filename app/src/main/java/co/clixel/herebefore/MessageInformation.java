@@ -1,6 +1,10 @@
 package co.clixel.herebefore;
 
+import android.util.Pair;
+
 import androidx.annotation.Keep;
+
+import java.util.ArrayList;
 
 @Keep
 class MessageInformation {
@@ -9,6 +13,7 @@ class MessageInformation {
     public Object date;
     public Boolean userIsWithinShape;
     public int position;
+    public ArrayList<Pair<String, Integer>> mentionPositionPairs;
 
     @Keep
     MessageInformation() {
@@ -36,6 +41,10 @@ class MessageInformation {
 
     public void setUserIsWithinShape(Boolean userIsWithinShape) {
         this.userIsWithinShape = userIsWithinShape;
+    }
+
+    public void setMentionPositionPairs(ArrayList<Pair<String, Integer>> mentionPositionPairs) {
+        this.mentionPositionPairs = mentionPositionPairs;
     }
 
     public void setUserUUID(String userUUID) {
