@@ -219,8 +219,7 @@ public class Chat extends Fragment implements
 
     @NonNull
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 
         Log.i(TAG, "onCreateView()");
 
@@ -1657,7 +1656,7 @@ public class Chat extends Fragment implements
                         // Add mentions to this list. Duplicates will be added and later cleared from this list.
                         allMentions.add(mSuggestions.get(position));
 
-                        return "@" + (mSuggestions.get(position)).substring(0, 10) + "...";
+                        return "@" + mSuggestions.get(position);
                     }
 
                     @NonNull

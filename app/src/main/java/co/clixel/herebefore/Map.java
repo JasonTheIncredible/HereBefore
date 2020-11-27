@@ -122,6 +122,7 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private final List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
+    // Truncate mention when adding it to Chat.
     // Add spannable to mentions when adding to Chat's recyclerView.
     // Add functions to adjust spannable string when changing a messageThread.
     // Allow user to click on a mention in Chat and scroll to that mention for context - spannable string.
@@ -148,6 +149,7 @@ public class Map extends FragmentActivity implements
     //// Add ability to add images and video to general chat and Chat from gallery. Distinguish them from media added from location. Github 8/29.
     // Leave messages in locations that users get notified of when they enter the area by adding geo-fencing.
     // Prevent spamming messages.
+    // Truncate mention in editText to look like userUUID in Chat.
     // Add a function for deleting / decreasing position of DMs after deleting / updating messageThreads - problem: need to store the name of the person being DM'ed, but that's a lot of useless information and possibly increases security risk.
     // Load user-specific shared preferences - looks like it might require saving info to database; is this worth it?
     // Increase viral potential - make it easier to share?
