@@ -150,6 +150,7 @@ public class Map extends FragmentActivity implements
     // Leave messages in locations that users get notified of when they enter the area by adding geo-fencing.
     // Prevent spamming messages.
     // Truncate mention in editText to look like userUUID in Chat.
+    // Add Firebase rules to mentionPositionPairs for more than 1 child. A "forEach" rule would be best.
     // Add a function for deleting / decreasing position of DMs after deleting / updating messageThreads - problem: need to store the name of the person being DM'ed, but that's a lot of useless information and possibly increases security risk.
     // Load user-specific shared preferences - looks like it might require saving info to database; is this worth it?
     // Increase viral potential - make it easier to share?

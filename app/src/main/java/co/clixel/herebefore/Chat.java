@@ -121,7 +121,7 @@ public class Chat extends Fragment implements
     private ArrayList<Boolean> mUserIsWithinShape;
     private ArrayList<Integer> mPosition;
     private ArrayList<Long> datesAL;
-    private ArrayList<Pair<String, Integer>> mentionPositionPairs;
+    private ArrayList<Pair<String, Integer>> userPositionPairs, userPositionPairsFromFirebase;
     private RecyclerView chatRecyclerView, mentionsRecyclerView;
     private static int index = -1, top = -1, last;
     private ChildEventListener childEventListener;
@@ -214,7 +214,8 @@ public class Chat extends Fragment implements
             }
         }
 
-        mentionPositionPairs = new ArrayList<>();
+        userPositionPairs = new ArrayList<>();
+        userPositionPairsFromFirebase = new ArrayList<>();
     }
 
     @NonNull
@@ -634,9 +635,9 @@ public class Chat extends Fragment implements
                     messageInformation.setMessage(input);
                     messageInformation.setPosition(mUser.size());
                     messageInformation.setUserIsWithinShape(userIsWithinShape);
-                    if (mentionPositionPairs != null && !mentionPositionPairs.isEmpty()) {
+                    if (userPositionPairs != null && !userPositionPairs.isEmpty()) {
 
-                        messageInformation.setMentionPositionPairs(mentionPositionPairs);
+                        messageInformation.setUserPositionPairs(userPositionPairs);
                     }
                     messageInformation.setUserUUID(userUUID);
                     DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID).push();
@@ -649,9 +650,9 @@ public class Chat extends Fragment implements
                         removedDuplicatesMentions.clear();
                     }
 
-                    if (mentionPositionPairs != null && !mentionPositionPairs.isEmpty()) {
+                    if (userPositionPairs != null && !userPositionPairs.isEmpty()) {
 
-                        mentionPositionPairs.clear();
+                        userPositionPairs.clear();
                     }
 
                     // For some reason, if the text begins with a mention and onCreateView was called after the mention was added, the mention is not cleared with one call to clear().
@@ -694,24 +695,24 @@ public class Chat extends Fragment implements
 
                 Pair<String, Integer> mentionablePair = new Pair<>(mentionableUUID, mentionablePosition);
 
-                if (mentionPositionPairs != null) {
+                if (userPositionPairs != null) {
 
-                    mentionPositionPairs.add(mentionPositionPairs.size(), mentionablePair);
+                    userPositionPairs.add(userPositionPairs.size(), mentionablePair);
                 }
             }
 
             @Override
             public void onMentionDeleted(@NonNull Mentionable mention, @NonNull String text, int start, int end) {
 
-                if (mentionPositionPairs != null) {
+                if (userPositionPairs != null) {
 
-                    for (int i = 0; i < mentionPositionPairs.size(); i++) {
+                    for (int i = 0; i < userPositionPairs.size(); i++) {
 
-                        Pair<String, Integer> pair = mentionPositionPairs.get(i);
+                        Pair<String, Integer> pair = userPositionPairs.get(i);
 
                         if (pair.first.equals(mention.getSuggestiblePrimaryText())) {
 
-                            mentionPositionPairs.remove(i);
+                            userPositionPairs.remove(i);
                             return;
                         }
                     }
@@ -813,6 +814,15 @@ public class Chat extends Fragment implements
 
                     datesAL.add(i, (Long) ds.child("date").getValue());
                     emailsAL.add(i, (String) ds.child("email").getValue());
+
+                    for (DataSnapshot dss : ds.child("userPositionPairs").getChildren()) {
+
+                        Pair<String, Integer> pair = new Pair<>((String) dss.child("first").getValue(), (int) (long) dss.child("second").getValue());
+                        if (!userPositionPairsFromFirebase.contains(pair)) {
+
+                            userPositionPairsFromFirebase.add(pair);
+                        }
+                    }
 
                     Long serverDate = (Long) ds.child("date").getValue();
                     String user = (String) ds.child("userUUID").getValue();
@@ -916,6 +926,15 @@ public class Chat extends Fragment implements
 
                     initChatAdapter();
                     return;
+                }
+
+                for (DataSnapshot ds : snapshot.child("userPositionPairs").getChildren()) {
+
+                    Pair<String, Integer> pair = new Pair<>((String) ds.child("first").getValue(), (int) (long) ds.child("second").getValue());
+                    if (!userPositionPairsFromFirebase.contains(pair)) {
+
+                        userPositionPairsFromFirebase.add(pair);
+                    }
                 }
 
                 String user = (String) snapshot.child("userUUID").getValue();
@@ -1636,16 +1655,6 @@ public class Chat extends Fragment implements
 
             holder.itemView.setOnClickListener(v -> {
 
-                // This is due to security rules in Firebase. If a "forEach" method is used in Firebase rules, this message can be deleted.
-                if (mentionPositionPairs != null) {
-
-                    if (mentionPositionPairs.size() == 10) {
-
-                        toastMessageShort("Can't include more than 10 users.");
-                        return;
-                    }
-                }
-
                 // Convert the string into a mentionable to be inserted into the MentionsEditText.
                 Mentionable mentionable = new Mentionable() {
 
@@ -1693,11 +1702,11 @@ public class Chat extends Fragment implements
                 };
 
                 // Don't add the mentionable if it already exists.
-                if (mentionPositionPairs != null) {
+                if (userPositionPairs != null) {
 
-                    for (int i = 0; i < mentionPositionPairs.size(); i++) {
+                    for (int i = 0; i < userPositionPairs.size(); i++) {
 
-                        Pair<String, Integer> pair = mentionPositionPairs.get(i);
+                        Pair<String, Integer> pair = userPositionPairs.get(i);
 
                         if (pair.first.equals(mentionable.getSuggestiblePrimaryText())) {
 
@@ -2755,9 +2764,9 @@ public class Chat extends Fragment implements
                         }
                         messageInformation.setPosition(mUser.size());
                         messageInformation.setUserIsWithinShape(userIsWithinShape);
-                        if (mentionPositionPairs != null && !mentionPositionPairs.isEmpty()) {
+                        if (userPositionPairs != null && !userPositionPairs.isEmpty()) {
 
-                            messageInformation.setMentionPositionPairs(mentionPositionPairs);
+                            messageInformation.setUserPositionPairs(userPositionPairs);
                         }
                         messageInformation.setUserUUID(userUUID);
                         messageInformation.setVideoUrl(uri.toString());
@@ -2769,9 +2778,9 @@ public class Chat extends Fragment implements
                             removedDuplicatesMentions.clear();
                         }
 
-                        if (mentionPositionPairs != null && !mentionPositionPairs.isEmpty()) {
+                        if (userPositionPairs != null && !userPositionPairs.isEmpty()) {
 
-                            mentionPositionPairs.clear();
+                            userPositionPairs.clear();
                         }
 
                         if (video != null) {
@@ -3015,9 +3024,9 @@ public class Chat extends Fragment implements
                         }
                         messageInformation.setPosition(mUser.size());
                         messageInformation.setUserIsWithinShape(userIsWithinShape);
-                        if (mentionPositionPairs != null && !mentionPositionPairs.isEmpty()) {
+                        if (userPositionPairs != null && !userPositionPairs.isEmpty()) {
 
-                            messageInformation.setMentionPositionPairs(mentionPositionPairs);
+                            messageInformation.setUserPositionPairs(userPositionPairs);
                         }
                         messageInformation.setUserUUID(userUUID);
                         DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID).push();
@@ -3028,9 +3037,9 @@ public class Chat extends Fragment implements
                             removedDuplicatesMentions.clear();
                         }
 
-                        if (mentionPositionPairs != null && !mentionPositionPairs.isEmpty()) {
+                        if (userPositionPairs != null && !userPositionPairs.isEmpty()) {
 
-                            mentionPositionPairs.clear();
+                            userPositionPairs.clear();
                         }
 
                         if (image != null) {

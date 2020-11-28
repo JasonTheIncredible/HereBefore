@@ -13,7 +13,7 @@ class MessageInformation {
     public Object date;
     public Boolean userIsWithinShape;
     public int position;
-    public ArrayList<Pair<String, Integer>> mentionPositionPairs;
+    public ArrayList<Pair<String, Integer>> userPositionPairs;
 
     @Keep
     MessageInformation() {
@@ -43,8 +43,8 @@ class MessageInformation {
         this.userIsWithinShape = userIsWithinShape;
     }
 
-    public void setMentionPositionPairs(ArrayList<Pair<String, Integer>> mentionPositionPairs) {
-        this.mentionPositionPairs = mentionPositionPairs;
+    public void setUserPositionPairs(ArrayList<Pair<String, Integer>> userPositionPairs) {
+        this.userPositionPairs = userPositionPairs;
     }
 
     public void setUserUUID(String userUUID) {
