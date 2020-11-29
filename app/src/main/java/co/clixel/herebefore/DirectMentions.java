@@ -8,6 +8,7 @@ import android.graphics.Color;
 import android.location.Location;
 import android.os.Bundle;
 import android.util.Log;
+import android.util.Pair;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -56,6 +57,7 @@ public class DirectMentions extends Fragment {
     private ArrayList<Boolean> mUserIsWithinShape, mShapeIsCircle, mSeenByUser;
     private ArrayList<Long> mShapeSize, mShapeLat, mShapeLon, datesAL;
     private ArrayList<Integer> mPosition;
+    private ArrayList<Pair<String, Integer>> userPositionPairsFromFirebase;
     private RecyclerView DmsRecyclerView;
     private static int index = -1, top = -1, last;
     private ChildEventListener childEventListener;
@@ -79,6 +81,8 @@ public class DirectMentions extends Fragment {
 
         mContext = context;
         mActivity = getActivity();
+
+        userPositionPairsFromFirebase = new ArrayList<>();
     }
 
     @NonNull
@@ -233,8 +237,54 @@ public class DirectMentions extends Fragment {
 
                     datesAL.add(i, (Long) ds.child("date").getValue());
 
+                    for (DataSnapshot dss : ds.child("userPositionPairs").getChildren()) {
+
+                        Pair<String, Integer> pair = new Pair<>((String) dss.child("first").getValue(), (int) (long) dss.child("second").getValue());
+                        if (!userPositionPairsFromFirebase.contains(pair)) {
+
+                            userPositionPairsFromFirebase.add(pair);
+                        }
+                    }
+
                     Long serverDate = (Long) ds.child("date").getValue();
+                    String user = (String) ds.child("userUUID").getValue();
+                    String imageUrl = (String) ds.child("imageUrl").getValue();
+                    String videoUrl = (String) ds.child("videoUrl").getValue();
+                    String messageText = (String) ds.child("message").getValue();
+
+                    // Truncate mentions from Firebase.
+                    String replacedMessageText = null;
+                    if (!userPositionPairsFromFirebase.isEmpty()) {
+
+                        for (Pair<String, Integer> pair : userPositionPairsFromFirebase) {
+
+                            if (replacedMessageText != null) {
+
+                                if (replacedMessageText.contains(pair.first)) {
+
+                                    replacedMessageText = replacedMessageText.replace(pair.first, pair.first.substring(0, 10) + "...");
+                                }
+                            } else {
+
+                                if (messageText.contains(pair.first)) {
+
+                                    replacedMessageText = messageText.replace(pair.first, pair.first.substring(0, 10) + "...");
+                                }
+                            }
+                        }
+                    }
+
+                    String shapeUUID = (String) ds.child("shapeUUID").getValue();
+                    Boolean userIsWithinShape = (Boolean) ds.child("userIsWithinShape").getValue();
+                    Boolean shapeIsCircle = (Boolean) ds.child("shapeIsCircle").getValue();
+                    Long size = (Long) ds.child("size").getValue();
+                    Long lat = (Long) ds.child("lat").getValue();
+                    Long lon = (Long) ds.child("lon").getValue();
+                    Integer position = ((Long) ds.child("position").getValue()).intValue();
+                    Boolean seenByUser = (Boolean) ds.child("seenByUser").getValue();
                     DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
+                    // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+                    // This will cause onDataChange to fire twice; optimizations could be made in the future.
                     if (serverDate != null) {
 
                         Date netDate = (new Date(serverDate));
@@ -244,18 +294,26 @@ public class DirectMentions extends Fragment {
 
                         Log.e(TAG, "fillRecyclerView() -> serverDate == null");
                     }
-                    mUser.add(i, (String) ds.child("userUUID").getValue());
-                    mImage.add(i, (String) ds.child("imageUrl").getValue());
-                    mVideo.add(i, (String) ds.child("videoUrl").getValue());
-                    mText.add(i, (String) ds.child("message").getValue());
-                    mShapeUUID.add(i, (String) ds.child("shapeUUID").getValue());
-                    mUserIsWithinShape.add(i, (Boolean) ds.child("userIsWithinShape").getValue());
-                    mShapeIsCircle.add(i, (Boolean) ds.child("shapeIsCircle").getValue());
-                    mShapeSize.add(i, (Long) ds.child("size").getValue());
-                    mShapeLat.add(i, (Long) ds.child("lat").getValue());
-                    mShapeLon.add(i, (Long) ds.child("lon").getValue());
-                    mPosition.add(i, ((Long) ds.child("position").getValue()).intValue());
-                    mSeenByUser.add(i, (Boolean) ds.child("seenByUser").getValue());
+                    mUser.add(i, user);
+                    mImage.add(i, imageUrl);
+                    mVideo.add(i, videoUrl);
+
+                    if (replacedMessageText != null) {
+
+                        mText.add(i, replacedMessageText);
+                    } else {
+
+                        mText.add(i, messageText);
+                    }
+
+                    mShapeUUID.add(i, shapeUUID);
+                    mUserIsWithinShape.add(i, userIsWithinShape);
+                    mShapeIsCircle.add(i, shapeIsCircle);
+                    mShapeSize.add(i, size);
+                    mShapeLat.add(i, lat);
+                    mShapeLon.add(i, lon);
+                    mPosition.add(i, position);
+                    mSeenByUser.add(i, seenByUser);
                     i++;
 
                     // Prevent duplicates.
@@ -340,8 +398,54 @@ public class DirectMentions extends Fragment {
                     top = (v == null) ? 0 : (v.getTop() - DmsRecyclerView.getPaddingTop());
                 }
 
+                for (DataSnapshot dss : snapshot.child("userPositionPairs").getChildren()) {
+
+                    Pair<String, Integer> pair = new Pair<>((String) dss.child("first").getValue(), (int) (long) dss.child("second").getValue());
+                    if (!userPositionPairsFromFirebase.contains(pair)) {
+
+                        userPositionPairsFromFirebase.add(pair);
+                    }
+                }
+
                 Long serverDate = (Long) snapshot.child("date").getValue();
+                String user = (String) snapshot.child("userUUID").getValue();
+                String imageUrl = (String) snapshot.child("imageUrl").getValue();
+                String videoUrl = (String) snapshot.child("videoUrl").getValue();
+                String messageText = (String) snapshot.child("message").getValue();
+
+                // Truncate mentions from Firebase.
+                String replacedMessageText = null;
+                if (!userPositionPairsFromFirebase.isEmpty()) {
+
+                    for (Pair<String, Integer> pair : userPositionPairsFromFirebase) {
+
+                        if (replacedMessageText != null) {
+
+                            if (replacedMessageText.contains(pair.first)) {
+
+                                replacedMessageText = replacedMessageText.replace(pair.first, pair.first.substring(0, 10) + "...");
+                            }
+                        } else {
+
+                            if (messageText.contains(pair.first)) {
+
+                                replacedMessageText = messageText.replace(pair.first, pair.first.substring(0, 10) + "...");
+                            }
+                        }
+                    }
+                }
+
+                String shapeUUID = (String) snapshot.child("shapeUUID").getValue();
+                Boolean userIsWithinShape = (Boolean) snapshot.child("userIsWithinShape").getValue();
+                Boolean shapeIsCircle = (Boolean) snapshot.child("shapeIsCircle").getValue();
+                Long size = (Long) snapshot.child("size").getValue();
+                Long lat = (Long) snapshot.child("lat").getValue();
+                Long lon = (Long) snapshot.child("lon").getValue();
+                Integer position = ((Long) snapshot.child("position").getValue()).intValue();
+                Boolean seenByUser = (Boolean) snapshot.child("seenByUser").getValue();
                 DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
+                // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+                // This will cause onDataChange to fire twice; optimizations could be made in the future.
                 if (serverDate != null) {
 
                     Date netDate = (new Date(serverDate));
@@ -351,18 +455,26 @@ public class DirectMentions extends Fragment {
 
                     Log.e(TAG, "fillRecyclerView() -> serverDate == null");
                 }
-                mUser.add((String) snapshot.child("userUUID").getValue());
-                mImage.add((String) snapshot.child("imageUrl").getValue());
-                mVideo.add((String) snapshot.child("videoUrl").getValue());
-                mText.add((String) snapshot.child("message").getValue());
-                mShapeUUID.add((String) snapshot.child("shapeUUID").getValue());
-                mUserIsWithinShape.add((Boolean) snapshot.child("userIsWithinShape").getValue());
-                mShapeIsCircle.add((Boolean) snapshot.child("shapeIsCircle").getValue());
-                mShapeSize.add((Long) snapshot.child("size").getValue());
-                mShapeLat.add((Long) snapshot.child("lat").getValue());
-                mShapeLon.add((Long) snapshot.child("lon").getValue());
-                mPosition.add(((Long) snapshot.child("position").getValue()).intValue());
-                mSeenByUser.add((Boolean) snapshot.child("seenByUser").getValue());
+                mUser.add(user);
+                mImage.add(imageUrl);
+                mVideo.add(videoUrl);
+
+                if (replacedMessageText != null) {
+
+                    mText.add(replacedMessageText);
+                } else {
+
+                    mText.add(messageText);
+                }
+
+                mShapeUUID.add(shapeUUID);
+                mUserIsWithinShape.add(userIsWithinShape);
+                mShapeIsCircle.add(shapeIsCircle);
+                mShapeSize.add(size);
+                mShapeLat.add(lat);
+                mShapeLon.add(lon);
+                mPosition.add(position);
+                mSeenByUser.add(seenByUser);
 
                 initDirectMentionsAdapter();
             }

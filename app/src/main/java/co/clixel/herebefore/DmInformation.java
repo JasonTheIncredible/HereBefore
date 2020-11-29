@@ -1,6 +1,10 @@
 package co.clixel.herebefore;
 
+import android.util.Pair;
+
 import androidx.annotation.Keep;
+
+import java.util.ArrayList;
 
 public class DmInformation {
 
@@ -10,6 +14,7 @@ public class DmInformation {
     public int position;
     public double size;
     public double lat, lon;
+    public ArrayList<Pair<String, Integer>> userPositionPairs;
 
     @Keep
     DmInformation() {
@@ -57,6 +62,10 @@ public class DmInformation {
 
     public void setUserIsWithinShape(Boolean userIsWithinShape) {
         this.userIsWithinShape = userIsWithinShape;
+    }
+
+    public void setUserPositionPairs(ArrayList<Pair<String, Integer>> userPositionPairs) {
+        this.userPositionPairs = userPositionPairs;
     }
 
     public void setUserUUID(String userUUID) {

@@ -605,6 +605,10 @@ public class Chat extends Fragment implements
                                     }
                                     dmInformation.setShapeUUID(shapeUUID);
                                     dmInformation.setUserIsWithinShape(userIsWithinShape);
+                                    if (userPositionPairs != null && !userPositionPairs.isEmpty()) {
+
+                                        dmInformation.setUserPositionPairs(userPositionPairs);
+                                    }
                                     dmInformation.setUserUUID(userUUID);
 
                                     // Firebase does not allow ".", so replace them with ",".
@@ -831,6 +835,29 @@ public class Chat extends Fragment implements
                     String imageUrl = (String) ds.child("imageUrl").getValue();
                     String videoUrl = (String) ds.child("videoUrl").getValue();
                     String messageText = (String) ds.child("message").getValue();
+
+                    // Truncate mentions from Firebase.
+                    String replacedMessageText = null;
+                    if (!userPositionPairsFromFirebase.isEmpty()) {
+
+                        for (Pair<String, Integer> pair : userPositionPairsFromFirebase) {
+
+                            if (replacedMessageText != null) {
+
+                                if (replacedMessageText.contains(pair.first)) {
+
+                                    replacedMessageText = replacedMessageText.replace(pair.first, pair.first.substring(0, 10) + "...");
+                                }
+                            } else {
+
+                                if (messageText.contains(pair.first)) {
+
+                                    replacedMessageText = messageText.replace(pair.first, pair.first.substring(0, 10) + "...");
+                                }
+                            }
+                        }
+                    }
+
                     Boolean userIsWithinShape = (Boolean) ds.child("userIsWithinShape").getValue();
                     Integer position = ((Long) ds.child("position").getValue()).intValue();
                     DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
@@ -848,7 +875,15 @@ public class Chat extends Fragment implements
                     mUser.add(i, user);
                     mImage.add(i, imageUrl);
                     mVideo.add(i, videoUrl);
-                    mText.add(i, messageText);
+
+                    if (replacedMessageText != null) {
+
+                        mText.add(i, replacedMessageText);
+                    } else {
+
+                        mText.add(i, messageText);
+                    }
+
                     mUserIsWithinShape.add(i, userIsWithinShape);
                     // No need to fill the arrayList if user did not click from DM.
                     if (directMentionsPosition != 0) {
@@ -949,6 +984,29 @@ public class Chat extends Fragment implements
                 String imageUrl = (String) snapshot.child("imageUrl").getValue();
                 String videoUrl = (String) snapshot.child("videoUrl").getValue();
                 String messageText = (String) snapshot.child("message").getValue();
+
+                // Truncate mentions from Firebase.
+                String replacedMessageText = null;
+                if (!userPositionPairsFromFirebase.isEmpty()) {
+
+                    for (Pair<String, Integer> pair : userPositionPairsFromFirebase) {
+
+                        if (replacedMessageText != null) {
+
+                            if (replacedMessageText.contains(pair.first)) {
+
+                                replacedMessageText = replacedMessageText.replace(pair.first, pair.first.substring(0, 10) + "...");
+                            }
+                        } else {
+
+                            if (messageText.contains(pair.first)) {
+
+                                replacedMessageText = messageText.replace(pair.first, pair.first.substring(0, 10) + "...");
+                            }
+                        }
+                    }
+                }
+
                 Boolean userIsWithinShape = (Boolean) snapshot.child("userIsWithinShape").getValue();
                 DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
                 // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
@@ -965,7 +1023,13 @@ public class Chat extends Fragment implements
                 mUser.add(user);
                 mImage.add(imageUrl);
                 mVideo.add(videoUrl);
-                mText.add(messageText);
+                if (replacedMessageText != null) {
+
+                    mText.add(replacedMessageText);
+                } else {
+
+                    mText.add(messageText);
+                }
                 mUserIsWithinShape.add(userIsWithinShape);
 
                 // Read RecyclerView scroll position (for use in initChatAdapter).
@@ -2730,6 +2794,10 @@ public class Chat extends Fragment implements
                                         }
                                         dmInformation.setShapeUUID(shapeUUID);
                                         dmInformation.setUserIsWithinShape(userIsWithinShape);
+                                        if (userPositionPairs != null && !userPositionPairs.isEmpty()) {
+
+                                            dmInformation.setUserPositionPairs(userPositionPairs);
+                                        }
                                         dmInformation.setUserUUID(userUUID);
                                         dmInformation.setVideoUrl(uri.toString());
 
@@ -2990,6 +3058,10 @@ public class Chat extends Fragment implements
                                         }
                                         dmInformation.setShapeUUID(shapeUUID);
                                         dmInformation.setUserIsWithinShape(userIsWithinShape);
+                                        if (userPositionPairs != null && !userPositionPairs.isEmpty()) {
+
+                                            dmInformation.setUserPositionPairs(userPositionPairs);
+                                        }
                                         dmInformation.setUserUUID(userUUID);
 
                                         // Firebase does not allow ".", so replace them with ",".

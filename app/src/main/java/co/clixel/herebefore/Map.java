@@ -122,10 +122,10 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private final List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // Truncate mention when adding it to Chat.
     // Add spannable to mentions when adding to Chat's recyclerView.
     // Add functions to adjust spannable string when changing a messageThread.
     // Allow user to click on a mention in Chat and scroll to that mention for context - spannable string.
+    // Switch from initChatAdapter() to notifyChatAdapter() to increase speed?
     // Make scrollToPosition work in Chat after a restart. Also prevent reloading Chat and DMs every time app restarts.
     // Find a way to not clear and reload map every time user returns from clicking a shape. Same with DM notification.
     // Make "creating a point" more accurate to the user's location.
