@@ -122,13 +122,12 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private final List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // Add spannable to mentions when adding to Chat's recyclerView.
-    // Add functions to adjust spannable string when changing a messageThread.
+    // Have spannable scroll to, and highlight, correct position in Chat.
+    // Add Firebase functions to adjust spannable string when changing a messageThread.
     // Allow user to click on a mention in Chat and scroll to that mention for context - spannable string.
-    // Switch from initChatAdapter() to notifyChatAdapter() to increase speed?
+    // Switch from initChatAdapter() to notifyChatAdapter() to increase speed? Generally, make Chat load faster, especially if there are multiple ClickableSpans
     // Make scrollToPosition work in Chat after a restart. Also prevent reloading Chat and DMs every time app restarts.
     // Find a way to not clear and reload map every time user returns from clicking a shape. Same with DM notification.
-    // Make "creating a point" more accurate to the user's location.
     // Get rid of "larger" shapes and only allow points? (Or make allowable shapes smaller?). Track where user is while taking the original video or picture and make the shape that big?
     // If user is on a point, prevent creating a new one. Deal with overlapping shapes in general.
     // Prevent data scraping (hide email addresses and other personal information).
@@ -138,6 +137,9 @@ public class Map extends FragmentActivity implements
     // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.
     // Add ability to add both picture and video to firebase at the same time.
 
+    // Increase point radius? Also, make "creating a point" more accurate to the user's location.
+    // Only be able to see things you've visited - Kenny.
+    // Develop an Apple version.
     // Require picture on creating a shape? Also, long press a shape to see a popup of that picture.
     // Add ability to filter recyclerView by type of content (recorded at the scene...).
     // Allow private posts or sharing with specific people.

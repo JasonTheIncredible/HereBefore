@@ -31,6 +31,10 @@ import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Parcel;
 import android.provider.MediaStore;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.method.LinkMovementMethod;
+import android.text.style.ClickableSpan;
 import android.util.Base64;
 import android.util.Base64OutputStream;
 import android.util.Log;
@@ -103,6 +107,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import id.zelory.compressor.Compressor;
 
@@ -117,7 +123,8 @@ public class Chat extends Fragment implements
     private static final String TAG = "Chat";
     private static final int Request_ID_Take_Photo = 1700, Request_ID_Record_Video = 1800;
     private MentionsEditText mInput;
-    private ArrayList<String> removedDuplicatesMentions, mTime, mUser, mImage, mVideo, mText, mSuggestions, allMentions, emailsAL;
+    private ArrayList<String> removedDuplicatesMentions, mTime, mUser, mImage, mVideo, mSuggestions, allMentions, emailsAL;
+    private ArrayList<SpannableString> mText;
     private ArrayList<Boolean> mUserIsWithinShape;
     private ArrayList<Integer> mPosition;
     private ArrayList<Long> datesAL;
@@ -836,27 +843,7 @@ public class Chat extends Fragment implements
                     String videoUrl = (String) ds.child("videoUrl").getValue();
                     String messageText = (String) ds.child("message").getValue();
 
-                    // Truncate mentions from Firebase.
-                    String replacedMessageText = null;
-                    if (!userPositionPairsFromFirebase.isEmpty()) {
-
-                        for (Pair<String, Integer> pair : userPositionPairsFromFirebase) {
-
-                            if (replacedMessageText != null) {
-
-                                if (replacedMessageText.contains(pair.first)) {
-
-                                    replacedMessageText = replacedMessageText.replace(pair.first, pair.first.substring(0, 10) + "...");
-                                }
-                            } else {
-
-                                if (messageText.contains(pair.first)) {
-
-                                    replacedMessageText = messageText.replace(pair.first, pair.first.substring(0, 10) + "...");
-                                }
-                            }
-                        }
-                    }
+                    SpannableString spannableMessageText = createSpannableMessage(messageText);
 
                     Boolean userIsWithinShape = (Boolean) ds.child("userIsWithinShape").getValue();
                     Integer position = ((Long) ds.child("position").getValue()).intValue();
@@ -875,15 +862,7 @@ public class Chat extends Fragment implements
                     mUser.add(i, user);
                     mImage.add(i, imageUrl);
                     mVideo.add(i, videoUrl);
-
-                    if (replacedMessageText != null) {
-
-                        mText.add(i, replacedMessageText);
-                    } else {
-
-                        mText.add(i, messageText);
-                    }
-
+                    mText.add(i, spannableMessageText);
                     mUserIsWithinShape.add(i, userIsWithinShape);
                     // No need to fill the arrayList if user did not click from DM.
                     if (directMentionsPosition != 0) {
@@ -985,27 +964,7 @@ public class Chat extends Fragment implements
                 String videoUrl = (String) snapshot.child("videoUrl").getValue();
                 String messageText = (String) snapshot.child("message").getValue();
 
-                // Truncate mentions from Firebase.
-                String replacedMessageText = null;
-                if (!userPositionPairsFromFirebase.isEmpty()) {
-
-                    for (Pair<String, Integer> pair : userPositionPairsFromFirebase) {
-
-                        if (replacedMessageText != null) {
-
-                            if (replacedMessageText.contains(pair.first)) {
-
-                                replacedMessageText = replacedMessageText.replace(pair.first, pair.first.substring(0, 10) + "...");
-                            }
-                        } else {
-
-                            if (messageText.contains(pair.first)) {
-
-                                replacedMessageText = messageText.replace(pair.first, pair.first.substring(0, 10) + "...");
-                            }
-                        }
-                    }
-                }
+                SpannableString spannableMessageText = createSpannableMessage(messageText);
 
                 Boolean userIsWithinShape = (Boolean) snapshot.child("userIsWithinShape").getValue();
                 DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
@@ -1023,13 +982,7 @@ public class Chat extends Fragment implements
                 mUser.add(user);
                 mImage.add(imageUrl);
                 mVideo.add(videoUrl);
-                if (replacedMessageText != null) {
-
-                    mText.add(replacedMessageText);
-                } else {
-
-                    mText.add(messageText);
-                }
+                mText.add(spannableMessageText);
                 mUserIsWithinShape.add(userIsWithinShape);
 
                 // Read RecyclerView scroll position (for use in initChatAdapter).
@@ -1066,6 +1019,94 @@ public class Chat extends Fragment implements
         };
 
         query.addChildEventListener(childEventListener);
+    }
+
+    private SpannableString createSpannableMessage(String messageText) {
+
+        ArrayList<String> possibleMentions = new ArrayList<>();
+        // Pattern matches UUID for mentions.
+        Pattern pattern = Pattern.compile("\\b[0-9a-f]{8}\\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\\b[0-9a-f]{12}\\b");
+        Matcher matcher = pattern.matcher(messageText);
+        while (matcher.find()) {
+
+            // Add the strings that match the UUID pattern to an arrayList. This ensures they are in order from the beginning of the sentence to the end.
+            possibleMentions.add(matcher.group());
+        }
+
+        // Truncate mentions from Firebase.
+        String replacedMessageText = null;
+        SpannableString spannableMessageText = null;
+        if (!possibleMentions.isEmpty()) {
+
+            ArrayList<Integer> indexOfMention = new ArrayList<>();
+            ArrayList<Integer> positionOfMention = new ArrayList<>();
+            for (String possibleMention : possibleMentions) {
+
+                // The "else" loop will go first - it will create replacedMessageText with truncated mentions and then replacedMessageText will continue to truncate mentions within itself.
+                if (replacedMessageText != null) {
+
+                    if (userPositionPairsFromFirebase != null) {
+
+                        for (Pair<String, Integer> pair : userPositionPairsFromFirebase) {
+
+                            if (possibleMention.equals(pair.first)) {
+
+                                String replacement = pair.first.substring(0, 10) + "...";
+                                replacedMessageText = replacedMessageText.replace(pair.first, replacement);
+                                indexOfMention.add(replacedMessageText.indexOf(replacement));
+                                positionOfMention.add(pair.second);
+                                break;
+                            }
+                        }
+                    }
+                } else {
+
+                    if (userPositionPairsFromFirebase != null) {
+
+                        for (Pair<String, Integer> pair : userPositionPairsFromFirebase) {
+
+                            if (pair.first.equals(possibleMention)) {
+
+                                String replacement = pair.first.substring(0, 10) + "...";
+                                replacedMessageText = messageText.replace(pair.first, replacement);
+                                indexOfMention.add(replacedMessageText.indexOf(replacement));
+                                positionOfMention.add(pair.second);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Clear the list to prevent unnecessary memory buildup.
+            possibleMentions.clear();
+
+            // After the replacedMessageText has been created with all the truncated mentions, add the ClickableSpans.
+            if (!indexOfMention.isEmpty()) {
+
+                spannableMessageText = new SpannableString(replacedMessageText);
+            }
+
+            for (int i = 0; i < positionOfMention.size(); i++) {
+
+                int finalI = i;
+                ClickableSpan clickableSpan = new ClickableSpan() {
+
+                    @Override
+                    public void onClick(@NonNull View widget) {
+
+                        toastMessageShort(positionOfMention.get(finalI).toString());
+                    }
+                };
+
+                spannableMessageText.setSpan(clickableSpan, indexOfMention.get(i) - 1, indexOfMention.get(i) + 13, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
+        } else {
+
+            spannableMessageText = new SpannableString(messageText);
+        }
+
+        return spannableMessageText;
     }
 
     @Override
@@ -1257,9 +1298,11 @@ public class Chat extends Fragment implements
     private class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ViewHolder> {
 
         private final Context mContext;
-        private final ArrayList<String> mMessageTime, mMessageUser, mMessageImage, mMessageImageVideo, mMessageText;
+        private final ArrayList<String> mMessageTime, mMessageUser, mMessageImage, mMessageImageVideo;
+        private final ArrayList<SpannableString> mMessageText;
         private final ArrayList<Boolean> mUserIsWithinShape;
         private final ArrayList<Integer> mPosition;
+        // theme == true is light mode.
         private boolean theme;
 
         class ViewHolder extends RecyclerView.ViewHolder {
@@ -1393,7 +1436,7 @@ public class Chat extends Fragment implements
             }
         }
 
-        ChatAdapter(Context context, ArrayList<String> mMessageTime, ArrayList<String> mMessageUser, ArrayList<String> mMessageImage, ArrayList<String> mMessageImageVideo, ArrayList<String> mMessageText, ArrayList<Boolean> mUserIsWithinShape, ArrayList<Integer> mPosition) {
+        ChatAdapter(Context context, ArrayList<String> mMessageTime, ArrayList<String> mMessageUser, ArrayList<String> mMessageImage, ArrayList<String> mMessageImageVideo, ArrayList<SpannableString> mMessageText, ArrayList<Boolean> mUserIsWithinShape, ArrayList<Integer> mPosition) {
 
             this.mContext = context;
             this.mMessageTime = mMessageTime;
@@ -1479,6 +1522,12 @@ public class Chat extends Fragment implements
                         holder.messageTextInside.setLayoutParams(params);
                     }
                     holder.messageTextInside.setText(mMessageText.get(position));
+                    if (!theme) {
+                        holder.messageTextInside.setLinkTextColor(Color.GREEN);
+                    } else {
+                        holder.messageTextInside.setLinkTextColor(Color.BLUE);
+                    }
+                    holder.messageTextInside.setMovementMethod(LinkMovementMethod.getInstance());
                     holder.messageTextInside.setVisibility(View.VISIBLE);
                 }
             } else {
@@ -1542,6 +1591,12 @@ public class Chat extends Fragment implements
                     }
 
                     holder.messageTextOutside.setText(mMessageText.get(position));
+                    if (!theme) {
+                        holder.messageTextInside.setLinkTextColor(Color.GREEN);
+                    } else {
+                        holder.messageTextInside.setLinkTextColor(Color.BLUE);
+                    }
+                    holder.messageUserOutside.setMovementMethod(LinkMovementMethod.getInstance());
                     holder.messageTextOutside.setVisibility(View.VISIBLE);
                 }
             }
