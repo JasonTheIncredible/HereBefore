@@ -133,7 +133,7 @@ public class Chat extends Fragment implements
     private static int index = -1, top = -1, last;
     private ChildEventListener childEventListener;
     private FloatingActionButton sendButton, mediaButton;
-    private boolean firstLoad, loadingOlderMessages, noMoreMessages = false, fromVideo, needProgressIconIndeterminate, reachedEndOfRecyclerView = false, recyclerViewHasScrolled = false, messageSent = false, fileIsImage, checkPermissionsPicture,
+    private boolean firstLoad, loadingOlderMessages, noMoreMessages = false, clickedOnMention = false, fromDms = false, fromVideo, needProgressIconIndeterminate, reachedEndOfRecyclerView = false, recyclerViewHasScrolled = false, messageSent = false, fileIsImage, checkPermissionsPicture,
             newShape, threeMarkers, fourMarkers, fiveMarkers, sixMarkers, sevenMarkers, eightMarkers;
     private Boolean userIsWithinShape;
     private View.OnLayoutChangeListener onLayoutChangeListener;
@@ -158,7 +158,8 @@ public class Chat extends Fragment implements
     private Query query;
     private Drawable imageDrawable, videoDrawable;
     private MentionsEditText.MentionWatcher mentionWatcher;
-    private int latFirebaseValue, lonFirebaseValue, directMentionsPosition;
+    private int latFirebaseValue, lonFirebaseValue;
+    private Integer positionToHighlight, previouslyHighlightedPosition;
     private final WordTokenizerConfig tokenizerConfig = new WordTokenizerConfig
             .Builder()
             .setWordBreakChars(", ")
@@ -181,7 +182,8 @@ public class Chat extends Fragment implements
             Bundle extras = mActivity.getIntent().getExtras();
             if (extras != null) {
 
-                directMentionsPosition = extras.getInt("directMentionsPosition");
+                positionToHighlight = extras.getInt("positionToHighlight");
+                fromDms = extras.getBoolean("fromDms");
                 newShape = extras.getBoolean("newShape");
                 latFirebaseValue = extras.getInt("shapeLat");
                 lonFirebaseValue = extras.getInt("shapeLon");
@@ -223,6 +225,8 @@ public class Chat extends Fragment implements
 
         userPositionPairs = new ArrayList<>();
         userPositionPairsFromFirebase = new ArrayList<>();
+
+        previouslyHighlightedPosition = null;
     }
 
     @NonNull
@@ -270,10 +274,8 @@ public class Chat extends Fragment implements
         mSuggestions = new ArrayList<>();
         allMentions = new ArrayList<>();
         mUserIsWithinShape = new ArrayList<>();
-        // No need to create the arrayList if user did not click from DM.
-        if (directMentionsPosition != 0) {
-            mPosition = new ArrayList<>();
-        }
+        mPosition = new ArrayList<>();
+
         // Prevents clearing this list if user adds a DM and takes a picture.
         if (removedDuplicatesMentions == null) {
             removedDuplicatesMentions = new ArrayList<>();
@@ -307,6 +309,9 @@ public class Chat extends Fragment implements
         // Set to true to scroll to the bottom of chatRecyclerView. Also prevents duplicate items in addQuery.
         firstLoad = true;
         loadingOlderMessages = false;
+        // Once older messages stay loaded after restart, noMoreMessages = false here can go away.
+        // Need to set noMoreMessages to false, or else user will not be able to scroll up upon restart.
+        noMoreMessages = false;
 
         // Clear text and prevent keyboard from opening.
         if (mInput != null) {
@@ -341,7 +346,7 @@ public class Chat extends Fragment implements
             mentionsRecyclerView.setVisibility(View.GONE);
         }
 
-        getFirebaseMessages(null);
+        getFirebaseMessages(null, null);
 
         // Check RecyclerView scroll state (to allow the layout to move up when keyboard appears).
         if (chatRecyclerView != null) {
@@ -357,6 +362,8 @@ public class Chat extends Fragment implements
 
                         // Used to detect if user has just entered the recyclerviewlayout (so layout needs to move up when keyboard appears).
                         recyclerViewHasScrolled = true;
+
+                        reachedEndOfRecyclerView = false;
                     }
 
                     if (newState == RecyclerView.SCROLL_STATE_IDLE) {
@@ -368,7 +375,7 @@ public class Chat extends Fragment implements
 
                             progressIconIndeterminate.setVisibility(View.VISIBLE);
                             loadingOlderMessages = true;
-                            getFirebaseMessages(datesAL.get(0));
+                            getFirebaseMessages(datesAL.get(0), null);
                         }
 
                         // If RecyclerView can't be scrolled down, reachedEndOfRecyclerView = true.
@@ -702,7 +709,7 @@ public class Chat extends Fragment implements
 
                 String mentionableUUID = mention.getSuggestiblePrimaryText();
 
-                Integer mentionablePosition = mUser.indexOf(mentionableUUID);
+                Integer mentionablePosition = mPosition.indexOf(mUser.indexOf(mentionableUUID));
 
                 Pair<String, Integer> mentionablePair = new Pair<>(mentionableUUID, mentionablePosition);
 
@@ -738,16 +745,17 @@ public class Chat extends Fragment implements
         mInput.addMentionWatcher(mentionWatcher);
     }
 
-    private void getFirebaseMessages(Long nodeID) {
+    // positionOfMention is used when user clicks on a mention.
+    private void getFirebaseMessages(Long nodeID, Integer positionOfMention) {
 
         Log.i(TAG, "getFirebaseMessages()");
 
         final Query[] query0 = new Query[1];
         final int[] latestPosition = {0};
 
-        if (nodeID == null) {
+        if (nodeID == null && positionOfMention == null) {
 
-            if (directMentionsPosition != 0) {
+            if (positionToHighlight != 0) {
 
                 // Get the latest item and check the position. This will let us know how far back to paginate.
                 query0[0] = FirebaseDatabase.getInstance().getReference()
@@ -762,7 +770,7 @@ public class Chat extends Fragment implements
                         for (DataSnapshot ds : snapshot.getChildren()) {
 
                             latestPosition[0] = ((Long) ds.child("position").getValue()).intValue();
-                            int loadMessagesFromDm = (latestPosition[0] - directMentionsPosition) + 20;
+                            int loadMessagesFromDm = (latestPosition[0] - positionToHighlight) + 20;
 
                             query0[0] = FirebaseDatabase.getInstance().getReference()
                                     .child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID)
@@ -786,7 +794,7 @@ public class Chat extends Fragment implements
 
                 fillRecyclerView(query0[0], 0);
             }
-        } else {
+        } else if (nodeID != null && positionOfMention == null) {
 
             query0[0] = FirebaseDatabase.getInstance().getReference()
                     .child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID)
@@ -795,6 +803,15 @@ public class Chat extends Fragment implements
                     .limitToLast(20);
 
             fillRecyclerView(query0[0], 0);
+        } else if (nodeID != null) {
+
+            query0[0] = FirebaseDatabase.getInstance().getReference()
+                    .child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID)
+                    .orderByChild("date")
+                    .endAt(nodeID)
+                    .limitToLast((int) (nodeID - positionOfMention) + 20);
+
+            fillRecyclerView(query0[0], mPosition.get(mPosition.size() - 1) - positionToHighlight);
         }
     }
 
@@ -815,9 +832,22 @@ public class Chat extends Fragment implements
                     toastMessageLong("Shape was deleted. Please return to map.");
                 }
 
-                if (directMentionsPosition == 0 && snapshot.getChildrenCount() < 20 || directMentionsPosition != 0 && snapshot.getChildrenCount() < (loadMessagesFromDm)) {
+                if (snapshot.getChildrenCount() < 20 || snapshot.getChildrenCount() < loadMessagesFromDm) {
 
                     noMoreMessages = true;
+
+                    // If 20 messages exist and the user scrolls to the top, a duplicate of the first item will be added. The following prevents that.
+                    if (snapshot.getChildrenCount() == 1) {
+
+                        for (DataSnapshot ds : snapshot.getChildren()) {
+
+                            if (((Long) ds.child("position").getValue()).intValue() == 0) {
+
+                                progressIconIndeterminate.setVisibility(View.GONE);
+                                return;
+                            }
+                        }
+                    }
                 }
 
                 int i = 0;
@@ -864,10 +894,8 @@ public class Chat extends Fragment implements
                     mVideo.add(i, videoUrl);
                     mText.add(i, spannableMessageText);
                     mUserIsWithinShape.add(i, userIsWithinShape);
-                    // No need to fill the arrayList if user did not click from DM.
-                    if (directMentionsPosition != 0) {
-                        mPosition.add(i, position);
-                    }
+                    mPosition.add(i, position);
+
                     i++;
 
                     // Prevent duplicates.
@@ -878,7 +906,7 @@ public class Chat extends Fragment implements
                 }
 
                 // Read RecyclerView scroll position (for use in initChatAdapter).
-                if (chatRecyclerViewLinearLayoutManager != null && chatRecyclerView != null) {
+                if (!loadingOlderMessages && chatRecyclerViewLinearLayoutManager != null && chatRecyclerView != null) {
 
                     index = chatRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
                     last = chatRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
@@ -893,6 +921,39 @@ public class Chat extends Fragment implements
 
                         chatRecyclerView.getAdapter().notifyItemRangeInserted(0, (int) snapshot.getChildrenCount() - 1);
                         progressIconIndeterminate.setVisibility(View.GONE);
+                    }
+                }
+
+                if (clickedOnMention) {
+
+                    // Show a couple messages above the position, as this seems to be better visually.
+                    int scrollPosition = positionToHighlight - 5;
+                    if (scrollPosition < 0) {
+
+                        scrollPosition = 0;
+                    }
+
+                    int finalScrollPosition = scrollPosition;
+
+                    if (mPosition.contains(finalScrollPosition)) {
+
+                        if (chatRecyclerView != null) {
+
+                            if (chatRecyclerView.getAdapter() != null) {
+
+                                // No need to paginate.
+                                chatRecyclerView.postDelayed(() -> chatRecyclerView.smoothScrollToPosition(
+
+                                        finalScrollPosition), 100);
+
+                                if (previouslyHighlightedPosition != null) {
+
+                                    chatRecyclerView.getAdapter().notifyItemChanged(previouslyHighlightedPosition);
+                                }
+
+                                chatRecyclerView.getAdapter().notifyItemChanged(positionToHighlight);
+                            }
+                        }
                     }
                 }
 
@@ -944,6 +1005,8 @@ public class Chat extends Fragment implements
 
                 for (DataSnapshot ds : snapshot.child("userPositionPairs").getChildren()) {
 
+                    datesAL.add((Long) ds.child("date").getValue());
+
                     Pair<String, Integer> pair = new Pair<>((String) ds.child("first").getValue(), (int) (long) ds.child("second").getValue());
                     if (!userPositionPairsFromFirebase.contains(pair)) {
 
@@ -967,6 +1030,7 @@ public class Chat extends Fragment implements
                 SpannableString spannableMessageText = createSpannableMessage(messageText);
 
                 Boolean userIsWithinShape = (Boolean) snapshot.child("userIsWithinShape").getValue();
+                Integer position = ((Long) snapshot.child("position").getValue()).intValue();
                 DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
                 // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
                 // This will cause onDataChange to fire twice; optimizations could be made in the future.
@@ -984,6 +1048,7 @@ public class Chat extends Fragment implements
                 mVideo.add(videoUrl);
                 mText.add(spannableMessageText);
                 mUserIsWithinShape.add(userIsWithinShape);
+                mPosition.add(position);
 
                 // Read RecyclerView scroll position (for use in initChatAdapter).
                 if (chatRecyclerViewLinearLayoutManager != null) {
@@ -1095,7 +1160,44 @@ public class Chat extends Fragment implements
                     @Override
                     public void onClick(@NonNull View widget) {
 
-                        toastMessageShort(positionOfMention.get(finalI).toString());
+                        clickedOnMention = true;
+
+                        // Show a couple messages above the position, as this seems to be better visually.
+                        int scrollPosition = positionOfMention.get(finalI) - 5;
+                        if (scrollPosition < 0) {
+
+                            scrollPosition = 0;
+                        }
+
+                        int finalScrollPosition = scrollPosition;
+
+                        if (mPosition.contains(finalScrollPosition)) {
+
+                            if (chatRecyclerView != null) {
+
+                                if (chatRecyclerView.getAdapter() != null) {
+
+                                    // No need to paginate.
+                                    chatRecyclerView.postDelayed(() -> chatRecyclerView.smoothScrollToPosition(
+
+                                            finalScrollPosition), 100);
+
+                                    if (previouslyHighlightedPosition != null) {
+
+                                        chatRecyclerView.getAdapter().notifyItemChanged(previouslyHighlightedPosition);
+                                    }
+
+                                    positionToHighlight = positionOfMention.get(finalI);
+                                    chatRecyclerView.getAdapter().notifyItemChanged(positionToHighlight);
+                                }
+                            }
+                        } else {
+
+                            // Pagination needed.
+                            loadingOlderMessages = true;
+                            positionToHighlight = positionOfMention.get(finalI);
+                            getFirebaseMessages(datesAL.get(0), positionOfMention.get(finalI));
+                        }
                     }
                 };
 
@@ -1267,10 +1369,10 @@ public class Chat extends Fragment implements
         chatRecyclerView.setHasFixedSize(true);
         chatRecyclerView.setLayoutManager(chatRecyclerViewLinearLayoutManager);
 
-        if (directMentionsPosition != 0) {
+        if (positionToHighlight != 0 && !reachedEndOfRecyclerView && !messageSent) {
 
             // Show a couple messages above the position, as this seems to be better visually.
-            int scrollPosition = directMentionsPosition - 5;
+            int scrollPosition = positionToHighlight - 5;
             if (scrollPosition < 0) {
 
                 scrollPosition = 0;
@@ -1622,10 +1724,10 @@ public class Chat extends Fragment implements
                 }
             }
 
-            // "Highlight" the directMention message.
-            if (directMentionsPosition != 0) {
+            // "Highlight" the message.
+            if (clickedOnMention || fromDms) {
 
-                if (mPosition.get(position) == directMentionsPosition) {
+                if (mPosition.get(position).equals(positionToHighlight)) {
 
                     if (theme) {
 
@@ -1635,7 +1737,7 @@ public class Chat extends Fragment implements
                         holder.itemView.setBackgroundColor(Color.parseColor("#1338BE"));
                     }
 
-                    directMentionsPosition = 0;
+                    previouslyHighlightedPosition = positionToHighlight;
                 }
             }
         }

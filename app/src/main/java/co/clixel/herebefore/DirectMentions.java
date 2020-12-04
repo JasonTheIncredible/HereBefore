@@ -739,12 +739,13 @@ public class DirectMentions extends Fragment {
                                                     Intent Activity = new Intent(mContext, Navigation.class);
                                                     Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
                                                     Activity.putExtra("radius", mShapeSize.get(getAdapterPosition()).doubleValue());
-                                                    Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
+                                                    Activity.putExtra("positionToHighlight", mPosition.get(getAdapterPosition()));
                                                     Activity.putExtra("userIsWithinShape", userIsWithinShape);
                                                     Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()).intValue());
                                                     Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()).intValue());
                                                     Activity.putExtra("userLatitude", userLatitude);
                                                     Activity.putExtra("userLongitude", userLongitude);
+                                                    Activity.putExtra("fromDms", true);
 
                                                     loadingIcon.setVisibility(View.GONE);
 
@@ -764,12 +765,13 @@ public class DirectMentions extends Fragment {
                                 Intent Activity = new Intent(mContext, Navigation.class);
                                 Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
                                 Activity.putExtra("radius", mShapeSize.get(getAdapterPosition()).doubleValue());
-                                Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
+                                Activity.putExtra("positionToHighlight", mPosition.get(getAdapterPosition()));
                                 Activity.putExtra("userIsWithinShape", false);
                                 Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()).intValue());
                                 Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()).intValue());
                                 Activity.putExtra("userLatitude", userLatitude);
                                 Activity.putExtra("userLongitude", userLongitude);
+                                Activity.putExtra("fromDms", true);
 
                                 loadingIcon.setVisibility(View.GONE);
 
@@ -853,12 +855,13 @@ public class DirectMentions extends Fragment {
                                                 Intent Activity = new Intent(mContext, Navigation.class);
                                                 Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
                                                 Activity.putExtra("polygonArea", mShapeSize.get(getAdapterPosition()).doubleValue());
-                                                Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
+                                                Activity.putExtra("positionToHighlight", mPosition.get(getAdapterPosition()));
                                                 Activity.putExtra("userIsWithinShape", userIsWithinShape);
                                                 Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()).intValue());
                                                 Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()).intValue());
                                                 Activity.putExtra("userLatitude", userLatitude);
                                                 Activity.putExtra("userLongitude", userLongitude);
+                                                Activity.putExtra("fromDms", true);
 
                                                 loadingIcon.setVisibility(View.GONE);
 
@@ -882,12 +885,13 @@ public class DirectMentions extends Fragment {
                                                 Intent Activity = new Intent(mContext, Navigation.class);
                                                 Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
                                                 Activity.putExtra("polygonArea", mShapeSize.get(getAdapterPosition()).doubleValue());
-                                                Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
+                                                Activity.putExtra("positionToHighlight", mPosition.get(getAdapterPosition()));
                                                 Activity.putExtra("userIsWithinShape", userIsWithinShape);
                                                 Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()).intValue());
                                                 Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()).intValue());
                                                 Activity.putExtra("userLatitude", userLatitude);
                                                 Activity.putExtra("userLongitude", userLongitude);
+                                                Activity.putExtra("fromDms", true);
 
                                                 loadingIcon.setVisibility(View.GONE);
 
@@ -910,12 +914,13 @@ public class DirectMentions extends Fragment {
                                                 Intent Activity = new Intent(mContext, Navigation.class);
                                                 Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
                                                 Activity.putExtra("polygonArea", mShapeSize.get(getAdapterPosition()).doubleValue());
-                                                Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
+                                                Activity.putExtra("positionToHighlight", mPosition.get(getAdapterPosition()));
                                                 Activity.putExtra("userIsWithinShape", userIsWithinShape);
                                                 Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()).intValue());
                                                 Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()).intValue());
                                                 Activity.putExtra("userLatitude", userLatitude);
                                                 Activity.putExtra("userLongitude", userLongitude);
+                                                Activity.putExtra("fromDms", true);
 
                                                 loadingIcon.setVisibility(View.GONE);
 
@@ -937,12 +942,13 @@ public class DirectMentions extends Fragment {
                                                 Intent Activity = new Intent(mContext, Navigation.class);
                                                 Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
                                                 Activity.putExtra("polygonArea", mShapeSize.get(getAdapterPosition()).doubleValue());
-                                                Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
+                                                Activity.putExtra("positionToHighlight", mPosition.get(getAdapterPosition()));
                                                 Activity.putExtra("userIsWithinShape", userIsWithinShape);
                                                 Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()).intValue());
                                                 Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()).intValue());
                                                 Activity.putExtra("userLatitude", userLatitude);
                                                 Activity.putExtra("userLongitude", userLongitude);
+                                                Activity.putExtra("fromDms", true);
 
                                                 loadingIcon.setVisibility(View.GONE);
 
@@ -963,12 +969,13 @@ public class DirectMentions extends Fragment {
                                                 Intent Activity = new Intent(mContext, Navigation.class);
                                                 Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
                                                 Activity.putExtra("polygonArea", mShapeSize.get(getAdapterPosition()).doubleValue());
-                                                Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
+                                                Activity.putExtra("positionToHighlight", mPosition.get(getAdapterPosition()));
                                                 Activity.putExtra("userIsWithinShape", userIsWithinShape);
                                                 Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()).intValue());
                                                 Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()).intValue());
                                                 Activity.putExtra("userLatitude", userLatitude);
                                                 Activity.putExtra("userLongitude", userLongitude);
+                                                Activity.putExtra("fromDms", true);
 
                                                 loadingIcon.setVisibility(View.GONE);
 
@@ -988,12 +995,13 @@ public class DirectMentions extends Fragment {
                                                 Intent Activity = new Intent(mContext, Navigation.class);
                                                 Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
                                                 Activity.putExtra("polygonArea", mShapeSize.get(getAdapterPosition()).doubleValue());
-                                                Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
+                                                Activity.putExtra("positionToHighlight", mPosition.get(getAdapterPosition()));
                                                 Activity.putExtra("userIsWithinShape", userIsWithinShape);
                                                 Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()).intValue());
                                                 Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()).intValue());
                                                 Activity.putExtra("userLatitude", userLatitude);
                                                 Activity.putExtra("userLongitude", userLongitude);
+                                                Activity.putExtra("fromDms", true);
 
                                                 loadingIcon.setVisibility(View.GONE);
 
@@ -1012,12 +1020,13 @@ public class DirectMentions extends Fragment {
                                 Intent Activity = new Intent(mContext, Navigation.class);
                                 Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
                                 Activity.putExtra("radius", mShapeSize.get(getAdapterPosition()).doubleValue());
-                                Activity.putExtra("directMentionsPosition", mPosition.get(getAdapterPosition()));
+                                Activity.putExtra("positionToHighlight", mPosition.get(getAdapterPosition()));
                                 Activity.putExtra("userIsWithinShape", false);
                                 Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()).intValue());
                                 Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()).intValue());
                                 Activity.putExtra("userLatitude", userLatitude);
                                 Activity.putExtra("userLongitude", userLongitude);
+                                Activity.putExtra("fromDms", true);
 
                                 loadingIcon.setVisibility(View.GONE);
 

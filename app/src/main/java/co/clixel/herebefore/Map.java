@@ -122,7 +122,8 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private final List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // Have spannable scroll to, and highlight, correct position in Chat.
+    // Check scroll position when another user adds a message when current user has a message highlighted. Check fully scrolled to bottom, scrolled to bottom then scrolled back up, and never scrolled to bottom.
+    // Prevent flash when loading older posts.
     // Add Firebase functions to adjust spannable string when changing a messageThread.
     // Allow user to click on a mention in Chat and scroll to that mention for context - spannable string.
     // Switch from initChatAdapter() to notifyChatAdapter() to increase speed? Generally, make Chat load faster, especially if there are multiple ClickableSpans
@@ -138,6 +139,7 @@ public class Map extends FragmentActivity implements
     // Add ability to add both picture and video to firebase at the same time.
 
     // Increase point radius? Also, make "creating a point" more accurate to the user's location.
+    // Allow users to get "likes".
     // Only be able to see things you've visited - Kenny.
     // Develop an Apple version.
     // Require picture on creating a shape? Also, long press a shape to see a popup of that picture.
