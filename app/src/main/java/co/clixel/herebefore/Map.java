@@ -122,11 +122,12 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private final List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // Check scroll position when another user adds a message when current user has a message highlighted. Check fully scrolled to bottom, scrolled to bottom then scrolled back up, and never scrolled to bottom.
     // Prevent flash when loading older posts.
+    // Get rid of mPosition, because there is no way to guarantee a position when multiple people are adding messages simultaneously.
     // Add Firebase functions to adjust spannable string when changing a messageThread.
     // Allow user to click on a mention in Chat and scroll to that mention for context - spannable string.
     // Switch from initChatAdapter() to notifyChatAdapter() to increase speed? Generally, make Chat load faster, especially if there are multiple ClickableSpans
+    // Get rid of deprecated methods.
     // Make scrollToPosition work in Chat after a restart. Also prevent reloading Chat and DMs every time app restarts.
     // Find a way to not clear and reload map every time user returns from clicking a shape. Same with DM notification.
     // Get rid of "larger" shapes and only allow points? (Or make allowable shapes smaller?). Track where user is while taking the original video or picture and make the shape that big?
@@ -138,6 +139,7 @@ public class Map extends FragmentActivity implements
     // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.
     // Add ability to add both picture and video to firebase at the same time.
 
+    // Chat very laggy on emulator.
     // Increase point radius? Also, make "creating a point" more accurate to the user's location.
     // Allow users to get "likes".
     // Only be able to see things you've visited - Kenny.
@@ -161,6 +163,7 @@ public class Map extends FragmentActivity implements
     // Update general look of app.
     // Panoramic view, like gMaps.
 
+    // Test on multiple devices.
     // Remember the AC: Origins inspiration. Also, airdrop - create items in the world. Also, gMaps drag and drop.
     // Unit testing.
     // Decrease app size (compress repeating code into methods) / Check on accumulation of size over time.

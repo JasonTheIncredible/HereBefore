@@ -130,7 +130,7 @@ public class Chat extends Fragment implements
     private ArrayList<Long> datesAL;
     private ArrayList<Pair<String, Integer>> userPositionPairs, userPositionPairsFromFirebase;
     private RecyclerView chatRecyclerView, mentionsRecyclerView;
-    private static int index = -1, top = -1, last;
+    private static Integer index = null, top = null, last;
     private ChildEventListener childEventListener;
     private FloatingActionButton sendButton, mediaButton;
     private boolean firstLoad, loadingOlderMessages, noMoreMessages = false, clickedOnMention = false, fromDms = false, fromVideo, needProgressIconIndeterminate, reachedEndOfRecyclerView = false, recyclerViewHasScrolled = false, messageSent = false, fileIsImage, checkPermissionsPicture,
@@ -608,7 +608,11 @@ public class Chat extends Fragment implements
                                     dmInformation.setLat(latFirebaseValue);
                                     dmInformation.setLon(lonFirebaseValue);
                                     dmInformation.setMessage(input);
-                                    dmInformation.setPosition(mUser.size());
+                                    if (mPosition.size() == 0) {
+                                        dmInformation.setPosition(0);
+                                    } else {
+                                        dmInformation.setPosition(mPosition.get(mPosition.size() - 1) + 1);
+                                    }
                                     dmInformation.setSeenByUser(false);
                                     if (radius != 0) {
                                         dmInformation.setSize(radius);
@@ -651,7 +655,11 @@ public class Chat extends Fragment implements
                     }
                     messageInformation.setEmail(email);
                     messageInformation.setMessage(input);
-                    messageInformation.setPosition(mUser.size());
+                    if (mPosition.size() == 0) {
+                        messageInformation.setPosition(0);
+                    } else {
+                        messageInformation.setPosition(mPosition.get(mPosition.size() - 1) + 1);
+                    }
                     messageInformation.setUserIsWithinShape(userIsWithinShape);
                     if (userPositionPairs != null && !userPositionPairs.isEmpty()) {
 
@@ -1369,7 +1377,7 @@ public class Chat extends Fragment implements
         chatRecyclerView.setHasFixedSize(true);
         chatRecyclerView.setLayoutManager(chatRecyclerViewLinearLayoutManager);
 
-        if (positionToHighlight != 0 && !reachedEndOfRecyclerView && !messageSent) {
+        if (positionToHighlight != 0 && !reachedEndOfRecyclerView && !messageSent && index == null && top == null) {
 
             // Show a couple messages above the position, as this seems to be better visually.
             int scrollPosition = positionToHighlight - 5;
@@ -1388,6 +1396,9 @@ public class Chat extends Fragment implements
 
             // Set RecyclerView scroll position to prevent position change when Firebase gets updated and after screen orientation change.
             chatRecyclerViewLinearLayoutManager.scrollToPositionWithOffset(index, top);
+            // Set index and top to null, so initChatAdapter will go to the else statement after user scrolls and then another user sends a message.
+            index = null;
+            top = null;
         }
 
         // After the initial load, make the progressIconIndeterminate invisible.
@@ -2940,7 +2951,11 @@ public class Chat extends Fragment implements
                                         if (input.length() != 0) {
                                             dmInformation.setMessage(input);
                                         }
-                                        dmInformation.setPosition(mUser.size());
+                                        if (mPosition.size() == 0) {
+                                            dmInformation.setPosition(0);
+                                        } else {
+                                            dmInformation.setPosition(mPosition.get(mPosition.size() - 1) + 1);
+                                        }
                                         dmInformation.setSeenByUser(false);
                                         if (radius != 0) {
                                             dmInformation.setSize(radius);
@@ -2987,7 +3002,11 @@ public class Chat extends Fragment implements
 
                             messageInformation.setMessage(input);
                         }
-                        messageInformation.setPosition(mUser.size());
+                        if (mPosition.size() == 0) {
+                            messageInformation.setPosition(0);
+                        } else {
+                            messageInformation.setPosition(mPosition.get(mPosition.size() - 1) + 1);
+                        }
                         messageInformation.setUserIsWithinShape(userIsWithinShape);
                         if (userPositionPairs != null && !userPositionPairs.isEmpty()) {
 
@@ -3204,7 +3223,11 @@ public class Chat extends Fragment implements
                                         if (input.length() != 0) {
                                             dmInformation.setMessage(input);
                                         }
-                                        dmInformation.setPosition(mUser.size());
+                                        if (mPosition.size() == 0) {
+                                            dmInformation.setPosition(0);
+                                        } else {
+                                            dmInformation.setPosition(mPosition.get(mPosition.size() - 1) + 1);
+                                        }
                                         dmInformation.setSeenByUser(false);
                                         if (radius != 0) {
                                             dmInformation.setSize(radius);
@@ -3251,7 +3274,11 @@ public class Chat extends Fragment implements
 
                             messageInformation.setMessage(input);
                         }
-                        messageInformation.setPosition(mUser.size());
+                        if (mPosition.size() == 0) {
+                            messageInformation.setPosition(0);
+                        } else {
+                            messageInformation.setPosition(mPosition.get(mPosition.size() - 1) + 1);
+                        }
                         messageInformation.setUserIsWithinShape(userIsWithinShape);
                         if (userPositionPairs != null && !userPositionPairs.isEmpty()) {
 
