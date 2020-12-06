@@ -1,6 +1,7 @@
 package co.clixel.herebefore;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
@@ -122,12 +123,9 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private final List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // Prevent flash when loading older posts.
     // Get rid of mPosition, because there is no way to guarantee a position when multiple people are adding messages simultaneously.
     // Add Firebase functions to adjust spannable string when changing a messageThread.
-    // Allow user to click on a mention in Chat and scroll to that mention for context - spannable string.
     // Switch from initChatAdapter() to notifyChatAdapter() to increase speed? Generally, make Chat load faster, especially if there are multiple ClickableSpans
-    // Get rid of deprecated methods.
     // Make scrollToPosition work in Chat after a restart. Also prevent reloading Chat and DMs every time app restarts.
     // Find a way to not clear and reload map every time user returns from clicking a shape. Same with DM notification.
     // Get rid of "larger" shapes and only allow points? (Or make allowable shapes smaller?). Track where user is while taking the original video or picture and make the shape that big?
@@ -2487,6 +2485,7 @@ public class Map extends FragmentActivity implements
         super.onPause();
     }
 
+    @SuppressLint("PotentialBehaviorOverride")
     @Override
     protected void onStop() {
 
@@ -2816,6 +2815,7 @@ public class Map extends FragmentActivity implements
     }
 
     // Cut down on code by using one method for the shared code from onMapReady() and onRestart().
+    @SuppressLint("PotentialBehaviorOverride")
     private void onMapReadyAndRestart() {
 
         Log.i(TAG, "onMapReadyAndRestart()");
