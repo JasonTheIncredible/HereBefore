@@ -55,7 +55,6 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.PolygonOptions;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import android.view.ViewGroup;
@@ -134,12 +133,11 @@ public class Chat extends Fragment implements
     private ChildEventListener childEventListener;
     private FloatingActionButton sendButton, mediaButton;
     private boolean firstLoad, loadingOlderMessages, noMoreMessages = false, clickedOnMention = false, fromDms = false, fromVideo, needProgressIconIndeterminate, reachedEndOfRecyclerView = false, recyclerViewHasScrolled = false, messageSent = false, fileIsImage, checkPermissionsPicture,
-            newShape, threeMarkers, fourMarkers, fiveMarkers, sixMarkers, sevenMarkers, eightMarkers;
+            newShape;
     private Boolean userIsWithinShape;
     private View.OnLayoutChangeListener onLayoutChangeListener;
     private String shapeUUID, reportedUser;
-    private double polygonArea, circleLatitude, circleLongitude, radius,
-            marker0Latitude, marker0Longitude, marker1Latitude, marker1Longitude, marker2Latitude, marker2Longitude, marker3Latitude, marker3Longitude, marker4Latitude, marker4Longitude, marker5Latitude, marker5Longitude, marker6Latitude, marker6Longitude, marker7Latitude, marker7Longitude;
+    private double circleLatitude, circleLongitude, radius;
     private PopupMenu mediaButtonMenu;
     private ImageView imageView, videoImageView;
     private Uri imageURI, videoURI;
@@ -193,30 +191,6 @@ public class Chat extends Fragment implements
                 circleLatitude = extras.getDouble("circleLatitude");
                 circleLongitude = extras.getDouble("circleLongitude");
                 radius = extras.getDouble("radius");
-                // Most of these will be null if the polygon does not have eight markers, or if the polygon is not new.
-                polygonArea = extras.getDouble("polygonArea");
-                threeMarkers = extras.getBoolean("threeMarkers");
-                fourMarkers = extras.getBoolean("fourMarkers");
-                fiveMarkers = extras.getBoolean("fiveMarkers");
-                sixMarkers = extras.getBoolean("sixMarkers");
-                sevenMarkers = extras.getBoolean("sevenMarkers");
-                eightMarkers = extras.getBoolean("eightMarkers");
-                marker0Latitude = extras.getDouble("marker0Latitude");
-                marker0Longitude = extras.getDouble("marker0Longitude");
-                marker1Latitude = extras.getDouble("marker1Latitude");
-                marker1Longitude = extras.getDouble("marker1Longitude");
-                marker2Latitude = extras.getDouble("marker2Latitude");
-                marker2Longitude = extras.getDouble("marker2Longitude");
-                marker3Latitude = extras.getDouble("marker3Latitude");
-                marker3Longitude = extras.getDouble("marker3Longitude");
-                marker4Latitude = extras.getDouble("marker4Latitude");
-                marker4Longitude = extras.getDouble("marker4Longitude");
-                marker5Latitude = extras.getDouble("marker5Latitude");
-                marker5Longitude = extras.getDouble("marker5Longitude");
-                marker6Latitude = extras.getDouble("marker6Latitude");
-                marker6Longitude = extras.getDouble("marker6Longitude");
-                marker7Latitude = extras.getDouble("marker7Latitude");
-                marker7Longitude = extras.getDouble("marker7Longitude");
             } else {
 
                 Log.e(TAG, "onCreateView() -> extras == null");
@@ -472,111 +446,33 @@ public class Chat extends Fragment implements
                     if (newShape) {
 
                         DatabaseReference newFirebaseShape = null;
-                        if (circleLatitude != 0 && circleLongitude != 0) {
 
-                            // Shape is a circle.
+                        // Since the UUID doesn't already exist in Firebase, add the circle.
+                        CircleOptions circleOptions = new CircleOptions()
+                                .center(new LatLng(circleLatitude, circleLongitude))
+                                .clickable(true)
+                                .radius(radius);
+                        CircleInformation circleInformation = new CircleInformation();
+                        circleInformation.setCircleOptions(circleOptions);
+                        circleInformation.setShapeUUID(shapeUUID);
 
-                            // Since the UUID doesn't already exist in Firebase, add the circle.
-                            CircleOptions circleOptions = new CircleOptions()
-                                    .center(new LatLng(circleLatitude, circleLongitude))
-                                    .clickable(true)
-                                    .radius(radius);
-                            CircleInformation circleInformation = new CircleInformation();
-                            circleInformation.setCircleOptions(circleOptions);
-                            circleInformation.setShapeUUID(shapeUUID);
+                        if (radius == 1) {
 
-                            if (radius == 1) {
+                            newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Point").push();
+                        } else if (1 < radius && radius <= 10) {
 
-                                newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Point").push();
-                            } else if (1 < radius && radius <= 10) {
+                            newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Small").push();
+                        } else if (10 < radius && radius <= 50) {
 
-                                newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Small").push();
-                            } else if (10 < radius && radius <= 50) {
+                            newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Medium").push();
+                        } else if (50 < radius) {
 
-                                newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Medium").push();
-                            } else if (50 < radius) {
+                            newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Large").push();
+                        }
 
-                                newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Large").push();
-                            }
+                        if (newFirebaseShape != null) {
 
-                            if (newFirebaseShape != null) {
-
-                                newFirebaseShape.setValue(circleInformation);
-                            }
-                        } else if (polygonArea != 0) {
-
-                            // Shape is a polygon.
-
-                            PolygonOptions polygonOptions = null;
-
-                            // Since the UUID doesn't already exist in Firebase, add the circle.
-                            if (threeMarkers) {
-
-                                polygonOptions = new PolygonOptions()
-                                        .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude))
-                                        .clickable(true);
-                            }
-
-                            if (fourMarkers) {
-
-                                polygonOptions = new PolygonOptions()
-                                        .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude))
-                                        .clickable(true);
-                            }
-
-                            if (fiveMarkers) {
-
-                                polygonOptions = new PolygonOptions()
-                                        .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude))
-                                        .clickable(true);
-                            }
-
-                            if (sixMarkers) {
-
-                                polygonOptions = new PolygonOptions()
-                                        .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude))
-                                        .clickable(true);
-                            }
-
-                            if (sevenMarkers) {
-
-                                polygonOptions = new PolygonOptions()
-                                        .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude), new LatLng(marker6Latitude, marker6Longitude))
-                                        .clickable(true);
-                            }
-
-                            if (eightMarkers) {
-
-                                polygonOptions = new PolygonOptions()
-                                        .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude), new LatLng(marker6Latitude, marker6Longitude), new LatLng(marker7Latitude, marker7Longitude))
-                                        .clickable(true);
-                            }
-
-                            PolygonInformation polygonInformation = new PolygonInformation();
-                            polygonInformation.setArea(polygonArea);
-                            polygonInformation.setPolygonOptions(polygonOptions);
-                            polygonInformation.setShapeUUID(shapeUUID);
-
-                            if (polygonArea <= Math.PI * (Math.pow(10, 2))) {
-
-                                newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Small").push();
-                            } else if (Math.PI * (Math.pow(10, 2)) < polygonArea && polygonArea <= Math.PI * (Math.pow(50, 2))) {
-
-                                newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Medium").push();
-                            } else if (Math.PI * (Math.pow(50, 2)) < polygonArea) {
-
-                                newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Large").push();
-                            }
-
-                            if (newFirebaseShape != null) {
-
-                                newFirebaseShape.setValue(polygonInformation);
-                            }
-                        } else {
-
-                            // Both radius and polygonArea are null.
-                            toastMessageLong("Oops! Something went wrong!");
-                            return;
+                            newFirebaseShape.setValue(circleInformation);
                         }
 
                         newShape = false;
@@ -614,13 +510,7 @@ public class Chat extends Fragment implements
                                         dmInformation.setPosition(mPosition.get(mPosition.size() - 1) + 1);
                                     }
                                     dmInformation.setSeenByUser(false);
-                                    if (radius != 0) {
-                                        dmInformation.setSize(radius);
-                                        dmInformation.setShapeIsCircle(true);
-                                    } else {
-                                        dmInformation.setSize(polygonArea);
-                                        dmInformation.setShapeIsCircle(false);
-                                    }
+                                    dmInformation.setSize(radius);
                                     dmInformation.setShapeUUID(shapeUUID);
                                     dmInformation.setUserIsWithinShape(userIsWithinShape);
                                     if (userPositionPairs != null && !userPositionPairs.isEmpty()) {
@@ -2813,111 +2703,33 @@ public class Chat extends Fragment implements
                         if (newShape) {
 
                             DatabaseReference newFirebaseShape = null;
-                            if (radius != 0) {
 
-                                // Shape is a circle.
+                            // Since the UUID doesn't already exist in Firebase, add the circle.
+                            CircleOptions circleOptions = new CircleOptions()
+                                    .center(new LatLng(circleLatitude, circleLongitude))
+                                    .clickable(true)
+                                    .radius(radius);
+                            CircleInformation circleInformation = new CircleInformation();
+                            circleInformation.setCircleOptions(circleOptions);
+                            circleInformation.setShapeUUID(shapeUUID);
 
-                                // Since the UUID doesn't already exist in Firebase, add the circle.
-                                CircleOptions circleOptions = new CircleOptions()
-                                        .center(new LatLng(circleLatitude, circleLongitude))
-                                        .clickable(true)
-                                        .radius(radius);
-                                CircleInformation circleInformation = new CircleInformation();
-                                circleInformation.setCircleOptions(circleOptions);
-                                circleInformation.setShapeUUID(shapeUUID);
+                            if (radius == 1) {
 
-                                if (radius == 1) {
+                                newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Point").push();
+                            } else if (1 < radius && radius <= 10) {
 
-                                    newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Point").push();
-                                } else if (1 < radius && radius <= 10) {
+                                newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Small").push();
+                            } else if (10 < radius && radius <= 50) {
 
-                                    newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Small").push();
-                                } else if (10 < radius && radius <= 50) {
+                                newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Medium").push();
+                            } else if (50 < radius) {
 
-                                    newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Medium").push();
-                                } else if (50 < radius) {
+                                newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Large").push();
+                            }
 
-                                    newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Large").push();
-                                }
+                            if (newFirebaseShape != null) {
 
-                                if (newFirebaseShape != null) {
-
-                                    newFirebaseShape.setValue(circleInformation);
-                                }
-                            } else if (polygonArea != 0) {
-
-                                // Shape is a polygon.
-
-                                PolygonOptions polygonOptions = null;
-
-                                // Since the UUID doesn't already exist in Firebase, add the circle.
-                                if (threeMarkers) {
-
-                                    polygonOptions = new PolygonOptions()
-                                            .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude))
-                                            .clickable(true);
-                                }
-
-                                if (fourMarkers) {
-
-                                    polygonOptions = new PolygonOptions()
-                                            .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude))
-                                            .clickable(true);
-                                }
-
-                                if (fiveMarkers) {
-
-                                    polygonOptions = new PolygonOptions()
-                                            .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude))
-                                            .clickable(true);
-                                }
-
-                                if (sixMarkers) {
-
-                                    polygonOptions = new PolygonOptions()
-                                            .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude))
-                                            .clickable(true);
-                                }
-
-                                if (sevenMarkers) {
-
-                                    polygonOptions = new PolygonOptions()
-                                            .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude), new LatLng(marker6Latitude, marker6Longitude))
-                                            .clickable(true);
-                                }
-
-                                if (eightMarkers) {
-
-                                    polygonOptions = new PolygonOptions()
-                                            .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude), new LatLng(marker6Latitude, marker6Longitude), new LatLng(marker7Latitude, marker7Longitude))
-                                            .clickable(true);
-                                }
-
-                                PolygonInformation polygonInformation = new PolygonInformation();
-                                polygonInformation.setArea(polygonArea);
-                                polygonInformation.setPolygonOptions(polygonOptions);
-                                polygonInformation.setShapeUUID(shapeUUID);
-
-                                if (polygonArea <= Math.PI * (Math.pow(10, 2))) {
-
-                                    newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Small").push();
-                                } else if (Math.PI * (Math.pow(10, 2)) < polygonArea && polygonArea <= Math.PI * (Math.pow(50, 2))) {
-
-                                    newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Medium").push();
-                                } else if (Math.PI * (Math.pow(50, 2)) < polygonArea) {
-
-                                    newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Large").push();
-                                }
-
-                                if (newFirebaseShape != null) {
-
-                                    newFirebaseShape.setValue(polygonInformation);
-                                }
-                            } else {
-
-                                // Both radius and polygonArea are null.
-                                toastMessageLong("Oops! Something went wrong!");
-                                return;
+                                newFirebaseShape.setValue(circleInformation);
                             }
 
                             newShape = false;
@@ -2957,13 +2769,7 @@ public class Chat extends Fragment implements
                                             dmInformation.setPosition(mPosition.get(mPosition.size() - 1) + 1);
                                         }
                                         dmInformation.setSeenByUser(false);
-                                        if (radius != 0) {
-                                            dmInformation.setSize(radius);
-                                            dmInformation.setShapeIsCircle(true);
-                                        } else {
-                                            dmInformation.setSize(polygonArea);
-                                            dmInformation.setShapeIsCircle(false);
-                                        }
+                                        dmInformation.setSize(radius);
                                         dmInformation.setShapeUUID(shapeUUID);
                                         dmInformation.setUserIsWithinShape(userIsWithinShape);
                                         if (userPositionPairs != null && !userPositionPairs.isEmpty()) {
@@ -3084,111 +2890,33 @@ public class Chat extends Fragment implements
                         if (newShape) {
 
                             DatabaseReference newFirebaseShape = null;
-                            if (radius != 0) {
 
-                                // Shape is a circle.
+                            // Since the UUID doesn't already exist in Firebase, add the circle.
+                            CircleOptions circleOptions = new CircleOptions()
+                                    .center(new LatLng(circleLatitude, circleLongitude))
+                                    .clickable(true)
+                                    .radius(radius);
+                            CircleInformation circleInformation = new CircleInformation();
+                            circleInformation.setCircleOptions(circleOptions);
+                            circleInformation.setShapeUUID(shapeUUID);
 
-                                // Since the UUID doesn't already exist in Firebase, add the circle.
-                                CircleOptions circleOptions = new CircleOptions()
-                                        .center(new LatLng(circleLatitude, circleLongitude))
-                                        .clickable(true)
-                                        .radius(radius);
-                                CircleInformation circleInformation = new CircleInformation();
-                                circleInformation.setCircleOptions(circleOptions);
-                                circleInformation.setShapeUUID(shapeUUID);
+                            if (radius == 1) {
 
-                                if (radius == 1) {
+                                newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Point").push();
+                            } else if (1 < radius && radius <= 10) {
 
-                                    newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Point").push();
-                                } else if (1 < radius && radius <= 10) {
+                                newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Small").push();
+                            } else if (10 < radius && radius <= 50) {
 
-                                    newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Small").push();
-                                } else if (10 < radius && radius <= 50) {
+                                newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Medium").push();
+                            } else if (50 < radius) {
 
-                                    newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Medium").push();
-                                } else if (50 < radius) {
+                                newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Large").push();
+                            }
 
-                                    newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Large").push();
-                                }
+                            if (newFirebaseShape != null) {
 
-                                if (newFirebaseShape != null) {
-
-                                    newFirebaseShape.setValue(circleInformation);
-                                }
-                            } else if (polygonArea != 0) {
-
-                                // Shape is a polygon.
-
-                                PolygonOptions polygonOptions = null;
-
-                                // Since the UUID doesn't already exist in Firebase, add the circle.
-                                if (threeMarkers) {
-
-                                    polygonOptions = new PolygonOptions()
-                                            .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude))
-                                            .clickable(true);
-                                }
-
-                                if (fourMarkers) {
-
-                                    polygonOptions = new PolygonOptions()
-                                            .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude))
-                                            .clickable(true);
-                                }
-
-                                if (fiveMarkers) {
-
-                                    polygonOptions = new PolygonOptions()
-                                            .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude))
-                                            .clickable(true);
-                                }
-
-                                if (sixMarkers) {
-
-                                    polygonOptions = new PolygonOptions()
-                                            .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude))
-                                            .clickable(true);
-                                }
-
-                                if (sevenMarkers) {
-
-                                    polygonOptions = new PolygonOptions()
-                                            .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude), new LatLng(marker6Latitude, marker6Longitude))
-                                            .clickable(true);
-                                }
-
-                                if (eightMarkers) {
-
-                                    polygonOptions = new PolygonOptions()
-                                            .add(new LatLng(marker0Latitude, marker0Longitude), new LatLng(marker1Latitude, marker1Longitude), new LatLng(marker2Latitude, marker2Longitude), new LatLng(marker3Latitude, marker3Longitude), new LatLng(marker4Latitude, marker4Longitude), new LatLng(marker5Latitude, marker5Longitude), new LatLng(marker6Latitude, marker6Longitude), new LatLng(marker7Latitude, marker7Longitude))
-                                            .clickable(true);
-                                }
-
-                                PolygonInformation polygonInformation = new PolygonInformation();
-                                polygonInformation.setArea(polygonArea);
-                                polygonInformation.setPolygonOptions(polygonOptions);
-                                polygonInformation.setShapeUUID(shapeUUID);
-
-                                if (polygonArea <= Math.PI * (Math.pow(10, 2))) {
-
-                                    newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Small").push();
-                                } else if (Math.PI * (Math.pow(10, 2)) < polygonArea && polygonArea <= Math.PI * (Math.pow(50, 2))) {
-
-                                    newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Medium").push();
-                                } else if (Math.PI * (Math.pow(50, 2)) < polygonArea) {
-
-                                    newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Large").push();
-                                }
-
-                                if (newFirebaseShape != null) {
-
-                                    newFirebaseShape.setValue(polygonInformation);
-                                }
-                            } else {
-
-                                // Both radius and polygonArea are null.
-                                toastMessageLong("Oops! Something went wrong!");
-                                return;
+                                newFirebaseShape.setValue(circleInformation);
                             }
 
                             newShape = false;
@@ -3229,13 +2957,7 @@ public class Chat extends Fragment implements
                                             dmInformation.setPosition(mPosition.get(mPosition.size() - 1) + 1);
                                         }
                                         dmInformation.setSeenByUser(false);
-                                        if (radius != 0) {
-                                            dmInformation.setSize(radius);
-                                            dmInformation.setShapeIsCircle(true);
-                                        } else {
-                                            dmInformation.setSize(polygonArea);
-                                            dmInformation.setShapeIsCircle(false);
-                                        }
+                                        dmInformation.setSize(radius);
                                         dmInformation.setShapeUUID(shapeUUID);
                                         dmInformation.setUserIsWithinShape(userIsWithinShape);
                                         if (userPositionPairs != null && !userPositionPairs.isEmpty()) {

@@ -10,7 +10,7 @@ public class DmInformation {
 
     public String userUUID, message, shapeUUID, imageUrl, videoUrl;
     public Object date;
-    public Boolean userIsWithinShape, seenByUser, shapeIsCircle;
+    public Boolean userIsWithinShape, seenByUser;
     public int position;
     public double size;
     public double lat, lon;
@@ -46,10 +46,6 @@ public class DmInformation {
 
     public void setSeenByUser(Boolean seenByUser) {
         this.seenByUser = seenByUser;
-    }
-
-    public void setShapeIsCircle(Boolean shapeIsCircle) {
-        this.shapeIsCircle = shapeIsCircle;
     }
 
     public void setShapeUUID(String shapeUUID) {
