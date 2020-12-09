@@ -79,7 +79,7 @@ public class Map extends FragmentActivity implements
     private static final String TAG = "Map";
     private GoogleMap mMap;
     private static final int Request_User_Location_Code = 99;
-    private Circle newCircle, circleTemp, mCircle = null;
+    private Circle circleTemp, mCircle = null;
     private ChildEventListener childEventListenerDms, childEventListenerShapesPoints;
     private SeekBar chatSelectorSeekBar;
     private String userEmailFirebase, shapeUUID, selectedOverlappingShapeUUID;
@@ -105,10 +105,9 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private final List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // Deleting messageThread no longer deletes shape.
-    // Change look of createChatButton - maybe make a circle around outside that's mostly transparent in the middle?
-    // If user is on a point, prevent creating a new one. Deal with overlapping shapes in general.
+    // If user is on a point, prevent creating a new one.
     // Deal with deprecated methods.
+    // Add "confirm password" to account creation.
     // Get rid of mPosition, because there is no way to guarantee a position when multiple people are adding messages simultaneously.
     // Add Firebase functions to adjust spannable string when changing a messageThread.
     // Switch from initChatAdapter() to notifyChatAdapter() to increase speed? Generally, make Chat load faster, especially if there are multiple ClickableSpans
@@ -122,7 +121,7 @@ public class Map extends FragmentActivity implements
     // Add ability to add both picture and video to firebase at the same time.
 
     // Chat very laggy on emulator.
-    // Increase point radius? Also, make "creating a point" more accurate to the user's location.
+    // Increase point radius? Create a variable with the point's radius and use that instead of "1" to future-proof changes. Also, make "creating a point" more accurate to the user's location.
     // Allow users to get "likes".
     // Only be able to see things you've visited - Kenny.
     // Develop an Apple version.
@@ -392,13 +391,6 @@ public class Map extends FragmentActivity implements
                 mFusedLocationClient.getLastLocation()
                         .addOnSuccessListener(Map.this, location -> {
 
-                            // Remove any other shape before adding the circle to Firebase.
-                            if (newCircle != null) {
-
-                                newCircle.remove();
-                                newCircle = null;
-                            }
-
                             // Add circle to the map and go to recyclerviewlayout.
                             if (mMap != null) {
 
@@ -662,11 +654,6 @@ public class Map extends FragmentActivity implements
 
             // Cut down on code by using one method for the shared code from onMapReady() and onRestart().
             onMapReadyAndRestart();
-        }
-
-        if (newCircle != null) {
-
-            newCircle = null;
         }
 
         if (circleTemp != null) {
@@ -1148,14 +1135,6 @@ public class Map extends FragmentActivity implements
 
                 chatsSize = 0;
 
-                // Get rid of new shapes if the user clicks away from them.
-                if (newCircle != null) {
-
-                    newCircle.remove();
-
-                    newCircle = null;
-                }
-
                 return;
             }
 
@@ -1290,18 +1269,6 @@ public class Map extends FragmentActivity implements
 
             // This will get called after the last shape is programmatically clicked.
             chatsSize = overlappingShapesUUID.size();
-
-            // If none of the clicked shapes are new, get rid of any new shapes.
-            if (!overlappingShapesUUID.contains("new")) {
-
-                // Remove the circle and markers.
-                if (newCircle != null) {
-
-                    newCircle.remove();
-
-                    newCircle = null;
-                }
-            }
 
             // If selectingShape, user has selected a highlighted shape. Similar logic applies to originally only clicking on one circle.
             if (selectingShape || (chatsSize == 1 && circle.getTag() != null)) {
@@ -1573,16 +1540,6 @@ public class Map extends FragmentActivity implements
 
                     checkLocationPermissions();
                 }
-
-                return;
-            }
-
-            // Get rid of new shapes if the user clicks away from them.
-            if (newCircle != null) {
-
-                newCircle.remove();
-
-                newCircle = null;
             }
         });
 
@@ -2071,16 +2028,8 @@ public class Map extends FragmentActivity implements
 
         loadingIcon.setVisibility(View.GONE);
 
-        newCircle = null;
-
         // Create a circleTemp or polygonTemp if one already exists.
         if (chatSelectorSeekBar.getVisibility() == View.VISIBLE) {
-
-            // Create arrayLists that hold shape information in a useful order.
-            ArrayList<Object> combinedListShapes = new ArrayList<>();
-            ArrayList<String> combinedListUUID = new ArrayList<>();
-
-            selectedOverlappingShapeUUID = combinedListUUID.get(chatSelectorSeekBar.getProgress());
 
             if (selectedOverlappingShapeUUID != null) {
 
@@ -2091,46 +2040,38 @@ public class Map extends FragmentActivity implements
 
                 if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
 
-                    // Create a yellow highlighted shape.
-                    if (combinedListShapes.get(chatSelectorSeekBar.getProgress()) instanceof LatLng) {
+                    circleTemp = mMap.addCircle(
+                            new CircleOptions()
+                                    .center(selectedOverlappingShapeCircleLocation)
+                                    .clickable(true)
+                                    .fillColor(Color.argb(100, 255, 255, 0))
+                                    .radius(selectedOverlappingShapeCircleRadius)
+                                    .strokeColor(Color.rgb(255, 255, 0))
+                                    .strokeWidth(3f)
+                                    .zIndex(2)
+                    );
 
-                        circleTemp = mMap.addCircle(
-                                new CircleOptions()
-                                        .center(selectedOverlappingShapeCircleLocation)
-                                        .clickable(true)
-                                        .fillColor(Color.argb(100, 255, 255, 0))
-                                        .radius(selectedOverlappingShapeCircleRadius)
-                                        .strokeColor(Color.rgb(255, 255, 0))
-                                        .strokeWidth(3f)
-                                        .zIndex(2)
-                        );
-
-                        // Used when getting rid of the shapes in onMapClick.
-                        circleTemp.setTag(selectedOverlappingShapeUUID);
-                        circleTemp.setCenter(selectedOverlappingShapeCircleLocation);
-                        circleTemp.setRadius(selectedOverlappingShapeCircleRadius);
-                    }
+                    // Used when getting rid of the shapes in onMapClick.
+                    circleTemp.setTag(selectedOverlappingShapeUUID);
+                    circleTemp.setCenter(selectedOverlappingShapeCircleLocation);
+                    circleTemp.setRadius(selectedOverlappingShapeCircleRadius);
                 } else {
 
-                    // Create a purple highlighted shape.
-                    if (combinedListShapes.get(chatSelectorSeekBar.getProgress()) instanceof LatLng) {
+                    circleTemp = mMap.addCircle(
+                            new CircleOptions()
+                                    .center(selectedOverlappingShapeCircleLocation)
+                                    .clickable(true)
+                                    .fillColor(Color.argb(100, 255, 0, 255))
+                                    .radius(selectedOverlappingShapeCircleRadius)
+                                    .strokeColor(Color.rgb(255, 0, 255))
+                                    .strokeWidth(3f)
+                                    .zIndex(2)
+                    );
 
-                        circleTemp = mMap.addCircle(
-                                new CircleOptions()
-                                        .center(selectedOverlappingShapeCircleLocation)
-                                        .clickable(true)
-                                        .fillColor(Color.argb(100, 255, 0, 255))
-                                        .radius(selectedOverlappingShapeCircleRadius)
-                                        .strokeColor(Color.rgb(255, 0, 255))
-                                        .strokeWidth(3f)
-                                        .zIndex(2)
-                        );
-
-                        // Used when getting rid of the shapes in onMapClick.
-                        circleTemp.setTag(selectedOverlappingShapeUUID);
-                        circleTemp.setCenter(selectedOverlappingShapeCircleLocation);
-                        circleTemp.setRadius(selectedOverlappingShapeCircleRadius);
-                    }
+                    // Used when getting rid of the shapes in onMapClick.
+                    circleTemp.setTag(selectedOverlappingShapeUUID);
+                    circleTemp.setCenter(selectedOverlappingShapeCircleLocation);
+                    circleTemp.setRadius(selectedOverlappingShapeCircleRadius);
                 }
             }
         }
@@ -2467,12 +2408,6 @@ public class Map extends FragmentActivity implements
         Log.i(TAG, "clearMap()");
 
         mMap.clear();
-
-        // Remove the circle and markers.
-        if (newCircle != null) {
-
-            newCircle = null;
-        }
 
         waitingForShapeInformationToProcess = false;
         waitingForClicksToProcess = false;

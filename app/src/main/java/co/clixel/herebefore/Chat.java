@@ -2427,8 +2427,7 @@ public class Chat extends Fragment implements
                         .setMaxHeight(10000)
                         .setQuality(100)
                         .setCompressFormat(Bitmap.CompressFormat.PNG)
-                        .setDestinationDirectoryPath(Environment.getExternalStoragePublicDirectory(
-                                Environment.DIRECTORY_PICTURES).getAbsolutePath())
+                        .setDestinationDirectoryPath(mContext.getExternalFilesDir(Environment.DIRECTORY_PICTURES).getAbsolutePath())
                         .compressToBitmap(image);
 
                 MediaStore.Images.Media.insertImage(mContext.getContentResolver(), imageBitmapFull, "HereBefore_" + System.currentTimeMillis() + "_PNG", null);
@@ -2569,8 +2568,6 @@ public class Chat extends Fragment implements
 
                 Log.e(TAG, "Exception while writing video: ", e);
             }
-
-            mContext.sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, uri));
         };
 
         handler.post(runnable);
