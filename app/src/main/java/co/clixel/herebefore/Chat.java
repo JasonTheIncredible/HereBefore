@@ -137,7 +137,7 @@ public class Chat extends Fragment implements
     private Boolean userIsWithinShape;
     private View.OnLayoutChangeListener onLayoutChangeListener;
     private String shapeUUID, reportedUser;
-    private double circleLatitude, circleLongitude, radius;
+    private double circleLatitude, circleLongitude;
     private PopupMenu mediaButtonMenu;
     private ImageView imageView, videoImageView;
     private Uri imageURI, videoURI;
@@ -190,7 +190,6 @@ public class Chat extends Fragment implements
                 // circleLatitude, circleLongitude, and radius will be null if the circle is not new (as a new circle is not being created).
                 circleLatitude = extras.getDouble("circleLatitude");
                 circleLongitude = extras.getDouble("circleLongitude");
-                radius = extras.getDouble("radius");
             } else {
 
                 Log.e(TAG, "onCreateView() -> extras == null");
@@ -445,35 +444,16 @@ public class Chat extends Fragment implements
 
                     if (newShape) {
 
-                        DatabaseReference newFirebaseShape = null;
-
                         // Since the UUID doesn't already exist in Firebase, add the circle.
                         CircleOptions circleOptions = new CircleOptions()
                                 .center(new LatLng(circleLatitude, circleLongitude))
                                 .clickable(true)
-                                .radius(radius);
+                                .radius(1.0);
                         CircleInformation circleInformation = new CircleInformation();
                         circleInformation.setCircleOptions(circleOptions);
                         circleInformation.setShapeUUID(shapeUUID);
-
-                        if (radius == 1) {
-
-                            newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Point").push();
-                        } else if (1 < radius && radius <= 10) {
-
-                            newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Small").push();
-                        } else if (10 < radius && radius <= 50) {
-
-                            newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Medium").push();
-                        } else if (50 < radius) {
-
-                            newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Large").push();
-                        }
-
-                        if (newFirebaseShape != null) {
-
-                            newFirebaseShape.setValue(circleInformation);
-                        }
+                        DatabaseReference newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Points").push();
+                        newFirebaseShape.setValue(circleInformation);
 
                         newShape = false;
                     }
@@ -510,7 +490,7 @@ public class Chat extends Fragment implements
                                         dmInformation.setPosition(mPosition.get(mPosition.size() - 1) + 1);
                                     }
                                     dmInformation.setSeenByUser(false);
-                                    dmInformation.setSize(radius);
+                                    dmInformation.setSize(1.0);
                                     dmInformation.setShapeUUID(shapeUUID);
                                     dmInformation.setUserIsWithinShape(userIsWithinShape);
                                     if (userPositionPairs != null && !userPositionPairs.isEmpty()) {
@@ -735,7 +715,7 @@ public class Chat extends Fragment implements
                     noMoreMessages = true;
 
                     // If 20 messages exist and the user scrolls to the top, a duplicate of the first item will be added. The following prevents that.
-                    if (snapshot.getChildrenCount() == 1) {
+                    if (loadingOlderMessages && snapshot.getChildrenCount() == 1) {
 
                         for (DataSnapshot ds : snapshot.getChildren()) {
 
@@ -2699,35 +2679,16 @@ public class Chat extends Fragment implements
 
                         if (newShape) {
 
-                            DatabaseReference newFirebaseShape = null;
-
                             // Since the UUID doesn't already exist in Firebase, add the circle.
                             CircleOptions circleOptions = new CircleOptions()
                                     .center(new LatLng(circleLatitude, circleLongitude))
                                     .clickable(true)
-                                    .radius(radius);
+                                    .radius(1.0);
                             CircleInformation circleInformation = new CircleInformation();
                             circleInformation.setCircleOptions(circleOptions);
                             circleInformation.setShapeUUID(shapeUUID);
-
-                            if (radius == 1) {
-
-                                newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Point").push();
-                            } else if (1 < radius && radius <= 10) {
-
-                                newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Small").push();
-                            } else if (10 < radius && radius <= 50) {
-
-                                newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Medium").push();
-                            } else if (50 < radius) {
-
-                                newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Large").push();
-                            }
-
-                            if (newFirebaseShape != null) {
-
-                                newFirebaseShape.setValue(circleInformation);
-                            }
+                            DatabaseReference newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Points").push();
+                            newFirebaseShape.setValue(circleInformation);
 
                             newShape = false;
                         }
@@ -2766,7 +2727,7 @@ public class Chat extends Fragment implements
                                             dmInformation.setPosition(mPosition.get(mPosition.size() - 1) + 1);
                                         }
                                         dmInformation.setSeenByUser(false);
-                                        dmInformation.setSize(radius);
+                                        dmInformation.setSize(1.0);
                                         dmInformation.setShapeUUID(shapeUUID);
                                         dmInformation.setUserIsWithinShape(userIsWithinShape);
                                         if (userPositionPairs != null && !userPositionPairs.isEmpty()) {
@@ -2886,35 +2847,16 @@ public class Chat extends Fragment implements
 
                         if (newShape) {
 
-                            DatabaseReference newFirebaseShape = null;
-
                             // Since the UUID doesn't already exist in Firebase, add the circle.
                             CircleOptions circleOptions = new CircleOptions()
                                     .center(new LatLng(circleLatitude, circleLongitude))
                                     .clickable(true)
-                                    .radius(radius);
+                                    .radius(1.0);
                             CircleInformation circleInformation = new CircleInformation();
                             circleInformation.setCircleOptions(circleOptions);
                             circleInformation.setShapeUUID(shapeUUID);
-
-                            if (radius == 1) {
-
-                                newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Point").push();
-                            } else if (1 < radius && radius <= 10) {
-
-                                newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Small").push();
-                            } else if (10 < radius && radius <= 50) {
-
-                                newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Medium").push();
-                            } else if (50 < radius) {
-
-                                newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Large").push();
-                            }
-
-                            if (newFirebaseShape != null) {
-
-                                newFirebaseShape.setValue(circleInformation);
-                            }
+                            DatabaseReference newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Points").push();
+                            newFirebaseShape.setValue(circleInformation);
 
                             newShape = false;
                         }
@@ -2954,7 +2896,7 @@ public class Chat extends Fragment implements
                                             dmInformation.setPosition(mPosition.get(mPosition.size() - 1) + 1);
                                         }
                                         dmInformation.setSeenByUser(false);
-                                        dmInformation.setSize(radius);
+                                        dmInformation.setSize(1.0);
                                         dmInformation.setShapeUUID(shapeUUID);
                                         dmInformation.setUserIsWithinShape(userIsWithinShape);
                                         if (userPositionPairs != null && !userPositionPairs.isEmpty()) {
