@@ -106,26 +106,25 @@ public class Map extends FragmentActivity implements
     private final List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
     // Deal with clicking on more than 1 point at a time.
-    // Deal with deprecated methods.
-    // Add "confirm password" to account creation.
     // Get rid of mPosition, because there is no way to guarantee a position when multiple people are adding messages simultaneously.
     // Add Firebase functions to adjust spannable string when changing a messageThread.
     // Switch from initChatAdapter() to notifyChatAdapter() to increase speed? Generally, make Chat load faster, especially if there are multiple ClickableSpans
     // Make scrollToPosition work in Chat after a restart. Also prevent reloading Chat and DMs every time app restarts.
     // Find a way to not clear and reload map every time user returns from clicking a shape. Same with DM notification.
     // Prevent data scraping (hide email addresses and other personal information).
-    // Create timer that kicks people out of a new Chat if they haven't posted within an amount of time (or take the photo/video before entering Chat), or keep updating their location.
+    // Create timer that kicks people out of a new Chat if they haven't posted within an amount of time (or take the photo/video before entering Chat), or keep updating their location. Or have them take media before entering chat and have the media being sent to Firebase create the chat.
     // Find a way to add to existing snapshot - then send that snapshot to DirectMentions from Map. Also, prevent reloading everything after restart when user paginated (also save scroll position).
     // After clicking on a DM and going to that Chat, allow user to find that same shape on the map.
     // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.
-    // Add ability to add both picture and video to firebase at the same time.
 
     // Chat very laggy on emulator.
+    // Require picture on creating a shape? Also, long press a shape to see a popup of that picture.
     // Increase point radius? Create a variable with the point's radius and use that instead of "1" to future-proof changes. Also, make "creating a point" more accurate to the user's location.
+    // Deal with deprecated methods.
     // Allow users to get "likes".
     // Only be able to see things you've visited - Kenny.
     // Develop an Apple version.
-    // Require picture on creating a shape? Also, long press a shape to see a popup of that picture.
+    // Add ability to add both picture and video to firebase at the same time.
     // Add ability to filter recyclerView by type of content (recorded at the scene...).
     // Allow private posts or sharing with specific people.
     // Let users allow specific other users to see their name.
@@ -458,39 +457,39 @@ public class Map extends FragmentActivity implements
                             circleTemp.remove();
                         }
 
-                            selectedOverlappingCirclesLocation = overlappingCirclesLocation.get(chatSelectorSeekBar.getProgress());
-                            selectedOverlappingCirclesRadius = overlappingCirclesRadius.get(chatSelectorSeekBar.getProgress());
+                        selectedOverlappingCirclesLocation = overlappingCirclesLocation.get(chatSelectorSeekBar.getProgress());
+                        selectedOverlappingCirclesRadius = overlappingCirclesRadius.get(chatSelectorSeekBar.getProgress());
 
-                            if (mMap.getMapType() == 2 || mMap.getMapType() == 4) {
+                        if (mMap.getMapType() == 2 || mMap.getMapType() == 4) {
 
-                                circleTemp = mMap.addCircle(
-                                        new CircleOptions()
-                                                .center(selectedOverlappingCirclesLocation)
-                                                .clickable(true)
-                                                .fillColor(Color.argb(100, 255, 255, 0))
-                                                .radius(selectedOverlappingCirclesRadius)
-                                                .strokeColor(Color.rgb(255, 255, 0))
-                                                .strokeWidth(3f)
-                                                .zIndex(2)
-                                );
-                            } else {
+                            circleTemp = mMap.addCircle(
+                                    new CircleOptions()
+                                            .center(selectedOverlappingCirclesLocation)
+                                            .clickable(true)
+                                            .fillColor(Color.argb(100, 255, 255, 0))
+                                            .radius(selectedOverlappingCirclesRadius)
+                                            .strokeColor(Color.rgb(255, 255, 0))
+                                            .strokeWidth(3f)
+                                            .zIndex(2)
+                            );
+                        } else {
 
-                                circleTemp = mMap.addCircle(
-                                        new CircleOptions()
-                                                .center(selectedOverlappingCirclesLocation)
-                                                .clickable(true)
-                                                .fillColor(Color.argb(100, 255, 0, 255))
-                                                .radius(selectedOverlappingCirclesRadius)
-                                                .strokeColor(Color.rgb(255, 0, 255))
-                                                .strokeWidth(3f)
-                                                .zIndex(2)
-                                );
-                            }
+                            circleTemp = mMap.addCircle(
+                                    new CircleOptions()
+                                            .center(selectedOverlappingCirclesLocation)
+                                            .clickable(true)
+                                            .fillColor(Color.argb(100, 255, 0, 255))
+                                            .radius(selectedOverlappingCirclesRadius)
+                                            .strokeColor(Color.rgb(255, 0, 255))
+                                            .strokeWidth(3f)
+                                            .zIndex(2)
+                            );
+                        }
 
-                            // Used when getting rid of the circles in onMapClick.
-                            circleTemp.setTag(selectedOverlappingShapeUUID);
-                            circleTemp.setCenter(selectedOverlappingCirclesLocation);
-                            circleTemp.setRadius(selectedOverlappingCirclesRadius);
+                        // Used when getting rid of the circles in onMapClick.
+                        circleTemp.setTag(selectedOverlappingShapeUUID);
+                        circleTemp.setCenter(selectedOverlappingCirclesLocation);
+                        circleTemp.setRadius(selectedOverlappingCirclesRadius);
                     } else {
 
                         Log.e(TAG, "onStart() -> chatSelectorSeekBar -> onProgressChanged -> selectedOverlappingShapeUUID == null");
@@ -817,15 +816,11 @@ public class Map extends FragmentActivity implements
 
                 mMap.setMyLocationEnabled(false);
             }
-
-            if (locationManager != null) {
-
-                locationManager.removeUpdates(Map.this);
-            }
         }
 
         if (locationManager != null) {
 
+            locationManager.removeUpdates(this);
             locationManager = null;
         }
 
@@ -888,9 +883,6 @@ public class Map extends FragmentActivity implements
         if (mMap != null) {
 
             mMap.setOnCircleClickListener(null);
-            mMap.setOnPolygonClickListener(null);
-            mMap.setOnMarkerDragListener(null);
-            mMap.setOnMarkerClickListener(null);
             mMap.setOnMapClickListener(null);
             mMap.setOnCameraMoveListener(null);
             mMap.setOnCameraIdleListener(null);
@@ -2086,7 +2078,7 @@ public class Map extends FragmentActivity implements
 
         loadingIcon.setVisibility(View.GONE);
 
-        // Create a circleTemp or polygonTemp if one already exists.
+        // Create a circleTemp if one already exists.
         if (chatSelectorSeekBar.getVisibility() == View.VISIBLE) {
 
             if (selectedOverlappingShapeUUID != null) {

@@ -34,10 +34,10 @@ public class SignUp extends AppCompatActivity {
 
     private static final String TAG = "SignUp";
     private static final int RC_SIGN_IN = 0;
-    private EditText mEmail, mPassword;
+    private EditText mEmail, mPassword, mConfirmPassword;
     private Button createAccountButton;
     private SignInButton googleSignInButton;
-    private String shapeUUID, email, pass;
+    private String shapeUUID, email, pass, confirmPass;
     private Double polygonArea, circleLatitude, circleLongitude, userLatitude, userLongitude, radius, marker0Latitude, marker0Longitude, marker1Latitude, marker1Longitude, marker2Latitude, marker2Longitude, marker3Latitude, marker3Longitude, marker4Latitude, marker4Longitude, marker5Latitude, marker5Longitude, marker6Latitude, marker6Longitude, marker7Latitude, marker7Longitude;
     private boolean newShape, userIsWithinShape, threeMarkers, fourMarkers, fiveMarkers, sixMarkers, sevenMarkers, eightMarkers;
     private int shapeLat, shapeLon;
@@ -56,6 +56,7 @@ public class SignUp extends AppCompatActivity {
 
         mEmail = findViewById(R.id.createEmailAddress);
         mPassword = findViewById(R.id.createPassword);
+        mConfirmPassword = findViewById(R.id.confirmPassword);
         createAccountButton = findViewById(R.id.createAccountButton);
         googleSignInButton = findViewById(R.id.googleSignInButton);
         // Set the color scheme for the Google sign-in button. Documentation found here:
@@ -137,8 +138,9 @@ public class SignUp extends AppCompatActivity {
 
             email = mEmail.getText().toString().toLowerCase().trim();
             pass = mPassword.getText().toString();
+            confirmPass = mConfirmPassword.getText().toString();
 
-            if (email.equals("") && !pass.equals("")) {
+            if (email.isEmpty()) {
 
                 toastMessageShort("Email address required");
                 mEmail.requestFocus();
@@ -150,7 +152,7 @@ public class SignUp extends AppCompatActivity {
                 mEmail.requestFocus();
                 return;
             }
-            if (pass.equals("") && !email.equals("")) {
+            if (pass.isEmpty()) {
 
                 toastMessageShort("Password required");
                 mPassword.requestFocus();
@@ -160,6 +162,23 @@ public class SignUp extends AppCompatActivity {
 
                 toastMessageShort("Password must be at least 6 characters long");
                 mPassword.requestFocus();
+                return;
+            }
+            if (!pass.equals(pass.trim())) {
+
+                toastMessageShort("Password cannot contain spaces");
+                mPassword.requestFocus();
+                return;
+            }
+            if (confirmPass.isEmpty()) {
+
+                toastMessageShort("Please enter password again");
+                mConfirmPassword.requestFocus();
+                return;
+            }
+            if (!confirmPass.equals(pass)) {
+
+                toastMessageShort("Passwords must match");
                 return;
             }
 
