@@ -20,11 +20,9 @@ import android.util.Log;
 import android.util.Pair;
 import android.view.Gravity;
 import android.view.MenuItem;
-import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.PopupMenu;
-import android.widget.SeekBar;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -78,25 +76,15 @@ public class Map extends FragmentActivity implements
     private static final String TAG = "Map";
     private GoogleMap mMap;
     private static final int Request_User_Location_Code = 99;
-    private Circle circleTemp, mCircle = null;
+    private Circle circleTemp;
     private ChildEventListener childEventListenerDms, childEventListenerCircles;
-    private SeekBar chatSelectorSeekBar;
-    private String userEmailFirebase, shapeUUID, selectedOverlappingShapeUUID;
-    private Button createChatButton, mapTypeButton, settingsButton;
+    private String userEmailFirebase, shapeUUID, circleTempUUID;
+    private Button circleButton, mapTypeButton, settingsButton;
     private PopupMenu popupMapType;
-    private boolean locationProviderDisabled = false, firstLoadCamera = true, firstLoadShapes = true, firstLoadDms = true, dmExists = false, mapChanged, cameraMoved = false, waitingForBetterLocationAccuracy = false, badAccuracy = false,
-            waitingForClicksToProcess = false, waitingForShapeInformationToProcess = false, userIsWithinShape, selectingShape = false, restarted = false, newCameraCoordinates = false, mapCleared = false;
-    private LatLng selectedOverlappingCirclesLocation;
-    private Double selectedOverlappingCirclesRadius;
-    private ArrayList<String> overlappingCirclesUUID = new ArrayList<>();
-    private final ArrayList<String> circleUUIDListForMapChange = new ArrayList<>();
-    private ArrayList<LatLng> overlappingCirclesLocation = new ArrayList<>();
-    private final ArrayList<LatLng> circleCenterListForMapChange = new ArrayList<>();
-    private ArrayList<Double> overlappingCirclesRadius = new ArrayList<>();
-    private float x, y;
-    private int chatsSize, dmCounter = 0, newNearLeftLat, newNearLeftLon;
-    private Float closestPointDistance;
-    private Integer closestPointInt;
+    private boolean locationProviderDisabled = false, firstLoadCamera = true, firstLoadShapes = true, firstLoadDms = true, dmExists = false, cameraMoved = false, waitingForBetterLocationAccuracy = false, badAccuracy = false, newShape = false, restarted = false, newCameraCoordinates = false, mapCleared = false;
+    private final ArrayList<String> circleUUIDs = new ArrayList<>();
+    private final ArrayList<LatLng> circleCenters = new ArrayList<>();
+    private int dmCounter = 0, newNearLeftLat, newNearLeftLon;
     private Toast longToast;
     private View loadingIcon;
     private CounterFab dmButton;
@@ -105,9 +93,8 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private final List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // Deal with clicking on more than 1 point at a time.
     // Get rid of mPosition, because there is no way to guarantee a position when multiple people are adding messages simultaneously.
-    // Add Firebase functions to adjust spannable string when changing a messageThread.
+    // Add Firebase functions to adjust spannable string when changing a messageThread. Also, make sure Firebase rules only allows "Points".
     // Switch from initChatAdapter() to notifyChatAdapter() to increase speed? Generally, make Chat load faster, especially if there are multiple ClickableSpans
     // Make scrollToPosition work in Chat after a restart. Also prevent reloading Chat and DMs every time app restarts.
     // Find a way to not clear and reload map every time user returns from clicking a shape. Same with DM notification.
@@ -137,7 +124,7 @@ public class Map extends FragmentActivity implements
     // Leave messages in locations that users get notified of when they enter the area by adding geo-fencing.
     // Prevent spamming messages.
     // Create widget for faster picture / creating point.
-    // Increase speed of checking whether user is inside a circle when clicking the createChatButton, as it currently cycles through all circles. Also, allow user to choose which circle they enter?
+    // Increase speed of checking whether user is inside a circle when clicking the circleButton, as it currently cycles through all circles. Also, allow user to choose which circle they enter?
     // Truncate mention in editText to look like userUUID in Chat.
     // Add Firebase rules to mentionPositionPairs for more than 1 child. A "forEach" rule would be best.
     // Add a function for deleting / decreasing position of DMs after deleting / updating messageThreads - problem: need to store the name of the person being DM'ed, but that's a lot of useless information and possibly increases security risk.
@@ -193,8 +180,7 @@ public class Map extends FragmentActivity implements
         mapTypeButton = findViewById(R.id.mapTypeButton);
         settingsButton = findViewById(R.id.settingsButton);
         dmButton = findViewById(R.id.dmButton);
-        createChatButton = findViewById(R.id.createChatButton);
-        chatSelectorSeekBar = findViewById(R.id.chatSelectorSeekBar);
+        circleButton = findViewById(R.id.circleButton);
         loadingIcon = findViewById(R.id.loadingIcon);
     }
 
@@ -255,23 +241,30 @@ public class Map extends FragmentActivity implements
 
                             if (location != null) {
 
-                                cancelToasts();
+                                if (!locationProviderDisabled) {
 
-                                Intent Activity = new Intent(Map.this, Navigation.class);
+                                    cancelToasts();
 
-                                Activity.putExtra("userLatitude", location.getLatitude());
-                                Activity.putExtra("userLongitude", location.getLongitude());
+                                    Intent Activity = new Intent(Map.this, Navigation.class);
 
-                                Activity.putExtra("noChat", true);
+                                    Activity.putExtra("userLatitude", location.getLatitude());
+                                    Activity.putExtra("userLongitude", location.getLongitude());
 
-                                loadingIcon.setVisibility(View.GONE);
+                                    Activity.putExtra("noChat", true);
 
-                                startActivity(Activity);
+                                    loadingIcon.setVisibility(View.GONE);
+
+                                    startActivity(Activity);
+                                } else {
+
+                                    loadingIcon.setVisibility(View.GONE);
+                                    Log.e(TAG, "onStart() -> settingsButton -> location == null");
+                                    toastMessageLong("An error occurred: your location is null.");
+                                }
                             } else {
 
                                 loadingIcon.setVisibility(View.GONE);
-                                Log.e(TAG, "onStart() -> settingsButton -> location == null");
-                                toastMessageLong("An error occurred: your location is null.");
+                                toastMessageLong("Enable your location provider and try again.");
                             }
                         });
             } else {
@@ -347,24 +340,31 @@ public class Map extends FragmentActivity implements
 
                             if (location != null) {
 
-                                cancelToasts();
+                                if (!locationProviderDisabled) {
 
-                                Intent Activity = new Intent(Map.this, Navigation.class);
+                                    cancelToasts();
 
-                                Activity.putExtra("userLatitude", location.getLatitude());
-                                Activity.putExtra("userLongitude", location.getLongitude());
+                                    Intent Activity = new Intent(Map.this, Navigation.class);
 
-                                Activity.putExtra("noChat", true);
-                                Activity.putExtra("fromDms", true);
+                                    Activity.putExtra("userLatitude", location.getLatitude());
+                                    Activity.putExtra("userLongitude", location.getLongitude());
 
-                                loadingIcon.setVisibility(View.GONE);
+                                    Activity.putExtra("noChat", true);
+                                    Activity.putExtra("fromDms", true);
 
-                                startActivity(Activity);
+                                    loadingIcon.setVisibility(View.GONE);
+
+                                    startActivity(Activity);
+                                } else {
+
+                                    loadingIcon.setVisibility(View.GONE);
+                                    Log.e(TAG, "onStart() -> dmButton -> location == null");
+                                    toastMessageLong("An error occurred: your location is null.");
+                                }
                             } else {
 
                                 loadingIcon.setVisibility(View.GONE);
-                                Log.e(TAG, "onStart() -> dmButton -> location == null");
-                                toastMessageLong("An error occurred: your location is null.");
+                                toastMessageLong("Enable your location provider and try again.");
                             }
                         });
             } else {
@@ -374,9 +374,9 @@ public class Map extends FragmentActivity implements
         });
 
         // Create a point and enter chat.
-        createChatButton.setOnClickListener(view -> {
+        circleButton.setOnClickListener(view -> {
 
-            Log.i(TAG, "createChatButton");
+            Log.i(TAG, "circleButton");
 
             // Check location permissions.
             if (ContextCompat.checkSelfPermission(getBaseContext(),
@@ -391,42 +391,105 @@ public class Map extends FragmentActivity implements
                 mFusedLocationClient.getLastLocation()
                         .addOnSuccessListener(Map.this, location -> {
 
-                            // Add circle to the map and go to recyclerviewlayout.
-                            if (mMap != null) {
+                            // Add circle to the map and go to Chat.
+                            if (location != null) {
 
-                                // Check if user is within a circle. If so, enter that circle instead of creating a new one.
-                                if (circleCenterListForMapChange != null && !circleCenterListForMapChange.isEmpty()) {
+                                if (!locationProviderDisabled) {
 
-                                    for (int i = 0; i < circleCenterListForMapChange.size(); i++) {
+                                    // If user is not close to a shape, create one. Else, highlight the shape they are "within" to let the user know which shape they are about to enter. If a shape is already highlighted, enter it.
+                                    if (circleTemp != null) {
 
+                                        // Check distance to circleTemp and enter it.
                                         float[] distance = new float[2];
-                                        Location.distanceBetween(circleCenterListForMapChange.get(i).latitude, circleCenterListForMapChange.get(i).longitude, location.getLatitude(), location.getLongitude(), distance);
+                                        Location.distanceBetween(circleTemp.getCenter().latitude, circleTemp.getCenter().longitude, location.getLatitude(), location.getLongitude(), distance);
 
-                                        if (distance[0] <= 2) {
-
-                                            // Enter the closest point.
-                                            if (closestPointDistance == null || distance[0] < closestPointDistance) {
-
-                                                closestPointDistance = distance[0];
-                                                closestPointInt = i;
-                                            }
-                                        }
-                                    }
-
-                                    if (closestPointInt != null) {
-
-                                        // User is inside (or close enough to) circle.
-                                        enterExistingCircle(location, circleCenterListForMapChange.get(closestPointInt), closestPointInt);
+                                        // userIsWithinShape will be true if user is within 2 meters of the shape's center.
+                                        enterCircle(location, newShape,distance[0] <= 2);
                                     } else {
 
-                                        // ArrayList of circles is not empty. However, user was not inside (or close enough to) any circles.
-                                        createAndEnterCircle(location);
-                                    }
-                                    return;
-                                }
+                                        // Check for closest circle. If user is close to a circle, highlight it. Else, create one.
+                                        for (int i = 0; i < circleCenters.size(); i++) {
 
-                                // User is not inside a point, or no point exists.
-                                createAndEnterCircle(location);
+                                            float[] distance = new float[2];
+                                            Location.distanceBetween(circleCenters.get(i).latitude, circleCenters.get(i).longitude, location.getLatitude(), location.getLongitude(), distance);
+
+                                            if (distance[0] <= 2) {
+
+                                                if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
+
+                                                    circleTemp = mMap.addCircle(
+                                                            new CircleOptions()
+                                                                    .center(circleCenters.get(i))
+                                                                    .clickable(true)
+                                                                    .fillColor(Color.argb(100, 255, 255, 0))
+                                                                    .radius(1.0)
+                                                                    .strokeColor(Color.rgb(255, 255, 0))
+                                                                    .strokeWidth(3f)
+                                                                    .zIndex(2)
+                                                    );
+                                                } else {
+
+                                                    circleTemp = mMap.addCircle(
+                                                            new CircleOptions()
+                                                                    .center(circleCenters.get(i))
+                                                                    .clickable(true)
+                                                                    .fillColor(Color.argb(100, 255, 0, 255))
+                                                                    .radius(1.0)
+                                                                    .strokeColor(Color.rgb(255, 0, 255))
+                                                                    .strokeWidth(3f)
+                                                                    .zIndex(2)
+                                                    );
+                                                }
+
+                                                newShape = false;
+                                                circleTempUUID = circleUUIDs.get(i);
+                                                loadingIcon.setVisibility(View.GONE);
+
+                                                return;
+                                            }
+                                        }
+
+                                        // No close circles exists. Create one.
+                                        if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
+
+                                            circleTemp = mMap.addCircle(
+                                                    new CircleOptions()
+                                                            .center(new LatLng(location.getLatitude(), location.getLongitude()))
+                                                            .clickable(true)
+                                                            .fillColor(Color.argb(100, 255, 255, 0))
+                                                            .radius(1.0)
+                                                            .strokeColor(Color.rgb(255, 255, 0))
+                                                            .strokeWidth(3f)
+                                                            .zIndex(2)
+                                            );
+                                        } else {
+
+                                            circleTemp = mMap.addCircle(
+                                                    new CircleOptions()
+                                                            .center(new LatLng(location.getLatitude(), location.getLongitude()))
+                                                            .clickable(true)
+                                                            .fillColor(Color.argb(100, 255, 0, 255))
+                                                            .radius(1.0)
+                                                            .strokeColor(Color.rgb(255, 0, 255))
+                                                            .strokeWidth(3f)
+                                                            .zIndex(2)
+                                            );
+                                        }
+
+                                        newShape = true;
+                                        circleTempUUID = UUID.randomUUID().toString();
+                                        loadingIcon.setVisibility(View.GONE);
+                                    }
+                                } else {
+
+                                    loadingIcon.setVisibility(View.GONE);
+                                    toastMessageLong("Enable your location provider and try again.");
+                                }
+                            } else {
+
+                                loadingIcon.setVisibility(View.GONE);
+                                Log.e(TAG, "onStart() -> creatChatButton -> location == null");
+                                toastMessageLong("An error occurred: your location is null.");
                             }
                         });
             } else {
@@ -435,195 +498,8 @@ public class Map extends FragmentActivity implements
             }
         });
 
-        chatSelectorSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-
-            @Override
-            public void onStartTrackingTouch(final SeekBar seekBar) {
-            }
-
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-
-                if (chatSelectorSeekBar.getVisibility() == View.VISIBLE) {
-
-                    // Create arrayLists that hold shape information in a useful order.
-                    ArrayList<String> combinedListUUID = new ArrayList<>(overlappingCirclesUUID);
-
-                    selectedOverlappingShapeUUID = combinedListUUID.get(chatSelectorSeekBar.getProgress());
-
-                    if (selectedOverlappingShapeUUID != null) {
-
-                        if (circleTemp != null) {
-
-                            circleTemp.remove();
-                        }
-
-                        selectedOverlappingCirclesLocation = overlappingCirclesLocation.get(chatSelectorSeekBar.getProgress());
-                        selectedOverlappingCirclesRadius = overlappingCirclesRadius.get(chatSelectorSeekBar.getProgress());
-
-                        if (mMap.getMapType() == 2 || mMap.getMapType() == 4) {
-
-                            circleTemp = mMap.addCircle(
-                                    new CircleOptions()
-                                            .center(selectedOverlappingCirclesLocation)
-                                            .clickable(true)
-                                            .fillColor(Color.argb(100, 255, 255, 0))
-                                            .radius(selectedOverlappingCirclesRadius)
-                                            .strokeColor(Color.rgb(255, 255, 0))
-                                            .strokeWidth(3f)
-                                            .zIndex(2)
-                            );
-                        } else {
-
-                            circleTemp = mMap.addCircle(
-                                    new CircleOptions()
-                                            .center(selectedOverlappingCirclesLocation)
-                                            .clickable(true)
-                                            .fillColor(Color.argb(100, 255, 0, 255))
-                                            .radius(selectedOverlappingCirclesRadius)
-                                            .strokeColor(Color.rgb(255, 0, 255))
-                                            .strokeWidth(3f)
-                                            .zIndex(2)
-                            );
-                        }
-
-                        // Used when getting rid of the circles in onMapClick.
-                        circleTemp.setTag(selectedOverlappingShapeUUID);
-                        circleTemp.setCenter(selectedOverlappingCirclesLocation);
-                        circleTemp.setRadius(selectedOverlappingCirclesRadius);
-                    } else {
-
-                        Log.e(TAG, "onStart() -> chatSelectorSeekBar -> onProgressChanged -> selectedOverlappingShapeUUID == null");
-                        toastMessageLong("An error occurred.");
-                    }
-
-                    selectingShape = true;
-                }
-            }
-
-            @Override
-            public void onStopTrackingTouch(final SeekBar seekBar) {
-            }
-        });
-
         // Clear the cache. This should clear the issue where Chat.java was creating files that were never deleted.
         deleteDirectory(this.getCacheDir());
-    }
-
-    private void enterExistingCircle(Location userLocation, LatLng circleLatLng, int i) {
-
-        Log.i(TAG, "enterExistingCircle()");
-
-        Intent Activity;
-
-        // Check if the user is already signed in.
-        if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) != null) {
-
-            // User signed in.
-
-            Activity = new Intent(Map.this, Navigation.class);
-
-        } else {
-
-            // User NOT signed in.
-
-            Activity = new Intent(Map.this, SignIn.class);
-        }
-
-        cancelToasts();
-
-        // Pass this boolean value to Chat.java.
-        Activity.putExtra("newShape", false);
-
-        // Get a value with 1 decimal point and use it for Firebase.
-        double nearLeftPrecisionLat = Math.pow(10, 1);
-        // Can't create a firebase path with '.', so get rid of decimal.
-        double nearLeftLatTemp = (int) (nearLeftPrecisionLat * circleLatLng.latitude) / nearLeftPrecisionLat;
-        nearLeftLatTemp *= 10;
-        int shapeLat = (int) nearLeftLatTemp;
-
-        double nearLeftPrecisionLon = Math.pow(10, 1);
-        // Can't create a firebase path with '.', so get rid of decimal.
-        double nearLeftLonTemp = (int) (nearLeftPrecisionLon * circleLatLng.longitude) / nearLeftPrecisionLon;
-        nearLeftLonTemp *= 10;
-        int shapeLon = (int) nearLeftLonTemp;
-
-        Activity.putExtra("shapeLat", shapeLat);
-        Activity.putExtra("shapeLon", shapeLon);
-        // UserLatitude and userLongitude are used in DirectMentions.
-        Activity.putExtra("userLatitude", userLocation.getLatitude());
-        Activity.putExtra("userLongitude", userLocation.getLongitude());
-        // Pass this value to Chat.java to identify the shape.
-        Activity.putExtra("shapeUUID", circleUUIDListForMapChange.get(i));
-        // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
-        Activity.putExtra("userIsWithinShape", true);
-        Activity.putExtra("circleLatitude", circleLatLng.latitude);
-        Activity.putExtra("circleLongitude", circleLatLng.longitude);
-        Activity.putExtra("radius", 1.0);
-
-        clearMap();
-
-        loadingIcon.setVisibility(View.GONE);
-
-        startActivity(Activity);
-    }
-
-    private void createAndEnterCircle(Location userLocation) {
-
-        Log.i(TAG, "createAndEnterCircle()");
-
-        shapeUUID = UUID.randomUUID().toString();
-
-        Intent Activity;
-
-        // Check if the user is already signed in.
-        if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) != null) {
-
-            // User signed in.
-
-            Activity = new Intent(Map.this, Navigation.class);
-        } else {
-
-            // User NOT signed in.
-
-            Activity = new Intent(Map.this, SignIn.class);
-        }
-
-        cancelToasts();
-
-        // Pass this boolean value to Chat.java.
-        Activity.putExtra("newShape", true);
-
-        // Get a value with 1 decimal point and use it for Firebase.
-        double nearLeftPrecisionLat = Math.pow(10, 1);
-        // Can't create a firebase path with '.', so get rid of decimal.
-        double nearLeftLatTemp = (int) (nearLeftPrecisionLat * userLocation.getLatitude()) / nearLeftPrecisionLat;
-        nearLeftLatTemp *= 10;
-        int shapeLat = (int) nearLeftLatTemp;
-
-        double nearLeftPrecisionLon = Math.pow(10, 1);
-        // Can't create a firebase path with '.', so get rid of decimal.
-        double nearLeftLonTemp = (int) (nearLeftPrecisionLon * userLocation.getLongitude()) / nearLeftPrecisionLon;
-        nearLeftLonTemp *= 10;
-        int shapeLon = (int) nearLeftLonTemp;
-
-        Activity.putExtra("shapeLat", shapeLat);
-        Activity.putExtra("shapeLon", shapeLon);
-        // UserLatitude and userLongitude are used in DirectMentions.
-        Activity.putExtra("userLatitude", userLocation.getLatitude());
-        Activity.putExtra("userLongitude", userLocation.getLongitude());
-        // Pass this value to Chat.java to identify the shape.
-        Activity.putExtra("shapeUUID", shapeUUID);
-        // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
-        Activity.putExtra("userIsWithinShape", true);
-        Activity.putExtra("circleLatitude", userLocation.getLatitude());
-        Activity.putExtra("circleLongitude", userLocation.getLongitude());
-        Activity.putExtra("radius", 1.0);
-
-        clearMap();
-
-        loadingIcon.setVisibility(View.GONE);
-
-        startActivity(Activity);
     }
 
     // Change to .limitToLast(1) to cut down on data usage. Otherwise, EVERY child at this node will be downloaded every time the child is updated.
@@ -676,14 +552,13 @@ public class Map extends FragmentActivity implements
         super.onRestart();
         Log.i(TAG, "onRestart()");
 
+        // Need to call clear because shapes will be loaded again in onStart(). This should change in the future to cut down on data usage.
+        mMap.clear();
+
         restarted = true;
         firstLoadCamera = false;
         firstLoadShapes = true;
         firstLoadDms = true;
-        waitingForShapeInformationToProcess = false;
-        waitingForClicksToProcess = false;
-        selectingShape = false;
-        chatsSize = 0;
         dmCounter = 0;
         newCameraCoordinates = false;
         loadedCoordinates.clear();
@@ -691,11 +566,9 @@ public class Map extends FragmentActivity implements
         oldFarLeft = null;
         oldNearRight = null;
         oldFarRight = null;
-        closestPointDistance = null;
-        closestPointInt = null;
+        circleTemp = null;
+        circleTempUUID = null;
 
-        circleUUIDListForMapChange.clear();
-        circleCenterListForMapChange.clear();
         cancelToasts();
 
         if (dmButton != null) {
@@ -704,33 +577,13 @@ public class Map extends FragmentActivity implements
         }
 
         // Clear map before adding new Firebase circles in onStart() to prevent overlap.
-        // Set shape to null so changing chatSizeSeekBar in onStart() will create a circle and createChatButton will reset itself.
+        // Set shape to null so changing chatSizeSeekBar in onStart() will create a circle and circleButton will reset itself.
         if (mMap != null) {
 
             mMap.getUiSettings().setScrollGesturesEnabled(true);
 
             // Cut down on code by using one method for the shared code from onMapReady() and onRestart().
             onMapReadyAndRestart();
-        }
-
-        if (circleTemp != null) {
-
-            circleTemp.remove();
-        }
-
-        mCircle = null;
-        selectingShape = false;
-        userIsWithinShape = false;
-
-        overlappingCirclesUUID = new ArrayList<>();
-        overlappingCirclesUUID = new ArrayList<>();
-        overlappingCirclesLocation = new ArrayList<>();
-        overlappingCirclesRadius = new ArrayList<>();
-
-        // Get rid of the chatSelectorSeekBar.
-        if (chatSelectorSeekBar.getVisibility() != View.GONE) {
-
-            chatSelectorSeekBar.setVisibility(View.GONE);
         }
     }
 
@@ -870,14 +723,9 @@ public class Map extends FragmentActivity implements
             childEventListenerCircles = null;
         }
 
-        if (createChatButton != null) {
+        if (circleButton != null) {
 
-            createChatButton.setOnClickListener(null);
-        }
-
-        if (chatSelectorSeekBar != null) {
-
-            chatSelectorSeekBar.setOnSeekBarChangeListener(null);
+            circleButton.setOnClickListener(null);
         }
 
         if (mMap != null) {
@@ -901,6 +749,145 @@ public class Map extends FragmentActivity implements
 
             longToast.cancel();
         }
+    }
+
+    @Override
+    public void onMapReady(GoogleMap googleMap) {
+
+        Log.i(TAG, "onMapReady()");
+
+        mMap = googleMap;
+
+        // Cut down on code by using one method for the shared code from onMapReady() and onRestart().
+        onMapReadyAndRestart();
+    }
+
+    // Cut down on code by using one method for the shared code from onMapReady() and onRestart().
+    private void onMapReadyAndRestart() {
+
+        Log.i(TAG, "onMapReadyAndRestart()");
+
+        if (!restarted) {
+
+            updatePreferences();
+        }
+
+        if (restarted) {
+
+            cameraIdle();
+        }
+
+        // Go to Chat.java when clicking on a circle.
+        mMap.setOnCircleClickListener(circle -> {
+
+            // If the user clicks on a circle that's already highlighted, enter that circle.
+            if (circle.getFillColor() != 0) {
+
+                // Check location permissions.
+                if (ContextCompat.checkSelfPermission(getBaseContext(),
+                        Manifest.permission.ACCESS_FINE_LOCATION)
+                        == PackageManager.PERMISSION_GRANTED) {
+
+                    loadingIcon.setVisibility(View.VISIBLE);
+
+                    // Create a point and to to Chat.java or SignIn.java.
+                    FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
+
+                    mFusedLocationClient.getLastLocation()
+                            .addOnSuccessListener(Map.this, location -> {
+
+                                // Add circle to the map and go to Chat.
+                                if (location != null) {
+
+                                    if (!locationProviderDisabled) {
+
+                                            // Check distance to circleTemp and enter it.
+                                            float[] distance = new float[2];
+                                            Location.distanceBetween(circleTemp.getCenter().latitude, circleTemp.getCenter().longitude, location.getLatitude(), location.getLongitude(), distance);
+
+                                            // userIsWithinShape will be true if user is within 2 meters of the shape's center.
+                                            enterCircle(location, newShape,distance[0] <= 2);
+                                    } else {
+
+                                        loadingIcon.setVisibility(View.GONE);
+                                        toastMessageLong("Enable your location provider and try again.");
+                                    }
+                                } else {
+
+                                    loadingIcon.setVisibility(View.GONE);
+                                    Log.e(TAG, "onStart() -> creatChatButton -> location == null");
+                                    toastMessageLong("An error occurred: your location is null.");
+                                }
+                            });
+                } else {
+
+                    checkLocationPermissions();
+                }
+
+                return;
+            }
+
+            if (circleTemp != null) {
+
+                circleTemp.remove();
+                circleTemp = null;
+            }
+
+            if (mMap.getMapType() == 2 || mMap.getMapType() == 4) {
+
+                circleTemp = mMap.addCircle(
+                        new CircleOptions()
+                                .center(circle.getCenter())
+                                .clickable(true)
+                                .fillColor(Color.argb(100, 255, 255, 0))
+                                .radius(circle.getRadius())
+                                .strokeColor(Color.rgb(255, 255, 0))
+                                .strokeWidth(3f)
+                                .zIndex(2)
+                );
+            } else {
+
+                circleTemp = mMap.addCircle(
+                        new CircleOptions()
+                                .center(circle.getCenter())
+                                .clickable(true)
+                                .fillColor(Color.argb(100, 255, 0, 255))
+                                .radius(circle.getRadius())
+                                .strokeColor(Color.rgb(255, 0, 255))
+                                .strokeWidth(3f)
+                                .zIndex(2)
+                );
+            }
+
+            newShape = false;
+            circleTempUUID = circle.getTag().toString();
+            loadingIcon.setVisibility(View.GONE);
+        });
+
+        mMap.setOnMapClickListener(latLng -> {
+
+            Log.i(TAG, "onMapReadyAndRestart() -> onMapClick -> Replacing circles with z = -1 with z-index = 0");
+
+            if (circleTemp != null) {
+
+                circleTemp.remove();
+                circleTemp = null;
+            }
+        });
+
+        // Updates the boolean value for onLocationChanged() to prevent updating the camera position if the user has already changed it manually.
+        mMap.setOnCameraMoveListener(() -> {
+
+            if (waitingForBetterLocationAccuracy && !cameraMoved) {
+
+                Log.i(TAG, "onMapReadyAndRestart() -> onCameraMove");
+
+                cameraMoved = true;
+            }
+        });
+
+        // Once camera stops moving, load the shapes in that region.
+        mMap.setOnCameraIdleListener(this::cameraIdle);
     }
 
     private void checkLocationPermissions() {
@@ -1099,513 +1086,60 @@ public class Map extends FragmentActivity implements
         loadingIcon.setVisibility(View.GONE);
     }
 
-    @Override
-    public void onMapReady(GoogleMap googleMap) {
+    private void enterCircle(Location userLocation, boolean newShape, boolean userIsWithinShape) {
 
-        Log.i(TAG, "onMapReady()");
+        Log.i(TAG, "enterCircle()");
 
-        mMap = googleMap;
+        Intent Activity;
 
-        // Cut down on code by using one method for the shared code from onMapReady() and onRestart().
-        onMapReadyAndRestart();
-    }
+        // Check if the user is already signed in.
+        if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) != null) {
 
-    // Cut down on code by using one method for the shared code from onMapReady() and onRestart().
-    private void onMapReadyAndRestart() {
+            // User signed in.
 
-        Log.i(TAG, "onMapReadyAndRestart()");
+            Activity = new Intent(Map.this, Navigation.class);
 
-        if (!restarted) {
+        } else {
 
-            updatePreferences();
+            // User NOT signed in.
+
+            Activity = new Intent(Map.this, SignIn.class);
         }
 
-        if (restarted) {
-
-            cameraIdle();
-        }
-
-        // Go to Chat.java when clicking on a circle.
-        mMap.setOnCircleClickListener(circle -> {
-
-            // If the user tries to click on a circle that is not a circleTemp while circleTemp exists, return.
-            if (chatSelectorSeekBar.getVisibility() == View.VISIBLE && (circle.getTag() != selectedOverlappingShapeUUID)) {
-
-                Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> Selected circle is not a circleTemp. Resetting and returning");
-
-                if (circleTemp != null) {
-
-                    circleTemp.remove();
-                }
-
-                selectingShape = false;
-
-                // Change the circle color depending on the map type.
-                if (mMap.getMapType() == 2 || mMap.getMapType() == 4) {
-
-                    for (int i = 0; i < overlappingCirclesLocation.size(); i++) {
-
-                        Circle circle0 = mMap.addCircle(
-                                new CircleOptions()
-                                        .center(overlappingCirclesLocation.get(i))
-                                        .clickable(true)
-                                        .radius(overlappingCirclesRadius.get(i))
-                                        .strokeColor(Color.rgb(255, 255, 0))
-                                        .strokeWidth(3f)
-                                        .zIndex(0)
-                        );
-
-                        circle0.setTag(overlappingCirclesUUID.get(i));
-                    }
-                } else {
-
-                    for (int i = 0; i < overlappingCirclesLocation.size(); i++) {
-
-                        Circle circle0 = mMap.addCircle(
-                                new CircleOptions()
-                                        .center(overlappingCirclesLocation.get(i))
-                                        .clickable(true)
-                                        .radius(overlappingCirclesRadius.get(i))
-                                        .strokeColor(Color.rgb(255, 0, 255))
-                                        .strokeWidth(3f)
-                                        .zIndex(0)
-                        );
-
-                        circle0.setTag(overlappingCirclesUUID.get(i));
-                    }
-                }
-
-                overlappingCirclesUUID = new ArrayList<>();
-                overlappingCirclesUUID = new ArrayList<>();
-                overlappingCirclesLocation = new ArrayList<>();
-                overlappingCirclesRadius = new ArrayList<>();
-
-                chatSelectorSeekBar.setVisibility(View.GONE);
-                chatSelectorSeekBar.setProgress(0);
-
-                chatsSize = 0;
-
-                return;
-            }
-
-            // Change boolean value so the x and y values in touchAgain() from dispatchTouchEvent() do not change.
-            waitingForClicksToProcess = true;
-
-            // While clicking through the circles, if a circle does not have a tag, it is new. Therefore, go directly to the recyclerviewlayout, as this is probably the recyclerviewlayout the user wants to enter.
-            if (circle.getTag() == null) {
-
-                Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> User clicked on a new circle");
-
-                // End this method if the method is already being processed from another shape clicking event.
-                if (waitingForShapeInformationToProcess) {
-
-                    return;
-                }
-
-                // Update boolean to prevent double clicking a shape.
-                waitingForShapeInformationToProcess = true;
-
-                // Inform the user is the circle is too small.
-                if (circle.getRadius() < 1) {
-
-                    toastMessageLong("Please make the shape larger.");
-                    waitingForClicksToProcess = false;
-                    waitingForShapeInformationToProcess = false;
-                    return;
-                }
-
-                // Generate a UUID, as the shape is new.
-                shapeUUID = UUID.randomUUID().toString();
-
-                // Check location permissions.
-                if (ContextCompat.checkSelfPermission(getBaseContext(),
-                        Manifest.permission.ACCESS_FINE_LOCATION)
-                        == PackageManager.PERMISSION_GRANTED) {
-
-                    // Check if user is within the circle before going to the recyclerviewlayout.
-                    FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
-
-                    mFusedLocationClient.getLastLocation()
-                            .addOnSuccessListener(Map.this, location -> {
-
-                                if (location != null) {
-
-                                    float[] distance = new float[2];
-
-                                    Location.distanceBetween(location.getLatitude(), location.getLongitude(),
-                                            circle.getCenter().latitude, circle.getCenter().longitude, distance);
-
-                                    // Boolean; will be true if user is within the circle upon circle click.
-                                    userIsWithinShape = !(distance[0] > circle.getRadius());
-
-                                    if (!userIsWithinShape) {
-
-                                        toastMessageLong("You must be inside the shape to create a new shape.");
-                                        waitingForClicksToProcess = false;
-                                        waitingForShapeInformationToProcess = false;
-                                        return;
-                                    }
-
-                                    // Check if the user is already signed in.
-                                    if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) != null) {
-
-                                        // User signed in.
-
-                                        Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> New circle -> User signed in");
-
-                                        // Carry the extras all the way to Chat.java.
-                                        Intent Activity = new Intent(Map.this, Navigation.class);
-                                        goToNextActivityCircle(Activity, circle, true);
-                                    } else {
-
-                                        // User NOT signed in.
-
-                                        Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> New circle -> User NOT signed in");
-
-                                        // Carry the extras all the way to Chat.java.
-                                        Intent Activity = new Intent(Map.this, SignIn.class);
-                                        goToNextActivityCircle(Activity, circle, true);
-                                    }
-                                } else {
-
-                                    Log.e(TAG, "onMapReadyAndRestart() -> onCircleClick -> circle.getTag() == null -> location == null");
-                                    mMap.getUiSettings().setScrollGesturesEnabled(true);
-                                    loadingIcon.setVisibility(View.GONE);
-                                    toastMessageLong("An error occurred: your location is null.");
-                                }
-                            });
-                } else {
-
-                    checkLocationPermissions();
-                }
-
-                // As getFusedLocationProviderClient is asynchronous, this return statement will prevent executing the rest of the code.
-                return;
-            }
-
-            // Click through all circles, using the z-index to figure out which ones have not been cycled through. All the information to the arrayLists to be used by chatSelectorSeekBar.
-            if (circle.getZIndex() == 0 && circle.getTag() != null) {
-
-                Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> Lowering z-index of a circle");
-
-                // Prevent the map from scrolling so the same spot will be clicked again in touchAgain().
-                if (mMap.getUiSettings().isScrollGesturesEnabled()) {
-
-                    mMap.getUiSettings().setScrollGesturesEnabled(false);
-                }
-
-                loadingIcon.setVisibility(View.VISIBLE);
-
-                // Drop the z-index to metaphorically check it off the "to click" list.
-                circle.setZIndex(-1);
-
-                // Add the information to arrayLists to be used by chatSelectorSeekBar.
-                overlappingCirclesUUID.add(circle.getTag().toString());
-                overlappingCirclesUUID.add(circle.getTag().toString());
-                overlappingCirclesLocation.add(circle.getCenter());
-                overlappingCirclesRadius.add(circle.getRadius());
-
-                // If the user zooms out and a shape is too small, touchAgain() will not touch the shape again (I'm not sure why).
-                // Therefore, save an instance of the shape so that if onMapClick is called, it will just go to the last shape.
-                mCircle = circle;
-
-                // Programmatically click the same spot again.
-                touchAgain();
-
-                return;
-            }
-
-            waitingForClicksToProcess = false;
-
-            // This will get called after the last shape is programmatically clicked.
-            chatsSize = overlappingCirclesUUID.size();
-
-            // If selectingShape, user has selected a highlighted shape. Similar logic applies to originally only clicking on one circle.
-            if (selectingShape || (chatsSize == 1 && circle.getTag() != null)) {
-
-                Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> User selected a circle");
-
-                // End this method if the method is already being processed from another shape clicking event.
-                if (waitingForShapeInformationToProcess) {
-
-                    return;
-                }
-
-                // Update boolean to prevent double clicking a shape.
-                waitingForShapeInformationToProcess = true;
-
-                // "New" circles are automatically clicked. Therefore, get the ID set by Firebase to identify which circle the user clicked on.
-                if (chatsSize == 1) {
-
-                    shapeUUID = (String) circle.getTag();
-                } else {
-
-                    shapeUUID = selectedOverlappingShapeUUID;
-                }
-
-                // Check if user is within the circle before going to the recyclerviewlayout.
-                FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
-
-                mFusedLocationClient.getLastLocation()
-                        .addOnSuccessListener(Map.this, location -> {
-
-                            if (location != null) {
-
-                                float[] distance = new float[2];
-
-                                Location.distanceBetween(location.getLatitude(), location.getLongitude(),
-                                        circle.getCenter().latitude, circle.getCenter().longitude, distance);
-
-                                // Boolean; will be true if user is within the circle upon circle click.
-                                userIsWithinShape = !(distance[0] > circle.getRadius());
-
-                                // Check if the user is already signed in.
-                                if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) != null) {
-
-                                    // User signed in.
-
-                                    Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> User selected a circle -> User signed in");
-
-                                    Intent Activity = new Intent(Map.this, Navigation.class);
-                                    goToNextActivityCircle(Activity, circle, false);
-                                } else {
-
-                                    // User NOT signed in.
-
-                                    Log.i(TAG, "onMapReadyAndRestart() -> onCircleClick -> User selected a circle -> User NOT signed in");
-
-                                    Intent Activity = new Intent(Map.this, SignIn.class);
-                                    goToNextActivityCircle(Activity, circle, false);
-                                }
-                            } else {
-
-                                Log.e(TAG, "onMapReadyAndRestart() -> onCircleClick -> User selected a circle -> location == null");
-                                mMap.getUiSettings().setScrollGesturesEnabled(true);
-                                loadingIcon.setVisibility(View.GONE);
-                                toastMessageLong("An error occurred: your location is null.");
-                            }
-                        });
-
-                return;
-            }
-
-            selectingShape = true;
-
-            // Create arrayLists that hold shape information in a useful order.
-
-            ArrayList<String> combinedListUUID = new ArrayList<>(overlappingCirclesUUID);
-
-            selectedOverlappingShapeUUID = combinedListUUID.get(chatSelectorSeekBar.getProgress());
-
-            if (selectedOverlappingShapeUUID != null) {
-
-                if (circleTemp != null) {
-
-                    circleTemp.remove();
-                }
-
-                selectedOverlappingCirclesLocation = overlappingCirclesLocation.get(0);
-                selectedOverlappingCirclesRadius = overlappingCirclesRadius.get(0);
-
-                if (mMap.getMapType() == 2 || mMap.getMapType() == 4) {
-
-                    circleTemp = mMap.addCircle(
-                            new CircleOptions()
-                                    .center(selectedOverlappingCirclesLocation)
-                                    .clickable(true)
-                                    .fillColor(Color.argb(100, 255, 255, 0))
-                                    .radius(selectedOverlappingCirclesRadius)
-                                    .strokeColor(Color.rgb(255, 255, 0))
-                                    .strokeWidth(3f)
-                                    .zIndex(2)
-                    );
-                } else {
-
-                    circleTemp = mMap.addCircle(
-                            new CircleOptions()
-                                    .center(selectedOverlappingCirclesLocation)
-                                    .clickable(true)
-                                    .fillColor(Color.argb(100, 255, 0, 255))
-                                    .radius(selectedOverlappingCirclesRadius)
-                                    .strokeColor(Color.rgb(255, 0, 255))
-                                    .strokeWidth(3f)
-                                    .zIndex(2)
-                    );
-                }
-
-                // Used when getting rid of the circles in onMapClick.
-                circleTemp.setTag(selectedOverlappingShapeUUID);
-                circleTemp.setCenter(selectedOverlappingCirclesLocation);
-                circleTemp.setRadius(selectedOverlappingCirclesRadius);
-            } else {
-
-                Log.e(TAG, "onMapReadyAndRestart() -> onCircleClick -> selectedOverlappingShapeUUID == null");
-                mMap.getUiSettings().setScrollGesturesEnabled(true);
-                loadingIcon.setVisibility(View.GONE);
-                toastMessageLong("An error occurred.");
-            }
-
-            // At this point, chatsSize > 1 so set the chatSelectorSeekBar to VISIBLE.
-            chatSelectorSeekBar.setMax(chatsSize - 1);
-            chatSelectorSeekBar.setProgress(0);
-            chatSelectorSeekBar.setVisibility(View.VISIBLE);
-            mMap.getUiSettings().setScrollGesturesEnabled(true);
-            loadingIcon.setVisibility(View.GONE);
-
-            longToast = Toast.makeText(getBaseContext(), "Select a shape using the SeekBar below", Toast.LENGTH_LONG);
-            longToast.setGravity(Gravity.BOTTOM, 0, 250);
-            longToast.show();
-        });
-
-        mMap.setOnMapClickListener(latLng -> {
-
-            // Make new shapes with z-index = 0.
-            if (chatSelectorSeekBar.getVisibility() == View.VISIBLE) {
-
-                Log.i(TAG, "onMapReadyAndRestart() -> onMapClick -> Replacing circles with z = -1 with z-index = 0");
-
-                if (circleTemp != null) {
-
-                    circleTemp.remove();
-                }
-
-                selectingShape = false;
-
-                // !mapChanged prevents duplicate shapes when a user is selecting a shape and then changes map types.
-                if (!mapChanged) {
-
-                    if (mMap.getMapType() == 2 || mMap.getMapType() == 4) {
-
-                        for (int i = 0; i < overlappingCirclesLocation.size(); i++) {
-
-                            Circle circle0 = mMap.addCircle(
-                                    new CircleOptions()
-                                            .center(overlappingCirclesLocation.get(i))
-                                            .clickable(true)
-                                            .radius(overlappingCirclesRadius.get(i))
-                                            .strokeColor(Color.rgb(255, 255, 0))
-                                            .strokeWidth(3f)
-                                            .zIndex(0)
-                            );
-
-                            circle0.setTag(overlappingCirclesUUID.get(i));
-                        }
-                    } else {
-
-                        for (int i = 0; i < overlappingCirclesLocation.size(); i++) {
-
-                            Circle circle0 = mMap.addCircle(
-                                    new CircleOptions()
-                                            .center(overlappingCirclesLocation.get(i))
-                                            .clickable(true)
-                                            .radius(overlappingCirclesRadius.get(i))
-                                            .strokeColor(Color.rgb(255, 0, 255))
-                                            .strokeWidth(3f)
-                                            .zIndex(0)
-                            );
-
-                            circle0.setTag(overlappingCirclesUUID.get(i));
-                        }
-                    }
-                }
-
-                overlappingCirclesUUID = new ArrayList<>();
-                overlappingCirclesUUID = new ArrayList<>();
-                overlappingCirclesLocation = new ArrayList<>();
-                overlappingCirclesRadius = new ArrayList<>();
-
-                chatSelectorSeekBar.setVisibility(View.GONE);
-                chatSelectorSeekBar.setProgress(0);
-
-                chatsSize = 0;
-            }
-
-            // If the user zooms out and a shape is too small, touchAgain() will not touch the shape again (I'm not sure why).
-            // Therefore, just follow through with the on[Shape]Click code without getting ALL the shapes.
-            if (loadingIcon.getVisibility() == View.VISIBLE && mCircle != null) {
-
-                Log.i(TAG, "onMapReadyAndRestart() -> onMapClick -> User selected a circle");
-
-                chatsSize = overlappingCirclesUUID.size();
-
-                // End this method if the method is already being processed from another shape clicking event.
-                if (waitingForShapeInformationToProcess) {
-
-                    return;
-                }
-
-                // Update boolean to prevent double clicking a shape.
-                waitingForShapeInformationToProcess = true;
-
-                shapeUUID = (String) mCircle.getTag();
-
-                // Check location permissions.
-                if (ContextCompat.checkSelfPermission(getBaseContext(),
-                        Manifest.permission.ACCESS_FINE_LOCATION)
-                        == PackageManager.PERMISSION_GRANTED) {
-
-                    // Check if user is within the circle before going to the recyclerviewlayout.
-                    FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
-
-                    mFusedLocationClient.getLastLocation()
-                            .addOnSuccessListener(Map.this, location -> {
-
-                                if (location != null) {
-
-                                    float[] distance = new float[2];
-
-                                    Location.distanceBetween(location.getLatitude(), location.getLongitude(),
-                                            mCircle.getCenter().latitude, mCircle.getCenter().longitude, distance);
-
-                                    // Boolean; will be true if user is within the circle upon circle click.
-                                    userIsWithinShape = !(distance[0] > mCircle.getRadius());
-
-                                    // Check if the user is already signed in.
-                                    if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) != null) {
-
-                                        // User signed in.
-
-                                        Log.i(TAG, "onMapReadyAndRestart() -> onMapClick -> User selected a circle -> User signed in");
-
-                                        Intent Activity = new Intent(Map.this, Navigation.class);
-                                        goToNextActivityCircle(Activity, mCircle, false);
-                                    } else {
-
-                                        // User NOT signed in.
-
-                                        Log.i(TAG, "onMapReadyAndRestart() -> onMapClick -> User selected a circle -> User NOT signed in");
-
-                                        Intent Activity = new Intent(Map.this, SignIn.class);
-                                        goToNextActivityCircle(Activity, mCircle, false);
-                                    }
-                                } else {
-
-                                    Log.e(TAG, "onMapReadyAndRestart() -> onMapClick -> User selected a circle -> location == null");
-                                    mMap.getUiSettings().setScrollGesturesEnabled(true);
-                                    loadingIcon.setVisibility(View.GONE);
-                                    toastMessageLong("An error occurred: your location is null.");
-                                }
-                            });
-                } else {
-
-                    checkLocationPermissions();
-                }
-            }
-        });
-
-        // Updates the boolean value for onLocationChanged() to prevent updating the camera position if the user has already changed it manually.
-        mMap.setOnCameraMoveListener(() -> {
-
-            if (waitingForBetterLocationAccuracy && !cameraMoved) {
-
-                Log.i(TAG, "onMapReadyAndRestart() -> onCameraMove");
-
-                cameraMoved = true;
-            }
-        });
-
-        // Once camera stops moving, load the shapes in that region.
-        mMap.setOnCameraIdleListener(this::cameraIdle);
+        cancelToasts();
+
+        // Pass this boolean value to Chat.java.
+        Activity.putExtra("newShape", newShape);
+
+        // Get a value with 1 decimal point and use it for Firebase.
+        double nearLeftPrecisionLat = Math.pow(10, 1);
+        // Can't create a firebase path with '.', so get rid of decimal.
+        double nearLeftLatTemp = (int) (nearLeftPrecisionLat * circleTemp.getCenter().latitude) / nearLeftPrecisionLat;
+        nearLeftLatTemp *= 10;
+        int shapeLat = (int) nearLeftLatTemp;
+
+        double nearLeftPrecisionLon = Math.pow(10, 1);
+        // Can't create a firebase path with '.', so get rid of decimal.
+        double nearLeftLonTemp = (int) (nearLeftPrecisionLon * circleTemp.getCenter().longitude) / nearLeftPrecisionLon;
+        nearLeftLonTemp *= 10;
+        int shapeLon = (int) nearLeftLonTemp;
+
+        Activity.putExtra("shapeLat", shapeLat);
+        Activity.putExtra("shapeLon", shapeLon);
+        // UserLatitude and userLongitude are used in DirectMentions.
+        Activity.putExtra("userLatitude", userLocation.getLatitude());
+        Activity.putExtra("userLongitude", userLocation.getLongitude());
+        // Pass this value to Chat.java to identify the shape.
+        Activity.putExtra("shapeUUID", circleTempUUID);
+        // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
+        Activity.putExtra("userIsWithinShape", userIsWithinShape);
+        Activity.putExtra("circleLatitude", circleTemp.getCenter().latitude);
+        Activity.putExtra("circleLongitude", circleTemp.getCenter().longitude);
+        Activity.putExtra("radius", 1.0);
+
+        loadingIcon.setVisibility(View.GONE);
+
+        startActivity(Activity);
     }
 
     protected void updatePreferences() {
@@ -1821,78 +1355,6 @@ public class Map extends FragmentActivity implements
         loadShapes();
     }
 
-    private void goToNextActivityCircle(final Intent Activity, final Circle circle, final Boolean newShape) {
-
-        Log.i(TAG, "goToNextActivityCircle()");
-
-        // Check location permissions.
-        if (ContextCompat.checkSelfPermission(getBaseContext(),
-                Manifest.permission.ACCESS_FINE_LOCATION)
-                == PackageManager.PERMISSION_GRANTED) {
-
-            FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
-
-            mFusedLocationClient.getLastLocation()
-                    .addOnSuccessListener(Map.this, location -> {
-
-                        if (location != null) {
-
-                            if (!locationProviderDisabled) {
-
-                                cancelToasts();
-
-                                // Pass this boolean value to Chat.java.
-                                Activity.putExtra("newShape", newShape);
-
-                                // Get a value with 1 decimal point and use it for Firebase.
-                                double nearLeftPrecisionLat = Math.pow(10, 1);
-                                // Can't create a firebase path with '.', so get rid of decimal.
-                                double nearLeftLatTemp = (int) (nearLeftPrecisionLat * circle.getCenter().latitude) / nearLeftPrecisionLat;
-                                nearLeftLatTemp *= 10;
-                                int shapeLat = (int) nearLeftLatTemp;
-
-                                double nearLeftPrecisionLon = Math.pow(10, 1);
-                                // Can't create a firebase path with '.', so get rid of decimal.
-                                double nearLeftLonTemp = (int) (nearLeftPrecisionLon * circle.getCenter().longitude) / nearLeftPrecisionLon;
-                                nearLeftLonTemp *= 10;
-                                int shapeLon = (int) nearLeftLonTemp;
-
-                                Activity.putExtra("shapeLat", shapeLat);
-                                Activity.putExtra("shapeLon", shapeLon);
-                                // UserLatitude and userLongitude are used in DirectMentions.
-                                Activity.putExtra("userLatitude", location.getLatitude());
-                                Activity.putExtra("userLongitude", location.getLongitude());
-                                // Pass this value to Chat.java to identify the shape.
-                                Activity.putExtra("shapeUUID", shapeUUID);
-                                // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
-                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                Activity.putExtra("circleLatitude", circle.getCenter().latitude);
-                                Activity.putExtra("circleLongitude", circle.getCenter().longitude);
-                                Activity.putExtra("radius", circle.getRadius());
-
-                                clearMap();
-
-                                loadingIcon.setVisibility(View.GONE);
-
-                                startActivity(Activity);
-                            } else {
-
-                                loadingIcon.setVisibility(View.GONE);
-                                toastMessageLong("Enable the location provider and try again.");
-                            }
-                        } else {
-
-                            loadingIcon.setVisibility(View.GONE);
-                            Log.e(TAG, "goToNextActivityCircle() -> location == null");
-                            toastMessageLong("An error occurred: your location is null.");
-                        }
-                    });
-        } else {
-
-            checkLocationPermissions();
-        }
-    }
-
     @Override
     public boolean onMenuItemClick(MenuItem menuItem) {
 
@@ -1917,8 +1379,6 @@ public class Map extends FragmentActivity implements
                         Log.i(TAG, "onMenuItemClick -> Road Map");
 
                         mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
-
-                        mapChanged = true;
 
                         adjustMapColors();
                     }
@@ -1948,8 +1408,6 @@ public class Map extends FragmentActivity implements
 
                         mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
 
-                        mapChanged = true;
-
                         adjustMapColors();
                     }
                 }
@@ -1977,8 +1435,6 @@ public class Map extends FragmentActivity implements
                         Log.i(TAG, "onMenuItemClick -> Hybrid Map");
 
                         mMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
-
-                        mapChanged = true;
 
                         adjustMapColors();
                     }
@@ -2008,8 +1464,6 @@ public class Map extends FragmentActivity implements
 
                         mMap.setMapType(GoogleMap.MAP_TYPE_TERRAIN);
 
-                        mapChanged = true;
-
                         adjustMapColors();
                     }
                 }
@@ -2034,90 +1488,79 @@ public class Map extends FragmentActivity implements
         // Change button color depending on map type.
         if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
 
-            createChatButton.setBackgroundResource(R.drawable.createchat_button);
+            circleButton.setBackgroundResource(R.drawable.circle_button);
 
             settingsButton.setBackgroundResource(R.drawable.ic_more_vert_yellow_24dp);
 
             dmButton.setBackgroundTintList(ContextCompat.getColorStateList(this, R.color.yellow));
 
-            for (int i = 0; i < circleCenterListForMapChange.size(); i++) {
+            for (int i = 0; i < circleCenters.size(); i++) {
 
                 Circle circle = mMap.addCircle(
                         new CircleOptions()
-                                .center(circleCenterListForMapChange.get(i))
+                                .center(circleCenters.get(i))
                                 .clickable(true)
                                 .radius(1.0)
                                 .strokeColor(Color.YELLOW)
                                 .strokeWidth(3f)
                 );
 
-                circle.setTag(circleUUIDListForMapChange.get(i));
+                circle.setTag(circleUUIDs.get(i));
             }
         } else {
 
-            createChatButton.setBackgroundResource(R.drawable.createchat_button_purple);
+            circleButton.setBackgroundResource(R.drawable.circle_button_purple);
 
             settingsButton.setBackgroundResource(R.drawable.ic_more_vert_purple_24dp);
 
             dmButton.setBackgroundTintList(ContextCompat.getColorStateList(this, R.color.purple));
 
-            for (int i = 0; i < circleCenterListForMapChange.size(); i++) {
+            for (int i = 0; i < circleCenters.size(); i++) {
 
                 Circle circle = mMap.addCircle(
                         new CircleOptions()
-                                .center(circleCenterListForMapChange.get(i))
+                                .center(circleCenters.get(i))
                                 .clickable(true)
                                 .radius(1.0)
                                 .strokeColor(Color.rgb(255, 0, 255))
                                 .strokeWidth(3f)
                 );
 
-                circle.setTag(circleUUIDListForMapChange.get(i));
+                circle.setTag(circleUUIDs.get(i));
             }
         }
 
         loadingIcon.setVisibility(View.GONE);
 
         // Create a circleTemp if one already exists.
-        if (chatSelectorSeekBar.getVisibility() == View.VISIBLE) {
+        if (circleTemp != null) {
 
-            if (selectedOverlappingShapeUUID != null) {
+            circleTemp.remove();
 
-                if (circleTemp != null) {
+            if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
 
-                    circleTemp.remove();
-                }
+                circleTemp = mMap.addCircle(
+                        new CircleOptions()
+                                .center(circleTemp.getCenter())
+                                .clickable(true)
+                                .fillColor(Color.argb(100, 255, 255, 0))
+                                .radius(1.0)
+                                .strokeColor(Color.rgb(255, 255, 0))
+                                .strokeWidth(3f)
+                                .zIndex(2)
+                );
+            } else {
 
-                if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
-
-                    circleTemp = mMap.addCircle(
-                            new CircleOptions()
-                                    .center(selectedOverlappingCirclesLocation)
-                                    .clickable(true)
-                                    .fillColor(Color.argb(100, 255, 255, 0))
-                                    .radius(selectedOverlappingCirclesRadius)
-                                    .strokeColor(Color.rgb(255, 255, 0))
-                                    .strokeWidth(3f)
-                                    .zIndex(2)
-                    );
-                } else {
-
-                    circleTemp = mMap.addCircle(
-                            new CircleOptions()
-                                    .center(selectedOverlappingCirclesLocation)
-                                    .clickable(true)
-                                    .fillColor(Color.argb(100, 255, 0, 255))
-                                    .radius(selectedOverlappingCirclesRadius)
-                                    .strokeColor(Color.rgb(255, 0, 255))
-                                    .strokeWidth(3f)
-                                    .zIndex(2)
-                    );
-                }
-
-                // Used when getting rid of the circles in onMapClick.
-                circleTemp.setTag(selectedOverlappingShapeUUID);
-                circleTemp.setCenter(selectedOverlappingCirclesLocation);
-                circleTemp.setRadius(selectedOverlappingCirclesRadius);
+                circleTemp = mMap.addCircle(
+                        new CircleOptions()
+                                .center(circleTemp.getCenter())
+                                .clickable(true)
+                                .fillColor(Color.argb(100, 255, 0, 255))
+                                .radius(1.0)
+                                .strokeColor(Color.rgb(255, 0, 255))
+                                .strokeWidth(3f)
+                                .zIndex(2)
+                );
             }
         }
     }
@@ -2125,7 +1568,7 @@ public class Map extends FragmentActivity implements
     private void loadShapes() {
 
         // Prevent resetting and reloading everything if this is already the state.
-        if (firstLoadShapes || restarted || newCameraCoordinates || mapChanged) {
+        if (firstLoadShapes || restarted || newCameraCoordinates) {
 
             Log.i(TAG, "loadShapes()");
 
@@ -2141,7 +1584,7 @@ public class Map extends FragmentActivity implements
 
             DatabaseReference firebasePoints = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + newNearLeftLat + ", " + newNearLeftLon + ")").child("Points");
 
-            clearMap();
+            mMap.clear();
 
             if (!loadedCoordinates.contains(newNearLeft) || mapCleared || restarted) {
 
@@ -2259,8 +1702,6 @@ public class Map extends FragmentActivity implements
                 });
             }
 
-            mapChanged = false;
-
             oldNearLeft = newNearLeft;
             oldFarLeft = newFarLeft;
             oldNearRight = newNearRight;
@@ -2281,8 +1722,8 @@ public class Map extends FragmentActivity implements
 
                 LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
 
-                circleCenterListForMapChange.add(center);
-                circleUUIDListForMapChange.add((String) ds.child("shapeUUID").getValue());
+                circleCenters.add(center);
+                circleUUIDs.add((String) ds.child("shapeUUID").getValue());
 
                 // Load different colored circles depending on the map type.
                 if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
@@ -2377,9 +1818,6 @@ public class Map extends FragmentActivity implements
 
             LatLng center = new LatLng((double) snapshot.child("circleOptions/center/latitude/").getValue(), (double) snapshot.child("circleOptions/center/longitude/").getValue());
 
-            circleCenterListForMapChange.add(center);
-            circleUUIDListForMapChange.add((String) snapshot.child("shapeUUID").getValue());
-
             // Load different colored circles depending on the map type.
             if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
 
@@ -2419,93 +1857,6 @@ public class Map extends FragmentActivity implements
         }
 
         loadingIcon.setVisibility(View.GONE);
-    }
-
-    private void clearMap() {
-
-        Log.i(TAG, "clearMap()");
-
-        mMap.clear();
-
-        waitingForShapeInformationToProcess = false;
-        waitingForClicksToProcess = false;
-        selectingShape = false;
-        chatsSize = 0;
-
-        overlappingCirclesUUID = new ArrayList<>();
-        overlappingCirclesLocation = new ArrayList<>();
-        overlappingCirclesRadius = new ArrayList<>();
-
-        // Get rid of the chatSelectorSeekBar.
-        if (chatSelectorSeekBar.getVisibility() != View.GONE) {
-
-            chatSelectorSeekBar.setVisibility(View.GONE);
-        }
-
-        chatSelectorSeekBar.setProgress(0);
-    }
-
-    @Override
-    public boolean dispatchTouchEvent(MotionEvent event) {
-
-        // If user already clicked on a circle, don't change the x and y values.
-        if (waitingForClicksToProcess) {
-
-            return false;
-        }
-
-        if (event.getAction() == MotionEvent.ACTION_DOWN) {
-
-            x = event.getX();
-            y = event.getY();
-        }
-
-        return super.dispatchTouchEvent(event);
-    }
-
-    private void touchAgain() {
-
-        Log.i(TAG, "touchAgain()");
-
-        // If x and y are the default value, return.
-        if (x == 0.0f || y == 0.0f) {
-
-            return;
-        }
-
-        // Obtain MotionEvent object
-        int downTime = 1;
-        int eventTime = 1;
-        // List of meta states found here: developer.android.com/reference/android/view/KeyEvent.html#getMetaState()
-        int metaState = 0;
-
-        MotionEvent motionEventDown = MotionEvent.obtain(
-                downTime,
-                eventTime,
-                MotionEvent.ACTION_DOWN,
-                x,
-                y,
-                metaState
-        );
-
-        View v = findViewById(R.id.activity_maps);
-
-        v.dispatchTouchEvent(motionEventDown);
-
-        motionEventDown.recycle();
-
-        MotionEvent motionEventUp = MotionEvent.obtain(
-                downTime,
-                eventTime,
-                MotionEvent.ACTION_UP,
-                x,
-                y,
-                metaState
-        );
-
-        v.dispatchTouchEvent(motionEventUp);
-
-        motionEventUp.recycle();
     }
 
     private void deleteDirectory(File file) {
