@@ -8,7 +8,6 @@ import android.graphics.Color;
 import android.location.Location;
 import android.os.Bundle;
 import android.util.Log;
-import android.util.Pair;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -43,6 +42,8 @@ import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static java.text.DateFormat.getDateTimeInstance;
 
@@ -51,10 +52,8 @@ public class DirectMentions extends Fragment {
     private static final String TAG = "DirectMentions";
     private String userEmailFirebase;
     private ArrayList<String> mTime, mUser, mImage, mVideo, mText, mShapeUUID;
-    private ArrayList<Boolean> mUserIsWithinShape, mShapeIsCircle, mSeenByUser;
-    private ArrayList<Long> mShapeSize, mShapeLat, mShapeLon, datesAL;
-    private ArrayList<Integer> mPosition;
-    private ArrayList<Pair<String, Integer>> userPositionPairsFromFirebase;
+    private ArrayList<Boolean> mUserIsWithinShape, mSeenByUser;
+    private ArrayList<Long> mShapeLat, mShapeLon, datesAL;
     private RecyclerView DmsRecyclerView;
     private static int index = -1, top = -1, last;
     private ChildEventListener childEventListener;
@@ -78,8 +77,6 @@ public class DirectMentions extends Fragment {
 
         mContext = context;
         mActivity = getActivity();
-
-        userPositionPairsFromFirebase = new ArrayList<>();
     }
 
     @NonNull
@@ -103,11 +100,8 @@ public class DirectMentions extends Fragment {
         mText = new ArrayList<>();
         mShapeUUID = new ArrayList<>();
         mUserIsWithinShape = new ArrayList<>();
-        mShapeIsCircle = new ArrayList<>();
-        mShapeSize = new ArrayList<>();
         mShapeLat = new ArrayList<>();
         mShapeLon = new ArrayList<>();
-        mPosition = new ArrayList<>();
         mSeenByUser = new ArrayList<>();
 
         datesAL = new ArrayList<>();
@@ -234,50 +228,44 @@ public class DirectMentions extends Fragment {
 
                     datesAL.add(i, (Long) ds.child("date").getValue());
 
-                    for (DataSnapshot dss : ds.child("userPositionPairs").getChildren()) {
-
-                        Pair<String, Integer> pair = new Pair<>((String) dss.child("first").getValue(), (int) (long) dss.child("second").getValue());
-                        if (!userPositionPairsFromFirebase.contains(pair)) {
-
-                            userPositionPairsFromFirebase.add(pair);
-                        }
-                    }
-
                     Long serverDate = (Long) ds.child("date").getValue();
                     String user = (String) ds.child("userUUID").getValue();
                     String imageUrl = (String) ds.child("imageUrl").getValue();
                     String videoUrl = (String) ds.child("videoUrl").getValue();
                     String messageText = (String) ds.child("message").getValue();
 
+                    ArrayList<String> possibleMentions = new ArrayList<>();
+                    // Pattern matches UUID for mentions.
+                    Pattern pattern = Pattern.compile("\\b[0-9a-f]{8}\\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\\b[0-9a-f]{12}\\b");
+                    Matcher matcher = pattern.matcher(messageText);
+                    while (matcher.find()) {
+
+                        // Add the strings that match the UUID pattern to an arrayList. This ensures they are in order from the beginning of the sentence to the end.
+                        possibleMentions.add(matcher.group());
+                    }
+
                     // Truncate mentions from Firebase.
                     String replacedMessageText = null;
-                    if (!userPositionPairsFromFirebase.isEmpty()) {
+                    if (!possibleMentions.isEmpty()) {
 
-                        for (Pair<String, Integer> pair : userPositionPairsFromFirebase) {
+                        for (String possibleMention : possibleMentions) {
 
+                            // The "else" loop will go first - it will create replacedMessageText with truncated mentions and then replacedMessageText will continue to truncate mentions within itself.
+                            String replacement = possibleMention.substring(0, 10) + "...";
                             if (replacedMessageText != null) {
 
-                                if (replacedMessageText.contains(pair.first)) {
-
-                                    replacedMessageText = replacedMessageText.replace(pair.first, pair.first.substring(0, 10) + "...");
-                                }
+                                replacedMessageText = replacedMessageText.replace(possibleMention, replacement);
                             } else {
 
-                                if (messageText.contains(pair.first)) {
-
-                                    replacedMessageText = messageText.replace(pair.first, pair.first.substring(0, 10) + "...");
-                                }
+                                replacedMessageText = messageText.replace(possibleMention, replacement);
                             }
                         }
                     }
 
                     String shapeUUID = (String) ds.child("shapeUUID").getValue();
                     Boolean userIsWithinShape = (Boolean) ds.child("userIsWithinShape").getValue();
-                    Boolean shapeIsCircle = (Boolean) ds.child("shapeIsCircle").getValue();
-                    Long size = (Long) ds.child("size").getValue();
                     Long lat = (Long) ds.child("lat").getValue();
                     Long lon = (Long) ds.child("lon").getValue();
-                    Integer position = ((Long) ds.child("position").getValue()).intValue();
                     Boolean seenByUser = (Boolean) ds.child("seenByUser").getValue();
                     DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
                     // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
@@ -305,11 +293,8 @@ public class DirectMentions extends Fragment {
 
                     mShapeUUID.add(i, shapeUUID);
                     mUserIsWithinShape.add(i, userIsWithinShape);
-                    mShapeIsCircle.add(i, shapeIsCircle);
-                    mShapeSize.add(i, size);
                     mShapeLat.add(i, lat);
                     mShapeLon.add(i, lon);
-                    mPosition.add(i, position);
                     mSeenByUser.add(i, seenByUser);
                     i++;
 
@@ -395,50 +380,44 @@ public class DirectMentions extends Fragment {
                     top = (v == null) ? 0 : (v.getTop() - DmsRecyclerView.getPaddingTop());
                 }
 
-                for (DataSnapshot dss : snapshot.child("userPositionPairs").getChildren()) {
-
-                    Pair<String, Integer> pair = new Pair<>((String) dss.child("first").getValue(), (int) (long) dss.child("second").getValue());
-                    if (!userPositionPairsFromFirebase.contains(pair)) {
-
-                        userPositionPairsFromFirebase.add(pair);
-                    }
-                }
-
                 Long serverDate = (Long) snapshot.child("date").getValue();
                 String user = (String) snapshot.child("userUUID").getValue();
                 String imageUrl = (String) snapshot.child("imageUrl").getValue();
                 String videoUrl = (String) snapshot.child("videoUrl").getValue();
                 String messageText = (String) snapshot.child("message").getValue();
 
+                ArrayList<String> possibleMentions = new ArrayList<>();
+                // Pattern matches UUID for mentions.
+                Pattern pattern = Pattern.compile("\\b[0-9a-f]{8}\\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\\b[0-9a-f]{12}\\b");
+                Matcher matcher = pattern.matcher(messageText);
+                while (matcher.find()) {
+
+                    // Add the strings that match the UUID pattern to an arrayList. This ensures they are in order from the beginning of the sentence to the end.
+                    possibleMentions.add(matcher.group());
+                }
+
                 // Truncate mentions from Firebase.
                 String replacedMessageText = null;
-                if (!userPositionPairsFromFirebase.isEmpty()) {
+                if (!possibleMentions.isEmpty()) {
 
-                    for (Pair<String, Integer> pair : userPositionPairsFromFirebase) {
+                    for (String possibleMention : possibleMentions) {
 
+                        // The "else" loop will go first - it will create replacedMessageText with truncated mentions and then replacedMessageText will continue to truncate mentions within itself.
+                        String replacement = possibleMention.substring(0, 10) + "...";
                         if (replacedMessageText != null) {
 
-                            if (replacedMessageText.contains(pair.first)) {
-
-                                replacedMessageText = replacedMessageText.replace(pair.first, pair.first.substring(0, 10) + "...");
-                            }
+                            replacedMessageText = replacedMessageText.replace(possibleMention, replacement);
                         } else {
 
-                            if (messageText.contains(pair.first)) {
-
-                                replacedMessageText = messageText.replace(pair.first, pair.first.substring(0, 10) + "...");
-                            }
+                            replacedMessageText = messageText.replace(possibleMention, replacement);
                         }
                     }
                 }
 
                 String shapeUUID = (String) snapshot.child("shapeUUID").getValue();
                 Boolean userIsWithinShape = (Boolean) snapshot.child("userIsWithinShape").getValue();
-                Boolean shapeIsCircle = (Boolean) snapshot.child("shapeIsCircle").getValue();
-                Long size = (Long) snapshot.child("size").getValue();
                 Long lat = (Long) snapshot.child("lat").getValue();
                 Long lon = (Long) snapshot.child("lon").getValue();
-                Integer position = ((Long) snapshot.child("position").getValue()).intValue();
                 Boolean seenByUser = (Boolean) snapshot.child("seenByUser").getValue();
                 DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
                 // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
@@ -466,11 +445,8 @@ public class DirectMentions extends Fragment {
 
                 mShapeUUID.add(shapeUUID);
                 mUserIsWithinShape.add(userIsWithinShape);
-                mShapeIsCircle.add(shapeIsCircle);
-                mShapeSize.add(size);
                 mShapeLat.add(lat);
                 mShapeLon.add(lon);
-                mPosition.add(position);
                 mSeenByUser.add(seenByUser);
 
                 initDirectMentionsAdapter();
@@ -509,7 +485,7 @@ public class DirectMentions extends Fragment {
             return;
         }
 
-        DirectMentionsAdapter adapter = new DirectMentionsAdapter(mContext, mTime, mUser, mImage, mVideo, mText, mShapeUUID, mUserIsWithinShape, mShapeIsCircle, mShapeSize, mShapeLat, mShapeLon, mPosition, mSeenByUser);
+        DirectMentionsAdapter adapter = new DirectMentionsAdapter(mContext, mTime, mUser, mImage, mVideo, mText, mShapeUUID, mUserIsWithinShape, mShapeLat, mShapeLon, mSeenByUser);
         DmsRecyclerView.setAdapter(adapter);
         DmsRecyclerView.setHasFixedSize(true);
         DmsRecyclerView.setLayoutManager(DmsRecyclerViewLinearLayoutManager);
@@ -617,9 +593,8 @@ public class DirectMentions extends Fragment {
 
         private final Context mContext;
         private final ArrayList<String> mMessageTime, mMessageUser, mMessageImage, mMessageImageVideo, mMessageText, mShapeUUID;
-        private final ArrayList<Boolean> mUserIsWithinShape, mShapeIsCircle, mSeenByUser;
-        private final ArrayList<Long> mShapeSize, mShapeLat, mShapeLon;
-        private final ArrayList<Integer> mPosition;
+        private final ArrayList<Boolean> mUserIsWithinShape, mSeenByUser;
+        private final ArrayList<Long> mShapeLat, mShapeLon;
         private boolean theme;
 
         class ViewHolder extends RecyclerView.ViewHolder {
@@ -685,106 +660,81 @@ public class DirectMentions extends Fragment {
                         });
                     }
 
-                    DatabaseReference shape = null;
-                    double shapeSize = mShapeSize.get(getAdapterPosition());
+                    DatabaseReference shape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latUser + ", " + lonUser + ")").child("Points");
+                    shape.addListenerForSingleValueEvent(new ValueEventListener() {
 
-                    if (mShapeIsCircle.get(getAdapterPosition())) {
+                        @Override
+                        public void onDataChange(@NonNull DataSnapshot snapshot) {
 
-                        if (shapeSize == 1) {
+                            for (DataSnapshot ds : snapshot.getChildren()) {
 
-                            shape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latUser + ", " + lonUser + ")").child("Point");
-                        } else if (1 < shapeSize && shapeSize <= 10) {
+                                String shapeUUID = (String) ds.child("shapeUUID").getValue();
+                                if (shapeUUID != null) {
 
-                            shape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latUser + ", " + lonUser + ")").child("Small");
-                        } else if (10 < shapeSize && shapeSize <= 50) {
+                                    if (shapeUUID.equals(mShapeUUID.get(getAdapterPosition()))) {
 
-                            shape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latUser + ", " + lonUser + ")").child("Medium");
-                        } else if (50 < shapeSize) {
+                                        Double mLatitude = (Double) ds.child("circleOptions").child("center").child("latitude").getValue();
+                                        Double mLongitude = (Double) ds.child("circleOptions").child("center").child("longitude").getValue();
+                                        if (mLatitude != null && mLongitude != null) {
 
-                            shape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latUser + ", " + lonUser + ")").child("Large");
-                        }
+                                            float[] distance = new float[2];
 
-                        shape.addListenerForSingleValueEvent(new ValueEventListener() {
+                                            Location.distanceBetween(mLatitude, mLongitude,
+                                                    userLatitude, userLongitude, distance);
 
-                            @Override
-                            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                                            // Boolean; will be true if user is within the circle (or close to the circle) upon circle click.
+                                            userIsWithinShape = !(distance[0] > 2.0);
 
-                                for (DataSnapshot ds : snapshot.getChildren()) {
+                                            cancelToasts();
 
-                                    String shapeUUID = (String) ds.child("shapeUUID").getValue();
-                                    if (shapeUUID != null) {
+                                            Intent Activity = new Intent(mContext, Navigation.class);
+                                            Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
+                                            Activity.putExtra("userIsWithinShape", userIsWithinShape);
+                                            Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()).intValue());
+                                            Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()).intValue());
+                                            Activity.putExtra("userLatitude", userLatitude);
+                                            Activity.putExtra("userLongitude", userLongitude);
+                                            Activity.putExtra("UUIDToHighlight", mUser.get(getAdapterPosition()));
+                                            Activity.putExtra("fromDms", true);
 
-                                        if (shapeUUID.equals(mShapeUUID.get(getAdapterPosition()))) {
+                                            loadingIcon.setVisibility(View.GONE);
 
-                                            Double mLatitude = (Double) ds.child("circleOptions").child("center").child("latitude").getValue();
-                                            Double mLongitude = (Double) ds.child("circleOptions").child("center").child("longitude").getValue();
-                                            if (mLatitude != null && mLongitude != null) {
+                                            mContext.startActivity(Activity);
 
-                                                double mRadius = (double) (long) ds.child("circleOptions").child("radius").getValue();
-                                                if (mRadius != 0) {
-
-                                                    float[] distance = new float[2];
-
-                                                    Location.distanceBetween(mLatitude, mLongitude,
-                                                            userLatitude, userLongitude, distance);
-
-                                                    // Boolean; will be true if user is within the circle upon circle click.
-                                                    userIsWithinShape = !(distance[0] > mRadius);
-
-                                                    cancelToasts();
-
-                                                    Intent Activity = new Intent(mContext, Navigation.class);
-                                                    Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
-                                                    Activity.putExtra("radius", mShapeSize.get(getAdapterPosition()).doubleValue());
-                                                    Activity.putExtra("positionToHighlight", mPosition.get(getAdapterPosition()));
-                                                    Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                                    Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()).intValue());
-                                                    Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()).intValue());
-                                                    Activity.putExtra("userLatitude", userLatitude);
-                                                    Activity.putExtra("userLongitude", userLongitude);
-                                                    Activity.putExtra("fromDms", true);
-
-                                                    loadingIcon.setVisibility(View.GONE);
-
-                                                    mContext.startActivity(Activity);
-
-                                                    mActivity.finish();
-                                                    return;
-                                                }
-                                            }
+                                            mActivity.finish();
+                                            return;
                                         }
                                     }
                                 }
-
-                                // If this part is reached, the user is not within the shape because the user's location is not in the same loadable map area as the shape.
-                                cancelToasts();
-
-                                Intent Activity = new Intent(mContext, Navigation.class);
-                                Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
-                                Activity.putExtra("radius", mShapeSize.get(getAdapterPosition()).doubleValue());
-                                Activity.putExtra("positionToHighlight", mPosition.get(getAdapterPosition()));
-                                Activity.putExtra("userIsWithinShape", false);
-                                Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()).intValue());
-                                Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()).intValue());
-                                Activity.putExtra("userLatitude", userLatitude);
-                                Activity.putExtra("userLongitude", userLongitude);
-                                Activity.putExtra("fromDms", true);
-
-                                loadingIcon.setVisibility(View.GONE);
-
-                                mContext.startActivity(Activity);
-
-                                mActivity.finish();
                             }
 
-                            @Override
-                            public void onCancelled(@NonNull DatabaseError error) {
+                            // If this part is reached, the user is not within the shape because the user's location is not in the same loadable map area as the shape.
+                            cancelToasts();
 
-                                loadingIcon.setVisibility(View.GONE);
-                                toastMessageLong(error.getMessage());
-                            }
-                        });
-                    }
+                            Intent Activity = new Intent(mContext, Navigation.class);
+                            Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
+                            Activity.putExtra("userIsWithinShape", false);
+                            Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()).intValue());
+                            Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()).intValue());
+                            Activity.putExtra("userLatitude", userLatitude);
+                            Activity.putExtra("userLongitude", userLongitude);
+                            Activity.putExtra("UUIDToHighlight", mUser.get(getAdapterPosition()));
+                            Activity.putExtra("fromDms", true);
+
+                            loadingIcon.setVisibility(View.GONE);
+
+                            mContext.startActivity(Activity);
+
+                            mActivity.finish();
+                        }
+
+                        @Override
+                        public void onCancelled(@NonNull DatabaseError error) {
+
+                            loadingIcon.setVisibility(View.GONE);
+                            toastMessageLong(error.getMessage());
+                        }
+                    });
                 });
 
                 if (messageImageInside != null) {
@@ -841,7 +791,7 @@ public class DirectMentions extends Fragment {
             }
         }
 
-        DirectMentionsAdapter(Context context, ArrayList<String> mMessageTime, ArrayList<String> mMessageUser, ArrayList<String> mMessageImage, ArrayList<String> mMessageImageVideo, ArrayList<String> mMessageText, ArrayList<String> mShapeUUID, ArrayList<Boolean> mUserIsWithinShape, ArrayList<Boolean> mShapeIsCircle, ArrayList<Long> mShapeSize, ArrayList<Long> mShapeLat, ArrayList<Long> mShapeLon, ArrayList<Integer> mPosition, ArrayList<Boolean> mSeenByUser) {
+        DirectMentionsAdapter(Context context, ArrayList<String> mMessageTime, ArrayList<String> mMessageUser, ArrayList<String> mMessageImage, ArrayList<String> mMessageImageVideo, ArrayList<String> mMessageText, ArrayList<String> mShapeUUID, ArrayList<Boolean> mUserIsWithinShape, ArrayList<Long> mShapeLat, ArrayList<Long> mShapeLon, ArrayList<Boolean> mSeenByUser) {
 
             this.mContext = context;
             this.mMessageTime = mMessageTime;
@@ -851,11 +801,8 @@ public class DirectMentions extends Fragment {
             this.mMessageText = mMessageText;
             this.mShapeUUID = mShapeUUID;
             this.mUserIsWithinShape = mUserIsWithinShape;
-            this.mShapeIsCircle = mShapeIsCircle;
-            this.mShapeSize = mShapeSize;
             this.mShapeLat = mShapeLat;
             this.mShapeLon = mShapeLon;
-            this.mPosition = mPosition;
             this.mSeenByUser = mSeenByUser;
         }
 

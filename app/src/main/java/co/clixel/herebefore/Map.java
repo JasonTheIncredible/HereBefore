@@ -93,7 +93,8 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private final List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // Get rid of mPosition, because there is no way to guarantee a position when multiple people are adding messages simultaneously.
+    // Have user enter a circle as soon as a new one is made?
+    // Newest userUUID are covered by the mentionRecyclerview.
     // Add Firebase functions to adjust spannable string when changing a messageThread. Also, make sure Firebase rules only allows "Points".
     // Switch from initChatAdapter() to notifyChatAdapter() to increase speed? Generally, make Chat load faster, especially if there are multiple ClickableSpans
     // Make scrollToPosition work in Chat after a restart. Also prevent reloading Chat and DMs every time app restarts.

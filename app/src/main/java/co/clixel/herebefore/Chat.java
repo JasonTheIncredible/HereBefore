@@ -38,7 +38,6 @@ import android.text.style.ClickableSpan;
 import android.util.Base64;
 import android.util.Base64OutputStream;
 import android.util.Log;
-import android.util.Pair;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -125,18 +124,16 @@ public class Chat extends Fragment implements
     private ArrayList<String> removedDuplicatesMentions, mTime, mUser, mImage, mVideo, mSuggestions, allMentions, emailsAL;
     private ArrayList<SpannableString> mText;
     private ArrayList<Boolean> mUserIsWithinShape;
-    private ArrayList<Integer> mPosition;
     private ArrayList<Long> datesAL;
-    private ArrayList<Pair<String, Integer>> userPositionPairs, userPositionPairsFromFirebase;
     private RecyclerView chatRecyclerView, mentionsRecyclerView;
     private static Integer index = null, top = null, last;
     private ChildEventListener childEventListener;
     private FloatingActionButton sendButton, mediaButton;
-    private boolean firstLoad, loadingOlderMessages, noMoreMessages = false, clickedOnMention = false, fromDms = false, fromVideo, needProgressIconIndeterminate, reachedEndOfRecyclerView = false, recyclerViewHasScrolled = false, messageSent = false, fileIsImage, checkPermissionsPicture,
+    private boolean firstLoad, loadingOlderMessages, noMoreMessages = false, fromVideo, needProgressIconIndeterminate, reachedEndOfRecyclerView = false, recyclerViewHasScrolled = false, messageSent = false, fileIsImage, checkPermissionsPicture,
             newShape;
-    private Boolean userIsWithinShape;
+    private Boolean userIsWithinShape, clickedOnMention, fromDms;
     private View.OnLayoutChangeListener onLayoutChangeListener;
-    private String shapeUUID, reportedUser;
+    private String shapeUUID, reportedUser, UUIDToHighlight;
     private double circleLatitude, circleLongitude;
     private PopupMenu mediaButtonMenu;
     private ImageView imageView, videoImageView;
@@ -153,11 +150,10 @@ public class Chat extends Fragment implements
     private Context mContext;
     private Activity mActivity;
     private AdView bannerAd;
-    private Query query;
+    private Query mQuery;
     private Drawable imageDrawable, videoDrawable;
-    private MentionsEditText.MentionWatcher mentionWatcher;
     private int latFirebaseValue, lonFirebaseValue;
-    private Integer positionToHighlight, previouslyHighlightedPosition;
+    private Integer previouslyHighlightedPosition;
     private final WordTokenizerConfig tokenizerConfig = new WordTokenizerConfig
             .Builder()
             .setWordBreakChars(", ")
@@ -180,7 +176,7 @@ public class Chat extends Fragment implements
             Bundle extras = mActivity.getIntent().getExtras();
             if (extras != null) {
 
-                positionToHighlight = extras.getInt("positionToHighlight");
+                UUIDToHighlight = extras.getString("UUIDToHighlight");
                 fromDms = extras.getBoolean("fromDms");
                 newShape = extras.getBoolean("newShape");
                 latFirebaseValue = extras.getInt("shapeLat");
@@ -195,11 +191,6 @@ public class Chat extends Fragment implements
                 Log.e(TAG, "onCreateView() -> extras == null");
             }
         }
-
-        userPositionPairs = new ArrayList<>();
-        userPositionPairsFromFirebase = new ArrayList<>();
-
-        previouslyHighlightedPosition = null;
     }
 
     @NonNull
@@ -247,14 +238,13 @@ public class Chat extends Fragment implements
         mSuggestions = new ArrayList<>();
         allMentions = new ArrayList<>();
         mUserIsWithinShape = new ArrayList<>();
-        mPosition = new ArrayList<>();
 
         // Prevents clearing this list if user adds a DM and takes a picture.
         if (removedDuplicatesMentions == null) {
             removedDuplicatesMentions = new ArrayList<>();
         }
 
-        // Make the progressIconIndeterminate visible upon the first load, as it can sometimes take a while to show anything. It should be made invisible in initChatAdapter().
+        // Make the progressIconIndeterminate visible upon the first load, as it can sometimes take a while to show anything. It should be made invisible in initChatAdapter.
         if (progressIconIndeterminate != null && !fromVideo) {
 
             progressIconIndeterminate.setVisibility(View.VISIBLE);
@@ -319,7 +309,7 @@ public class Chat extends Fragment implements
             mentionsRecyclerView.setVisibility(View.GONE);
         }
 
-        getFirebaseMessages(null, null);
+        getFirebaseMessages(null);
 
         // Check RecyclerView scroll state (to allow the layout to move up when keyboard appears).
         if (chatRecyclerView != null) {
@@ -348,7 +338,7 @@ public class Chat extends Fragment implements
 
                             progressIconIndeterminate.setVisibility(View.VISIBLE);
                             loadingOlderMessages = true;
-                            getFirebaseMessages(datesAL.get(0), null);
+                            getFirebaseMessages(mUser.get(0));
                         }
 
                         // If RecyclerView can't be scrolled down, reachedEndOfRecyclerView = true.
@@ -484,19 +474,10 @@ public class Chat extends Fragment implements
                                     dmInformation.setLat(latFirebaseValue);
                                     dmInformation.setLon(lonFirebaseValue);
                                     dmInformation.setMessage(input);
-                                    if (mPosition.size() == 0) {
-                                        dmInformation.setPosition(0);
-                                    } else {
-                                        dmInformation.setPosition(mPosition.get(mPosition.size() - 1) + 1);
-                                    }
                                     dmInformation.setSeenByUser(false);
                                     dmInformation.setSize(1.0);
                                     dmInformation.setShapeUUID(shapeUUID);
                                     dmInformation.setUserIsWithinShape(userIsWithinShape);
-                                    if (userPositionPairs != null && !userPositionPairs.isEmpty()) {
-
-                                        dmInformation.setUserPositionPairs(userPositionPairs);
-                                    }
                                     dmInformation.setUserUUID(userUUID);
 
                                     // Firebase does not allow ".", so replace them with ",".
@@ -525,16 +506,7 @@ public class Chat extends Fragment implements
                     }
                     messageInformation.setEmail(email);
                     messageInformation.setMessage(input);
-                    if (mPosition.size() == 0) {
-                        messageInformation.setPosition(0);
-                    } else {
-                        messageInformation.setPosition(mPosition.get(mPosition.size() - 1) + 1);
-                    }
                     messageInformation.setUserIsWithinShape(userIsWithinShape);
-                    if (userPositionPairs != null && !userPositionPairs.isEmpty()) {
-
-                        messageInformation.setUserPositionPairs(userPositionPairs);
-                    }
                     messageInformation.setUserUUID(userUUID);
                     DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID).push();
                     newMessage.setValue(messageInformation);
@@ -544,11 +516,6 @@ public class Chat extends Fragment implements
                     if (removedDuplicatesMentions != null && !removedDuplicatesMentions.isEmpty()) {
 
                         removedDuplicatesMentions.clear();
-                    }
-
-                    if (userPositionPairs != null && !userPositionPairs.isEmpty()) {
-
-                        userPositionPairs.clear();
                     }
 
                     // For some reason, if the text begins with a mention and onCreateView was called after the mention was added, the mention is not cleared with one call to clear().
@@ -579,125 +546,47 @@ public class Chat extends Fragment implements
             Activity.putExtra("videoUrl", videoURI.toString());
             Chat.this.startActivity(Activity);
         });
-
-        mentionWatcher = new MentionsEditText.MentionWatcher() {
-
-            @Override
-            public void onMentionAdded(@NonNull Mentionable mention, @NonNull String text, int start, int end) {
-
-                String mentionableUUID = mention.getSuggestiblePrimaryText();
-
-                Integer mentionablePosition = mPosition.indexOf(mUser.indexOf(mentionableUUID));
-
-                Pair<String, Integer> mentionablePair = new Pair<>(mentionableUUID, mentionablePosition);
-
-                if (userPositionPairs != null) {
-
-                    userPositionPairs.add(userPositionPairs.size(), mentionablePair);
-                }
-            }
-
-            @Override
-            public void onMentionDeleted(@NonNull Mentionable mention, @NonNull String text, int start, int end) {
-
-                if (userPositionPairs != null) {
-
-                    for (int i = 0; i < userPositionPairs.size(); i++) {
-
-                        Pair<String, Integer> pair = userPositionPairs.get(i);
-
-                        if (pair.first.equals(mention.getSuggestiblePrimaryText())) {
-
-                            userPositionPairs.remove(i);
-                            return;
-                        }
-                    }
-                }
-            }
-
-            @Override
-            public void onMentionPartiallyDeleted(@NonNull Mentionable mention, @NonNull String text, int start, int end) {
-            }
-        };
-
-        mInput.addMentionWatcher(mentionWatcher);
     }
 
     // positionOfMention is used when user clicks on a mention.
-    private void getFirebaseMessages(Long nodeID, Integer positionOfMention) {
+    private void getFirebaseMessages(String referenceUserUUID) {
 
         Log.i(TAG, "getFirebaseMessages()");
 
-        final Query[] query0 = new Query[1];
-        final int[] latestPosition = {0};
+        Query query;
+        if (referenceUserUUID == null) {
 
-        if (nodeID == null && positionOfMention == null) {
+            query = FirebaseDatabase.getInstance().getReference()
+                    .child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID)
+                    .limitToLast(20);
+        } else {
 
-            if (positionToHighlight != 0) {
+            // If pagination needs to happen multiple times, mUser will not contain the referenceUserUUID.
+            if (!mUser.contains(referenceUserUUID)) {
 
-                // Get the latest item and check the position. This will let us know how far back to paginate.
-                query0[0] = FirebaseDatabase.getInstance().getReference()
+                query = FirebaseDatabase.getInstance().getReference()
                         .child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID)
-                        .limitToLast(1);
-
-                query0[0].addListenerForSingleValueEvent(new ValueEventListener() {
-
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot snapshot) {
-
-                        for (DataSnapshot ds : snapshot.getChildren()) {
-
-                            latestPosition[0] = ((Long) ds.child("position").getValue()).intValue();
-                            int loadMessagesFromDm = (latestPosition[0] - positionToHighlight) + 20;
-
-                            query0[0] = FirebaseDatabase.getInstance().getReference()
-                                    .child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID)
-                                    .limitToLast(loadMessagesFromDm);
-
-                            fillRecyclerView(query0[0], loadMessagesFromDm);
-                        }
-                    }
-
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError error) {
-
-                        toastMessageLong(error.getMessage());
-                    }
-                });
+                        .orderByChild("date")
+                        .endAt(datesAL.get(0))
+                        .limitToLast(20);
             } else {
 
-                query0[0] = FirebaseDatabase.getInstance().getReference()
+                query = FirebaseDatabase.getInstance().getReference()
                         .child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID)
+                        .orderByChild("date")
+                        .endAt(datesAL.get(mUser.indexOf(referenceUserUUID)))
                         .limitToLast(20);
-
-                fillRecyclerView(query0[0], 0);
             }
-        } else if (nodeID != null && positionOfMention == null) {
-
-            query0[0] = FirebaseDatabase.getInstance().getReference()
-                    .child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID)
-                    .orderByChild("date")
-                    .endAt(nodeID)
-                    .limitToLast(20);
-
-            fillRecyclerView(query0[0], 0);
-        } else if (nodeID != null) {
-
-            query0[0] = FirebaseDatabase.getInstance().getReference()
-                    .child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID)
-                    .orderByChild("date")
-                    .endAt(nodeID)
-                    .limitToLast((int) (nodeID - positionOfMention) + 20);
-
-            fillRecyclerView(query0[0], mPosition.get(mPosition.size() - 1) - positionToHighlight);
         }
+
+        fillRecyclerView(query);
     }
 
-    private void fillRecyclerView(Query query0, int loadMessagesFromDm) {
+    private void fillRecyclerView(Query query) {
 
         Log.i(TAG, "fillRecyclerView()");
 
-        query0.addListenerForSingleValueEvent(new ValueEventListener() {
+        query.addListenerForSingleValueEvent(new ValueEventListener() {
 
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
@@ -710,7 +599,7 @@ public class Chat extends Fragment implements
                     toastMessageLong("Shape was deleted. Please return to map.");
                 }
 
-                if (snapshot.getChildrenCount() < 20 || snapshot.getChildrenCount() < loadMessagesFromDm) {
+                if (snapshot.getChildrenCount() < 20) {
 
                     noMoreMessages = true;
 
@@ -731,17 +620,9 @@ public class Chat extends Fragment implements
                 int i = 0;
                 for (DataSnapshot ds : snapshot.getChildren()) {
 
+                    // Add dates to this AL for use in pagination.
                     datesAL.add(i, (Long) ds.child("date").getValue());
                     emailsAL.add(i, (String) ds.child("email").getValue());
-
-                    for (DataSnapshot dss : ds.child("userPositionPairs").getChildren()) {
-
-                        Pair<String, Integer> pair = new Pair<>((String) dss.child("first").getValue(), (int) (long) dss.child("second").getValue());
-                        if (!userPositionPairsFromFirebase.contains(pair)) {
-
-                            userPositionPairsFromFirebase.add(pair);
-                        }
-                    }
 
                     Long serverDate = (Long) ds.child("date").getValue();
                     String user = (String) ds.child("userUUID").getValue();
@@ -754,7 +635,6 @@ public class Chat extends Fragment implements
                     SpannableString spannableMessageText = createSpannableMessage(messageText);
 
                     Boolean userIsWithinShape = (Boolean) ds.child("userIsWithinShape").getValue();
-                    Integer position = ((Long) ds.child("position").getValue()).intValue();
                     DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
                     // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
                     // This will cause onDataChange to fire twice; optimizations could be made in the future.
@@ -772,7 +652,6 @@ public class Chat extends Fragment implements
                     mVideo.add(i, videoUrl);
                     mText.add(i, spannableMessageText);
                     mUserIsWithinShape.add(i, userIsWithinShape);
-                    mPosition.add(i, position);
 
                     i++;
 
@@ -781,6 +660,13 @@ public class Chat extends Fragment implements
 
                         break;
                     }
+                }
+
+                // If after cycling through all entries, if the message needing to be highlighted does not exist yet, get more Firebase values.
+                if (UUIDToHighlight != null && !mUser.contains(UUIDToHighlight)) {
+
+                    getFirebaseMessages(UUIDToHighlight);
+                    return;
                 }
 
                 // Read RecyclerView scroll position (for use in initChatAdapter).
@@ -802,24 +688,23 @@ public class Chat extends Fragment implements
                     }
                 }
 
-                if (clickedOnMention) {
+                if (UUIDToHighlight != null && mUser.contains(UUIDToHighlight) && !firstLoad && ((clickedOnMention != null && clickedOnMention) || (fromDms != null && fromDms))) {
 
                     // Show a couple messages above the position, as this seems to be better visually.
-                    int scrollPosition = positionToHighlight - 5;
+                    int scrollPosition = mUser.indexOf(UUIDToHighlight) - 5;
                     if (scrollPosition < 0) {
 
                         scrollPosition = 0;
                     }
 
-                    int finalScrollPosition = scrollPosition;
-
-                    if (mPosition.contains(finalScrollPosition)) {
+                    if (mUser.contains(UUIDToHighlight)) {
 
                         if (chatRecyclerView != null) {
 
                             if (chatRecyclerView.getAdapter() != null) {
 
                                 // No need to paginate.
+                                int finalScrollPosition = scrollPosition;
                                 chatRecyclerView.postDelayed(() -> chatRecyclerView.smoothScrollToPosition(
 
                                         finalScrollPosition), 100);
@@ -829,10 +714,13 @@ public class Chat extends Fragment implements
                                     chatRecyclerView.getAdapter().notifyItemChanged(previouslyHighlightedPosition);
                                 }
 
-                                chatRecyclerView.getAdapter().notifyItemChanged(positionToHighlight);
+                                chatRecyclerView.getAdapter().notifyItemChanged(mUser.indexOf(UUIDToHighlight));
                             }
                         }
                     }
+
+                    clickedOnMention = false;
+                    fromDms = false;
                 }
 
                 if (!loadingOlderMessages) {
@@ -855,9 +743,9 @@ public class Chat extends Fragment implements
     private void addQuery() {
 
         // This prevents duplicates when loading into Settings fragment then switched back into Chat (as onStop is never called but onStart is called).
-        if (query != null) {
+        if (mQuery != null) {
 
-            query.removeEventListener(childEventListener);
+            mQuery.removeEventListener(childEventListener);
         }
 
         // If this is the first time calling this eventListener and it's a new shape, initialize the adapter (but don't return, as the childEventListener should still be added), as onChildAdded won't be called the first time.
@@ -866,7 +754,7 @@ public class Chat extends Fragment implements
             initChatAdapter();
         }
 
-        query = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID).limitToLast(1);
+        mQuery = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID).limitToLast(1);
         childEventListener = new ChildEventListener() {
 
             @Override
@@ -881,16 +769,8 @@ public class Chat extends Fragment implements
                     return;
                 }
 
-                for (DataSnapshot ds : snapshot.child("userPositionPairs").getChildren()) {
-
-                    datesAL.add((Long) ds.child("date").getValue());
-
-                    Pair<String, Integer> pair = new Pair<>((String) ds.child("first").getValue(), (int) (long) ds.child("second").getValue());
-                    if (!userPositionPairsFromFirebase.contains(pair)) {
-
-                        userPositionPairsFromFirebase.add(pair);
-                    }
-                }
+                emailsAL.add((String) snapshot.child("email").getValue());
+                datesAL.add((Long) snapshot.child("date").getValue());
 
                 String user = (String) snapshot.child("userUUID").getValue();
                 // Prevents duplicates when user adds a message to a new shape then switches between light / dark mode.
@@ -908,7 +788,6 @@ public class Chat extends Fragment implements
                 SpannableString spannableMessageText = createSpannableMessage(messageText);
 
                 Boolean userIsWithinShape = (Boolean) snapshot.child("userIsWithinShape").getValue();
-                Integer position = ((Long) snapshot.child("position").getValue()).intValue();
                 DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
                 // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
                 // This will cause onDataChange to fire twice; optimizations could be made in the future.
@@ -926,7 +805,6 @@ public class Chat extends Fragment implements
                 mVideo.add(videoUrl);
                 mText.add(spannableMessageText);
                 mUserIsWithinShape.add(userIsWithinShape);
-                mPosition.add(position);
 
                 // Read RecyclerView scroll position (for use in initChatAdapter).
                 if (chatRecyclerViewLinearLayoutManager != null) {
@@ -936,8 +814,6 @@ public class Chat extends Fragment implements
                     View v = chatRecyclerView.getChildAt(0);
                     top = (v == null) ? 0 : (v.getTop() - chatRecyclerView.getPaddingTop());
                 }
-
-                emailsAL.add((String) snapshot.child("email").getValue());
 
                 initChatAdapter();
             }
@@ -961,7 +837,7 @@ public class Chat extends Fragment implements
             }
         };
 
-        query.addChildEventListener(childEventListener);
+        mQuery.addChildEventListener(childEventListener);
     }
 
     private SpannableString createSpannableMessage(String messageText) {
@@ -981,56 +857,28 @@ public class Chat extends Fragment implements
         SpannableString spannableMessageText = null;
         if (!possibleMentions.isEmpty()) {
 
+            ArrayList<String> fullLengthMention = new ArrayList<>();
             ArrayList<Integer> indexOfMention = new ArrayList<>();
-            ArrayList<Integer> positionOfMention = new ArrayList<>();
             for (String possibleMention : possibleMentions) {
 
                 // The "else" loop will go first - it will create replacedMessageText with truncated mentions and then replacedMessageText will continue to truncate mentions within itself.
+                fullLengthMention.add(possibleMention);
+                String replacement = possibleMention.substring(0, 10) + "...";
                 if (replacedMessageText != null) {
 
-                    if (userPositionPairsFromFirebase != null) {
-
-                        for (Pair<String, Integer> pair : userPositionPairsFromFirebase) {
-
-                            if (possibleMention.equals(pair.first)) {
-
-                                String replacement = pair.first.substring(0, 10) + "...";
-                                replacedMessageText = replacedMessageText.replace(pair.first, replacement);
-                                indexOfMention.add(replacedMessageText.indexOf(replacement));
-                                positionOfMention.add(pair.second);
-                                break;
-                            }
-                        }
-                    }
+                    replacedMessageText = replacedMessageText.replace(possibleMention, replacement);
                 } else {
 
-                    if (userPositionPairsFromFirebase != null) {
-
-                        for (Pair<String, Integer> pair : userPositionPairsFromFirebase) {
-
-                            if (pair.first.equals(possibleMention)) {
-
-                                String replacement = pair.first.substring(0, 10) + "...";
-                                replacedMessageText = messageText.replace(pair.first, replacement);
-                                indexOfMention.add(replacedMessageText.indexOf(replacement));
-                                positionOfMention.add(pair.second);
-                                break;
-                            }
-                        }
-                    }
+                    replacedMessageText = messageText.replace(possibleMention, replacement);
                 }
+                indexOfMention.add(replacedMessageText.indexOf(replacement));
+                spannableMessageText = new SpannableString(replacedMessageText);
             }
 
             // Clear the list to prevent unnecessary memory buildup.
             possibleMentions.clear();
 
-            // After the replacedMessageText has been created with all the truncated mentions, add the ClickableSpans.
-            if (!indexOfMention.isEmpty()) {
-
-                spannableMessageText = new SpannableString(replacedMessageText);
-            }
-
-            for (int i = 0; i < positionOfMention.size(); i++) {
+            for (int i = 0; i < fullLengthMention.size(); i++) {
 
                 int finalI = i;
                 ClickableSpan clickableSpan = new ClickableSpan() {
@@ -1041,15 +889,17 @@ public class Chat extends Fragment implements
                         clickedOnMention = true;
 
                         // Show a couple messages above the position, as this seems to be better visually.
-                        int scrollPosition = positionOfMention.get(finalI) - 5;
-                        if (scrollPosition < 0) {
+                        if (mUser.contains(fullLengthMention.get(finalI))) {
 
-                            scrollPosition = 0;
-                        }
+                            UUIDToHighlight = fullLengthMention.get(finalI);
 
-                        int finalScrollPosition = scrollPosition;
+                            int scrollPosition = mUser.indexOf(UUIDToHighlight) - 5;
+                            if (scrollPosition < 0) {
 
-                        if (mPosition.contains(finalScrollPosition)) {
+                                scrollPosition = 0;
+                            }
+
+                            int finalScrollPosition = scrollPosition;
 
                             if (chatRecyclerView != null) {
 
@@ -1065,16 +915,15 @@ public class Chat extends Fragment implements
                                         chatRecyclerView.getAdapter().notifyItemChanged(previouslyHighlightedPosition);
                                     }
 
-                                    positionToHighlight = positionOfMention.get(finalI);
-                                    chatRecyclerView.getAdapter().notifyItemChanged(positionToHighlight);
+                                    chatRecyclerView.getAdapter().notifyItemChanged(mUser.indexOf(fullLengthMention.get(finalI)));
                                 }
                             }
                         } else {
 
                             // Pagination needed.
+                            UUIDToHighlight = fullLengthMention.get(finalI);
                             loadingOlderMessages = true;
-                            positionToHighlight = positionOfMention.get(finalI);
-                            getFirebaseMessages(datesAL.get(0), positionOfMention.get(finalI));
+                            getFirebaseMessages(mUser.get(0));
                         }
                     }
                 };
@@ -1099,9 +948,9 @@ public class Chat extends Fragment implements
             uploadTask.cancel();
         }
 
-        if (query != null) {
+        if (mQuery != null) {
 
-            query.removeEventListener(childEventListener);
+            mQuery.removeEventListener(childEventListener);
         }
 
         if (chatRecyclerView != null) {
@@ -1151,11 +1000,6 @@ public class Chat extends Fragment implements
         if (videoImageView != null) {
 
             videoDrawable = videoImageView.getDrawable();
-        }
-
-        if (mInput != null) {
-
-            mInput.removeMentionWatcher(mentionWatcher);
         }
 
         cancelToasts();
@@ -1242,34 +1086,34 @@ public class Chat extends Fragment implements
             return;
         }
 
-        ChatAdapter adapter = new ChatAdapter(mContext, mTime, mUser, mImage, mVideo, mText, mUserIsWithinShape, mPosition);
+        ChatAdapter adapter = new ChatAdapter(mContext, mTime, mUser, mImage, mVideo, mText, mUserIsWithinShape);
         chatRecyclerView.setAdapter(adapter);
         chatRecyclerView.setHasFixedSize(true);
         chatRecyclerView.setLayoutManager(chatRecyclerViewLinearLayoutManager);
 
-        if (positionToHighlight != 0 && !reachedEndOfRecyclerView && !messageSent && index == null && top == null) {
+        if (UUIDToHighlight != null && !reachedEndOfRecyclerView && ((clickedOnMention != null && clickedOnMention) || fromDms != null && fromDms)) {
 
             // Show a couple messages above the position, as this seems to be better visually.
-            int scrollPosition = positionToHighlight - 5;
+            int scrollPosition = mUser.indexOf(UUIDToHighlight) - 5;
             if (scrollPosition < 0) {
 
                 scrollPosition = 0;
             }
             chatRecyclerView.scrollToPosition(scrollPosition);
+            clickedOnMention = false;
+            fromDms = false;
         } else if (last == (mUser.size() - 2) || firstLoad || messageSent) {
 
             // Scroll to bottom of recyclerviewlayout after first initialization and after sending a recyclerviewlayout.
             chatRecyclerView.scrollToPosition(mUser.size() - 1);
             messageSent = false;
-            firstLoad = false;
         } else {
 
             // Set RecyclerView scroll position to prevent position change when Firebase gets updated and after screen orientation change.
             chatRecyclerViewLinearLayoutManager.scrollToPositionWithOffset(index, top);
-            // Set index and top to null, so initChatAdapter will go to the else statement after user scrolls and then another user sends a message.
-            index = null;
-            top = null;
         }
+
+        firstLoad = false;
 
         // After the initial load, make the progressIconIndeterminate invisible.
         if (progressIconIndeterminate != null && !needProgressIconIndeterminate) {
@@ -1284,7 +1128,6 @@ public class Chat extends Fragment implements
         private final ArrayList<String> mMessageTime, mMessageUser, mMessageImage, mMessageImageVideo;
         private final ArrayList<SpannableString> mMessageText;
         private final ArrayList<Boolean> mUserIsWithinShape;
-        private final ArrayList<Integer> mPosition;
         // theme == true is light mode.
         private boolean theme;
 
@@ -1419,7 +1262,7 @@ public class Chat extends Fragment implements
             }
         }
 
-        ChatAdapter(Context context, ArrayList<String> mMessageTime, ArrayList<String> mMessageUser, ArrayList<String> mMessageImage, ArrayList<String> mMessageImageVideo, ArrayList<SpannableString> mMessageText, ArrayList<Boolean> mUserIsWithinShape, ArrayList<Integer> mPosition) {
+        ChatAdapter(Context context, ArrayList<String> mMessageTime, ArrayList<String> mMessageUser, ArrayList<String> mMessageImage, ArrayList<String> mMessageImageVideo, ArrayList<SpannableString> mMessageText, ArrayList<Boolean> mUserIsWithinShape) {
 
             this.mContext = context;
             this.mMessageTime = mMessageTime;
@@ -1428,7 +1271,6 @@ public class Chat extends Fragment implements
             this.mMessageImageVideo = mMessageImageVideo;
             this.mMessageText = mMessageText;
             this.mUserIsWithinShape = mUserIsWithinShape;
-            this.mPosition = mPosition;
         }
 
         @NonNull
@@ -1606,9 +1448,9 @@ public class Chat extends Fragment implements
             }
 
             // "Highlight" the message.
-            if (clickedOnMention || fromDms) {
+            if (UUIDToHighlight != null) {
 
-                if (mPosition.get(position).equals(positionToHighlight)) {
+                if (mUser.get(position).equals(UUIDToHighlight)) {
 
                     if (theme) {
 
@@ -1618,7 +1460,7 @@ public class Chat extends Fragment implements
                         holder.itemView.setBackgroundColor(Color.parseColor("#1338BE"));
                     }
 
-                    previouslyHighlightedPosition = positionToHighlight;
+                    previouslyHighlightedPosition = mUser.indexOf(UUIDToHighlight);
                 }
             }
         }
@@ -1804,18 +1646,10 @@ public class Chat extends Fragment implements
                 };
 
                 // Don't add the mentionable if it already exists.
-                if (userPositionPairs != null) {
+                if (mInput.getText().toString().trim().contains(mSuggestions.get(position))) {
 
-                    for (int i = 0; i < userPositionPairs.size(); i++) {
-
-                        Pair<String, Integer> pair = userPositionPairs.get(i);
-
-                        if (pair.first.equals(mentionable.getSuggestiblePrimaryText())) {
-
-                            toastMessageShort("User has already been mentioned.");
-                            return;
-                        }
-                    }
+                    toastMessageShort("User has already been mentioned.");
+                    return;
                 }
 
                 mInput.insertMention(mentionable);
@@ -2721,19 +2555,10 @@ public class Chat extends Fragment implements
                                         if (input.length() != 0) {
                                             dmInformation.setMessage(input);
                                         }
-                                        if (mPosition.size() == 0) {
-                                            dmInformation.setPosition(0);
-                                        } else {
-                                            dmInformation.setPosition(mPosition.get(mPosition.size() - 1) + 1);
-                                        }
                                         dmInformation.setSeenByUser(false);
                                         dmInformation.setSize(1.0);
                                         dmInformation.setShapeUUID(shapeUUID);
                                         dmInformation.setUserIsWithinShape(userIsWithinShape);
-                                        if (userPositionPairs != null && !userPositionPairs.isEmpty()) {
-
-                                            dmInformation.setUserPositionPairs(userPositionPairs);
-                                        }
                                         dmInformation.setUserUUID(userUUID);
                                         dmInformation.setVideoUrl(uri.toString());
 
@@ -2766,16 +2591,7 @@ public class Chat extends Fragment implements
 
                             messageInformation.setMessage(input);
                         }
-                        if (mPosition.size() == 0) {
-                            messageInformation.setPosition(0);
-                        } else {
-                            messageInformation.setPosition(mPosition.get(mPosition.size() - 1) + 1);
-                        }
                         messageInformation.setUserIsWithinShape(userIsWithinShape);
-                        if (userPositionPairs != null && !userPositionPairs.isEmpty()) {
-
-                            messageInformation.setUserPositionPairs(userPositionPairs);
-                        }
                         messageInformation.setUserUUID(userUUID);
                         messageInformation.setVideoUrl(uri.toString());
                         DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID).push();
@@ -2784,11 +2600,6 @@ public class Chat extends Fragment implements
                         if (removedDuplicatesMentions != null && !removedDuplicatesMentions.isEmpty()) {
 
                             removedDuplicatesMentions.clear();
-                        }
-
-                        if (userPositionPairs != null && !userPositionPairs.isEmpty()) {
-
-                            userPositionPairs.clear();
                         }
 
                         if (video != null) {
@@ -2890,19 +2701,10 @@ public class Chat extends Fragment implements
                                         if (input.length() != 0) {
                                             dmInformation.setMessage(input);
                                         }
-                                        if (mPosition.size() == 0) {
-                                            dmInformation.setPosition(0);
-                                        } else {
-                                            dmInformation.setPosition(mPosition.get(mPosition.size() - 1) + 1);
-                                        }
                                         dmInformation.setSeenByUser(false);
                                         dmInformation.setSize(1.0);
                                         dmInformation.setShapeUUID(shapeUUID);
                                         dmInformation.setUserIsWithinShape(userIsWithinShape);
-                                        if (userPositionPairs != null && !userPositionPairs.isEmpty()) {
-
-                                            dmInformation.setUserPositionPairs(userPositionPairs);
-                                        }
                                         dmInformation.setUserUUID(userUUID);
 
                                         // Firebase does not allow ".", so replace them with ",".
@@ -2935,16 +2737,7 @@ public class Chat extends Fragment implements
 
                             messageInformation.setMessage(input);
                         }
-                        if (mPosition.size() == 0) {
-                            messageInformation.setPosition(0);
-                        } else {
-                            messageInformation.setPosition(mPosition.get(mPosition.size() - 1) + 1);
-                        }
                         messageInformation.setUserIsWithinShape(userIsWithinShape);
-                        if (userPositionPairs != null && !userPositionPairs.isEmpty()) {
-
-                            messageInformation.setUserPositionPairs(userPositionPairs);
-                        }
                         messageInformation.setUserUUID(userUUID);
                         DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID).push();
                         newMessage.setValue(messageInformation);
@@ -2952,11 +2745,6 @@ public class Chat extends Fragment implements
                         if (removedDuplicatesMentions != null && !removedDuplicatesMentions.isEmpty()) {
 
                             removedDuplicatesMentions.clear();
-                        }
-
-                        if (userPositionPairs != null && !userPositionPairs.isEmpty()) {
-
-                            userPositionPairs.clear();
                         }
 
                         if (image != null) {
