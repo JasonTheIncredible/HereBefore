@@ -129,8 +129,7 @@ public class Chat extends Fragment implements
     private static Integer index = null, top = null, last;
     private ChildEventListener childEventListener;
     private FloatingActionButton sendButton, mediaButton;
-    private boolean firstLoad, loadingOlderMessages, noMoreMessages = false, fromVideo, needProgressIconIndeterminate, reachedEndOfRecyclerView = false, recyclerViewHasScrolled = false, messageSent = false, fileIsImage, checkPermissionsPicture,
-            newShape;
+    private boolean firstLoad, loadingOlderMessages, noMoreMessages = false, fromVideo, needProgressIconIndeterminate, reachedEndOfRecyclerView = false, recyclerViewHasScrolled = false, messageSent = false, fileIsImage, checkPermissionsPicture, newShape;
     private Boolean userIsWithinShape, clickedOnMention, fromDms;
     private View.OnLayoutChangeListener onLayoutChangeListener;
     private String shapeUUID, reportedUser, UUIDToHighlight;

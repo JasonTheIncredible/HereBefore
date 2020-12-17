@@ -81,7 +81,7 @@ public class Map extends FragmentActivity implements
     private String userEmailFirebase, shapeUUID, circleTempUUID;
     private Button circleButton, mapTypeButton, settingsButton;
     private PopupMenu popupMapType;
-    private boolean locationProviderDisabled = false, firstLoadCamera = true, firstLoadShapes = true, firstLoadDms = true, dmExists = false, cameraMoved = false, waitingForBetterLocationAccuracy = false, badAccuracy = false, newShape = false, restarted = false, newCameraCoordinates = false, mapCleared = false;
+    private boolean locationProviderDisabled = false, firstLoadCamera = true, firstLoadShapes = true, firstLoadDms = true, dmExists = false, cameraMoved = false, waitingForBetterLocationAccuracy = false, badAccuracy = false, restarted = false, newCameraCoordinates = false, mapCleared = false;
     private final ArrayList<String> circleUUIDs = new ArrayList<>();
     private final ArrayList<LatLng> circleCenters = new ArrayList<>();
     private int dmCounter = 0, newNearLeftLat, newNearLeftLon;
@@ -93,9 +93,6 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private final List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // Have user enter a circle as soon as a new one is made?
-    // Newest userUUID are covered by the mentionRecyclerview.
-    // Add Firebase functions to adjust spannable string when changing a messageThread. Also, make sure Firebase rules only allows "Points".
     // Switch from initChatAdapter() to notifyChatAdapter() to increase speed? Generally, make Chat load faster, especially if there are multiple ClickableSpans
     // Make scrollToPosition work in Chat after a restart. Also prevent reloading Chat and DMs every time app restarts.
     // Find a way to not clear and reload map every time user returns from clicking a shape. Same with DM notification.
@@ -397,90 +394,38 @@ public class Map extends FragmentActivity implements
 
                                 if (!locationProviderDisabled) {
 
-                                    // If user is not close to a shape, create one. Else, highlight the shape they are "within" to let the user know which shape they are about to enter. If a shape is already highlighted, enter it.
-                                    if (circleTemp != null) {
+                                    // This prevent the user from entering a circle before the map has adjusted to their location the first time.
+                                    if (!mMap.isMyLocationEnabled()) {
 
-                                        // Check distance to circleTemp and enter it.
-                                        float[] distance = new float[2];
-                                        Location.distanceBetween(circleTemp.getCenter().latitude, circleTemp.getCenter().longitude, location.getLatitude(), location.getLongitude(), distance);
-
-                                        // userIsWithinShape will be true if user is within 2 meters of the shape's center.
-                                        enterCircle(location, newShape,distance[0] <= 2);
-                                    } else {
-
-                                        // Check for closest circle. If user is close to a circle, highlight it. Else, create one.
-                                        for (int i = 0; i < circleCenters.size(); i++) {
-
-                                            float[] distance = new float[2];
-                                            Location.distanceBetween(circleCenters.get(i).latitude, circleCenters.get(i).longitude, location.getLatitude(), location.getLongitude(), distance);
-
-                                            if (distance[0] <= 2) {
-
-                                                if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
-
-                                                    circleTemp = mMap.addCircle(
-                                                            new CircleOptions()
-                                                                    .center(circleCenters.get(i))
-                                                                    .clickable(true)
-                                                                    .fillColor(Color.argb(100, 255, 255, 0))
-                                                                    .radius(1.0)
-                                                                    .strokeColor(Color.rgb(255, 255, 0))
-                                                                    .strokeWidth(3f)
-                                                                    .zIndex(2)
-                                                    );
-                                                } else {
-
-                                                    circleTemp = mMap.addCircle(
-                                                            new CircleOptions()
-                                                                    .center(circleCenters.get(i))
-                                                                    .clickable(true)
-                                                                    .fillColor(Color.argb(100, 255, 0, 255))
-                                                                    .radius(1.0)
-                                                                    .strokeColor(Color.rgb(255, 0, 255))
-                                                                    .strokeWidth(3f)
-                                                                    .zIndex(2)
-                                                    );
-                                                }
-
-                                                newShape = false;
-                                                circleTempUUID = circleUUIDs.get(i);
-                                                loadingIcon.setVisibility(View.GONE);
-
-                                                return;
-                                            }
-                                        }
-
-                                        // No close circles exists. Create one.
-                                        if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
-
-                                            circleTemp = mMap.addCircle(
-                                                    new CircleOptions()
-                                                            .center(new LatLng(location.getLatitude(), location.getLongitude()))
-                                                            .clickable(true)
-                                                            .fillColor(Color.argb(100, 255, 255, 0))
-                                                            .radius(1.0)
-                                                            .strokeColor(Color.rgb(255, 255, 0))
-                                                            .strokeWidth(3f)
-                                                            .zIndex(2)
-                                            );
-                                        } else {
-
-                                            circleTemp = mMap.addCircle(
-                                                    new CircleOptions()
-                                                            .center(new LatLng(location.getLatitude(), location.getLongitude()))
-                                                            .clickable(true)
-                                                            .fillColor(Color.argb(100, 255, 0, 255))
-                                                            .radius(1.0)
-                                                            .strokeColor(Color.rgb(255, 0, 255))
-                                                            .strokeWidth(3f)
-                                                            .zIndex(2)
-                                            );
-                                        }
-
-                                        newShape = true;
-                                        circleTempUUID = UUID.randomUUID().toString();
                                         loadingIcon.setVisibility(View.GONE);
+                                        return;
                                     }
+
+                                    // If user is within a circle, enter it. Else, cycle through all circles that are 2 meters away and enter the closest one. Else, enter a new one.
+                                    float[] oldDistance = new float[2];
+                                    oldDistance[0] = 2f;
+                                    LatLng latLng = null;
+                                    String uuid = null;
+                                    for (int i = 0; i < circleCenters.size(); i++) {
+
+                                        float[] newDistance = new float[2];
+                                        Location.distanceBetween(circleCenters.get(i).latitude, circleCenters.get(i).longitude, location.getLatitude(), location.getLongitude(), newDistance);
+
+                                        if (newDistance[0] <= 1) {
+
+                                            enterCircle(location, circleCenters.get(i), circleUUIDs.get(i), false, true);
+
+                                            return;
+                                        } else if (newDistance[0] <= oldDistance[0]) {
+
+                                            oldDistance[0] = newDistance[0];
+                                            latLng = circleCenters.get(i);
+                                            uuid = circleUUIDs.get(i);
+                                        }
+                                    }
+
+                                    // latLng and uuid will be null if it is a new circle, and newShape will be true.
+                                    enterCircle(location, latLng, uuid, latLng == null, true);
                                 } else {
 
                                     loadingIcon.setVisibility(View.GONE);
@@ -802,12 +747,12 @@ public class Map extends FragmentActivity implements
 
                                     if (!locationProviderDisabled) {
 
-                                            // Check distance to circleTemp and enter it.
-                                            float[] distance = new float[2];
-                                            Location.distanceBetween(circleTemp.getCenter().latitude, circleTemp.getCenter().longitude, location.getLatitude(), location.getLongitude(), distance);
+                                        // Check distance to circleTemp and enter it.
+                                        float[] distance = new float[2];
+                                        Location.distanceBetween(circleTemp.getCenter().latitude, circleTemp.getCenter().longitude, location.getLatitude(), location.getLongitude(), distance);
 
-                                            // userIsWithinShape will be true if user is within 2 meters of the shape's center.
-                                            enterCircle(location, newShape,distance[0] <= 2);
+                                        // If distance <= 2, enterCircle(location, circleTemp.getCenter(), false, true). Else, enterCircle(location, circleTemp.getCenter(), false, false).
+                                        enterCircle(location, null, null, false, distance[0] <= 2);
                                     } else {
 
                                         loadingIcon.setVisibility(View.GONE);
@@ -860,7 +805,6 @@ public class Map extends FragmentActivity implements
                 );
             }
 
-            newShape = false;
             circleTempUUID = circle.getTag().toString();
             loadingIcon.setVisibility(View.GONE);
         });
@@ -1087,9 +1031,25 @@ public class Map extends FragmentActivity implements
         loadingIcon.setVisibility(View.GONE);
     }
 
-    private void enterCircle(Location userLocation, boolean newShape, boolean userIsWithinShape) {
+    private void enterCircle(Location userLocation, LatLng circleLatLng, String circleUUID, boolean newShape, boolean userIsWithinShape) {
 
         Log.i(TAG, "enterCircle()");
+
+        LatLng circleToEnterLatLng = null;
+        String circleToEnterUUID = null;
+        if (circleLatLng == null && newShape) {
+            // New circle.
+            circleToEnterLatLng = new LatLng(userLocation.getLatitude(), userLocation.getLongitude());
+            circleToEnterUUID = UUID.randomUUID().toString();
+        } else if (circleLatLng == null && !newShape) {
+            // User is entering a circle by clicking on it, so circleTemp != null.
+            circleToEnterLatLng = circleTemp.getCenter();
+            circleToEnterUUID = circleTempUUID;
+        } else if (circleLatLng != null && !newShape) {
+            // User clicked on the circle button and is entering a circle close to their location.
+            circleToEnterLatLng = circleLatLng;
+            circleToEnterUUID = circleUUID;
+        }
 
         Intent Activity;
 
@@ -1115,13 +1075,13 @@ public class Map extends FragmentActivity implements
         // Get a value with 1 decimal point and use it for Firebase.
         double nearLeftPrecisionLat = Math.pow(10, 1);
         // Can't create a firebase path with '.', so get rid of decimal.
-        double nearLeftLatTemp = (int) (nearLeftPrecisionLat * circleTemp.getCenter().latitude) / nearLeftPrecisionLat;
+        double nearLeftLatTemp = (int) (nearLeftPrecisionLat * circleToEnterLatLng.latitude) / nearLeftPrecisionLat;
         nearLeftLatTemp *= 10;
         int shapeLat = (int) nearLeftLatTemp;
 
         double nearLeftPrecisionLon = Math.pow(10, 1);
         // Can't create a firebase path with '.', so get rid of decimal.
-        double nearLeftLonTemp = (int) (nearLeftPrecisionLon * circleTemp.getCenter().longitude) / nearLeftPrecisionLon;
+        double nearLeftLonTemp = (int) (nearLeftPrecisionLon * circleToEnterLatLng.longitude) / nearLeftPrecisionLon;
         nearLeftLonTemp *= 10;
         int shapeLon = (int) nearLeftLonTemp;
 
@@ -1131,11 +1091,11 @@ public class Map extends FragmentActivity implements
         Activity.putExtra("userLatitude", userLocation.getLatitude());
         Activity.putExtra("userLongitude", userLocation.getLongitude());
         // Pass this value to Chat.java to identify the shape.
-        Activity.putExtra("shapeUUID", circleTempUUID);
+        Activity.putExtra("shapeUUID", circleToEnterUUID);
         // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
         Activity.putExtra("userIsWithinShape", userIsWithinShape);
-        Activity.putExtra("circleLatitude", circleTemp.getCenter().latitude);
-        Activity.putExtra("circleLongitude", circleTemp.getCenter().longitude);
+        Activity.putExtra("circleLatitude", circleToEnterLatLng.latitude);
+        Activity.putExtra("circleLongitude", circleToEnterLatLng.longitude);
         Activity.putExtra("radius", 1.0);
 
         loadingIcon.setVisibility(View.GONE);
