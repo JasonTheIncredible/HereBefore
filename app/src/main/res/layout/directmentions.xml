@@ -9,7 +9,7 @@
         android:layout_height="wrap_content"
         android:layout_centerHorizontal="true"
         android:layout_centerVertical="true"
-        android:text="You have no DMs"
+        android:text="@string/you_have_no_dms"
         android:textAppearance="@style/TextAppearance.AppCompat.Medium"
         android:visibility="gone" />
 

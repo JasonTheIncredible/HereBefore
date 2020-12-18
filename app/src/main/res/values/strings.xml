@@ -17,7 +17,7 @@
     <string name="hybrid_view">Hybrid view"</string>
     <string name="deleteAccount">Delete Account</string>
     <string name="back">Back</string>
-    <string name="email">"Email: "</string>
+    <string name="email">Email: %1$s</string>
     <string name="forgot_password">Forgot Password?</string>
     <string name="reset_password">Reset Password</string>
     <string name="send_email">Send Email</string>
@@ -28,6 +28,8 @@
     <string name="createAccountWithPassword">Create Account With Password:</string>
     <string name="report_post">Report Post</string>
     <string name="feedback_warning">As this feedback is anonymous, please provide additional details (e.g. email address) if you want a follow-up with your specific account.</string>
+    <string name="you_have_no_dms">You have no DMs</string>
+    <string name="atUsername">"@"%1$s</string>
 
     <string-array name="pref_map_types_entries">
         <item>Road map view</item>

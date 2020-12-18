@@ -105,7 +105,7 @@ public class DeleteAccount extends AppCompatActivity {
                 // Add everything after "@".
                 privateEmail.append(secondPartOfEmail);
             }
-            textView.setText(getResources().getString(R.string.email) + privateEmail);
+            textView.setText(getString(R.string.email, privateEmail));
             textView.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
             textView.setTextSize(20);
             RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);

@@ -93,18 +93,16 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private final List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // Switch from initChatAdapter() to notifyChatAdapter() to increase speed? Generally, make Chat load faster, especially if there are multiple ClickableSpans
-    // Make scrollToPosition work in Chat after a restart. Also prevent reloading Chat and DMs every time app restarts.
-    // Find a way to not clear and reload map every time user returns from clicking a shape. Same with DM notification.
-    // Prevent data scraping (hide email addresses and other personal information).
-    // Create timer that kicks people out of a new Chat if they haven't posted within an amount of time (or take the photo/video before entering Chat), or keep updating their location. Or have them take media before entering chat and have the media being sent to Firebase create the chat.
-    // Find a way to add to existing snapshot - then send that snapshot to DirectMentions from Map. Also, prevent reloading everything after restart when user paginated (also save scroll position).
     // After clicking on a DM and going to that Chat, allow user to find that same shape on the map.
+    // Find a way to not clear and reload map every time user returns from clicking a shape - possibly add to existing snapshot or check for differences in snapshot? Same with DM notification.
+    // Make scrollToPosition work in Chat after a restart, especially after pagination. Also prevent reloading Chat and DMs every time app restarts.
+    // Create timer that kicks people out of a new Chat if they haven't posted within an amount of time (or take the photo/video before entering Chat), or keep updating their location. Or have them take media before entering chat and have the media being sent to Firebase create the chat.
     // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.
+    // Prevent data scraping (hide email addresses and other personal information).
 
-    // Chat very laggy on emulator.
+    // Chat very laggy on emulator - caused by multiple clickableSpans?
     // Require picture on creating a shape? Also, long press a shape to see a popup of that picture.
-    // Increase point radius? Create a variable with the point's radius and use that instead of "1" to future-proof changes. Also, make "creating a point" more accurate to the user's location.
+    // Create a variable with the point's radius and use that instead of "1" to future-proof changes. Also, make "creating a point" more accurate to the user's location.
     // Deal with deprecated methods.
     // Allow users to get "likes".
     // Only be able to see things you've visited - Kenny.
@@ -124,7 +122,6 @@ public class Map extends FragmentActivity implements
     // Create widget for faster picture / creating point.
     // Increase speed of checking whether user is inside a circle when clicking the circleButton, as it currently cycles through all circles. Also, allow user to choose which circle they enter?
     // Truncate mention in editText to look like userUUID in Chat.
-    // Add Firebase rules to mentionPositionPairs for more than 1 child. A "forEach" rule would be best.
     // Add a function for deleting / decreasing position of DMs after deleting / updating messageThreads - problem: need to store the name of the person being DM'ed, but that's a lot of useless information and possibly increases security risk.
     // Load user-specific shared preferences - looks like it might require saving info to database; is this worth it?
     // Increase viral potential - make it easier to share?
@@ -562,6 +559,7 @@ public class Map extends FragmentActivity implements
             // Location seems to work without the following line, but it is set to false in onPause so for symmetry's sake, I'm setting it to true here.
             if (mMap != null) {
 
+                // Needs to be re-enabled or circleButton won't work.
                 mMap.setMyLocationEnabled(true);
             }
 
@@ -575,9 +573,6 @@ public class Map extends FragmentActivity implements
                 Log.e(TAG, "onResume() -> locationManager == null");
                 toastMessageLong("Error retrieving your location.");
             }
-        } else {
-
-            checkLocationPermissions();
         }
     }
 
@@ -843,14 +838,9 @@ public class Map extends FragmentActivity implements
                 Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
 
-            // No explanation needed, we can request the permission.
             ActivityCompat.requestPermissions(this,
                     new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
                     Request_User_Location_Code);
-        } else if (ActivityCompat.shouldShowRequestPermissionRationale(this,
-                Manifest.permission.ACCESS_FINE_LOCATION)) {
-
-            locationPermissionAlertAsync();
         }
     }
 
@@ -859,28 +849,29 @@ public class Map extends FragmentActivity implements
 
         Log.i(TAG, "onRequestPermissionsResult()");
 
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
         // If request is cancelled, the result arrays are empty.
         if (requestCode == Request_User_Location_Code) {
 
-            if (grantResults.length > 0
-                    && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            if (grantResults.length > 0) {
 
-                // Permission was granted, yay! Do the location-related task you need to do.
-                if (ContextCompat.checkSelfPermission(this,
-                        Manifest.permission.ACCESS_FINE_LOCATION)
-                        == PackageManager.PERMISSION_GRANTED) {
+                if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION)) {
 
-                    startLocationUpdates();
+                    locationPermissionAlertAsync();
+                } else if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+                    // Permission was granted, yay! Do the location-related task you need to do.
+                    if (ContextCompat.checkSelfPermission(this,
+                            Manifest.permission.ACCESS_FINE_LOCATION)
+                            == PackageManager.PERMISSION_GRANTED) {
+
+                        startLocationUpdates();
+                    }
+                } else if (grantResults[0] != PackageManager.PERMISSION_GRANTED) {
+
+                    toastMessageLong("Location permission is required. Please enable it manually through the Android settings menu.");
                 }
-            } else if (ActivityCompat.shouldShowRequestPermissionRationale(this,
-                    Manifest.permission.ACCESS_FINE_LOCATION)) {
-
-                locationPermissionAlertAsync();
-            } else if (grantResults.length > 0
-                    && grantResults[0] != PackageManager.PERMISSION_GRANTED) {
-
-                // User denied permission and checked "Don't ask again!"
-                toastMessageLong("Location permission is required. Please enable it manually through the Android settings menu.");
             }
         }
     }
