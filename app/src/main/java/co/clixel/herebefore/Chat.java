@@ -133,7 +133,7 @@ public class Chat extends Fragment implements
     private boolean firstLoad, loadingOlderMessages, noMoreMessages = false, fromVideo, needProgressIconIndeterminate, reachedEndOfRecyclerView = false, recyclerViewHasScrolled = false, messageSent = false, fileIsImage, checkPermissionsPicture, newShape;
     private Boolean userIsWithinShape, clickedOnMention, fromDms;
     private View.OnLayoutChangeListener onLayoutChangeListener;
-    private String shapeUUID, reportedUser, UUIDToHighlight;
+    private String shapeUUID, reportedUser, UUIDToHighlight, queryUser;
     private double circleLatitude, circleLongitude;
     private PopupMenu mediaButtonMenu;
     private ImageView imageView, videoImageView;
@@ -227,17 +227,20 @@ public class Chat extends Fragment implements
         chatRecyclerViewLinearLayoutManager = new LinearLayoutManager(mActivity);
         mentionsRecyclerViewLinearLayoutManager = new LinearLayoutManager(mActivity);
 
-        datesAL = new ArrayList<>();
-        emailsAL = new ArrayList<>();
+        if (queryUser == null) {
 
-        mTime = new ArrayList<>();
-        mUser = new ArrayList<>();
-        mImage = new ArrayList<>();
-        mVideo = new ArrayList<>();
-        mText = new ArrayList<>();
-        mSuggestions = new ArrayList<>();
-        allMentions = new ArrayList<>();
-        mUserIsWithinShape = new ArrayList<>();
+            datesAL = new ArrayList<>();
+            emailsAL = new ArrayList<>();
+
+            mTime = new ArrayList<>();
+            mUser = new ArrayList<>();
+            mImage = new ArrayList<>();
+            mVideo = new ArrayList<>();
+            mText = new ArrayList<>();
+            mSuggestions = new ArrayList<>();
+            allMentions = new ArrayList<>();
+            mUserIsWithinShape = new ArrayList<>();
+        }
 
         // Prevents clearing this list if user adds a DM and takes a picture.
         if (removedDuplicatesMentions == null) {
@@ -309,7 +312,52 @@ public class Chat extends Fragment implements
             mentionsRecyclerView.setVisibility(View.GONE);
         }
 
-        getFirebaseMessages(null);
+        // If the string doesn't equal null, check if the latest user is the same as the one in the recyclerView. If string is null, it's the first time loading.
+        if (queryUser != null) {
+
+            Query query = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID).limitToLast(1);
+            query.addListenerForSingleValueEvent(new ValueEventListener() {
+
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+
+                    for (DataSnapshot ds : snapshot.getChildren()) {
+
+                        String user = (String) ds.child("userUUID").getValue();
+                        // If the saved string and the latest user match, then there's no need to re-download everything from Firebase.
+                        if (!user.isEmpty() && !user.equals(queryUser)) {
+
+                            Log.i(TAG, "onStart() -> new messages since app restarted");
+
+                            datesAL = new ArrayList<>();
+                            emailsAL = new ArrayList<>();
+
+                            mTime = new ArrayList<>();
+                            mUser = new ArrayList<>();
+                            mImage = new ArrayList<>();
+                            mVideo = new ArrayList<>();
+                            mText = new ArrayList<>();
+                            mSuggestions = new ArrayList<>();
+                            allMentions = new ArrayList<>();
+                            mUserIsWithinShape = new ArrayList<>();
+
+                            getFirebaseMessages(null);
+                        } else {
+
+                            Log.i(TAG, "onStart() -> no new messages");
+                            addQuery();
+                        }
+                    }
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
+                }
+            });
+        } else {
+
+            getFirebaseMessages(null);
+        }
 
         // Check RecyclerView scroll state (to allow the layout to move up when keyboard appears).
         if (chatRecyclerView != null) {
@@ -626,6 +674,8 @@ public class Chat extends Fragment implements
 
                     Long serverDate = (Long) ds.child("date").getValue();
                     String user = (String) ds.child("userUUID").getValue();
+                    // Update queryUser to be used if the activity restarts.
+                    queryUser = user;
                     // Used when a user mentions another user with "@".
                     mSuggestions.add(i, user);
                     String imageUrl = (String) ds.child("imageUrl").getValue();
@@ -773,6 +823,8 @@ public class Chat extends Fragment implements
                 datesAL.add((Long) snapshot.child("date").getValue());
 
                 String user = (String) snapshot.child("userUUID").getValue();
+                // Update queryUser to be used if the activity restarts.
+                queryUser = user;
                 // Prevents duplicates when user adds a message to a new shape then switches between light / dark mode.
                 if (mUser.contains(user)) {
 
@@ -1936,22 +1988,22 @@ public class Chat extends Fragment implements
 
                     if (cameraPermissions != null && externalStoragePermissions != null && audioPermissions != null) {
 
-                            if (ActivityCompat.shouldShowRequestPermissionRationale(mActivity, Manifest.permission.CAMERA)) {
+                        if (ActivityCompat.shouldShowRequestPermissionRationale(mActivity, Manifest.permission.CAMERA)) {
 
-                                Log.d(TAG, "Request_ID_Take_Photo -> Camera permissions were not granted. Ask again.");
+                            Log.d(TAG, "Request_ID_Take_Photo -> Camera permissions were not granted. Ask again.");
 
-                                cameraPermissionAlertAsync(checkPermissionsPicture);
-                            } else if (ActivityCompat.shouldShowRequestPermissionRationale(mActivity, Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+                            cameraPermissionAlertAsync(checkPermissionsPicture);
+                        } else if (ActivityCompat.shouldShowRequestPermissionRationale(mActivity, Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
 
-                                Log.d(TAG, "Request_ID_Take_Photo -> Storage permissions were not granted. Ask again.");
+                            Log.d(TAG, "Request_ID_Take_Photo -> Storage permissions were not granted. Ask again.");
 
-                                writeExternalStoragePermissionAlertAsync(checkPermissionsPicture);
-                            } else if (ActivityCompat.shouldShowRequestPermissionRationale(mActivity, Manifest.permission.RECORD_AUDIO)) {
+                            writeExternalStoragePermissionAlertAsync(checkPermissionsPicture);
+                        } else if (ActivityCompat.shouldShowRequestPermissionRationale(mActivity, Manifest.permission.RECORD_AUDIO)) {
 
-                                Log.d(TAG, "Request_ID_Record_Video -> Audio permissions were not granted. Ask again.");
+                            Log.d(TAG, "Request_ID_Record_Video -> Audio permissions were not granted. Ask again.");
 
-                                audioPermissionAlertAsync(checkPermissionsPicture);
-                            } else if (cameraPermissions == PackageManager.PERMISSION_GRANTED
+                            audioPermissionAlertAsync(checkPermissionsPicture);
+                        } else if (cameraPermissions == PackageManager.PERMISSION_GRANTED
                                 && externalStoragePermissions == PackageManager.PERMISSION_GRANTED
                                 && audioPermissions == PackageManager.PERMISSION_GRANTED) {
 

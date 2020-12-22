@@ -50,7 +50,7 @@ import static java.text.DateFormat.getDateTimeInstance;
 public class DirectMentions extends Fragment {
 
     private static final String TAG = "DirectMentions";
-    private String userEmailFirebase;
+    private String userEmailFirebase, queryUser;
     private ArrayList<String> mTime, mUser, mImage, mVideo, mText, mShapeUUID;
     private ArrayList<Boolean> mUserIsWithinShape, mSeenByUser;
     private ArrayList<Long> mShapeLat, mShapeLon, datesAL;
@@ -93,18 +93,21 @@ public class DirectMentions extends Fragment {
 
         DmsRecyclerViewLinearLayoutManager = new LinearLayoutManager(mActivity);
 
-        mTime = new ArrayList<>();
-        mUser = new ArrayList<>();
-        mImage = new ArrayList<>();
-        mVideo = new ArrayList<>();
-        mText = new ArrayList<>();
-        mShapeUUID = new ArrayList<>();
-        mUserIsWithinShape = new ArrayList<>();
-        mShapeLat = new ArrayList<>();
-        mShapeLon = new ArrayList<>();
-        mSeenByUser = new ArrayList<>();
+        if (queryUser == null) {
 
-        datesAL = new ArrayList<>();
+            mTime = new ArrayList<>();
+            mUser = new ArrayList<>();
+            mImage = new ArrayList<>();
+            mVideo = new ArrayList<>();
+            mText = new ArrayList<>();
+            mShapeUUID = new ArrayList<>();
+            mUserIsWithinShape = new ArrayList<>();
+            mShapeLat = new ArrayList<>();
+            mShapeLon = new ArrayList<>();
+            mSeenByUser = new ArrayList<>();
+
+            datesAL = new ArrayList<>();
+        }
 
         if (mActivity != null) {
 
@@ -168,7 +171,53 @@ public class DirectMentions extends Fragment {
         // Firebase does not allow ".", so replace them with ",".
         userEmailFirebase = email.replace(".", ",");
 
-        getFirebaseDms(null);
+        // If the string doesn't equal null, check if the latest user is the same as the one in the recyclerView. If string is null, it's the first time loading.
+        if (queryUser != null) {
+
+            Query query = FirebaseDatabase.getInstance().getReference().child("Users").child(userEmailFirebase).child("ReceivedDms").limitToLast(1);
+            query.addListenerForSingleValueEvent(new ValueEventListener() {
+
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+
+                    for (DataSnapshot ds : snapshot.getChildren()) {
+
+                        String user = (String) ds.child("userUUID").getValue();
+                        // If the saved string and the latest user match, then there's no need to re-download everything from Firebase.
+                        if (!user.isEmpty() && !user.equals(queryUser)) {
+
+                            Log.i(TAG, "onStart() -> new DMs since app restarted");
+
+                            mTime = new ArrayList<>();
+                            mUser = new ArrayList<>();
+                            mImage = new ArrayList<>();
+                            mVideo = new ArrayList<>();
+                            mText = new ArrayList<>();
+                            mShapeUUID = new ArrayList<>();
+                            mUserIsWithinShape = new ArrayList<>();
+                            mShapeLat = new ArrayList<>();
+                            mShapeLon = new ArrayList<>();
+                            mSeenByUser = new ArrayList<>();
+
+                            datesAL = new ArrayList<>();
+
+                            getFirebaseDms(null);
+                        } else {
+
+                            Log.i(TAG, "onStart() -> no new DMs");
+                            addQuery();
+                        }
+                    }
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
+                }
+            });
+        } else {
+
+            getFirebaseDms(null);
+        }
 
         DmsRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
 
@@ -230,6 +279,8 @@ public class DirectMentions extends Fragment {
 
                     Long serverDate = (Long) ds.child("date").getValue();
                     String user = (String) ds.child("userUUID").getValue();
+                    // Update queryUser to be used if the activity restarts.
+                    queryUser = user;
                     String imageUrl = (String) ds.child("imageUrl").getValue();
                     String videoUrl = (String) ds.child("videoUrl").getValue();
                     String messageText = (String) ds.child("message").getValue();
@@ -382,6 +433,8 @@ public class DirectMentions extends Fragment {
 
                 Long serverDate = (Long) snapshot.child("date").getValue();
                 String user = (String) snapshot.child("userUUID").getValue();
+                // Update queryUser to be used if the activity restarts.
+                queryUser = user;
                 String imageUrl = (String) snapshot.child("imageUrl").getValue();
                 String videoUrl = (String) snapshot.child("videoUrl").getValue();
                 String messageText = (String) snapshot.child("message").getValue();
