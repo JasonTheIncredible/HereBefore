@@ -127,13 +127,13 @@ public class Chat extends Fragment implements
     private ArrayList<Boolean> mUserIsWithinShape;
     private ArrayList<Long> datesAL;
     private RecyclerView chatRecyclerView, mentionsRecyclerView;
-    private static Integer index = null, top = null, last;
+    private Integer index, top, last;
     private ChildEventListener childEventListener;
     private FloatingActionButton sendButton, mediaButton;
-    private boolean firstLoad, loadingOlderMessages, noMoreMessages = false, fromVideo, needProgressIconIndeterminate, reachedEndOfRecyclerView = false, recyclerViewHasScrolled = false, messageSent = false, fileIsImage, checkPermissionsPicture, newShape;
+    private boolean firstLoad, loadingOlderMessages, noMoreMessages = false, restarted = false, fromVideo, needProgressIconIndeterminate, reachedEndOfRecyclerView = false, messageSent = false, fileIsImage, checkPermissionsPicture, newShape;
     private Boolean userIsWithinShape, clickedOnMention, fromDms;
     private View.OnLayoutChangeListener onLayoutChangeListener;
-    private String shapeUUID, reportedUser, UUIDToHighlight, queryUser;
+    private String shapeUUID, reportedUser, UUIDToHighlight, queryUser, indexUserUUID;
     private double circleLatitude, circleLongitude;
     private PopupMenu mediaButtonMenu;
     private ImageView imageView, videoImageView;
@@ -152,7 +152,7 @@ public class Chat extends Fragment implements
     private AdView bannerAd;
     private Query mQuery;
     private Drawable imageDrawable, videoDrawable;
-    private int latFirebaseValue, lonFirebaseValue;
+    private int latFirebaseValue, lonFirebaseValue, indexOffset = -1, queryCount = 0;
     private Integer previouslyHighlightedPosition;
     private final WordTokenizerConfig tokenizerConfig = new WordTokenizerConfig
             .Builder()
@@ -341,10 +341,20 @@ public class Chat extends Fragment implements
                             allMentions = new ArrayList<>();
                             mUserIsWithinShape = new ArrayList<>();
 
+                            // This is not an ideal, but it will make the recyclerView scroll to the proper position in initChatAdapter.
+                            if (UUIDToHighlight != null) {
+
+                                fromDms = true;
+                            }
+
+                            restarted = true;
                             getFirebaseMessages(null);
                         } else {
 
                             Log.i(TAG, "onStart() -> no new messages");
+                            // Used in initChatAdapter to prevent scrolling to the bottom on recyclerView.
+                            restarted = true;
+
                             addQuery();
                         }
                     }
@@ -371,9 +381,6 @@ public class Chat extends Fragment implements
 
                     if (newState == RecyclerView.SCROLL_STATE_DRAGGING) {
 
-                        // Used to detect if user has just entered the recyclerviewlayout (so layout needs to move up when keyboard appears).
-                        recyclerViewHasScrolled = true;
-
                         reachedEndOfRecyclerView = false;
                     }
 
@@ -398,7 +405,7 @@ public class Chat extends Fragment implements
             // If RecyclerView is scrolled to the bottom, move the layout up when the keyboard appears.
             chatRecyclerView.addOnLayoutChangeListener(onLayoutChangeListener = (v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
 
-                if (reachedEndOfRecyclerView || !recyclerViewHasScrolled) {
+                if (reachedEndOfRecyclerView) {
 
                     if (bottom < oldBottom) {
 
@@ -634,6 +641,8 @@ public class Chat extends Fragment implements
 
         Log.i(TAG, "fillRecyclerView()");
 
+        final Integer[] indexQueryUser = {null};
+
         query.addListenerForSingleValueEvent(new ValueEventListener() {
 
             @Override
@@ -654,19 +663,19 @@ public class Chat extends Fragment implements
                     // If 20 messages exist and the user scrolls to the top, a duplicate of the first item will be added. The following prevents that.
                     if (loadingOlderMessages && snapshot.getChildrenCount() == 1) {
 
-                        for (DataSnapshot ds : snapshot.getChildren()) {
-
-                            if (((Long) ds.child("position").getValue()).intValue() == 0) {
-
-                                progressIconIndeterminate.setVisibility(View.GONE);
-                                return;
-                            }
-                        }
+                        progressIconIndeterminate.setVisibility(View.GONE);
+                        return;
                     }
                 }
 
                 int i = 0;
                 for (DataSnapshot ds : snapshot.getChildren()) {
+
+                    // Not a clean way of doing this, but effective. This prevent duplicates when a user clicks on a DM and the DM is at the top of the page before pagination.
+                    if (datesAL.contains(ds.child("date").getValue())) {
+
+                        break;
+                    }
 
                     // Add dates to this AL for use in pagination.
                     datesAL.add(i, (Long) ds.child("date").getValue());
@@ -674,8 +683,28 @@ public class Chat extends Fragment implements
 
                     Long serverDate = (Long) ds.child("date").getValue();
                     String user = (String) ds.child("userUUID").getValue();
-                    // Update queryUser to be used if the activity restarts.
-                    queryUser = user;
+
+                    // Prevents unnecessarily increasing indexQuery.
+                    if (indexQueryUser[0] != null && mUser.size() > indexQueryUser[0]) {
+
+                        // Used in initChatAdapter to scroll to user's previous position before they put the app in the background and other users added messages to Chat.
+                        if (indexOffset != -1) {
+
+                            indexOffset++;
+                            // Is the following necessary?
+                            if (indexOffset == 20) {
+
+                                indexOffset = 0;
+                            }
+                        }
+                    }
+
+                    if (user.equals(queryUser)) {
+
+                        indexOffset = 0;
+                        indexQueryUser[0] = mUser.size() - 1;
+                    }
+
                     // Used when a user mentions another user with "@".
                     mSuggestions.add(i, user);
                     String imageUrl = (String) ds.child("imageUrl").getValue();
@@ -712,20 +741,36 @@ public class Chat extends Fragment implements
                     }
                 }
 
-                // If after cycling through all entries, if the message needing to be highlighted does not exist yet, get more Firebase values.
-                if (UUIDToHighlight != null && !mUser.contains(UUIDToHighlight)) {
+                // Update queryUser to be used if the activity restarts.
+                queryUser = mUser.get(mUser.size() - 1);
 
-                    getFirebaseMessages(UUIDToHighlight);
-                    return;
+                // Get the position X back from the UUIDToHighlight. If this number is 0, the recyclerView needs to paginate.
+                String stringToScrollTo = null;
+                if (UUIDToHighlight != null) {
+
+                    int scrollPosition = mUser.indexOf(UUIDToHighlight) - 5;
+                    if (scrollPosition < 0 && !noMoreMessages) {
+
+                        getFirebaseMessages(UUIDToHighlight);
+                        return;
+                    } else {
+
+                        scrollPosition = 0;
+                    }
+
+                    stringToScrollTo = mUser.get(scrollPosition);
                 }
 
-                // Read RecyclerView scroll position (for use in initChatAdapter).
-                if (!loadingOlderMessages && chatRecyclerViewLinearLayoutManager != null && chatRecyclerView != null) {
+                // If after cycling through all entries, if the message needing to be highlighted does not exist yet, get more Firebase values.
+                if (UUIDToHighlight != null && stringToScrollTo != null && !mUser.contains(stringToScrollTo)) {
 
-                    index = chatRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
-                    last = chatRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
-                    View v = chatRecyclerView.getChildAt(0);
-                    top = (v == null) ? 0 : (v.getTop() - chatRecyclerView.getPaddingTop());
+                    getFirebaseMessages(stringToScrollTo);
+                    return;
+                } else if (indexUserUUID != null && !mUser.contains(indexUserUUID)) {
+
+                    // Used if user paginates, puts the app in the background, then another user updates the Chat.
+                    getFirebaseMessages(indexUserUUID);
+                    return;
                 }
 
                 // Prevents crash when user toggles between light / dark mode.
@@ -812,6 +857,16 @@ public class Chat extends Fragment implements
 
                 Log.i(TAG, "addQuery()");
 
+                // Read RecyclerView scroll position (for use in initChatAdapter to prevent scrolling after Chat gets updated by another user).
+                if (!firstLoad && chatRecyclerViewLinearLayoutManager != null && chatRecyclerView != null) {
+
+                    index = chatRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
+                    indexUserUUID = mUser.get(index);
+                    last = chatRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
+                    View v = chatRecyclerView.getChildAt(0);
+                    top = (v == null) ? 0 : (v.getTop() - chatRecyclerView.getPaddingTop());
+                }
+
                 // If this is the first time calling this eventListener, prevent double posts (as onStart() already added the last item).
                 if (firstLoad) {
 
@@ -825,6 +880,8 @@ public class Chat extends Fragment implements
                 String user = (String) snapshot.child("userUUID").getValue();
                 // Update queryUser to be used if the activity restarts.
                 queryUser = user;
+                // I'm not sure why, but this need to be subtracted from index to maintain position after user returns from app being in background.
+                queryCount++;
                 // Prevents duplicates when user adds a message to a new shape then switches between light / dark mode.
                 if (mUser.contains(user)) {
 
@@ -857,15 +914,6 @@ public class Chat extends Fragment implements
                 mVideo.add(videoUrl);
                 mText.add(spannableMessageText);
                 mUserIsWithinShape.add(userIsWithinShape);
-
-                // Read RecyclerView scroll position (for use in initChatAdapter).
-                if (chatRecyclerViewLinearLayoutManager != null) {
-
-                    index = chatRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
-                    last = chatRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
-                    View v = chatRecyclerView.getChildAt(0);
-                    top = (v == null) ? 0 : (v.getTop() - chatRecyclerView.getPaddingTop());
-                }
 
                 initChatAdapter();
             }
@@ -994,6 +1042,18 @@ public class Chat extends Fragment implements
     public void onStop() {
 
         Log.i(TAG, "onStop()");
+
+        // Read RecyclerView scroll position (for use in initChatAdapter if user reload the activity).
+        if (chatRecyclerViewLinearLayoutManager != null && chatRecyclerView != null) {
+
+            index = chatRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
+            indexUserUUID = mUser.get(index);
+            last = chatRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
+            View v = chatRecyclerView.getChildAt(0);
+            top = (v == null) ? 0 : (v.getTop() - chatRecyclerView.getPaddingTop());
+        }
+
+        restarted = true;
 
         if (uploadTask != null) {
 
@@ -1143,7 +1203,7 @@ public class Chat extends Fragment implements
         chatRecyclerView.setHasFixedSize(true);
         chatRecyclerView.setLayoutManager(chatRecyclerViewLinearLayoutManager);
 
-        if (UUIDToHighlight != null && !reachedEndOfRecyclerView && ((clickedOnMention != null && clickedOnMention) || fromDms != null && fromDms)) {
+        if (UUIDToHighlight != null && !reachedEndOfRecyclerView && ((clickedOnMention != null && clickedOnMention) || (fromDms != null && fromDms))) {
 
             // Show a couple messages above the position, as this seems to be better visually.
             int scrollPosition = mUser.indexOf(UUIDToHighlight) - 5;
@@ -1154,15 +1214,41 @@ public class Chat extends Fragment implements
             chatRecyclerView.scrollToPosition(scrollPosition);
             clickedOnMention = false;
             fromDms = false;
-        } else if (last == (mUser.size() - 2) || firstLoad || messageSent) {
+            if (index != null && top != null) {
+
+                // Set RecyclerView scroll position to prevent position change when Firebase gets updated and after screen orientation change.
+                if (indexOffset != -1) {
+
+                    chatRecyclerViewLinearLayoutManager.scrollToPositionWithOffset(index - indexOffset - queryCount, top);
+                    queryCount = 0;
+                } else {
+
+                    chatRecyclerViewLinearLayoutManager.scrollToPositionWithOffset(index, top);
+                }
+
+                indexOffset = -1;
+            }
+
+            restarted = false;
+        } else if ((last != null && last == (mUser.size() - 2)) || firstLoad && !restarted || messageSent) {
 
             // Scroll to bottom of recyclerviewlayout after first initialization and after sending a recyclerviewlayout.
             chatRecyclerView.scrollToPosition(mUser.size() - 1);
             messageSent = false;
-        } else {
+        } else if (index != null && top != null) {
 
             // Set RecyclerView scroll position to prevent position change when Firebase gets updated and after screen orientation change.
-            chatRecyclerViewLinearLayoutManager.scrollToPositionWithOffset(index, top);
+            if (indexOffset != -1) {
+
+                chatRecyclerViewLinearLayoutManager.scrollToPositionWithOffset(index - indexOffset - queryCount, top);
+                queryCount = 0;
+            } else {
+
+                chatRecyclerViewLinearLayoutManager.scrollToPositionWithOffset(index, top);
+            }
+
+            indexOffset = -1;
+            restarted = false;
         }
 
         firstLoad = false;
@@ -1469,11 +1555,11 @@ public class Chat extends Fragment implements
 
                     holder.messageTextOutside.setText(mMessageText.get(position));
                     if (!theme) {
-                        holder.messageTextInside.setLinkTextColor(Color.GREEN);
+                        holder.messageTextOutside.setLinkTextColor(Color.GREEN);
                     } else {
-                        holder.messageTextInside.setLinkTextColor(Color.BLUE);
+                        holder.messageTextOutside.setLinkTextColor(Color.BLUE);
                     }
-                    holder.messageUserOutside.setMovementMethod(LinkMovementMethod.getInstance());
+                    holder.messageTextOutside.setMovementMethod(LinkMovementMethod.getInstance());
                     holder.messageTextOutside.setVisibility(View.VISIBLE);
                 }
             }
