@@ -127,13 +127,13 @@ public class Chat extends Fragment implements
     private ArrayList<Boolean> mUserIsWithinShape;
     private ArrayList<Long> datesAL;
     private RecyclerView chatRecyclerView, mentionsRecyclerView;
-    private Integer index, top, last;
+    private Integer index, top, last, datesALSize;
     private ChildEventListener childEventListener;
     private FloatingActionButton sendButton, mediaButton;
-    private boolean firstLoad, loadingOlderMessages, noMoreMessages = false, restarted = false, fromVideo, needProgressIconIndeterminate, reachedEndOfRecyclerView = false, messageSent = false, fileIsImage, checkPermissionsPicture, newShape;
-    private Boolean userIsWithinShape, clickedOnMention, fromDms;
+    private boolean firstLoad, loadingOlderMessages = false, clickedOnMention = false, fromDms = false, noMoreMessages = false, fromVideo, needProgressIconIndeterminate, reachedEndOfRecyclerView = false, messageSent = false, fileIsImage, checkPermissionsPicture, newShape;
+    private Boolean userIsWithinShape;
     private View.OnLayoutChangeListener onLayoutChangeListener;
-    private String shapeUUID, reportedUser, UUIDToHighlight, queryUser, indexUserUUID;
+    private String shapeUUID, reportedUser, UUIDToHighlight;
     private double circleLatitude, circleLongitude;
     private PopupMenu mediaButtonMenu;
     private ImageView imageView, videoImageView;
@@ -152,7 +152,7 @@ public class Chat extends Fragment implements
     private AdView bannerAd;
     private Query mQuery;
     private Drawable imageDrawable, videoDrawable;
-    private int latFirebaseValue, lonFirebaseValue, indexOffset = -1, queryCount = 0;
+    private int latFirebaseValue, lonFirebaseValue;
     private Integer previouslyHighlightedPosition;
     private final WordTokenizerConfig tokenizerConfig = new WordTokenizerConfig
             .Builder()
@@ -227,7 +227,7 @@ public class Chat extends Fragment implements
         chatRecyclerViewLinearLayoutManager = new LinearLayoutManager(mActivity);
         mentionsRecyclerViewLinearLayoutManager = new LinearLayoutManager(mActivity);
 
-        if (queryUser == null) {
+        if (datesALSize == null) {
 
             datesAL = new ArrayList<>();
             emailsAL = new ArrayList<>();
@@ -274,7 +274,6 @@ public class Chat extends Fragment implements
 
         // Set to true to scroll to the bottom of chatRecyclerView. Also prevents duplicate items in addQuery.
         firstLoad = true;
-        loadingOlderMessages = false;
         // Once older messages stay loaded after restart, noMoreMessages = false here can go away.
         // Need to set noMoreMessages to false, or else user will not be able to scroll up upon restart.
         noMoreMessages = false;
@@ -312,8 +311,8 @@ public class Chat extends Fragment implements
             mentionsRecyclerView.setVisibility(View.GONE);
         }
 
-        // If the string doesn't equal null, check if the latest user is the same as the one in the recyclerView. If string is null, it's the first time loading.
-        if (queryUser != null) {
+        // If the value isn't null, check if the latest date is the same as the one in the recyclerView. If the value is null, it's the first time loading.
+        if (datesALSize != null) {
 
             Query query = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID).limitToLast(1);
             query.addListenerForSingleValueEvent(new ValueEventListener() {
@@ -321,39 +320,26 @@ public class Chat extends Fragment implements
                 @Override
                 public void onDataChange(@NonNull DataSnapshot snapshot) {
 
+                    // Edge case where user reloading into a chat that no longer exists.
+                    if (snapshot.getChildrenCount() == 0 && !newShape) {
+
+                        progressIconIndeterminate.setVisibility(View.GONE);
+                        mInput.setFocusable(false);
+                        toastMessageLong("Shape was deleted. Please return to map.");
+                    }
+
                     for (DataSnapshot ds : snapshot.getChildren()) {
 
-                        String user = (String) ds.child("userUUID").getValue();
-                        // If the saved string and the latest user match, then there's no need to re-download everything from Firebase.
-                        if (!user.isEmpty() && !user.equals(queryUser)) {
+                        Long date = (Long) ds.child("date").getValue();
+                        // If the saved date and the latest date match, then there's no need to re-download everything from Firebase.
+                        if (date != null && datesAL != null && !date.equals(datesAL.get(datesAL.size() - 1))) {
 
                             Log.i(TAG, "onStart() -> new messages since app restarted");
 
-                            datesAL = new ArrayList<>();
-                            emailsAL = new ArrayList<>();
-
-                            mTime = new ArrayList<>();
-                            mUser = new ArrayList<>();
-                            mImage = new ArrayList<>();
-                            mVideo = new ArrayList<>();
-                            mText = new ArrayList<>();
-                            mSuggestions = new ArrayList<>();
-                            allMentions = new ArrayList<>();
-                            mUserIsWithinShape = new ArrayList<>();
-
-                            // This is not an ideal, but it will make the recyclerView scroll to the proper position in initChatAdapter.
-                            if (UUIDToHighlight != null) {
-
-                                fromDms = true;
-                            }
-
-                            restarted = true;
                             getFirebaseMessages(null);
                         } else {
 
                             Log.i(TAG, "onStart() -> no new messages");
-                            // Used in initChatAdapter to prevent scrolling to the bottom on recyclerView.
-                            restarted = true;
 
                             addQuery();
                         }
@@ -484,7 +470,7 @@ public class Chat extends Fragment implements
                     firebaseUpload();
                 } else {
 
-                    // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter()).
+                    // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter).
                     messageSent = true;
 
                     if (newShape) {
@@ -603,13 +589,18 @@ public class Chat extends Fragment implements
         });
     }
 
-    // positionOfMention is used when user clicks on a mention.
     private void getFirebaseMessages(String referenceUserUUID) {
 
         Log.i(TAG, "getFirebaseMessages()");
 
         Query query;
-        if (referenceUserUUID == null) {
+        if (!fromDms && !clickedOnMention && datesALSize != null) {
+
+            query = FirebaseDatabase.getInstance().getReference()
+                    .child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID)
+                    .orderByChild("date")
+                    .startAt(datesAL.get(datesALSize));
+        } else if (referenceUserUUID == null) {
 
             query = FirebaseDatabase.getInstance().getReference()
                     .child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID)
@@ -619,6 +610,7 @@ public class Chat extends Fragment implements
             // If pagination needs to happen multiple times, mUser will not contain the referenceUserUUID.
             if (!mUser.contains(referenceUserUUID)) {
 
+                // Use example: clicking on a DM and pagination occurs multiple times.
                 query = FirebaseDatabase.getInstance().getReference()
                         .child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID)
                         .orderByChild("date")
@@ -626,6 +618,7 @@ public class Chat extends Fragment implements
                         .limitToLast(20);
             } else {
 
+                // Use example: manually scrolling to the top and loading older messages.
                 query = FirebaseDatabase.getInstance().getReference()
                         .child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID)
                         .orderByChild("date")
@@ -641,8 +634,6 @@ public class Chat extends Fragment implements
 
         Log.i(TAG, "fillRecyclerView()");
 
-        final Integer[] indexQueryUser = {null};
-
         query.addListenerForSingleValueEvent(new ValueEventListener() {
 
             @Override
@@ -656,7 +647,7 @@ public class Chat extends Fragment implements
                     toastMessageLong("Shape was deleted. Please return to map.");
                 }
 
-                if (snapshot.getChildrenCount() < 20) {
+                if (datesALSize == null && snapshot.getChildrenCount() < 20) {
 
                     noMoreMessages = true;
 
@@ -668,13 +659,21 @@ public class Chat extends Fragment implements
                     }
                 }
 
-                int i = 0;
+                int i;
+                if (!fromDms && !loadingOlderMessages && datesAL != null) {
+
+                    i = datesAL.size();
+                } else {
+
+                    i = 0;
+                }
+
                 for (DataSnapshot ds : snapshot.getChildren()) {
 
-                    // Not a clean way of doing this, but effective. This prevent duplicates when a user clicks on a DM and the DM is at the top of the page before pagination.
-                    if (datesAL.contains(ds.child("date").getValue())) {
+                    // Also prevents duplicates during getFirebaseMessages.
+                    if (mUser.contains(ds.child("userUUID").getValue())) {
 
-                        break;
+                        continue;
                     }
 
                     // Add dates to this AL for use in pagination.
@@ -683,27 +682,6 @@ public class Chat extends Fragment implements
 
                     Long serverDate = (Long) ds.child("date").getValue();
                     String user = (String) ds.child("userUUID").getValue();
-
-                    // Prevents unnecessarily increasing indexQuery.
-                    if (indexQueryUser[0] != null && mUser.size() > indexQueryUser[0]) {
-
-                        // Used in initChatAdapter to scroll to user's previous position before they put the app in the background and other users added messages to Chat.
-                        if (indexOffset != -1) {
-
-                            indexOffset++;
-                            // Is the following necessary?
-                            if (indexOffset == 20) {
-
-                                indexOffset = 0;
-                            }
-                        }
-                    }
-
-                    if (user.equals(queryUser)) {
-
-                        indexOffset = 0;
-                        indexQueryUser[0] = mUser.size() - 1;
-                    }
 
                     // Used when a user mentions another user with "@".
                     mSuggestions.add(i, user);
@@ -741,10 +719,7 @@ public class Chat extends Fragment implements
                     }
                 }
 
-                // Update queryUser to be used if the activity restarts.
-                queryUser = mUser.get(mUser.size() - 1);
-
-                // Get the position X back from the UUIDToHighlight. If this number is 0, the recyclerView needs to paginate.
+                // Get the X'th previous message from UUIDToHighlight. If this number is 0, the recyclerView needs to paginate.
                 String stringToScrollTo = null;
                 if (UUIDToHighlight != null) {
 
@@ -764,12 +739,8 @@ public class Chat extends Fragment implements
                 // If after cycling through all entries, if the message needing to be highlighted does not exist yet, get more Firebase values.
                 if (UUIDToHighlight != null && stringToScrollTo != null && !mUser.contains(stringToScrollTo)) {
 
+                    loadingOlderMessages = true;
                     getFirebaseMessages(stringToScrollTo);
-                    return;
-                } else if (indexUserUUID != null && !mUser.contains(indexUserUUID)) {
-
-                    // Used if user paginates, puts the app in the background, then another user updates the Chat.
-                    getFirebaseMessages(indexUserUUID);
                     return;
                 }
 
@@ -783,47 +754,10 @@ public class Chat extends Fragment implements
                     }
                 }
 
-                if (UUIDToHighlight != null && mUser.contains(UUIDToHighlight) && !firstLoad && ((clickedOnMention != null && clickedOnMention) || (fromDms != null && fromDms))) {
-
-                    // Show a couple messages above the position, as this seems to be better visually.
-                    int scrollPosition = mUser.indexOf(UUIDToHighlight) - 5;
-                    if (scrollPosition < 0) {
-
-                        scrollPosition = 0;
-                    }
-
-                    if (mUser.contains(UUIDToHighlight)) {
-
-                        if (chatRecyclerView != null) {
-
-                            if (chatRecyclerView.getAdapter() != null) {
-
-                                // No need to paginate.
-                                int finalScrollPosition = scrollPosition;
-                                chatRecyclerView.postDelayed(() -> chatRecyclerView.smoothScrollToPosition(
-
-                                        finalScrollPosition), 100);
-
-                                if (previouslyHighlightedPosition != null) {
-
-                                    chatRecyclerView.getAdapter().notifyItemChanged(previouslyHighlightedPosition);
-                                }
-
-                                chatRecyclerView.getAdapter().notifyItemChanged(mUser.indexOf(UUIDToHighlight));
-                            }
-                        }
-                    }
-
-                    clickedOnMention = false;
-                    fromDms = false;
-                }
-
                 if (!loadingOlderMessages) {
 
                     addQuery();
                 }
-
-                loadingOlderMessages = false;
             }
 
             @Override
@@ -861,7 +795,6 @@ public class Chat extends Fragment implements
                 if (!firstLoad && chatRecyclerViewLinearLayoutManager != null && chatRecyclerView != null) {
 
                     index = chatRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
-                    indexUserUUID = mUser.get(index);
                     last = chatRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
                     View v = chatRecyclerView.getChildAt(0);
                     top = (v == null) ? 0 : (v.getTop() - chatRecyclerView.getPaddingTop());
@@ -878,10 +811,6 @@ public class Chat extends Fragment implements
                 datesAL.add((Long) snapshot.child("date").getValue());
 
                 String user = (String) snapshot.child("userUUID").getValue();
-                // Update queryUser to be used if the activity restarts.
-                queryUser = user;
-                // I'm not sure why, but this need to be subtracted from index to maintain position after user returns from app being in background.
-                queryCount++;
                 // Prevents duplicates when user adds a message to a new shape then switches between light / dark mode.
                 if (mUser.contains(user)) {
 
@@ -1047,13 +976,12 @@ public class Chat extends Fragment implements
         if (chatRecyclerViewLinearLayoutManager != null && chatRecyclerView != null) {
 
             index = chatRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
-            indexUserUUID = mUser.get(index);
             last = chatRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
             View v = chatRecyclerView.getChildAt(0);
             top = (v == null) ? 0 : (v.getTop() - chatRecyclerView.getPaddingTop());
         }
 
-        restarted = true;
+        datesALSize = datesAL.size() - 1;
 
         if (uploadTask != null) {
 
@@ -1203,7 +1131,7 @@ public class Chat extends Fragment implements
         chatRecyclerView.setHasFixedSize(true);
         chatRecyclerView.setLayoutManager(chatRecyclerViewLinearLayoutManager);
 
-        if (UUIDToHighlight != null && !reachedEndOfRecyclerView && ((clickedOnMention != null && clickedOnMention) || (fromDms != null && fromDms))) {
+        if (UUIDToHighlight != null && !reachedEndOfRecyclerView && (clickedOnMention || fromDms)) {
 
             // Show a couple messages above the position, as this seems to be better visually.
             int scrollPosition = mUser.indexOf(UUIDToHighlight) - 5;
@@ -1217,41 +1145,23 @@ public class Chat extends Fragment implements
             if (index != null && top != null) {
 
                 // Set RecyclerView scroll position to prevent position change when Firebase gets updated and after screen orientation change.
-                if (indexOffset != -1) {
-
-                    chatRecyclerViewLinearLayoutManager.scrollToPositionWithOffset(index - indexOffset - queryCount, top);
-                    queryCount = 0;
-                } else {
-
-                    chatRecyclerViewLinearLayoutManager.scrollToPositionWithOffset(index, top);
-                }
-
-                indexOffset = -1;
+                chatRecyclerViewLinearLayoutManager.scrollToPositionWithOffset(index, top);
             }
-
-            restarted = false;
-        } else if ((last != null && last == (mUser.size() - 2)) || firstLoad && !restarted || messageSent) {
+        } else if ((last != null && last == (mUser.size() - 2)) || firstLoad && datesALSize == null || messageSent || reachedEndOfRecyclerView) {
 
             // Scroll to bottom of recyclerviewlayout after first initialization and after sending a recyclerviewlayout.
             chatRecyclerView.scrollToPosition(mUser.size() - 1);
             messageSent = false;
+            reachedEndOfRecyclerView = true;
         } else if (index != null && top != null) {
 
-            // Set RecyclerView scroll position to prevent position change when Firebase gets updated and after screen orientation change.
-            if (indexOffset != -1) {
-
-                chatRecyclerViewLinearLayoutManager.scrollToPositionWithOffset(index - indexOffset - queryCount, top);
-                queryCount = 0;
-            } else {
-
-                chatRecyclerViewLinearLayoutManager.scrollToPositionWithOffset(index, top);
-            }
-
-            indexOffset = -1;
-            restarted = false;
+            chatRecyclerViewLinearLayoutManager.scrollToPositionWithOffset(index, top);
         }
 
         firstLoad = false;
+        loadingOlderMessages = false;
+        // Need to make datesALSize null so user can load older messages after restarting the app.
+        datesALSize = null;
 
         // After the initial load, make the progressIconIndeterminate invisible.
         if (progressIconIndeterminate != null && !needProgressIconIndeterminate) {

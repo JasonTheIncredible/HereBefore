@@ -93,8 +93,8 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private final List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // Position is not maintained if so many messages were added while app is in background that pagination occurred (also, look for "is the following necessary?" in Chat).
     // Maintain position in DMs after a restart.
+    // After clicking on a UUID, keep it expanded after updating recyclerView.
     // Find a way to not clear and reload map every time user returns from clicking a shape - check if latest circleUUID is the same as the last saved UUID. Same with DM notification.
     // Create timer that kicks people out of a new Chat if they haven't posted within an amount of time (or take the photo/video before entering Chat), or keep updating their location. Or have them take media before entering chat and have the media being sent to Firebase create the chat.
     // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.
