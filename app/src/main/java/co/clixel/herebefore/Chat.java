@@ -274,9 +274,6 @@ public class Chat extends Fragment implements
 
         // Set to true to scroll to the bottom of chatRecyclerView. Also prevents duplicate items in addQuery.
         firstLoad = true;
-        // Once older messages stay loaded after restart, noMoreMessages = false here can go away.
-        // Need to set noMoreMessages to false, or else user will not be able to scroll up upon restart.
-        noMoreMessages = false;
 
         // Clear text and prevent keyboard from opening.
         if (mInput != null) {
@@ -516,7 +513,6 @@ public class Chat extends Fragment implements
                                     dmInformation.setLon(lonFirebaseValue);
                                     dmInformation.setMessage(input);
                                     dmInformation.setSeenByUser(false);
-                                    dmInformation.setSize(1.0);
                                     dmInformation.setShapeUUID(shapeUUID);
                                     dmInformation.setUserIsWithinShape(userIsWithinShape);
                                     dmInformation.setUserUUID(userUUID);
@@ -670,7 +666,7 @@ public class Chat extends Fragment implements
 
                 for (DataSnapshot ds : snapshot.getChildren()) {
 
-                    // Also prevents duplicates during getFirebaseMessages.
+                    // Prevents duplicates during getFirebaseMessages.
                     if (mUser.contains(ds.child("userUUID").getValue())) {
 
                         continue;
@@ -1152,7 +1148,6 @@ public class Chat extends Fragment implements
             // Scroll to bottom of recyclerviewlayout after first initialization and after sending a recyclerviewlayout.
             chatRecyclerView.scrollToPosition(mUser.size() - 1);
             messageSent = false;
-            reachedEndOfRecyclerView = true;
         } else if (index != null && top != null) {
 
             chatRecyclerViewLinearLayoutManager.scrollToPositionWithOffset(index, top);
@@ -2603,7 +2598,6 @@ public class Chat extends Fragment implements
                                             dmInformation.setMessage(input);
                                         }
                                         dmInformation.setSeenByUser(false);
-                                        dmInformation.setSize(1.0);
                                         dmInformation.setShapeUUID(shapeUUID);
                                         dmInformation.setUserIsWithinShape(userIsWithinShape);
                                         dmInformation.setUserUUID(userUUID);
@@ -2749,7 +2743,6 @@ public class Chat extends Fragment implements
                                             dmInformation.setMessage(input);
                                         }
                                         dmInformation.setSeenByUser(false);
-                                        dmInformation.setSize(1.0);
                                         dmInformation.setShapeUUID(shapeUUID);
                                         dmInformation.setUserIsWithinShape(userIsWithinShape);
                                         dmInformation.setUserUUID(userUUID);

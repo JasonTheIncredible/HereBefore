@@ -7,7 +7,6 @@ public class DmInformation {
     public String userUUID, message, shapeUUID, imageUrl, videoUrl;
     public Object date;
     public Boolean userIsWithinShape, seenByUser;
-    public double size;
     public double lat, lon;
 
     @Keep
@@ -40,10 +39,6 @@ public class DmInformation {
 
     public void setShapeUUID(String shapeUUID) {
         this.shapeUUID = shapeUUID;
-    }
-
-    public void setSize(double size) {
-        this.size = size;
     }
 
     public void setUserIsWithinShape(Boolean userIsWithinShape) {

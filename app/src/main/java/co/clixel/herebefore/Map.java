@@ -93,9 +93,7 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
     private final List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
 
-    // Maintain position in DMs after a restart.
-    // After clicking on a UUID, keep it expanded after updating recyclerView.
-    // Find a way to not clear and reload map every time user returns from clicking a shape - check if latest circleUUID is the same as the last saved UUID. Same with DM notification.
+    // Don't reload circles in Map every time user returns from clicking a shape. Same with DM notification.
     // Create timer that kicks people out of a new Chat if they haven't posted within an amount of time (or take the photo/video before entering Chat), or keep updating their location. Or have them take media before entering chat and have the media being sent to Firebase create the chat.
     // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.
     // Chat very laggy on emulator - caused by multiple clickableSpans?
@@ -105,6 +103,8 @@ public class Map extends FragmentActivity implements
     // After clicking on a DM and going to that Chat, allow user to find that same shape on the map.
     // Create a variable with the point's radius and use that instead of "1" to future-proof changes. Also, make "creating a point" more accurate to the user's location.
     // Deal with deprecated methods.
+    // After clicking on a UUID, keep it expanded after updating recyclerView.
+    // Create a "New messages" toast if user is scroll up (or maybe just if user is scrolled up and restarts?)
     // Allow users to get "likes".
     // Only be able to see things you've visited - Kenny.
     // Develop an Apple version.

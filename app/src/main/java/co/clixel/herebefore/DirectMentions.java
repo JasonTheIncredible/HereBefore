@@ -50,18 +50,19 @@ import static java.text.DateFormat.getDateTimeInstance;
 public class DirectMentions extends Fragment {
 
     private static final String TAG = "DirectMentions";
-    private String userEmailFirebase, queryUser;
+    private String userEmailFirebase;
     private ArrayList<String> mTime, mUser, mImage, mVideo, mText, mShapeUUID;
     private ArrayList<Boolean> mUserIsWithinShape, mSeenByUser;
     private ArrayList<Long> mShapeLat, mShapeLon, datesAL;
-    private RecyclerView DmsRecyclerView;
+    private RecyclerView dmsRecyclerView;
     private static int index = -1, top = -1, last;
     private ChildEventListener childEventListener;
-    private LinearLayoutManager DmsRecyclerViewLinearLayoutManager;
-    private boolean firstLoad, loadingOlderMessages, userIsWithinShape, noMoreMessages = false;
+    private LinearLayoutManager dmsRecyclerViewLinearLayoutManager;
+    private boolean firstLoad, loadingOlderMessages, userIsWithinShape, noMoreMessages = false, reachedEndOfRecyclerView = false;
     private int latUser, lonUser;
     private View loadingIcon;
     private Toast longToast;
+    private Integer datesALSize;
     private Double userLatitude, userLongitude;
     private Context mContext;
     private Activity mActivity;
@@ -87,13 +88,13 @@ public class DirectMentions extends Fragment {
         Log.i(TAG, "onCreateView()");
         rootView = inflater.inflate(R.layout.directmentions, container, false);
 
-        DmsRecyclerView = rootView.findViewById(R.id.mentionsList);
+        dmsRecyclerView = rootView.findViewById(R.id.mentionsList);
         loadingIcon = rootView.findViewById(R.id.loadingIcon);
         noDmsTextView = rootView.findViewById(R.id.noDmsTextView);
 
-        DmsRecyclerViewLinearLayoutManager = new LinearLayoutManager(mActivity);
+        dmsRecyclerViewLinearLayoutManager = new LinearLayoutManager(mActivity);
 
-        if (queryUser == null) {
+        if (datesALSize == null) {
 
             mTime = new ArrayList<>();
             mUser = new ArrayList<>();
@@ -172,7 +173,7 @@ public class DirectMentions extends Fragment {
         userEmailFirebase = email.replace(".", ",");
 
         // If the string doesn't equal null, check if the latest user is the same as the one in the recyclerView. If string is null, it's the first time loading.
-        if (queryUser != null) {
+        if (datesALSize != null) {
 
             Query query = FirebaseDatabase.getInstance().getReference().child("Users").child(userEmailFirebase).child("ReceivedDms").limitToLast(1);
             query.addListenerForSingleValueEvent(new ValueEventListener() {
@@ -182,29 +183,17 @@ public class DirectMentions extends Fragment {
 
                     for (DataSnapshot ds : snapshot.getChildren()) {
 
-                        String user = (String) ds.child("userUUID").getValue();
-                        // If the saved string and the latest user match, then there's no need to re-download everything from Firebase.
-                        if (!user.isEmpty() && !user.equals(queryUser)) {
+                        Long date = (Long) ds.child("date").getValue();
+                        // If the saved date and the latest date match, then there's no need to re-download everything from Firebase.
+                        if (date != null && datesAL != null && !date.equals(datesAL.get(datesAL.size() - 1))) {
 
                             Log.i(TAG, "onStart() -> new DMs since app restarted");
-
-                            mTime = new ArrayList<>();
-                            mUser = new ArrayList<>();
-                            mImage = new ArrayList<>();
-                            mVideo = new ArrayList<>();
-                            mText = new ArrayList<>();
-                            mShapeUUID = new ArrayList<>();
-                            mUserIsWithinShape = new ArrayList<>();
-                            mShapeLat = new ArrayList<>();
-                            mShapeLon = new ArrayList<>();
-                            mSeenByUser = new ArrayList<>();
-
-                            datesAL = new ArrayList<>();
 
                             getFirebaseDms(null);
                         } else {
 
                             Log.i(TAG, "onStart() -> no new DMs");
+
                             addQuery();
                         }
                     }
@@ -219,17 +208,22 @@ public class DirectMentions extends Fragment {
             getFirebaseDms(null);
         }
 
-        DmsRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+        dmsRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
 
             @Override
             public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
 
                 super.onScrollStateChanged(recyclerView, newState);
 
+                if (newState == RecyclerView.SCROLL_STATE_DRAGGING) {
+
+                    reachedEndOfRecyclerView = false;
+                }
+
                 if (newState == RecyclerView.SCROLL_STATE_IDLE) {
 
                     // Get the top visible position. If it is (almost) the last loaded item, load more.
-                    int firstCompletelyVisibleItemPosition = DmsRecyclerViewLinearLayoutManager.findFirstCompletelyVisibleItemPosition();
+                    int firstCompletelyVisibleItemPosition = dmsRecyclerViewLinearLayoutManager.findFirstCompletelyVisibleItemPosition();
 
                     if (firstCompletelyVisibleItemPosition == 0 && !noMoreMessages) {
 
@@ -237,6 +231,9 @@ public class DirectMentions extends Fragment {
                         loadingOlderMessages = true;
                         getFirebaseDms(datesAL.get(0));
                     }
+
+                    // If RecyclerView can't be scrolled down, reachedEndOfRecyclerView = true.
+                    reachedEndOfRecyclerView = !recyclerView.canScrollVertically(1);
                 }
             }
         });
@@ -246,41 +243,65 @@ public class DirectMentions extends Fragment {
 
         Log.i(TAG, "getFirebaseDms()");
 
-        Query query0;
+        Query query;
+        if (datesALSize != null) {
 
-        if (nodeID == null) {
+            query = FirebaseDatabase.getInstance().getReference()
+                    .child("Users").child(userEmailFirebase).child("ReceivedDms")
+                    .orderByChild("date")
+                    .startAt(datesAL.get(datesALSize));
+        } else if (nodeID == null) {
 
-            query0 = FirebaseDatabase.getInstance().getReference()
+            query = FirebaseDatabase.getInstance().getReference()
                     .child("Users").child(userEmailFirebase).child("ReceivedDms")
                     .limitToLast(20);
         } else {
 
-            query0 = FirebaseDatabase.getInstance().getReference()
+            query = FirebaseDatabase.getInstance().getReference()
                     .child("Users").child(userEmailFirebase).child("ReceivedDms")
                     .orderByChild("date")
                     .endAt(nodeID)
                     .limitToLast(20);
         }
 
-        query0.addListenerForSingleValueEvent(new ValueEventListener() {
+        fillRecyclerView(query);
+    }
+
+    private void fillRecyclerView(Query query) {
+
+        Log.i(TAG, "fillRecyclerView()");
+
+        query.addListenerForSingleValueEvent(new ValueEventListener() {
 
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
 
-                if (snapshot.getChildrenCount() < 20 && loadingOlderMessages) {
+                if (datesALSize == null && snapshot.getChildrenCount() < 20) {
 
                     noMoreMessages = true;
                 }
 
-                int i = 0;
+                int i;
+                if (!loadingOlderMessages && datesAL != null) {
+
+                    i = datesAL.size();
+                } else {
+
+                    i = 0;
+                }
+
                 for (DataSnapshot ds : snapshot.getChildren()) {
+
+                    // Prevents duplicates during getFirebaseDMs.
+                    if (mUser.contains(ds.child("userUUID").getValue())) {
+
+                        continue;
+                    }
 
                     datesAL.add(i, (Long) ds.child("date").getValue());
 
                     Long serverDate = (Long) ds.child("date").getValue();
                     String user = (String) ds.child("userUUID").getValue();
-                    // Update queryUser to be used if the activity restarts.
-                    queryUser = user;
                     String imageUrl = (String) ds.child("imageUrl").getValue();
                     String videoUrl = (String) ds.child("videoUrl").getValue();
                     String messageText = (String) ds.child("message").getValue();
@@ -356,21 +377,12 @@ public class DirectMentions extends Fragment {
                     }
                 }
 
-                // Read RecyclerView scroll position (for use in initDirectMentionsAdapter())
-                if (DmsRecyclerViewLinearLayoutManager != null) {
-
-                    index = DmsRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
-                    last = DmsRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
-                    View v = DmsRecyclerView.getChildAt(0);
-                    top = (v == null) ? 0 : (v.getTop() - DmsRecyclerView.getPaddingTop());
-                }
-
                 // Prevents crash when user toggles between light / dark mode.
-                if (DmsRecyclerView != null) {
+                if (dmsRecyclerView != null) {
 
-                    if (DmsRecyclerView.getAdapter() != null && loadingOlderMessages) {
+                    if (dmsRecyclerView.getAdapter() != null && loadingOlderMessages) {
 
-                        DmsRecyclerView.getAdapter().notifyItemRangeInserted(0, (int) snapshot.getChildrenCount() - 1);
+                        dmsRecyclerView.getAdapter().notifyItemRangeInserted(0, (int) snapshot.getChildrenCount() - 1);
                         loadingIcon.setVisibility(View.GONE);
                     }
                 }
@@ -379,8 +391,6 @@ public class DirectMentions extends Fragment {
 
                     addQuery();
                 }
-
-                loadingOlderMessages = false;
             }
 
             @Override
@@ -422,19 +432,19 @@ public class DirectMentions extends Fragment {
                     return;
                 }
 
-                // Read RecyclerView scroll position (for use in initDirectMentionsAdapter()).
-                if (DmsRecyclerViewLinearLayoutManager != null) {
+                // Read RecyclerView scroll position (for use in initChatAdapter to prevent scrolling after recyclerView gets updated by another user).
+                if (!firstLoad && dmsRecyclerViewLinearLayoutManager != null && dmsRecyclerView != null) {
 
-                    index = DmsRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
-                    last = DmsRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
-                    View v = DmsRecyclerView.getChildAt(0);
-                    top = (v == null) ? 0 : (v.getTop() - DmsRecyclerView.getPaddingTop());
+                    index = dmsRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
+                    last = dmsRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
+                    View v = dmsRecyclerView.getChildAt(0);
+                    top = (v == null) ? 0 : (v.getTop() - dmsRecyclerView.getPaddingTop());
                 }
+
+                datesAL.add((Long) snapshot.child("date").getValue());
 
                 Long serverDate = (Long) snapshot.child("date").getValue();
                 String user = (String) snapshot.child("userUUID").getValue();
-                // Update queryUser to be used if the activity restarts.
-                queryUser = user;
                 String imageUrl = (String) snapshot.child("imageUrl").getValue();
                 String videoUrl = (String) snapshot.child("videoUrl").getValue();
                 String messageText = (String) snapshot.child("message").getValue();
@@ -533,25 +543,30 @@ public class DirectMentions extends Fragment {
         Log.i(TAG, "initDirectMentionsAdapter()");
 
         // Prevents crash when user toggles between light / dark mode.
-        if (DmsRecyclerView == null) {
+        if (dmsRecyclerView == null) {
 
             return;
         }
 
         DirectMentionsAdapter adapter = new DirectMentionsAdapter(mContext, mTime, mUser, mImage, mVideo, mText, mShapeUUID, mUserIsWithinShape, mShapeLat, mShapeLon, mSeenByUser);
-        DmsRecyclerView.setAdapter(adapter);
-        DmsRecyclerView.setHasFixedSize(true);
-        DmsRecyclerView.setLayoutManager(DmsRecyclerViewLinearLayoutManager);
+        dmsRecyclerView.setAdapter(adapter);
+        dmsRecyclerView.setHasFixedSize(true);
+        dmsRecyclerView.setLayoutManager(dmsRecyclerViewLinearLayoutManager);
 
-        if (last == (mTime.size() - 2) || firstLoad) {
+        if (last == (mTime.size() - 2) || firstLoad && datesALSize == null || reachedEndOfRecyclerView) {
 
             // Scroll to bottom of recyclerviewlayout after first initialization and after sending a recyclerviewlayout.
-            DmsRecyclerView.scrollToPosition(mTime.size() - 1);
+            dmsRecyclerView.scrollToPosition(mTime.size() - 1);
         } else {
 
             // Set RecyclerView scroll position to prevent position change when Firebase gets updated and after screen orientation change.
-            DmsRecyclerViewLinearLayoutManager.scrollToPositionWithOffset(index, top);
+            dmsRecyclerViewLinearLayoutManager.scrollToPositionWithOffset(index, top);
         }
+
+        firstLoad = false;
+        loadingOlderMessages = false;
+        // Need to make datesALSize null so user can load older messages after restarting the app.
+        datesALSize = null;
 
         // After the initial load, make the loadingIcon invisible.
         if (loadingIcon != null) {
@@ -566,8 +581,6 @@ public class DirectMentions extends Fragment {
 
             noDmsTextView.setVisibility(View.GONE);
         }
-
-        firstLoad = false;
     }
 
     @Override
@@ -575,15 +588,26 @@ public class DirectMentions extends Fragment {
 
         Log.i(TAG, "onStop()");
 
+        // Read RecyclerView scroll position (for use in initChatAdapter if user reload the activity).
+        if (dmsRecyclerViewLinearLayoutManager != null && dmsRecyclerView != null) {
+
+            index = dmsRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
+            last = dmsRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
+            View v = dmsRecyclerView.getChildAt(0);
+            top = (v == null) ? 0 : (v.getTop() - dmsRecyclerView.getPaddingTop());
+        }
+
+        datesALSize = datesAL.size() - 1;
+
         if (query != null) {
 
             query.removeEventListener(childEventListener);
         }
 
-        if (DmsRecyclerView != null) {
+        if (dmsRecyclerView != null) {
 
-            DmsRecyclerView.clearOnScrollListeners();
-            DmsRecyclerView.setAdapter(null);
+            dmsRecyclerView.clearOnScrollListeners();
+            dmsRecyclerView.setAdapter(null);
         }
 
         cancelToasts();
@@ -596,9 +620,9 @@ public class DirectMentions extends Fragment {
 
         Log.i(TAG, "onDestroyView()");
 
-        if (DmsRecyclerView != null) {
+        if (dmsRecyclerView != null) {
 
-            DmsRecyclerView = null;
+            dmsRecyclerView = null;
         }
 
         if (loadingIcon != null) {
@@ -611,9 +635,9 @@ public class DirectMentions extends Fragment {
             noDmsTextView = null;
         }
 
-        if (DmsRecyclerViewLinearLayoutManager != null) {
+        if (dmsRecyclerViewLinearLayoutManager != null) {
 
-            DmsRecyclerViewLinearLayoutManager = null;
+            dmsRecyclerViewLinearLayoutManager = null;
         }
 
         if (rootView != null) {
@@ -648,6 +672,7 @@ public class DirectMentions extends Fragment {
         private final ArrayList<String> mMessageTime, mMessageUser, mMessageImage, mMessageImageVideo, mMessageText, mShapeUUID;
         private final ArrayList<Boolean> mUserIsWithinShape, mSeenByUser;
         private final ArrayList<Long> mShapeLat, mShapeLon;
+        // theme == true is light mode.
         private boolean theme;
 
         class ViewHolder extends RecyclerView.ViewHolder {
@@ -886,6 +911,15 @@ public class DirectMentions extends Fragment {
             // Set the left side if the user sent the message from inside the shape.
             if (mUserIsWithinShape.get(position)) {
 
+                // Prevent overlapping while paginating.
+                holder.messageTimeOutside.setVisibility(View.GONE);
+                holder.messageUserOutside.setVisibility(View.GONE);
+                holder.messageImageOutside.setVisibility(View.GONE);
+                holder.messageImageVideoOutside.setVisibility(View.GONE);
+                holder.messageTextOutside.setVisibility(View.GONE);
+                holder.messageTimeInside.setVisibility(View.VISIBLE);
+                holder.messageUserInside.setVisibility(View.VISIBLE);
+
                 holder.messageTimeInside.setText(mMessageTime.get(position));
 
                 holder.messageUserInside.setText(mMessageUser.get(position));
@@ -937,6 +971,15 @@ public class DirectMentions extends Fragment {
                     holder.messageTextInside.setVisibility(View.VISIBLE);
                 }
             } else {
+
+                // Prevent overlapping while paginating.
+                holder.messageTimeInside.setVisibility(View.GONE);
+                holder.messageUserInside.setVisibility(View.GONE);
+                holder.messageImageInside.setVisibility(View.GONE);
+                holder.messageImageVideoInside.setVisibility(View.GONE);
+                holder.messageTextInside.setVisibility(View.GONE);
+                holder.messageTimeOutside.setVisibility(View.VISIBLE);
+                holder.messageUserOutside.setVisibility(View.VISIBLE);
 
                 // User sent the message from outside the shape. Setup the right side.
                 holder.messageTimeOutside.setText(mMessageTime.get(position));
