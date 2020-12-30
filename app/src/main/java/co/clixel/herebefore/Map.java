@@ -657,19 +657,9 @@ public class Map extends FragmentActivity implements
             queryNearLeft.removeEventListener(childEventListenerNearLeft);
         }
 
-        if (childEventListenerNearLeft != null) {
-
-            childEventListenerNearLeft = null;
-        }
-
         if (queryFarLeft != null) {
 
             queryFarLeft.removeEventListener(childEventListenerFarLeft);
-        }
-
-        if (childEventListenerFarLeft != null) {
-
-            childEventListenerFarLeft = null;
         }
 
         if (queryNearRight != null) {
@@ -677,19 +667,9 @@ public class Map extends FragmentActivity implements
             queryNearRight.removeEventListener(childEventListenerNearRight);
         }
 
-        if (childEventListenerNearRight != null) {
-
-            childEventListenerNearRight = null;
-        }
-
         if (queryFarRight != null) {
 
             queryFarRight.removeEventListener(childEventListenerFarRight);
-        }
-
-        if (childEventListenerFarRight != null) {
-
-            childEventListenerFarRight = null;
         }
 
         if (circleButton != null) {
@@ -1697,6 +1677,14 @@ public class Map extends FragmentActivity implements
 
                     @Override
                     public void onDataChange(@NonNull DataSnapshot snapshot) {
+
+                        // The user restarted, but no shape exists or was added.
+                        if (snapshot.getChildrenCount() == 0) {
+
+                            DatabaseReference firebasePoints = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + coordinates.first + ", " + coordinates.second + ")").child("Points");
+                            addCirclesQuery(firebasePoints, coordinates);
+                            return;
+                        }
 
                         for (DataSnapshot ds : snapshot.getChildren()) {
 
