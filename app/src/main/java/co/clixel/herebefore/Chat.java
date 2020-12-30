@@ -244,6 +244,7 @@ public class Chat extends Fragment implements
 
         // Prevents clearing this list if user adds a DM and takes a picture.
         if (removedDuplicatesMentions == null) {
+
             removedDuplicatesMentions = new ArrayList<>();
         }
 
@@ -488,6 +489,10 @@ public class Chat extends Fragment implements
 
                     String userUUID = UUID.randomUUID().toString();
 
+                    // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+                    // This will cause onDataChange to fire twice; optimizations could be made in the future.
+                    Object date = ServerValue.TIMESTAMP;
+
                     // If mentions exist, add to the user's DMs.
                     if (removedDuplicatesMentions != null) {
 
@@ -505,9 +510,6 @@ public class Chat extends Fragment implements
                                     String email = emailsAL.get(i);
 
                                     DmInformation dmInformation = new DmInformation();
-                                    // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                                    // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                                    Object date = ServerValue.TIMESTAMP;
                                     dmInformation.setDate(date);
                                     dmInformation.setLat(latFirebaseValue);
                                     dmInformation.setLon(lonFirebaseValue);
@@ -528,9 +530,6 @@ public class Chat extends Fragment implements
                     }
 
                     MessageInformation messageInformation = new MessageInformation();
-                    // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                    // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                    Object date = ServerValue.TIMESTAMP;
                     messageInformation.setDate(date);
                     // If user has a Google account, get email one way. Else, get email another way.
                     GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
@@ -2571,6 +2570,10 @@ public class Chat extends Fragment implements
 
                         String userUUID = UUID.randomUUID().toString();
 
+                        // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+                        // This will cause onDataChange to fire twice; optimizations could be made in the future.
+                        Object date = ServerValue.TIMESTAMP;
+
                         // If mentions exist, add to the user's DMs.
                         if (removedDuplicatesMentions != null) {
 
@@ -2588,9 +2591,6 @@ public class Chat extends Fragment implements
                                         String email = emailsAL.get(i);
 
                                         DmInformation dmInformation = new DmInformation();
-                                        // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                                        // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                                        Object date = ServerValue.TIMESTAMP;
                                         dmInformation.setDate(date);
                                         dmInformation.setLat(latFirebaseValue);
                                         dmInformation.setLon(lonFirebaseValue);
@@ -2614,9 +2614,6 @@ public class Chat extends Fragment implements
                         }
 
                         MessageInformation messageInformation = new MessageInformation();
-                        // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                        // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                        Object date = ServerValue.TIMESTAMP;
                         messageInformation.setDate(date);
                         // If user has a Google account, get email one way. Else, get email another way.
                         GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
@@ -2715,6 +2712,10 @@ public class Chat extends Fragment implements
 
                         String userUUID = UUID.randomUUID().toString();
 
+                        // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+                        // This will cause onDataChange to fire twice; optimizations could be made in the future.
+                        Object date = ServerValue.TIMESTAMP;
+
                         // If mentions exist, add to the user's DMs.
                         if (removedDuplicatesMentions != null) {
 
@@ -2732,9 +2733,6 @@ public class Chat extends Fragment implements
                                         String email = emailsAL.get(i);
 
                                         DmInformation dmInformation = new DmInformation();
-                                        // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                                        // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                                        Object date = ServerValue.TIMESTAMP;
                                         dmInformation.setDate(date);
                                         dmInformation.setImageUrl(uri.toString());
                                         dmInformation.setLat(latFirebaseValue);
@@ -2758,9 +2756,6 @@ public class Chat extends Fragment implements
                         }
 
                         MessageInformation messageInformation = new MessageInformation();
-                        // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                        // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                        Object date = ServerValue.TIMESTAMP;
                         messageInformation.setDate(date);
                         // If user has a Google account, get email one way. Else, get email another way.
                         GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);

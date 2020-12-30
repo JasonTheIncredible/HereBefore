@@ -63,7 +63,9 @@ import com.google.firebase.database.ValueEventListener;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import static com.google.android.gms.location.LocationServices.getFusedLocationProviderClient;
@@ -78,10 +80,10 @@ public class Map extends FragmentActivity implements
     private static final int Request_User_Location_Code = 99;
     private Circle circleTemp;
     private ChildEventListener childEventListenerDms, childEventListenerNearLeft, childEventListenerFarLeft, childEventListenerNearRight, childEventListenerFarRight;
-    private String userEmailFirebase, shapeUUID, circleTempUUID;
+    private String userEmailFirebase, circleTempUUID;
     private Button circleButton, mapTypeButton, settingsButton;
     private PopupMenu popupMapType;
-    private boolean locationProviderDisabled = false, firstLoadCamera = true, firstLoadShapes = true, firstLoadDms = true, dmExists = false, cameraMoved = false, waitingForBetterLocationAccuracy = false, badAccuracy = false, restarted = false, newCameraCoordinates = false, mapCleared = false;
+    private boolean locationProviderDisabled = false, firstLoadCamera = true, firstLoadDms = true, dmExists = false, cameraMoved = false, waitingForBetterLocationAccuracy = false, badAccuracy = false, restarted = false, mapCleared = false;
     private final ArrayList<String> circleUUIDsAL = new ArrayList<>();
     private final ArrayList<LatLng> circleCentersAL = new ArrayList<>();
     private int dmCounter = 0, newNearLeftLat, newNearLeftLon, newFarLeftLat, newFarLeftLon, newNearRightLat, newNearRightLon, newFarRightLat, newFarRightLon;
@@ -90,10 +92,10 @@ public class Map extends FragmentActivity implements
     private CounterFab dmButton;
     private LocationManager locationManager;
     private Query queryDms, queryNearLeft, queryFarLeft, queryNearRight, queryFarRight;
-    private Pair<Integer, Integer> oldNearLeft, oldFarLeft, oldNearRight, oldFarRight, newNearLeft, newFarLeft, newNearRight, newFarRight;
-    private final List<Pair<Integer, Integer>> loadedCoordinates = new ArrayList<>();
+    private Pair<Integer, Integer> newNearLeft, newFarLeft, newNearRight, newFarRight;
+    private List<Pair<Integer, Integer>> loadedCoordinates;
 
-    // Don't reload circles in Map every time user returns from clicking a shape. Same with DM notification.
+    // Make clicking on a DM go to DirectMentions, then get rid of counter in Maps.
     // Create timer that kicks people out of a new Chat if they haven't posted within an amount of time (or take the photo/video before entering Chat), or keep updating their location. Or have them take media before entering chat and have the media being sent to Firebase create the chat.
     // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.
     // Chat very laggy on emulator - caused by multiple clickableSpans?
@@ -205,6 +207,12 @@ public class Map extends FragmentActivity implements
 
             settingsButton.setVisibility(View.GONE);
             dmButton.setVisibility(View.GONE);
+        }
+
+        // Create the arrayList if the activity didn't restart.
+        if (!restarted) {
+
+            loadedCoordinates = new ArrayList<>();
         }
 
         // Shows a menu to change the map type.
@@ -372,7 +380,7 @@ public class Map extends FragmentActivity implements
         // Create a point and enter chat.
         circleButton.setOnClickListener(view -> {
 
-            Log.i(TAG, "circleButton");
+            Log.i(TAG, "onStart() -> circleButton -> onClick");
 
             // Check location permissions.
             if (ContextCompat.checkSelfPermission(getBaseContext(),
@@ -496,20 +504,10 @@ public class Map extends FragmentActivity implements
         super.onRestart();
         Log.i(TAG, "onRestart()");
 
-        // Need to call clear because shapes will be loaded again in onStart(). This should change in the future to cut down on data usage.
-        mMap.clear();
-
         restarted = true;
         firstLoadCamera = false;
-        firstLoadShapes = true;
         firstLoadDms = true;
         dmCounter = 0;
-        newCameraCoordinates = false;
-        loadedCoordinates.clear();
-        oldNearLeft = null;
-        oldFarLeft = null;
-        oldNearRight = null;
-        oldFarRight = null;
         circleTemp = null;
         circleTempUUID = null;
 
@@ -1248,8 +1246,6 @@ public class Map extends FragmentActivity implements
             return;
         }
 
-        newCameraCoordinates = true;
-
         Projection projection = mMap.getProjection();
         VisibleRegion visibleRegion = projection.getVisibleRegion();
         LatLng nearLeft = visibleRegion.nearLeft;
@@ -1320,19 +1316,6 @@ public class Map extends FragmentActivity implements
         newFarLeft = new Pair<>(newFarLeftLat, newFarLeftLon);
         newNearRight = new Pair<>(newNearRightLat, newNearRightLon);
         newFarRight = new Pair<>(newFarRightLat, newFarRightLon);
-
-        // No need to continue if none of the new coordinates need to be loaded.
-        if (loadedCoordinates.contains(newNearLeft) && loadedCoordinates.contains(newFarLeft) && loadedCoordinates.contains(newNearRight) && loadedCoordinates.contains(newFarRight)) {
-
-            return;
-        }
-
-        // If the camera view has not entered a new section of the map, there's no need to load new shapes. Need to account for a 90 degree turn, so check all values against all old values.
-        if ((newNearLeft.equals(oldNearLeft) || newNearLeft.equals(oldFarLeft) || newNearLeft.equals(oldNearRight) || newNearLeft.equals(oldFarRight)) && (newFarLeft.equals(oldNearLeft) || newFarLeft.equals(oldFarLeft) || newFarLeft.equals(oldNearRight) || newFarLeft.equals(oldFarRight))
-                && (newNearRight.equals(oldNearLeft) || newNearRight.equals(oldFarLeft) || newNearRight.equals(oldNearRight) || newNearRight.equals(oldFarRight)) && (newFarRight.equals(oldNearLeft) || newFarRight.equals(oldFarLeft) || newFarRight.equals(oldNearRight) || newFarRight.equals(oldFarRight))) {
-
-            return;
-        }
 
         loadShapes();
     }
@@ -1549,153 +1532,219 @@ public class Map extends FragmentActivity implements
 
     private void loadShapes() {
 
-        // Prevent resetting and reloading everything if this is already the state.
-        if (firstLoadShapes || restarted || newCameraCoordinates) {
+        Log.i(TAG, "loadShapes()");
 
-            Log.i(TAG, "loadShapes()");
+        // Don't load more than 7 areas at a time.
+        if (loadedCoordinates.size() == 7) {
+
+            mMap.clear();
+            loadedCoordinates.clear();
+            mapCleared = true;
+        }
+
+        // Used to query Firebase.
+        ArrayList<Pair<Integer, Integer>> coordinatesNotJustLoadedTo = new ArrayList<>();
+        coordinatesNotJustLoadedTo.add(newNearLeft);
+        coordinatesNotJustLoadedTo.add(newFarLeft);
+        coordinatesNotJustLoadedTo.add(newNearRight);
+        coordinatesNotJustLoadedTo.add(newFarRight);
+        Set<Pair<Integer, Integer>> removedDuplicatesCoordinatesNotJustLoadedTo = new HashSet<>(coordinatesNotJustLoadedTo);
+
+        if (!loadedCoordinates.contains(newNearLeft) || mapCleared) {
 
             loadingIcon.setVisibility(View.VISIBLE);
 
-            // Don't load more than 7 areas at a time.
-            if (loadedCoordinates.size() == 7) {
+            loadedCoordinates.add(0, newNearLeft);
+            removedDuplicatesCoordinatesNotJustLoadedTo.remove(newNearLeft);
 
-                mMap.clear();
-                loadedCoordinates.clear();
-                mapCleared = true;
+            if (loadedCoordinates.size() > 7) {
+
+                loadedCoordinates.subList(7, loadedCoordinates.size()).clear();
             }
 
-            mMap.clear();
+            DatabaseReference firebasePoints = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + newNearLeftLat + ", " + newNearLeftLon + ")").child("Points");
 
-            if (!loadedCoordinates.contains(newNearLeft) || mapCleared || restarted) {
+            firebasePoints.addListenerForSingleValueEvent(new ValueEventListener() {
 
-                loadedCoordinates.add(0, newNearLeft);
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
 
-                if (loadedCoordinates.size() > 7) {
+                    loadCirclesODC(snapshot);
 
-                    loadedCoordinates.subList(7, loadedCoordinates.size()).clear();
+                    addCirclesQuery(firebasePoints, newNearLeft);
                 }
 
-                DatabaseReference firebasePoints = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + newNearLeftLat + ", " + newNearLeftLon + ")").child("Points");
+                @Override
+                public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                firebasePoints.addListenerForSingleValueEvent(new ValueEventListener() {
-
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot snapshot) {
-
-                        loadCirclesODC(snapshot);
-
-                        addCirclesQuery(firebasePoints, "nearLeft");
-                    }
-
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                        Log.e(TAG, "DatabaseError");
-                        loadingIcon.setVisibility(View.GONE);
-                        toastMessageLong(databaseError.getMessage());
-                    }
-                });
-            }
-
-            if (!loadedCoordinates.contains(newFarLeft) || mapCleared || (!loadedCoordinates.contains(newFarLeft) && restarted)) {
-
-                loadedCoordinates.add(0, newFarLeft);
-
-                if (loadedCoordinates.size() > 7) {
-
-                    loadedCoordinates.subList(7, loadedCoordinates.size()).clear();
+                    Log.e(TAG, "DatabaseError");
+                    loadingIcon.setVisibility(View.GONE);
+                    toastMessageLong(databaseError.getMessage());
                 }
-
-                DatabaseReference firebasePoints = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + newFarLeftLat + ", " + newFarLeftLon + ")").child("Points");
-
-                firebasePoints.addListenerForSingleValueEvent(new ValueEventListener() {
-
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot snapshot) {
-
-                        loadCirclesODC(snapshot);
-
-                        addCirclesQuery(firebasePoints, "farLeft");
-                    }
-
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                        Log.e(TAG, "DatabaseError");
-                        loadingIcon.setVisibility(View.GONE);
-                        toastMessageLong(databaseError.getMessage());
-                    }
-                });
-            }
-
-            if (!loadedCoordinates.contains(newNearRight) || mapCleared || (!loadedCoordinates.contains(newNearRight) && restarted)) {
-
-                loadedCoordinates.add(0, newNearRight);
-
-                if (loadedCoordinates.size() > 7) {
-
-                    loadedCoordinates.subList(7, loadedCoordinates.size()).clear();
-                }
-
-                DatabaseReference firebasePoints = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + newNearRightLat + ", " + newNearRightLon + ")").child("Points");
-
-                firebasePoints.addListenerForSingleValueEvent(new ValueEventListener() {
-
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot snapshot) {
-
-                        loadCirclesODC(snapshot);
-
-                        addCirclesQuery(firebasePoints, "nearRight");
-                    }
-
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                        Log.e(TAG, "DatabaseError");
-                        loadingIcon.setVisibility(View.GONE);
-                        toastMessageLong(databaseError.getMessage());
-                    }
-                });
-            }
-
-            if (!loadedCoordinates.contains(newFarRight) || mapCleared || (!loadedCoordinates.contains(newFarRight) && restarted)) {
-
-                loadedCoordinates.add(0, newFarRight);
-
-                if (loadedCoordinates.size() > 7) {
-
-                    loadedCoordinates.subList(7, loadedCoordinates.size()).clear();
-                }
-
-                DatabaseReference firebasePoints = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + newFarRightLat + ", " + newFarRightLon + ")").child("Points");
-
-                firebasePoints.addListenerForSingleValueEvent(new ValueEventListener() {
-
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot snapshot) {
-
-                        loadCirclesODC(snapshot);
-
-                        addCirclesQuery(firebasePoints, "farRight");
-                    }
-
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                        Log.e(TAG, "DatabaseError");
-                        loadingIcon.setVisibility(View.GONE);
-                        toastMessageLong(databaseError.getMessage());
-                    }
-                });
-            }
-
-            oldNearLeft = newNearLeft;
-            oldFarLeft = newFarLeft;
-            oldNearRight = newNearRight;
-            oldFarRight = newFarRight;
-            newCameraCoordinates = false;
+            });
         }
+
+        if (!loadedCoordinates.contains(newFarLeft) && newFarLeft != newNearLeft || mapCleared) {
+
+            loadingIcon.setVisibility(View.VISIBLE);
+
+            loadedCoordinates.add(0, newFarLeft);
+            removedDuplicatesCoordinatesNotJustLoadedTo.remove(newFarLeft);
+
+            if (loadedCoordinates.size() > 7) {
+
+                loadedCoordinates.subList(7, loadedCoordinates.size()).clear();
+            }
+
+            DatabaseReference firebasePoints = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + newFarLeftLat + ", " + newFarLeftLon + ")").child("Points");
+
+            firebasePoints.addListenerForSingleValueEvent(new ValueEventListener() {
+
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+
+                    loadCirclesODC(snapshot);
+
+                    addCirclesQuery(firebasePoints, newFarLeft);
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                    Log.e(TAG, "DatabaseError");
+                    loadingIcon.setVisibility(View.GONE);
+                    toastMessageLong(databaseError.getMessage());
+                }
+            });
+        }
+
+        if (!loadedCoordinates.contains(newNearRight) && newNearRight != newNearLeft && newNearRight != newFarLeft || mapCleared) {
+
+            loadingIcon.setVisibility(View.VISIBLE);
+
+            loadedCoordinates.add(0, newNearRight);
+            removedDuplicatesCoordinatesNotJustLoadedTo.remove(newNearRight);
+
+            if (loadedCoordinates.size() > 7) {
+
+                loadedCoordinates.subList(7, loadedCoordinates.size()).clear();
+            }
+
+            DatabaseReference firebasePoints = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + newNearRightLat + ", " + newNearRightLon + ")").child("Points");
+
+            firebasePoints.addListenerForSingleValueEvent(new ValueEventListener() {
+
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+
+                    loadCirclesODC(snapshot);
+
+                    addCirclesQuery(firebasePoints, newNearRight);
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                    Log.e(TAG, "DatabaseError");
+                    loadingIcon.setVisibility(View.GONE);
+                    toastMessageLong(databaseError.getMessage());
+                }
+            });
+        }
+
+        if (!loadedCoordinates.contains(newFarRight) && newFarRight != newNearLeft && newFarRight != newFarLeft && newFarRight != newNearRight || mapCleared) {
+
+            loadingIcon.setVisibility(View.VISIBLE);
+
+            loadedCoordinates.add(0, newFarRight);
+            removedDuplicatesCoordinatesNotJustLoadedTo.remove(newFarRight);
+
+            if (loadedCoordinates.size() > 7) {
+
+                loadedCoordinates.subList(7, loadedCoordinates.size()).clear();
+            }
+
+            DatabaseReference firebasePoints = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + newFarRightLat + ", " + newFarRightLon + ")").child("Points");
+
+            firebasePoints.addListenerForSingleValueEvent(new ValueEventListener() {
+
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+
+                    loadCirclesODC(snapshot);
+
+                    addCirclesQuery(firebasePoints, newFarRight);
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                    Log.e(TAG, "DatabaseError");
+                    loadingIcon.setVisibility(View.GONE);
+                    toastMessageLong(databaseError.getMessage());
+                }
+            });
+        }
+
+        if (!mapCleared || restarted) {
+
+            // Check if the latest value in Firebase equals the saved value. If not, load the new shapes.
+            for (Pair<Integer, Integer> coordinates : removedDuplicatesCoordinatesNotJustLoadedTo) {
+
+                Query query = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + coordinates.first + ", " + coordinates.second + ")").child("Points").limitToLast(1);
+
+                query.addListenerForSingleValueEvent(new ValueEventListener() {
+
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+
+                        for (DataSnapshot ds : snapshot.getChildren()) {
+
+                            String shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                            if (shapeUUID != null) {
+
+                                // If new circles exist, add them to the map. Else, add the query to add new shapes in the future.
+                                if (!circleUUIDsAL.contains(shapeUUID)) {
+
+                                    Query query = FirebaseDatabase.getInstance().getReference()
+                                            .child("Shapes").child("(" + coordinates.first + ", " + coordinates.second + ")").child("Points")
+                                            .orderByKey()
+                                            .startAt(ds.getKey());
+
+                                    query.addListenerForSingleValueEvent(new ValueEventListener() {
+
+                                        @Override
+                                        public void onDataChange(@NonNull DataSnapshot snapshot) {
+
+                                            loadCirclesODC(snapshot);
+
+                                            DatabaseReference firebasePoints = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + coordinates.first + ", " + coordinates.second + ")").child("Points");
+                                            addCirclesQuery(firebasePoints, coordinates);
+                                        }
+
+                                        @Override
+                                        public void onCancelled(@NonNull DatabaseError error) {
+                                        }
+                                    });
+                                } else {
+
+                                    DatabaseReference firebasePoints = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + coordinates.first + ", " + coordinates.second + ")").child("Points");
+                                    addCirclesQuery(firebasePoints, coordinates);
+                                }
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError databaseError) {
+                    }
+                });
+            }
+        }
+
+        mapCleared = false;
+        restarted = false;
     }
 
     private void loadCirclesODC(DataSnapshot snapshot) {
@@ -1736,7 +1785,7 @@ public class Map extends FragmentActivity implements
                 }
 
                 // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady to identify the chatCircle.
-                shapeUUID = (String) ds.child("shapeUUID").getValue();
+                String shapeUUID = (String) ds.child("shapeUUID").getValue();
 
                 circle.setTag(shapeUUID);
             }
@@ -1746,92 +1795,102 @@ public class Map extends FragmentActivity implements
     }
 
     // Change to .limitToLast(1) to cut down on data usage. Otherwise, EVERY child at this node will be downloaded every time the child is updated.
-    private void addCirclesQuery(DatabaseReference databaseReference, String cornerReference) {
+    private void addCirclesQuery(DatabaseReference databaseReference, Pair<Integer, Integer> cornerReference) {
 
-        switch (cornerReference) {
+        if (newNearLeft.equals(cornerReference)) {
 
-            case "nearLeft":
+            queryNearLeft = databaseReference.limitToLast(1);
+            childEventListenerNearLeft = new ChildEventListener() {
 
-                queryNearLeft = databaseReference.limitToLast(1);
-                childEventListenerNearLeft = new ChildEventListener() {
+                @Override
+                public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
 
-                    @Override
-                    public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-
-                        if (snapshot.child("circleOptions").exists()) {
-
-                            // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady to identify the chatCircle.
-                            shapeUUID = (String) snapshot.child("shapeUUID").getValue();
-
-                            if (shapeUUID != null && circleUUIDsAL.contains(shapeUUID)) {
-
-                                return;
-                            }
-
-                            LatLng center = new LatLng((double) snapshot.child("circleOptions/center/latitude/").getValue(), (double) snapshot.child("circleOptions/center/longitude/").getValue());
-
-                            // Load different colored circles depending on the map type.
-                            Circle circle;
-                            if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
-
-                                // Yellow circle.
-                                circle = mMap.addCircle(
-                                        new CircleOptions()
-                                                .center(center)
-                                                .clickable(true)
-                                                .radius(1.0)
-                                                .strokeColor(Color.YELLOW)
-                                                .strokeWidth(3f)
-                                );
-                            } else {
-
-                                // Purple circle.
-                                circle = mMap.addCircle(
-                                        new CircleOptions()
-                                                .center(center)
-                                                .clickable(true)
-                                                .radius(1.0)
-                                                .strokeColor(Color.rgb(255, 0, 255))
-                                                .strokeWidth(3f)
-                                );
-                            }
-
-                            circle.setTag(shapeUUID);
-                        }
-                    }
-
-                    @Override
-                    public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-                    }
-
-                    @Override
-                    public void onChildRemoved(@NonNull DataSnapshot snapshot) {
-                    }
-
-                    @Override
-                    public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-                    }
-
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError error) {
-
-                        toastMessageLong(error.getMessage());
-                    }
-                };
-
-                queryNearLeft.addChildEventListener(childEventListenerNearLeft);
-
-                break;
-            case "farLeft":
-
-                queryFarLeft = databaseReference.limitToLast(1);
-                childEventListenerFarLeft = new ChildEventListener() {
-
-                    @Override
-                    public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+                    if (snapshot.child("circleOptions").exists()) {
 
                         // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady to identify the chatCircle.
-                        shapeUUID = (String) snapshot.child("shapeUUID").getValue();
+                        String shapeUUID = (String) snapshot.child("shapeUUID").getValue();
+
+                        // Prevent duplicates.
+                        if (circleUUIDsAL.contains(shapeUUID)) {
+
+                            return;
+                        }
+
+                        if (shapeUUID != null && circleUUIDsAL.contains(shapeUUID)) {
+
+                            return;
+                        }
+
+                        LatLng center = new LatLng((double) snapshot.child("circleOptions/center/latitude/").getValue(), (double) snapshot.child("circleOptions/center/longitude/").getValue());
+
+                        // Load different colored circles depending on the map type.
+                        Circle circle;
+                        if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
+
+                            // Yellow circle.
+                            circle = mMap.addCircle(
+                                    new CircleOptions()
+                                            .center(center)
+                                            .clickable(true)
+                                            .radius(1.0)
+                                            .strokeColor(Color.YELLOW)
+                                            .strokeWidth(3f)
+                            );
+                        } else {
+
+                            // Purple circle.
+                            circle = mMap.addCircle(
+                                    new CircleOptions()
+                                            .center(center)
+                                            .clickable(true)
+                                            .radius(1.0)
+                                            .strokeColor(Color.rgb(255, 0, 255))
+                                            .strokeWidth(3f)
+                            );
+                        }
+
+                        circle.setTag(shapeUUID);
+                    }
+                }
+
+                @Override
+                public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+                }
+
+                @Override
+                public void onChildRemoved(@NonNull DataSnapshot snapshot) {
+                }
+
+                @Override
+                public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
+
+                    toastMessageLong(error.getMessage());
+                }
+            };
+
+            queryNearLeft.addChildEventListener(childEventListenerNearLeft);
+        } else if (newFarLeft.equals(cornerReference)) {
+
+            queryFarLeft = databaseReference.limitToLast(1);
+            childEventListenerFarLeft = new ChildEventListener() {
+
+                @Override
+                public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+
+                    if (snapshot.child("circleOptions").exists()) {
+
+                        // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady to identify the chatCircle.
+                        String shapeUUID = (String) snapshot.child("shapeUUID").getValue();
+
+                        // Prevent duplicates.
+                        if (circleUUIDsAL.contains(shapeUUID)) {
+
+                            return;
+                        }
 
                         if (shapeUUID != null && circleUUIDsAL.contains(shapeUUID)) {
 
@@ -1871,173 +1930,120 @@ public class Map extends FragmentActivity implements
                             circle.setTag(shapeUUID);
                         }
                     }
+                }
 
-                    @Override
-                    public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-                    }
+                @Override
+                public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+                }
 
-                    @Override
-                    public void onChildRemoved(@NonNull DataSnapshot snapshot) {
-                    }
+                @Override
+                public void onChildRemoved(@NonNull DataSnapshot snapshot) {
+                }
 
-                    @Override
-                    public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-                    }
+                @Override
+                public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+                }
 
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError error) {
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
 
-                        toastMessageLong(error.getMessage());
-                    }
-                };
+                    toastMessageLong(error.getMessage());
+                }
+            };
 
-                queryFarLeft.addChildEventListener(childEventListenerFarLeft);
+            queryFarLeft.addChildEventListener(childEventListenerFarLeft);
+        } else if (newNearRight.equals(cornerReference)) {
 
-                break;
-            case "nearRight":
+            queryNearRight = databaseReference.limitToLast(1);
+            childEventListenerNearRight = new ChildEventListener() {
 
-                queryNearRight = databaseReference.limitToLast(1);
-                childEventListenerNearRight = new ChildEventListener() {
+                @Override
+                public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
 
-                    @Override
-                    public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+                    if (snapshot.child("circleOptions").exists()) {
 
                         // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady to identify the chatCircle.
-                        shapeUUID = (String) snapshot.child("shapeUUID").getValue();
+                        String shapeUUID = (String) snapshot.child("shapeUUID").getValue();
+
+                        // Prevent duplicates.
+                        if (circleUUIDsAL.contains(shapeUUID)) {
+
+                            return;
+                        }
 
                         if (shapeUUID != null && circleUUIDsAL.contains(shapeUUID)) {
 
                             return;
                         }
-
-                        if (snapshot.child("circleOptions").exists()) {
-
-                            LatLng center = new LatLng((double) snapshot.child("circleOptions/center/latitude/").getValue(), (double) snapshot.child("circleOptions/center/longitude/").getValue());
-
-                            // Load different colored circles depending on the map type.
-                            Circle circle;
-                            if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
-
-                                // Yellow circle.
-                                circle = mMap.addCircle(
-                                        new CircleOptions()
-                                                .center(center)
-                                                .clickable(true)
-                                                .radius(1.0)
-                                                .strokeColor(Color.YELLOW)
-                                                .strokeWidth(3f)
-                                );
-                            } else {
-
-                                // Purple circle.
-                                circle = mMap.addCircle(
-                                        new CircleOptions()
-                                                .center(center)
-                                                .clickable(true)
-                                                .radius(1.0)
-                                                .strokeColor(Color.rgb(255, 0, 255))
-                                                .strokeWidth(3f)
-                                );
-                            }
-
-                            circle.setTag(shapeUUID);
-                        }
                     }
+                }
 
-                    @Override
-                    public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-                    }
+                @Override
+                public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+                }
 
-                    @Override
-                    public void onChildRemoved(@NonNull DataSnapshot snapshot) {
-                    }
+                @Override
+                public void onChildRemoved(@NonNull DataSnapshot snapshot) {
+                }
 
-                    @Override
-                    public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-                    }
+                @Override
+                public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+                }
 
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError error) {
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
 
-                        toastMessageLong(error.getMessage());
-                    }
-                };
+                    toastMessageLong(error.getMessage());
+                }
+            };
 
-                queryNearRight.addChildEventListener(childEventListenerNearRight);
+            queryNearRight.addChildEventListener(childEventListenerNearRight);
+        } else if (newFarRight.equals(cornerReference)) {
 
-                break;
-            case "farRight":
+            queryFarRight = databaseReference.limitToLast(1);
+            childEventListenerFarRight = new ChildEventListener() {
 
-                queryFarRight = databaseReference.limitToLast(1);
-                childEventListenerFarRight = new ChildEventListener() {
+                @Override
+                public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
 
-                    @Override
-                    public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+                    if (snapshot.child("circleOptions").exists()) {
 
                         // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady to identify the chatCircle.
-                        shapeUUID = (String) snapshot.child("shapeUUID").getValue();
+                        String shapeUUID = (String) snapshot.child("shapeUUID").getValue();
+
+                        // Prevent duplicates.
+                        if (circleUUIDsAL.contains(shapeUUID)) {
+
+                            return;
+                        }
 
                         if (shapeUUID != null && circleUUIDsAL.contains(shapeUUID)) {
 
                             return;
                         }
-
-                        if (snapshot.child("circleOptions").exists()) {
-
-                            LatLng center = new LatLng((double) snapshot.child("circleOptions/center/latitude/").getValue(), (double) snapshot.child("circleOptions/center/longitude/").getValue());
-
-                            // Load different colored circles depending on the map type.
-                            Circle circle;
-                            if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
-
-                                // Yellow circle.
-                                circle = mMap.addCircle(
-                                        new CircleOptions()
-                                                .center(center)
-                                                .clickable(true)
-                                                .radius(1.0)
-                                                .strokeColor(Color.YELLOW)
-                                                .strokeWidth(3f)
-                                );
-                            } else {
-
-                                // Purple circle.
-                                circle = mMap.addCircle(
-                                        new CircleOptions()
-                                                .center(center)
-                                                .clickable(true)
-                                                .radius(1.0)
-                                                .strokeColor(Color.rgb(255, 0, 255))
-                                                .strokeWidth(3f)
-                                );
-                            }
-
-                            circle.setTag(shapeUUID);
-                        }
                     }
+                }
 
-                    @Override
-                    public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-                    }
+                @Override
+                public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+                }
 
-                    @Override
-                    public void onChildRemoved(@NonNull DataSnapshot snapshot) {
-                    }
+                @Override
+                public void onChildRemoved(@NonNull DataSnapshot snapshot) {
+                }
 
-                    @Override
-                    public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-                    }
+                @Override
+                public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+                }
 
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError error) {
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
 
-                        toastMessageLong(error.getMessage());
-                    }
-                };
+                    toastMessageLong(error.getMessage());
+                }
+            };
 
-                queryFarRight.addChildEventListener(childEventListenerFarRight);
-
-                break;
+            queryFarRight.addChildEventListener(childEventListenerFarRight);
         }
     }
 
