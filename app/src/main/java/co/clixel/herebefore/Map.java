@@ -1668,6 +1668,8 @@ public class Map extends FragmentActivity implements
 
         if (!mapCleared || restarted) {
 
+            loadingIcon.setVisibility(View.VISIBLE);
+
             // Check if the latest value in Firebase equals the saved value. If not, load the new shapes.
             for (Pair<Integer, Integer> coordinates : removedDuplicatesCoordinatesNotJustLoadedTo) {
 
@@ -2033,6 +2035,8 @@ public class Map extends FragmentActivity implements
 
             queryFarRight.addChildEventListener(childEventListenerFarRight);
         }
+
+        loadingIcon.setVisibility(View.GONE);
     }
 
     private void deleteDirectory(File file) {
