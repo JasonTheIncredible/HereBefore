@@ -86,7 +86,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
      */
     private void sendMessageNotification(String title, String message, String notificationId) {
 
-        Log.d(TAG, "sendChatmessageNotification: building a chatmessage notification");
+        Log.d(TAG, "sendDmNotification: building a DM notification");
 
         Intent intent = new Intent(getBaseContext(), Map.class);
         intent.putExtra("notification_id", notificationId);
@@ -98,7 +98,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this,
                 DEFAULT_NOTIFICATION_CHANNEL_ID);
 
-        // Add properties to the builder
+        // Add properties to the builder.
         builder.setContentTitle(title)
                 .setAutoCancel(true)
                 .setSubText(message)

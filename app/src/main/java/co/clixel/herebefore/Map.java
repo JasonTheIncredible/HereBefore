@@ -22,6 +22,7 @@ import android.view.Gravity;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.PopupMenu;
 import android.widget.Toast;
 
@@ -32,9 +33,7 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
 import androidx.preference.PreferenceManager;
 
-import com.andremion.counterfab.CounterFab;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
-import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
@@ -80,22 +79,24 @@ public class Map extends FragmentActivity implements
     private static final int Request_User_Location_Code = 99;
     private Circle circleTemp;
     private ChildEventListener childEventListenerDms, childEventListenerNearLeft, childEventListenerFarLeft, childEventListenerNearRight, childEventListenerFarRight;
-    private String userEmailFirebase, circleTempUUID;
+    private String circleTempUUID;
     private Button circleButton, mapTypeButton, settingsButton;
+    private ImageButton dmButton;
     private PopupMenu popupMapType;
-    private boolean locationProviderDisabled = false, firstLoadCamera = true, firstLoadDms = true, dmExists = false, cameraMoved = false, waitingForBetterLocationAccuracy = false, badAccuracy = false, restarted = false, mapCleared = false;
+    private boolean locationProviderDisabled = false, firstLoadCamera = true, cameraMoved = false, waitingForBetterLocationAccuracy = false, badAccuracy = false, restarted = false, mapCleared = false;
     private final ArrayList<String> circleUUIDsAL = new ArrayList<>();
     private final ArrayList<LatLng> circleCentersAL = new ArrayList<>();
-    private int dmCounter = 0, newNearLeftLat, newNearLeftLon, newFarLeftLat, newFarLeftLon, newNearRightLat, newNearRightLon, newFarRightLat, newFarRightLon;
+    private int newNearLeftLat, newNearLeftLon, newFarLeftLat, newFarLeftLon, newNearRightLat, newNearRightLon, newFarRightLat, newFarRightLon;
     private Toast longToast;
     private View loadingIcon;
-    private CounterFab dmButton;
     private LocationManager locationManager;
     private Query queryDms, queryNearLeft, queryFarLeft, queryNearRight, queryFarRight;
     private Pair<Integer, Integer> newNearLeft, newFarLeft, newNearRight, newFarRight;
     private List<Pair<Integer, Integer>> loadedCoordinates;
 
-    // Make clicking on a DM go to DirectMentions, then get rid of counter in Maps.
+    // Prevent opening new DirectMentions if user is already inside Navigation. Instead, switch to DirectMentions tab.
+    // Fix bug where circle still has fill color after entering a circle then clicking on a notification.
+    // Update to Node.js 10.
     // Create timer that kicks people out of a new Chat if they haven't posted within an amount of time (or take the photo/video before entering Chat), or keep updating their location. Or have them take media before entering chat and have the media being sent to Firebase create the chat.
     // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.
     // Chat very laggy on emulator - caused by multiple clickableSpans?
@@ -149,6 +150,9 @@ public class Map extends FragmentActivity implements
 
         super.onCreate(savedInstanceState);
         Log.i(TAG, "onCreate()");
+
+        // This will be called if user opens app using a notification.
+        onNewIntent(getIntent());
 
         // Show the intro if the user has not yet seen it.
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
@@ -276,54 +280,6 @@ public class Map extends FragmentActivity implements
                 checkLocationPermissions();
             }
         });
-
-        // Used to set dmButton badge number.
-        // If user has a Google account, get email one way. Else, get email another way.
-        GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(this);
-        String email;
-        if (acct != null) {
-
-            email = acct.getEmail();
-        } else {
-
-            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-            email = sharedPreferences.getString("userToken", "null");
-        }
-
-        // If new DMs, update dmButton badge.
-        if (email != null) {
-
-            // Firebase does not allow ".", so replace them with ",".
-            userEmailFirebase = email.replace(".", ",");
-
-            DatabaseReference Dms = FirebaseDatabase.getInstance().getReference().child("Users").child(userEmailFirebase).child("ReceivedDms");
-            Dms.addListenerForSingleValueEvent(new ValueEventListener() {
-
-                @Override
-                public void onDataChange(@NonNull DataSnapshot snapshot) {
-
-                    for (DataSnapshot ds : snapshot.getChildren()) {
-
-                        // Used in addDmsQuery to allow the child to be called the first time if no child exists and prevent double posts if a child exists.
-                        dmExists = true;
-
-                        if (!(Boolean) ds.child("seenByUser").getValue()) {
-
-                            dmCounter++;
-                        }
-                    }
-
-                    dmButton.setCount(dmCounter);
-                    addDmsQuery();
-                }
-
-                @Override
-                public void onCancelled(@NonNull DatabaseError error) {
-
-                    // Don't put error toastMessage here, as it will create a "Permissions Denied" message when no user is signed in.
-                }
-            });
-        }
 
         // Go to DMs.
         dmButton.setOnClickListener(v -> {
@@ -454,50 +410,6 @@ public class Map extends FragmentActivity implements
         deleteDirectory(this.getCacheDir());
     }
 
-    // Change to .limitToLast(1) to cut down on data usage. Otherwise, EVERY child at this node will be downloaded every time the child is updated.
-    private void addDmsQuery() {
-
-        queryDms = FirebaseDatabase.getInstance().getReference().child("Users").child(userEmailFirebase).child("ReceivedDms").limitToLast(1);
-        childEventListenerDms = new ChildEventListener() {
-
-            @Override
-            public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-
-                Log.i(TAG, "addDmQuery()");
-
-                // If this is the first time calling this eventListener, prevent double posts (as onStart() already added the last item).
-                if (firstLoadDms && dmExists) {
-
-                    firstLoadDms = false;
-                    return;
-                }
-
-                dmCounter++;
-                dmButton.setCount(dmCounter);
-            }
-
-            @Override
-            public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-            }
-
-            @Override
-            public void onChildRemoved(@NonNull DataSnapshot snapshot) {
-            }
-
-            @Override
-            public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-
-                toastMessageLong(error.getMessage());
-            }
-        };
-
-        queryDms.addChildEventListener(childEventListenerDms);
-    }
-
     @Override
     protected void onRestart() {
 
@@ -506,17 +418,10 @@ public class Map extends FragmentActivity implements
 
         restarted = true;
         firstLoadCamera = false;
-        firstLoadDms = true;
-        dmCounter = 0;
         circleTemp = null;
         circleTempUUID = null;
 
         cancelToasts();
-
-        if (dmButton != null) {
-
-            dmButton.setCount(0);
-        }
 
         // Clear map before adding new Firebase circles in onStart() to prevent overlap.
         // Set shape to null so changing chatSizeSeekBar in onStart() will create a circle and circleButton will reset itself.
@@ -709,6 +614,59 @@ public class Map extends FragmentActivity implements
 
         // Cut down on code by using one method for the shared code from onMapReady and onRestart.
         onMapReadyAndRestart();
+    }
+
+    // If the user clicks on a notification, this should trigger.
+    @Override
+    public void onNewIntent(Intent intent) {
+
+        Log.i(TAG, "onNewIntent()");
+
+        super.onNewIntent(intent);
+
+        Bundle extras = intent.getExtras();
+        if (extras != null) {
+
+            // Check location permissions.
+            if (ContextCompat.checkSelfPermission(getBaseContext(),
+                    Manifest.permission.ACCESS_FINE_LOCATION)
+                    == PackageManager.PERMISSION_GRANTED) {
+
+                FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
+
+                mFusedLocationClient.getLastLocation()
+                        .addOnSuccessListener(Map.this, location -> {
+
+                            if (location != null) {
+
+                                if (!locationProviderDisabled) {
+
+                                    cancelToasts();
+
+                                    Intent Activity = new Intent(Map.this, Navigation.class);
+
+                                    Activity.putExtra("userLatitude", location.getLatitude());
+                                    Activity.putExtra("userLongitude", location.getLongitude());
+
+                                    Activity.putExtra("noChat", true);
+                                    Activity.putExtra("fromDms", true);
+
+                                    startActivity(Activity);
+                                } else {
+
+                                    Log.e(TAG, "onNewIntent -> location == null");
+                                    toastMessageLong("An error occurred: your location is null.");
+                                }
+                            } else {
+
+                                toastMessageLong("Enable your location provider and try again.");
+                            }
+                        });
+            } else {
+
+                checkLocationPermissions();
+            }
+        }
     }
 
     // Cut down on code by using one method for the shared code from onMapReady and onRestart.
@@ -1437,7 +1395,7 @@ public class Map extends FragmentActivity implements
 
             settingsButton.setBackgroundResource(R.drawable.ic_more_vert_yellow_24dp);
 
-            dmButton.setBackgroundTintList(ContextCompat.getColorStateList(this, R.color.yellow));
+            dmButton.setBackgroundResource(R.drawable.dm_button);
 
             for (int i = 0; i < circleCentersAL.size(); i++) {
 
@@ -1458,7 +1416,7 @@ public class Map extends FragmentActivity implements
 
             settingsButton.setBackgroundResource(R.drawable.ic_more_vert_purple_24dp);
 
-            dmButton.setBackgroundTintList(ContextCompat.getColorStateList(this, R.color.purple));
+            dmButton.setBackgroundResource(R.drawable.dm_button_purple);
 
             for (int i = 0; i < circleCentersAL.size(); i++) {
 

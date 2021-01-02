@@ -79,6 +79,7 @@
 
         <activity
             android:name=".Map"
+            android:launchMode="singleTask"
             android:label="@string/title_activity_maps">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

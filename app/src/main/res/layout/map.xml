@@ -28,23 +28,23 @@
         android:layout_height="40dp"
         android:layout_alignParentEnd="true"
         android:layout_marginTop="10dp"
-        android:layout_marginEnd="64dp"
+        android:layout_marginEnd="65dp"
         android:background="@drawable/ic_more_vert_yellow_24dp"
         android:visibility="gone" />
 
-    <com.andremion.counterfab.CounterFab
+    <ImageButton
         android:id="@+id/dmButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
         android:layout_alignParentEnd="true"
-        android:layout_marginTop="55dp"
-        android:layout_marginEnd="8dp"
+        android:layout_marginTop="65dp"
+        android:layout_marginEnd="10dp"
+        android:background="@drawable/dm_button"
         android:clickable="true"
         android:focusable="true"
         android:src="@drawable/ic_dm"
         android:visibility="gone"
-        app:badgeBackgroundColor="@color/red"
-        app:fabSize="mini" />
+        android:contentDescription="TODO" />
 
     <Button
         android:id="@+id/circleButton"
