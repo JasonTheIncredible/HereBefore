@@ -92,5 +92,5 @@ dependencies {
     implementation 'me.zhanghai.android.materialprogressbar:library:1.6.1'
 
     // debugImplementation because LeakCanary should only run in debug builds.
-    debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.5'
+    debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.6'
 }

@@ -79,7 +79,7 @@ public class Map extends FragmentActivity implements
     private static final int Request_User_Location_Code = 99;
     private Circle circleTemp;
     private ChildEventListener childEventListenerDms, childEventListenerNearLeft, childEventListenerFarLeft, childEventListenerNearRight, childEventListenerFarRight;
-    private String circleTempUUID;
+    private String circleTempUUID, circleTempUUIDTemp;
     private Button circleButton, mapTypeButton, settingsButton;
     private ImageButton dmButton;
     private PopupMenu popupMapType;
@@ -94,9 +94,9 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> newNearLeft, newFarLeft, newNearRight, newFarRight;
     private List<Pair<Integer, Integer>> loadedCoordinates;
 
-    // Prevent opening new DirectMentions if user is already inside Navigation. Instead, switch to DirectMentions tab.
-    // Fix bug where circle still has fill color after entering a circle then clicking on a notification.
     // Update to Node.js 10.
+    // Instead of clicking on notification going to DMs page, make it go directly to Chat and set seenByUser to true. This should also fix the bug where circleTempUUID will not be cleared if user clicks out of Chat too quickly and only onPause and onResume are called. If this can't be done, switch to DirectMentions tab if user enters Chat from notification.
+    // Get rid of onRestart and add those things to onPause / onResume, as user backing out of Chat too quickly does not trigger onRestart?
     // Create timer that kicks people out of a new Chat if they haven't posted within an amount of time (or take the photo/video before entering Chat), or keep updating their location. Or have them take media before entering chat and have the media being sent to Firebase create the chat.
     // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.
     // Chat very laggy on emulator - caused by multiple clickableSpans?
@@ -418,16 +418,19 @@ public class Map extends FragmentActivity implements
 
         restarted = true;
         firstLoadCamera = false;
-        circleTemp = null;
-        circleTempUUID = null;
+
+        // If user did not click on a notification while in a chat, circleTempUUID should be null. Else, it should be used in onNewIntent.
+        if (getIntent() == null) {
+
+            circleTempUUID = null;
+            circleTemp = null;
+        }
 
         cancelToasts();
 
         // Clear map before adding new Firebase circles in onStart() to prevent overlap.
         // Set shape to null so changing chatSizeSeekBar in onStart() will create a circle and circleButton will reset itself.
         if (mMap != null) {
-
-            mMap.getUiSettings().setScrollGesturesEnabled(true);
 
             // Cut down on code by using one method for the shared code from onMapReady and onRestart.
             onMapReadyAndRestart();
@@ -504,6 +507,12 @@ public class Map extends FragmentActivity implements
     protected void onPause() {
 
         Log.i(TAG, "onPause()");
+
+        // If the user backs out of Chat too quickly, circleTemp will not be cleared as onStop and onStart are not called.
+        if (circleTemp != null) {
+
+            circleTemp.remove();
+        }
 
         // Remove updating location information.
         if (ContextCompat.checkSelfPermission(Map.this,
@@ -641,6 +650,18 @@ public class Map extends FragmentActivity implements
 
                                 if (!locationProviderDisabled) {
 
+                                    if (circleTempUUID != null) {
+
+                                        // Check distance to circleTemp and enter it.
+                                        float[] distance = new float[2];
+                                        Location.distanceBetween(circleTemp.getCenter().latitude, circleTemp.getCenter().longitude, location.getLatitude(), location.getLongitude(), distance);
+
+                                        // If distance <= 2, enterCircle(location, circleTemp.getCenter(), false, true). Else, enterCircle(location, circleTemp.getCenter(), false, false).
+                                        enterCircle(location, circleTemp.getCenter(), circleTempUUID, false, distance[0] <= 2);
+
+                                        return;
+                                    }
+
                                     cancelToasts();
 
                                     Intent Activity = new Intent(Map.this, Navigation.class);
@@ -689,6 +710,8 @@ public class Map extends FragmentActivity implements
 
             // If the user clicks on a circle that's already highlighted, enter that circle.
             if (circle.getFillColor() != 0) {
+
+                circleTempUUID = circleTempUUIDTemp;
 
                 // Check location permissions.
                 if (ContextCompat.checkSelfPermission(getBaseContext(),
@@ -766,7 +789,8 @@ public class Map extends FragmentActivity implements
                 );
             }
 
-            circleTempUUID = circle.getTag().toString();
+            // Can't set circleTempUUID here, as user might highlight a circle, then click on a notification and accidentally enter the highlighted circle from the notification.
+            circleTempUUIDTemp = circle.getTag().toString();
             loadingIcon.setVisibility(View.GONE);
         });
 
