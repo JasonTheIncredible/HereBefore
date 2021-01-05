@@ -94,13 +94,14 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> newNearLeft, newFarLeft, newNearRight, newFarRight;
     private List<Pair<Integer, Integer>> loadedCoordinates;
 
-    // Update to Node.js 10.
-    // Instead of clicking on notification going to DMs page, make it go directly to Chat and set seenByUser to true. This should also fix the bug where circleTempUUID will not be cleared if user clicks out of Chat too quickly and only onPause and onResume are called. If this can't be done, switch to DirectMentions tab if user enters Chat from notification.
-    // Get rid of onRestart and add those things to onPause / onResume, as user backing out of Chat too quickly does not trigger onRestart?
+    // Remove previous activities from stack when clicking on notification.
+    // Set seenByUser to true after clicking a notification, and highlight / scroll to the specific message (same behavior as clicking on DM directly).
+    // When app is closed and user clicks on a notification, prevent initial flash of the map screen if possible.
     // Create timer that kicks people out of a new Chat if they haven't posted within an amount of time (or take the photo/video before entering Chat), or keep updating their location. Or have them take media before entering chat and have the media being sent to Firebase create the chat.
     // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.
     // Chat very laggy on emulator - caused by multiple clickableSpans?
     // Prevent data scraping (hide email addresses and other personal information).
+    // Update to Node.js 10.
 
     // Require picture on creating a shape? Also, long press a shape to see a popup of that picture.
     // After clicking on a DM and going to that Chat, allow user to find that same shape on the map.
@@ -419,15 +420,6 @@ public class Map extends FragmentActivity implements
         restarted = true;
         firstLoadCamera = false;
 
-        // If user did not click on a notification while in a chat, circleTempUUID should be null. Else, it should be used in onNewIntent.
-        if (getIntent() == null) {
-
-            circleTempUUID = null;
-            circleTemp = null;
-        }
-
-        cancelToasts();
-
         // Clear map before adding new Firebase circles in onStart() to prevent overlap.
         // Set shape to null so changing chatSizeSeekBar in onStart() will create a circle and circleButton will reset itself.
         if (mMap != null) {
@@ -442,6 +434,15 @@ public class Map extends FragmentActivity implements
 
         super.onResume();
         Log.i(TAG, "onResume()");
+
+        // If the user backs out of Chat too quickly, circleTemp will not be cleared as onStop and onStart are not called.
+        if (circleTemp != null) {
+
+            circleTemp.remove();
+        }
+
+        circleTempUUID = null;
+        circleTemp = null;
 
         locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
 
@@ -507,12 +508,6 @@ public class Map extends FragmentActivity implements
     protected void onPause() {
 
         Log.i(TAG, "onPause()");
-
-        // If the user backs out of Chat too quickly, circleTemp will not be cleared as onStop and onStart are not called.
-        if (circleTemp != null) {
-
-            circleTemp.remove();
-        }
 
         // Remove updating location information.
         if (ContextCompat.checkSelfPermission(Map.this,
@@ -650,29 +645,19 @@ public class Map extends FragmentActivity implements
 
                                 if (!locationProviderDisabled) {
 
-                                    if (circleTempUUID != null) {
+                                    String circleUUID = extras.getString("shapeUUID");
+                                    double lat = extras.getDouble("lat");
+                                    double lon = extras.getDouble("lon");
+
+                                    if (circleUUID != null) {
 
                                         // Check distance to circleTemp and enter it.
                                         float[] distance = new float[2];
-                                        Location.distanceBetween(circleTemp.getCenter().latitude, circleTemp.getCenter().longitude, location.getLatitude(), location.getLongitude(), distance);
+                                        Location.distanceBetween(lat, lon, location.getLatitude(), location.getLongitude(), distance);
 
                                         // If distance <= 2, enterCircle(location, circleTemp.getCenter(), false, true). Else, enterCircle(location, circleTemp.getCenter(), false, false).
-                                        enterCircle(location, circleTemp.getCenter(), circleTempUUID, false, distance[0] <= 2);
-
-                                        return;
+                                        enterCircle(location, new LatLng(lat, lon), circleUUID, false, distance[0] <= 2);
                                     }
-
-                                    cancelToasts();
-
-                                    Intent Activity = new Intent(Map.this, Navigation.class);
-
-                                    Activity.putExtra("userLatitude", location.getLatitude());
-                                    Activity.putExtra("userLongitude", location.getLongitude());
-
-                                    Activity.putExtra("noChat", true);
-                                    Activity.putExtra("fromDms", true);
-
-                                    startActivity(Activity);
                                 } else {
 
                                     Log.e(TAG, "onNewIntent -> location == null");
@@ -1022,11 +1007,11 @@ public class Map extends FragmentActivity implements
             // New circle.
             circleToEnterLatLng = new LatLng(userLocation.getLatitude(), userLocation.getLongitude());
             circleToEnterUUID = UUID.randomUUID().toString();
-        } else if (circleLatLng == null && !newShape) {
+        } else if (circleLatLng == null) {
             // User is entering a circle by clicking on it, so circleTemp != null.
             circleToEnterLatLng = circleTemp.getCenter();
             circleToEnterUUID = circleTempUUID;
-        } else if (circleLatLng != null && !newShape) {
+        } else if (!newShape) {
             // User clicked on the circle button and is entering a circle close to their location.
             circleToEnterLatLng = circleLatLng;
             circleToEnterUUID = circleUUID;
@@ -1077,7 +1062,6 @@ public class Map extends FragmentActivity implements
         Activity.putExtra("userIsWithinShape", userIsWithinShape);
         Activity.putExtra("circleLatitude", circleToEnterLatLng.latitude);
         Activity.putExtra("circleLongitude", circleToEnterLatLng.longitude);
-        Activity.putExtra("radius", 1.0);
 
         loadingIcon.setVisibility(View.GONE);
 

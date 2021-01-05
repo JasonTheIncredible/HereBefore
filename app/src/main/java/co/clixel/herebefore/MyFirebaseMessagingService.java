@@ -21,7 +21,7 @@ import com.google.firebase.messaging.RemoteMessage;
 
 public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
-    private static final String TAG = "MyFirebaseMsgService";
+    private static final String TAG = "MyFirebaseMessagingService";
     private static final String DEFAULT_NOTIFICATION_CHANNEL_ID = "DEFAULT_NOTIFICATION_CHANNEL_ID";
     private static final int PENDING_INTENT_REQ_CODE = 69;
 
@@ -78,18 +78,24 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         String title = remoteMessage.getData().get("title");
         String message = remoteMessage.getData().get("body");
         String notificationId = remoteMessage.getData().get("notification_id");
-        sendMessageNotification(title, message, notificationId);
+        String shapeUUID = remoteMessage.getData().get("shapeUUID");
+        Double lat = Double.parseDouble(remoteMessage.getData().get("lat"));
+        Double lon = Double.parseDouble(remoteMessage.getData().get("lon"));
+        sendMessageNotification(title, message, notificationId, shapeUUID, lat, lon);
     }
 
     /**
      * Build a push notification for a chat message
      */
-    private void sendMessageNotification(String title, String message, String notificationId) {
+    private void sendMessageNotification(String title, String message, String notificationId, String shapeUUID, Double lat, Double lon) {
 
         Log.d(TAG, "sendDmNotification: building a DM notification");
 
         Intent intent = new Intent(getBaseContext(), Map.class);
         intent.putExtra("notification_id", notificationId);
+        intent.putExtra("shapeUUID", shapeUUID);
+        intent.putExtra("lat", lat);
+        intent.putExtra("lon", lon);
 
         PendingIntent pendingIntent = PendingIntent.getActivity(this, PENDING_INTENT_REQ_CODE,
                 intent, PendingIntent.FLAG_UPDATE_CURRENT);

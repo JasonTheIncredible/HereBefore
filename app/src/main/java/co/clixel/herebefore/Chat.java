@@ -152,7 +152,7 @@ public class Chat extends Fragment implements
     private AdView bannerAd;
     private Query mQuery;
     private Drawable imageDrawable, videoDrawable;
-    private int latFirebaseValue, lonFirebaseValue;
+    private int shapeLatInt, shapeLonInt;
     private Integer previouslyHighlightedPosition;
     private final WordTokenizerConfig tokenizerConfig = new WordTokenizerConfig
             .Builder()
@@ -179,13 +179,23 @@ public class Chat extends Fragment implements
                 UUIDToHighlight = extras.getString("UUIDToHighlight");
                 fromDms = extras.getBoolean("fromDms");
                 newShape = extras.getBoolean("newShape");
-                latFirebaseValue = extras.getInt("shapeLat");
-                lonFirebaseValue = extras.getInt("shapeLon");
                 shapeUUID = extras.getString("shapeUUID");
                 userIsWithinShape = extras.getBoolean("userIsWithinShape");
-                // circleLatitude, circleLongitude, and radius will be null if the circle is not new (as a new circle is not being created).
                 circleLatitude = extras.getDouble("circleLatitude");
                 circleLongitude = extras.getDouble("circleLongitude");
+
+                // Get a value with 1 decimal point and use it for Firebase.
+                double nearLeftPrecisionLat = Math.pow(10, 1);
+                // Can't create a firebase path with '.', so get rid of decimal.
+                double nearLeftLatTemp = (int) (nearLeftPrecisionLat * circleLatitude) / nearLeftPrecisionLat;
+                nearLeftLatTemp *= 10;
+                shapeLatInt = (int) nearLeftLatTemp;
+
+                double nearLeftPrecisionLon = Math.pow(10, 1);
+                // Can't create a firebase path with '.', so get rid of decimal.
+                double nearLeftLonTemp = (int) (nearLeftPrecisionLon * circleLongitude) / nearLeftPrecisionLon;
+                nearLeftLonTemp *= 10;
+                shapeLonInt = (int) nearLeftLonTemp;
             } else {
 
                 Log.e(TAG, "onCreateView() -> extras == null");
@@ -312,7 +322,7 @@ public class Chat extends Fragment implements
         // If the value isn't null, check if the latest date is the same as the one in the recyclerView. If the value is null, it's the first time loading.
         if (datesALSize != null) {
 
-            Query query = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID).limitToLast(1);
+            Query query = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child(shapeUUID).limitToLast(1);
             query.addListenerForSingleValueEvent(new ValueEventListener() {
 
                 @Override
@@ -481,7 +491,7 @@ public class Chat extends Fragment implements
                         CircleInformation circleInformation = new CircleInformation();
                         circleInformation.setCircleOptions(circleOptions);
                         circleInformation.setShapeUUID(shapeUUID);
-                        DatabaseReference newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Points").push();
+                        DatabaseReference newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child("Points").push();
                         newFirebaseShape.setValue(circleInformation);
 
                         newShape = false;
@@ -511,8 +521,8 @@ public class Chat extends Fragment implements
 
                                     DmInformation dmInformation = new DmInformation();
                                     dmInformation.setDate(date);
-                                    dmInformation.setLat(latFirebaseValue);
-                                    dmInformation.setLon(lonFirebaseValue);
+                                    dmInformation.setLat(circleLatitude);
+                                    dmInformation.setLon(circleLongitude);
                                     dmInformation.setMessage(input);
                                     dmInformation.setSeenByUser(false);
                                     dmInformation.setShapeUUID(shapeUUID);
@@ -544,7 +554,7 @@ public class Chat extends Fragment implements
                     messageInformation.setMessage(input);
                     messageInformation.setUserIsWithinShape(userIsWithinShape);
                     messageInformation.setUserUUID(userUUID);
-                    DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID).push();
+                    DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child(shapeUUID).push();
                     newMessage.setValue(messageInformation);
 
                     mInput.getText().clear();
@@ -592,13 +602,13 @@ public class Chat extends Fragment implements
         if (!fromDms && !clickedOnMention && datesALSize != null) {
 
             query = FirebaseDatabase.getInstance().getReference()
-                    .child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID)
+                    .child("MessageThreads").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child(shapeUUID)
                     .orderByChild("date")
                     .startAt(datesAL.get(datesALSize));
         } else if (referenceUserUUID == null) {
 
             query = FirebaseDatabase.getInstance().getReference()
-                    .child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID)
+                    .child("MessageThreads").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child(shapeUUID)
                     .limitToLast(20);
         } else {
 
@@ -607,7 +617,7 @@ public class Chat extends Fragment implements
 
                 // Use example: clicking on a DM and pagination occurs multiple times.
                 query = FirebaseDatabase.getInstance().getReference()
-                        .child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID)
+                        .child("MessageThreads").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child(shapeUUID)
                         .orderByChild("date")
                         .endAt(datesAL.get(0))
                         .limitToLast(20);
@@ -615,7 +625,7 @@ public class Chat extends Fragment implements
 
                 // Use example: manually scrolling to the top and loading older messages.
                 query = FirebaseDatabase.getInstance().getReference()
-                        .child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID)
+                        .child("MessageThreads").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child(shapeUUID)
                         .orderByChild("date")
                         .endAt(datesAL.get(mUser.indexOf(referenceUserUUID)))
                         .limitToLast(20);
@@ -778,7 +788,7 @@ public class Chat extends Fragment implements
             initChatAdapter();
         }
 
-        mQuery = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID).limitToLast(1);
+        mQuery = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child(shapeUUID).limitToLast(1);
         childEventListener = new ChildEventListener() {
 
             @Override
@@ -1754,7 +1764,7 @@ public class Chat extends Fragment implements
 
             progressIconIndeterminate.setVisibility(View.VISIBLE);
 
-            DatabaseReference firebaseMessages = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID);
+            DatabaseReference firebaseMessages = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child(shapeUUID);
             firebaseMessages.addListenerForSingleValueEvent(new ValueEventListener() {
 
                 @Override
@@ -1769,8 +1779,8 @@ public class Chat extends Fragment implements
 
                                 String pushID = ds.getKey();
                                 ReportPostInformation reportPostInformation = new ReportPostInformation();
-                                reportPostInformation.setLat(latFirebaseValue);
-                                reportPostInformation.setLon(lonFirebaseValue);
+                                reportPostInformation.setLat(shapeLatInt);
+                                reportPostInformation.setLon(shapeLonInt);
                                 reportPostInformation.setPushID(pushID);
                                 reportPostInformation.setShapeUUID(shapeUUID);
                                 DatabaseReference newReportedPost = FirebaseDatabase.getInstance().getReference().child("ReportedPost").push();
@@ -2534,7 +2544,7 @@ public class Chat extends Fragment implements
         if (!fileIsImage) {
 
             // Video.
-            final StorageReference storageReferenceVideo = FirebaseStorage.getInstance().getReference("Videos").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(String.valueOf(System.currentTimeMillis()));
+            final StorageReference storageReferenceVideo = FirebaseStorage.getInstance().getReference("Videos").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child(String.valueOf(System.currentTimeMillis()));
             storageReferenceVideo.putFile(videoURI);
 
             uploadTask = storageReferenceVideo.putFile(videoURI).addOnSuccessListener(taskSnapshot -> storageReferenceVideo.getDownloadUrl()
@@ -2562,7 +2572,7 @@ public class Chat extends Fragment implements
                             CircleInformation circleInformation = new CircleInformation();
                             circleInformation.setCircleOptions(circleOptions);
                             circleInformation.setShapeUUID(shapeUUID);
-                            DatabaseReference newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Points").push();
+                            DatabaseReference newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child("Points").push();
                             newFirebaseShape.setValue(circleInformation);
 
                             newShape = false;
@@ -2592,8 +2602,8 @@ public class Chat extends Fragment implements
 
                                         DmInformation dmInformation = new DmInformation();
                                         dmInformation.setDate(date);
-                                        dmInformation.setLat(latFirebaseValue);
-                                        dmInformation.setLon(lonFirebaseValue);
+                                        dmInformation.setLat(circleLatitude);
+                                        dmInformation.setLon(circleLongitude);
                                         if (input.length() != 0) {
                                             dmInformation.setMessage(input);
                                         }
@@ -2632,7 +2642,7 @@ public class Chat extends Fragment implements
                         messageInformation.setUserIsWithinShape(userIsWithinShape);
                         messageInformation.setUserUUID(userUUID);
                         messageInformation.setVideoUrl(uri.toString());
-                        DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID).push();
+                        DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child(shapeUUID).push();
                         newMessage.setValue(messageInformation);
 
                         if (removedDuplicatesMentions != null && !removedDuplicatesMentions.isEmpty()) {
@@ -2676,7 +2686,7 @@ public class Chat extends Fragment implements
         } else {
 
             // byteArray and image.
-            final StorageReference storageReferenceImage = FirebaseStorage.getInstance().getReference("Images").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(String.valueOf(System.currentTimeMillis()));
+            final StorageReference storageReferenceImage = FirebaseStorage.getInstance().getReference("Images").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child(String.valueOf(System.currentTimeMillis()));
             storageReferenceImage.putBytes(byteArray);
 
             uploadTask = storageReferenceImage.putBytes(byteArray).addOnSuccessListener(taskSnapshot -> storageReferenceImage.getDownloadUrl()
@@ -2704,7 +2714,7 @@ public class Chat extends Fragment implements
                             CircleInformation circleInformation = new CircleInformation();
                             circleInformation.setCircleOptions(circleOptions);
                             circleInformation.setShapeUUID(shapeUUID);
-                            DatabaseReference newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child("Points").push();
+                            DatabaseReference newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child("Points").push();
                             newFirebaseShape.setValue(circleInformation);
 
                             newShape = false;
@@ -2735,8 +2745,8 @@ public class Chat extends Fragment implements
                                         DmInformation dmInformation = new DmInformation();
                                         dmInformation.setDate(date);
                                         dmInformation.setImageUrl(uri.toString());
-                                        dmInformation.setLat(latFirebaseValue);
-                                        dmInformation.setLon(lonFirebaseValue);
+                                        dmInformation.setLat(circleLatitude);
+                                        dmInformation.setLon(circleLongitude);
                                         if (input.length() != 0) {
                                             dmInformation.setMessage(input);
                                         }
@@ -2774,7 +2784,7 @@ public class Chat extends Fragment implements
                         }
                         messageInformation.setUserIsWithinShape(userIsWithinShape);
                         messageInformation.setUserUUID(userUUID);
-                        DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + latFirebaseValue + ", " + lonFirebaseValue + ")").child(shapeUUID).push();
+                        DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child(shapeUUID).push();
                         newMessage.setValue(messageInformation);
 
                         if (removedDuplicatesMentions != null && !removedDuplicatesMentions.isEmpty()) {

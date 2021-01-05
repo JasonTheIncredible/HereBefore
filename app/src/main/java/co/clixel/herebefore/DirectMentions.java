@@ -53,7 +53,8 @@ public class DirectMentions extends Fragment {
     private String userEmailFirebase;
     private ArrayList<String> mTime, mUser, mImage, mVideo, mText, mShapeUUID;
     private ArrayList<Boolean> mUserIsWithinShape, mSeenByUser;
-    private ArrayList<Long> mShapeLat, mShapeLon, datesAL;
+    private ArrayList<Long> datesAL;
+    private ArrayList<Double> mShapeLat, mShapeLon;
     private RecyclerView dmsRecyclerView;
     private static int index = -1, top = -1, last;
     private ChildEventListener childEventListener;
@@ -336,8 +337,8 @@ public class DirectMentions extends Fragment {
 
                     String shapeUUID = (String) ds.child("shapeUUID").getValue();
                     Boolean userIsWithinShape = (Boolean) ds.child("userIsWithinShape").getValue();
-                    Long lat = (Long) ds.child("lat").getValue();
-                    Long lon = (Long) ds.child("lon").getValue();
+                    Double lat = (Double) ds.child("lat").getValue();
+                    Double lon = (Double) ds.child("lon").getValue();
                     Boolean seenByUser = (Boolean) ds.child("seenByUser").getValue();
                     DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
                     // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
@@ -433,7 +434,7 @@ public class DirectMentions extends Fragment {
                 }
 
                 // Read RecyclerView scroll position (for use in initChatAdapter to prevent scrolling after recyclerView gets updated by another user).
-                if (!firstLoad && dmsRecyclerViewLinearLayoutManager != null && dmsRecyclerView != null) {
+                if (dmsRecyclerViewLinearLayoutManager != null && dmsRecyclerView != null) {
 
                     index = dmsRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
                     last = dmsRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
@@ -479,8 +480,8 @@ public class DirectMentions extends Fragment {
 
                 String shapeUUID = (String) snapshot.child("shapeUUID").getValue();
                 Boolean userIsWithinShape = (Boolean) snapshot.child("userIsWithinShape").getValue();
-                Long lat = (Long) snapshot.child("lat").getValue();
-                Long lon = (Long) snapshot.child("lon").getValue();
+                Double lat = (Double) snapshot.child("lat").getValue();
+                Double lon = (Double) snapshot.child("lon").getValue();
                 Boolean seenByUser = (Boolean) snapshot.child("seenByUser").getValue();
                 DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
                 // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
@@ -671,7 +672,7 @@ public class DirectMentions extends Fragment {
         private final Context mContext;
         private final ArrayList<String> mMessageTime, mMessageUser, mMessageImage, mMessageImageVideo, mMessageText, mShapeUUID;
         private final ArrayList<Boolean> mUserIsWithinShape, mSeenByUser;
-        private final ArrayList<Long> mShapeLat, mShapeLon;
+        private final ArrayList<Double> mShapeLat, mShapeLon;
         // theme == true is light mode.
         private boolean theme;
 
@@ -768,8 +769,8 @@ public class DirectMentions extends Fragment {
                                             Intent Activity = new Intent(mContext, Navigation.class);
                                             Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
                                             Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                            Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()).intValue());
-                                            Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()).intValue());
+                                            Activity.putExtra("circleLatitude", mShapeLat.get(getAdapterPosition()).doubleValue());
+                                            Activity.putExtra("circleLongitude", mShapeLon.get(getAdapterPosition()).doubleValue());
                                             Activity.putExtra("userLatitude", userLatitude);
                                             Activity.putExtra("userLongitude", userLongitude);
                                             Activity.putExtra("UUIDToHighlight", mUser.get(getAdapterPosition()));
@@ -792,8 +793,8 @@ public class DirectMentions extends Fragment {
                             Intent Activity = new Intent(mContext, Navigation.class);
                             Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
                             Activity.putExtra("userIsWithinShape", false);
-                            Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()).intValue());
-                            Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()).intValue());
+                            Activity.putExtra("circleLatitude", mShapeLat.get(getAdapterPosition()).doubleValue());
+                            Activity.putExtra("circleLongitude", mShapeLon.get(getAdapterPosition()).doubleValue());
                             Activity.putExtra("userLatitude", userLatitude);
                             Activity.putExtra("userLongitude", userLongitude);
                             Activity.putExtra("UUIDToHighlight", mUser.get(getAdapterPosition()));
@@ -869,7 +870,7 @@ public class DirectMentions extends Fragment {
             }
         }
 
-        DirectMentionsAdapter(Context context, ArrayList<String> mMessageTime, ArrayList<String> mMessageUser, ArrayList<String> mMessageImage, ArrayList<String> mMessageImageVideo, ArrayList<String> mMessageText, ArrayList<String> mShapeUUID, ArrayList<Boolean> mUserIsWithinShape, ArrayList<Long> mShapeLat, ArrayList<Long> mShapeLon, ArrayList<Boolean> mSeenByUser) {
+        DirectMentionsAdapter(Context context, ArrayList<String> mMessageTime, ArrayList<String> mMessageUser, ArrayList<String> mMessageImage, ArrayList<String> mMessageImageVideo, ArrayList<String> mMessageText, ArrayList<String> mShapeUUID, ArrayList<Boolean> mUserIsWithinShape, ArrayList<Double> mShapeLat, ArrayList<Double> mShapeLon, ArrayList<Boolean> mSeenByUser) {
 
             this.mContext = context;
             this.mMessageTime = mMessageTime;
