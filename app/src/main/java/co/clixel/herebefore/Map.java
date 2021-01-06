@@ -94,7 +94,6 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> newNearLeft, newFarLeft, newNearRight, newFarRight;
     private List<Pair<Integer, Integer>> loadedCoordinates;
 
-    // Remove previous activities from stack when clicking on notification.
     // Set seenByUser to true after clicking a notification, and highlight / scroll to the specific message (same behavior as clicking on DM directly).
     // When app is closed and user clicks on a notification, prevent initial flash of the map screen if possible.
     // Create timer that kicks people out of a new Chat if they haven't posted within an amount of time (or take the photo/video before entering Chat), or keep updating their location. Or have them take media before entering chat and have the media being sent to Firebase create the chat.
@@ -646,8 +645,9 @@ public class Map extends FragmentActivity implements
                                 if (!locationProviderDisabled) {
 
                                     String circleUUID = extras.getString("shapeUUID");
-                                    double lat = extras.getDouble("lat");
-                                    double lon = extras.getDouble("lon");
+                                    // lat and lon will be strings, as that's the only thing allowed in a notification. Convert them before use.
+                                    double lat = Double.parseDouble(extras.getString("lat"));
+                                    double lon = Double.parseDouble(extras.getString("lon"));
 
                                     if (circleUUID != null) {
 
@@ -1001,8 +1001,8 @@ public class Map extends FragmentActivity implements
 
         Log.i(TAG, "enterCircle()");
 
-        LatLng circleToEnterLatLng = null;
-        String circleToEnterUUID = null;
+        LatLng circleToEnterLatLng;
+        String circleToEnterUUID;
         if (circleLatLng == null && newShape) {
             // New circle.
             circleToEnterLatLng = new LatLng(userLocation.getLatitude(), userLocation.getLongitude());
@@ -1011,8 +1011,8 @@ public class Map extends FragmentActivity implements
             // User is entering a circle by clicking on it, so circleTemp != null.
             circleToEnterLatLng = circleTemp.getCenter();
             circleToEnterUUID = circleTempUUID;
-        } else if (!newShape) {
-            // User clicked on the circle button and is entering a circle close to their location.
+        } else {
+            // User clicked on the circle button and is entering a circle close to their location, OR user clicked on a notification.
             circleToEnterLatLng = circleLatLng;
             circleToEnterUUID = circleUUID;
         }
@@ -1062,6 +1062,9 @@ public class Map extends FragmentActivity implements
         Activity.putExtra("userIsWithinShape", userIsWithinShape);
         Activity.putExtra("circleLatitude", circleToEnterLatLng.latitude);
         Activity.putExtra("circleLongitude", circleToEnterLatLng.longitude);
+
+        // Prevent previous activities from being in the back stack.
+        Activity.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
         loadingIcon.setVisibility(View.GONE);
 
