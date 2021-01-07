@@ -91,7 +91,6 @@ public class Navigation extends AppCompatActivity {
 
     @Override
     protected void onRestart() {
-
         super.onRestart();
 
         dmCounter = 0;

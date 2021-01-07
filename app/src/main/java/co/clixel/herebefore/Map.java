@@ -34,6 +34,7 @@ import androidx.fragment.app.FragmentActivity;
 import androidx.preference.PreferenceManager;
 
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
@@ -94,7 +95,6 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> newNearLeft, newFarLeft, newNearRight, newFarRight;
     private List<Pair<Integer, Integer>> loadedCoordinates;
 
-    // Set seenByUser to true after clicking a notification, and highlight / scroll to the specific message (same behavior as clicking on DM directly).
     // When app is closed and user clicks on a notification, prevent initial flash of the map screen if possible.
     // Create timer that kicks people out of a new Chat if they haven't posted within an amount of time (or take the photo/video before entering Chat), or keep updating their location. Or have them take media before entering chat and have the media being sent to Firebase create the chat.
     // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.
@@ -645,11 +645,11 @@ public class Map extends FragmentActivity implements
                                 if (!locationProviderDisabled) {
 
                                     String circleUUID = extras.getString("shapeUUID");
-                                    // lat and lon will be strings, as that's the only thing allowed in a notification. Convert them before use.
-                                    double lat = Double.parseDouble(extras.getString("lat"));
-                                    double lon = Double.parseDouble(extras.getString("lon"));
 
-                                    if (circleUUID != null) {
+                                    // If the user clicks on a notification while the app is running, lat !=0 && lon != 0, so the if statement will run.
+                                    double lat = extras.getDouble("lat");
+                                    double lon = extras.getDouble("lon");
+                                    if (lat != 0 && lon != 0 && circleUUID != null) {
 
                                         // Check distance to circleTemp and enter it.
                                         float[] distance = new float[2];
@@ -657,6 +657,20 @@ public class Map extends FragmentActivity implements
 
                                         // If distance <= 2, enterCircle(location, circleTemp.getCenter(), false, true). Else, enterCircle(location, circleTemp.getCenter(), false, false).
                                         enterCircle(location, new LatLng(lat, lon), circleUUID, false, distance[0] <= 2);
+                                        return;
+                                    }
+
+                                    // If the code got to this point, the user clicked on a notification while the app was closed.
+                                    double latDouble = Double.parseDouble(extras.getString("lat"));
+                                    double lonDouble = Double.parseDouble(extras.getString("lon"));
+                                    if (circleUUID != null) {
+
+                                        // Check distance to circleTemp and enter it.
+                                        float[] distance = new float[2];
+                                        Location.distanceBetween(latDouble, lonDouble, location.getLatitude(), location.getLongitude(), distance);
+
+                                        // If distance <= 2, enterCircle(location, circleTemp.getCenter(), false, true). Else, enterCircle(location, circleTemp.getCenter(), false, false).
+                                        enterCircle(location, new LatLng(latDouble, lonDouble), circleUUID, false, distance[0] <= 2);
                                     }
                                 } else {
 
@@ -1023,13 +1037,10 @@ public class Map extends FragmentActivity implements
         if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) != null) {
 
             // User signed in.
-
             Activity = new Intent(Map.this, Navigation.class);
-
         } else {
 
             // User NOT signed in.
-
             Activity = new Intent(Map.this, SignIn.class);
         }
 
@@ -1066,9 +1077,68 @@ public class Map extends FragmentActivity implements
         // Prevent previous activities from being in the back stack.
         Activity.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
-        loadingIcon.setVisibility(View.GONE);
+        // If getIntent().getExtras != null, user is entering a circle from a notification and seenByUser needs to be set to true. Else, enter circle like normal.
+        if (getIntent().getExtras() != null) {
 
-        startActivity(Activity);
+                String userUUID = getIntent().getExtras().getString("userUUID");
+                Activity.putExtra("UUIDToHighlight", userUUID);
+
+                // If user has a Google account, get email one way. Else, get email another way.
+                GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(this);
+                String email;
+                if (acct != null) {
+
+                    email = acct.getEmail();
+                } else {
+
+                    SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+                    email = sharedPreferences.getString("userToken", "null");
+                }
+                // Firebase does not allow ".", so replace them with ",".
+                String userEmailFirebase = email.replace(".", ",");
+
+                // Set "seenByUser" to true so it is not highlighted in the future.
+                DatabaseReference Dms = FirebaseDatabase.getInstance().getReference().child("Users").child(userEmailFirebase).child("ReceivedDms");
+                Dms.addListenerForSingleValueEvent(new ValueEventListener() {
+
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+
+                        for (DataSnapshot ds : snapshot.getChildren()) {
+
+                            String mUserUUID = (String) ds.child("userUUID").getValue();
+
+                            if (mUserUUID != null) {
+
+                                if (mUserUUID.equals(userUUID)) {
+
+                                    if (!(Boolean) ds.child("seenByUser").getValue()) {
+
+                                        ds.child("seenByUser").getRef().setValue(true);
+
+                                        loadingIcon.setVisibility(View.GONE);
+
+                                        startActivity(Activity);
+
+                                        return;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {
+
+                        toastMessageLong(error.getMessage());
+                    }
+                });
+        } else {
+
+            loadingIcon.setVisibility(View.GONE);
+
+            startActivity(Activity);
+        }
     }
 
     protected void updatePreferences() {

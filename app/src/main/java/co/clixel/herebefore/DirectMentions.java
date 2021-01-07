@@ -774,7 +774,6 @@ public class DirectMentions extends Fragment {
                                             Activity.putExtra("userLatitude", userLatitude);
                                             Activity.putExtra("userLongitude", userLongitude);
                                             Activity.putExtra("UUIDToHighlight", mUser.get(getAdapterPosition()));
-                                            Activity.putExtra("fromDms", true);
 
                                             loadingIcon.setVisibility(View.GONE);
 
@@ -798,7 +797,6 @@ public class DirectMentions extends Fragment {
                             Activity.putExtra("userLatitude", userLatitude);
                             Activity.putExtra("userLongitude", userLongitude);
                             Activity.putExtra("UUIDToHighlight", mUser.get(getAdapterPosition()));
-                            Activity.putExtra("fromDms", true);
 
                             loadingIcon.setVisibility(View.GONE);
 

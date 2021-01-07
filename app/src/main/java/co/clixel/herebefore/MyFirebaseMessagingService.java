@@ -79,21 +79,23 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         String message = remoteMessage.getData().get("body");
         String notificationId = remoteMessage.getData().get("notification_id");
         String shapeUUID = remoteMessage.getData().get("shapeUUID");
+        String userUUID = remoteMessage.getData().get("userUUID");
         Double lat = Double.parseDouble(remoteMessage.getData().get("lat"));
         Double lon = Double.parseDouble(remoteMessage.getData().get("lon"));
-        sendMessageNotification(title, message, notificationId, shapeUUID, lat, lon);
+        sendMessageNotification(title, message, notificationId, shapeUUID, userUUID, lat, lon);
     }
 
     /**
      * Build a push notification for a chat message
      */
-    private void sendMessageNotification(String title, String message, String notificationId, String shapeUUID, Double lat, Double lon) {
+    private void sendMessageNotification(String title, String message, String notificationId, String shapeUUID, String userUUID, Double lat, Double lon) {
 
         Log.d(TAG, "sendDmNotification: building a DM notification");
 
         Intent intent = new Intent(getBaseContext(), Map.class);
         intent.putExtra("notification_id", notificationId);
         intent.putExtra("shapeUUID", shapeUUID);
+        intent.putExtra("userUUID", userUUID);
         intent.putExtra("lat", lat);
         intent.putExtra("lon", lon);
 
