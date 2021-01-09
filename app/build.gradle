@@ -81,7 +81,7 @@ dependencies {
 
     implementation 'com.otaliastudios:transcoder:0.9.1'
 
-    implementation 'com.mikepenz:aboutlibraries:8.6.3'
+    implementation 'com.mikepenz:aboutlibraries:8.6.5'
 
     implementation 'com.linkedin.android.spyglass:spyglass:2.2.0'
 

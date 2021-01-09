@@ -95,20 +95,18 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> newNearLeft, newFarLeft, newNearRight, newFarRight;
     private List<Pair<Integer, Integer>> loadedCoordinates;
 
-    // When app is closed and user clicks on a notification, prevent initial flash of the map screen if possible.
     // Create timer that kicks people out of a new Chat if they haven't posted within an amount of time (or take the photo/video before entering Chat), or keep updating their location. Or have them take media before entering chat and have the media being sent to Firebase create the chat.
     // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.
-    // Chat very laggy on emulator - caused by multiple clickableSpans?
     // Prevent data scraping (hide email addresses and other personal information).
     // Update to Node.js 10.
 
     // Require picture on creating a shape? Also, long press a shape to see a popup of that picture.
+    // Allow users to get "likes". Allow more likes per second with a higher "level" like DS.
     // After clicking on a DM and going to that Chat, allow user to find that same shape on the map.
     // Create a variable with the point's radius and use that instead of "1" to future-proof changes. Also, make "creating a point" more accurate to the user's location.
     // Deal with deprecated methods.
     // After clicking on a UUID, keep it expanded after updating recyclerView.
-    // Create a "New messages" toast if user is scroll up (or maybe just if user is scrolled up and restarts?)
-    // Allow users to get "likes".
+    // Create a "New messages" toast if user is scrolled up (or maybe just if user is scrolled up and restarts?)
     // Only be able to see things you've visited - Kenny.
     // Develop an Apple version.
     // Add ability to add both picture and video to firebase at the same time.
@@ -133,7 +131,7 @@ public class Map extends FragmentActivity implements
     // Panoramic view, like gMaps.
 
     // Test on multiple devices.
-    // Remember the AC: Origins inspiration. Also, airdrop - create items in the world. Also, gMaps drag and drop.
+    // Remember the AC: Origins inspiration. Also, airdrop - create items in the world. Also, gMaps drag and drop. Also, DS virtual items in the world.
     // Unit testing.
     // Decrease app size (compress repeating code into methods) / Check on accumulation of size over time.
     // Work on deprecated methods.
