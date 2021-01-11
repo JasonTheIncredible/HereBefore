@@ -182,6 +182,15 @@ public class DirectMentions extends Fragment {
                 @Override
                 public void onDataChange(@NonNull DataSnapshot snapshot) {
 
+                    // User reloaded app but user has no DMs.
+                    if (snapshot.getChildrenCount() == 0) {
+
+                        loadingIcon.setVisibility(View.GONE);
+                        noDmsTextView.setVisibility(View.VISIBLE);
+                        addQuery();
+                        return;
+                    }
+
                     for (DataSnapshot ds : snapshot.getChildren()) {
 
                         Long date = (Long) ds.child("date").getValue();

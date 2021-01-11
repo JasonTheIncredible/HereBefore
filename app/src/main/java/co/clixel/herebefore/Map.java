@@ -95,13 +95,13 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> newNearLeft, newFarLeft, newNearRight, newFarRight;
     private List<Pair<Integer, Integer>> loadedCoordinates;
 
-    // Create timer that kicks people out of a new Chat if they haven't posted within an amount of time (or take the photo/video before entering Chat), or keep updating their location. Or have them take media before entering chat and have the media being sent to Firebase create the chat.
-    // Make recyclerView load faster, possibly by adding layouts for all video/picture and then adding them when possible. Also, fix issue where images / videos are changing size with orientation change. Possible: Send image dimensions to Firebase and set a "null" image of that size.
+    // Create timer that kicks people out of a new Chat if they haven't posted within an amount of time (or take the photo/video before entering Chat and keep tracking location - should increase accuracy), or keep updating their location. Or have them take media before entering chat and have the media being sent to Firebase create the chat.
     // Prevent data scraping (hide email addresses and other personal information).
     // Update to Node.js 10.
 
     // Require picture on creating a shape? Also, long press a shape to see a popup of that picture.
     // Allow users to get "likes". Allow more likes per second with a higher "level" like DS.
+    // If user is outside of circle, show how far outside - requires checking location every time before posting new message.
     // After clicking on a DM and going to that Chat, allow user to find that same shape on the map.
     // Create a variable with the point's radius and use that instead of "1" to future-proof changes. Also, make "creating a point" more accurate to the user's location.
     // Deal with deprecated methods.
@@ -142,6 +142,7 @@ public class Map extends FragmentActivity implements
     // Make sure aboutLibraries includes all libraries, and make sure all licenses are fair use (NOT GPL).
     // Make sure the secret stuff is secret.
     // Switch existing values in Firebase (including storage).
+    // Form LLC?
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

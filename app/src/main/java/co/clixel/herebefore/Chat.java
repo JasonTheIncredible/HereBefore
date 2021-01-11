@@ -334,6 +334,7 @@ public class Chat extends Fragment implements
                         progressIconIndeterminate.setVisibility(View.GONE);
                         mInput.setFocusable(false);
                         toastMessageLong("Shape was deleted. Please return to map.");
+                        return;
                     }
 
                     for (DataSnapshot ds : snapshot.getChildren()) {
@@ -694,7 +695,11 @@ public class Chat extends Fragment implements
                     String videoUrl = (String) ds.child("videoUrl").getValue();
                     String messageText = (String) ds.child("message").getValue();
 
-                    SpannableString spannableMessageText = createSpannableMessage(messageText);
+                    SpannableString spannableMessageText = null;
+                    if (messageText != null) {
+
+                        spannableMessageText = createSpannableMessage(messageText);
+                    }
 
                     Boolean userIsWithinShape = (Boolean) ds.child("userIsWithinShape").getValue();
                     DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
@@ -828,7 +833,11 @@ public class Chat extends Fragment implements
                 String videoUrl = (String) snapshot.child("videoUrl").getValue();
                 String messageText = (String) snapshot.child("message").getValue();
 
-                SpannableString spannableMessageText = createSpannableMessage(messageText);
+                SpannableString spannableMessageText = null;
+                if (messageText != null) {
+
+                    spannableMessageText = createSpannableMessage(messageText);
+                }
 
                 Boolean userIsWithinShape = (Boolean) snapshot.child("userIsWithinShape").getValue();
                 DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
@@ -1214,40 +1223,24 @@ public class Chat extends Fragment implements
                     menu.add(0, R.string.report_post, 0, R.string.report_post);
                 });
 
+                // Expand userUUID.
                 if (messageUserInside != null) {
 
                     messageUserInside.setOnClickListener(v -> {
 
                         ViewGroup.LayoutParams params = messageUserInside.getLayoutParams();
-                        int screenWidth = Resources.getSystem().getDisplayMetrics().widthPixels;
-
-                        if (params.width == screenWidth) {
-
-                            // params is in pixels, so convert it to dp.
-                            params.width = (int) (120 * (itemView.getContext().getResources().getDisplayMetrics().density));
-                        } else {
-
-                            params.width = screenWidth;
-                        }
+                        params.width = ViewGroup.LayoutParams.WRAP_CONTENT;
                         messageUserInside.setLayoutParams(params);
                     });
                 }
 
+                // Expand userUUID.
                 if (messageUserOutside != null) {
 
                     messageUserOutside.setOnClickListener(v -> {
 
                         ViewGroup.LayoutParams params = messageUserOutside.getLayoutParams();
-                        int screenWidth = Resources.getSystem().getDisplayMetrics().widthPixels;
-
-                        if (params.width == screenWidth) {
-
-                            // params is in pixels, so convert it to dp.
-                            params.width = (int) (120 * (itemView.getContext().getResources().getDisplayMetrics().density));
-                        } else {
-
-                            params.width = screenWidth;
-                        }
+                        params.width = ViewGroup.LayoutParams.WRAP_CONTENT;
                         messageUserOutside.setLayoutParams(params);
                     });
                 }

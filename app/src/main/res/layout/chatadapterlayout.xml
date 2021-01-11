@@ -12,6 +12,7 @@
         android:layout_alignParentTop="true"
         android:layout_marginStart="10dp"
         android:layout_marginTop="4dp"
+        android:layout_marginEnd="4dp"
         tools:text="Time" />
 
     <TextView
@@ -80,6 +81,7 @@
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
         android:layout_alignParentEnd="true"
+        android:layout_marginStart="4dp"
         android:layout_marginTop="4dp"
         android:layout_marginEnd="10dp"
         tools:text="Time" />
@@ -90,7 +92,6 @@
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
         android:layout_marginTop="4dp"
-        android:layout_marginEnd="0dp"
         android:layout_toStartOf="@id/messageTimeOutside"
         android:ellipsize="end"
         android:singleLine="true"
