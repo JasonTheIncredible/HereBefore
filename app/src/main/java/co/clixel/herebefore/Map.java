@@ -11,10 +11,12 @@ import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
+import android.provider.MediaStore;
 import android.provider.Settings;
 import android.util.Log;
 import android.util.Pair;
@@ -30,6 +32,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
 import androidx.fragment.app.FragmentActivity;
 import androidx.preference.PreferenceManager;
 
@@ -62,7 +65,9 @@ import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -76,15 +81,17 @@ public class Map extends FragmentActivity implements
         PopupMenu.OnMenuItemClickListener {
 
     private static final String TAG = "Map";
+    private static final int Request_User_Location_Code = 69420, Request_ID_Take_Photo = 69, Request_ID_Record_Video = 420;
     private GoogleMap mMap;
-    private static final int Request_User_Location_Code = 99;
     private Circle circleTemp;
     private ChildEventListener childEventListenerDms, childEventListenerNearLeft, childEventListenerFarLeft, childEventListenerNearRight, childEventListenerFarRight;
     private String circleTempUUID, circleTempUUIDTemp;
     private Button circleButton, mapTypeButton, settingsButton;
     private ImageButton dmButton;
     private PopupMenu popupMapType;
-    private boolean locationProviderDisabled = false, firstLoadCamera = true, cameraMoved = false, waitingForBetterLocationAccuracy = false, badAccuracy = false, restarted = false, mapCleared = false;
+    private Uri imageURI, videoURI;
+    private File image, video;
+    private boolean locationProviderDisabled = false, firstLoadCamera = true, cameraMoved = false, waitingForBetterLocationAccuracy = false, badAccuracy = false, restarted = false, mapCleared = false, checkPermissionsPicture;
     private final ArrayList<String> circleUUIDsAL = new ArrayList<>();
     private final ArrayList<LatLng> circleCentersAL = new ArrayList<>();
     private int newNearLeftLat, newNearLeftLon, newFarLeftLat, newFarLeftLon, newNearRightLat, newNearRightLon, newFarRightLat, newFarRightLon;
@@ -95,9 +102,9 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> newNearLeft, newFarLeft, newNearRight, newFarRight;
     private List<Pair<Integer, Integer>> loadedCoordinates;
 
+    // Create a chat if one doesn't exist at the user's location. Else, create a chat.
     // Create timer that kicks people out of a new Chat if they haven't posted within an amount of time (or take the photo/video before entering Chat and keep tracking location - should increase accuracy), or keep updating their location. Or have them take media before entering chat and have the media being sent to Firebase create the chat.
     // Prevent data scraping (hide email addresses and other personal information).
-    // Update to Node.js 10.
 
     // Require picture on creating a shape? Also, long press a shape to see a popup of that picture.
     // Allow users to get "likes". Allow more likes per second with a higher "level" like DS.
@@ -130,6 +137,7 @@ public class Map extends FragmentActivity implements
     // Update general look of app.
     // Panoramic view, like gMaps.
 
+    // Update to Node.js 10.
     // Test on multiple devices.
     // Remember the AC: Origins inspiration. Also, airdrop - create items in the world. Also, gMaps drag and drop. Also, DS virtual items in the world.
     // Unit testing.
@@ -332,81 +340,283 @@ public class Map extends FragmentActivity implements
             }
         });
 
-        // Create a point and enter chat.
+        // Take a photo. Create chat if one doesn't exist.
         circleButton.setOnClickListener(view -> {
 
             Log.i(TAG, "onStart() -> circleButton -> onClick");
 
-            // Check location permissions.
-            if (ContextCompat.checkSelfPermission(getBaseContext(),
-                    Manifest.permission.ACCESS_FINE_LOCATION)
-                    == PackageManager.PERMISSION_GRANTED) {
+            if (checkPermissionsPicture()) {
 
-                loadingIcon.setVisibility(View.VISIBLE);
+                cancelToasts();
 
-                // Create a point and to to Chat.java or SignIn.java.
-                FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
-
-                mFusedLocationClient.getLastLocation()
-                        .addOnSuccessListener(Map.this, location -> {
-
-                            // Add circle to the map and go to Chat.
-                            if (location != null) {
-
-                                if (!locationProviderDisabled) {
-
-                                    // This prevent the user from entering a circle before the map has adjusted to their location the first time.
-                                    if (!mMap.isMyLocationEnabled()) {
-
-                                        loadingIcon.setVisibility(View.GONE);
-                                        return;
-                                    }
-
-                                    // If user is within a circle, enter it. Else, cycle through all circles that are 2 meters away and enter the closest one. Else, enter a new one.
-                                    float[] oldDistance = new float[2];
-                                    oldDistance[0] = 2f;
-                                    LatLng latLng = null;
-                                    String uuid = null;
-                                    for (int i = 0; i < circleCentersAL.size(); i++) {
-
-                                        float[] newDistance = new float[2];
-                                        Location.distanceBetween(circleCentersAL.get(i).latitude, circleCentersAL.get(i).longitude, location.getLatitude(), location.getLongitude(), newDistance);
-
-                                        if (newDistance[0] <= 1) {
-
-                                            enterCircle(location, circleCentersAL.get(i), circleUUIDsAL.get(i), false, true);
-
-                                            return;
-                                        } else if (newDistance[0] <= oldDistance[0]) {
-
-                                            oldDistance[0] = newDistance[0];
-                                            latLng = circleCentersAL.get(i);
-                                            uuid = circleUUIDsAL.get(i);
-                                        }
-                                    }
-
-                                    // latLng and uuid will be null if it is a new circle, and newShape will be true.
-                                    enterCircle(location, latLng, uuid, latLng == null, true);
-                                } else {
-
-                                    loadingIcon.setVisibility(View.GONE);
-                                    toastMessageLong("Enable your location provider and try again.");
-                                }
-                            } else {
-
-                                loadingIcon.setVisibility(View.GONE);
-                                Log.e(TAG, "onStart() -> creatChatButton -> location == null");
-                                toastMessageLong("An error occurred: your location is null.");
-                            }
-                        });
-            } else {
-
-                checkLocationPermissions();
+                startActivityTakePhoto();
             }
+        });
+
+        // Record a video. Create chat if one doesn't exist.
+        circleButton.setOnLongClickListener(view -> {
+
+            Log.i(TAG, "onStart() -> circleButton -> onLongClick");
+
+            if (checkPermissionsVideo()) {
+
+                cancelToasts();
+
+                startActivityRecordVideo();
+            }
+
+            return false;
         });
 
         // Clear the cache. This should clear the issue where Chat.java was creating files that were never deleted.
         deleteDirectory(this.getCacheDir());
+    }
+
+    private boolean checkPermissionsPicture() {
+
+        Log.i(TAG, "checkPermissionsPicture()");
+
+        // boolean to loop back to this point and start activity after xPermissionAlertDialog.
+        checkPermissionsPicture = true;
+
+        int permissionCamera = ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA);
+        int permissionWriteExternalStorage = ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        List<String> listPermissionsNeeded = new ArrayList<>();
+
+        if (permissionCamera != PackageManager.PERMISSION_GRANTED) {
+
+            listPermissionsNeeded.add(Manifest.permission.CAMERA);
+        }
+
+        if (permissionWriteExternalStorage != PackageManager.PERMISSION_GRANTED) {
+
+            listPermissionsNeeded.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        }
+
+        if (!listPermissionsNeeded.isEmpty()) {
+
+            requestPermissions(listPermissionsNeeded.toArray(new String[0]), Request_ID_Take_Photo);
+            return false;
+        }
+
+        return true;
+    }
+
+    private boolean checkPermissionsVideo() {
+
+        Log.i(TAG, "checkPermissionsVideo()");
+
+        // boolean to loop back to this point and start activity after xPermissionAlertDialog.
+        checkPermissionsPicture = false;
+
+        int permissionCamera = ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA);
+        int permissionWriteExternalStorage = ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        int permissionRecordAudio = ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO);
+        List<String> listPermissionsNeeded = new ArrayList<>();
+
+        if (permissionCamera != PackageManager.PERMISSION_GRANTED) {
+
+            listPermissionsNeeded.add(Manifest.permission.CAMERA);
+        }
+
+        if (permissionWriteExternalStorage != PackageManager.PERMISSION_GRANTED) {
+
+            listPermissionsNeeded.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        }
+
+        if (permissionRecordAudio != PackageManager.PERMISSION_GRANTED) {
+
+            listPermissionsNeeded.add(Manifest.permission.RECORD_AUDIO);
+        }
+
+        if (!listPermissionsNeeded.isEmpty()) {
+
+            requestPermissions(listPermissionsNeeded.toArray(new String[0]), Request_ID_Record_Video);
+            return false;
+        }
+
+        return true;
+    }
+
+    private void startActivityTakePhoto() {
+
+        Log.i(TAG, "startActivityTakePhoto()");
+
+        // Permission was granted, yay! Do the task you need to do.
+        Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        if (cameraIntent.resolveActivity(this.getPackageManager()) != null) {
+
+            // Create the File where the photo should go
+            File photoFile = null;
+            try {
+
+                photoFile = createImageFile();
+            } catch (IOException ex) {
+
+                // Error occurred while creating the File
+                toastMessageLong(ex.getMessage());
+            }
+            // Continue only if the File was successfully created
+            if (photoFile != null) {
+
+                imageURI = FileProvider.getUriForFile(this,
+                        "com.example.android.fileprovider",
+                        photoFile);
+                cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, imageURI);
+                startActivityForResult(cameraIntent, 3);
+            }
+        }
+    }
+
+    private void startActivityRecordVideo() {
+
+        Log.i(TAG, "startActivityRecordVideo()");
+
+        // Permission was granted, yay! Do the task you need to do.
+        Intent videoIntent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
+        if (videoIntent.resolveActivity(this.getPackageManager()) != null) {
+
+            // Create the File where the video should go
+            File videoFile = null;
+            try {
+
+                videoFile = createVideoFile();
+            } catch (IOException ex) {
+
+                // Error occurred while creating the File
+                toastMessageLong(ex.getMessage());
+            }
+            // Continue only if the File was successfully created
+            if (videoFile != null) {
+
+                videoURI = FileProvider.getUriForFile(this,
+                        "com.example.android.fileprovider",
+                        videoFile);
+                videoIntent.putExtra(MediaStore.EXTRA_OUTPUT, videoURI);
+                // Limit the amount of time a video can be recorded (in seconds).
+                videoIntent.putExtra(MediaStore.EXTRA_DURATION_LIMIT, 30);
+                startActivityForResult(videoIntent, 4);
+            }
+        }
+    }
+
+    private void cameraPermissionAlertAsync(Boolean checkPermissionsPicture) {
+
+        AlertDialog.Builder alert;
+        alert = new AlertDialog.Builder(this);
+
+        HandlerThread cameraHandlerThread = new HandlerThread("CameraHandlerThread");
+        cameraHandlerThread.start();
+        Handler mHandler = new Handler(cameraHandlerThread.getLooper());
+        Runnable runnable = () ->
+
+                alert.setCancelable(false)
+                        .setTitle("Camera Permission Required")
+                        .setMessage("Here Before needs permission to use your camera to take pictures and video.")
+                        .setPositiveButton("OK", (dialogInterface, i) -> {
+
+                            if (checkPermissionsPicture) {
+
+                                checkPermissionsPicture();
+                            } else {
+
+                                checkPermissionsVideo();
+                            }
+                        })
+                        .create()
+                        .show();
+
+        mHandler.post(runnable);
+    }
+
+    private void writeExternalStoragePermissionAlertAsync(Boolean checkPermissionsPicture) {
+
+        AlertDialog.Builder alert;
+        alert = new AlertDialog.Builder(this);
+
+        HandlerThread writeExternalStoragePermissionHandlerThread = new HandlerThread("writeExternalStorageHandlerThread");
+        writeExternalStoragePermissionHandlerThread.start();
+        Handler mHandler = new Handler(writeExternalStoragePermissionHandlerThread.getLooper());
+        Runnable runnable = () ->
+
+                alert.setCancelable(false)
+                        .setTitle("Storage Permission Required")
+                        .setMessage("Here Before needs permission to use your storage to save photos and videos.")
+                        .setPositiveButton("OK", (dialogInterface, i) -> {
+
+                            if (checkPermissionsPicture) {
+
+                                checkPermissionsPicture();
+                            } else {
+
+                                checkPermissionsVideo();
+                            }
+                        })
+                        .create()
+                        .show();
+
+        mHandler.post(runnable);
+    }
+
+    private void audioPermissionAlertAsync(Boolean checkPermissionsPicture) {
+
+        AlertDialog.Builder alert;
+        alert = new AlertDialog.Builder(this);
+
+        HandlerThread audioPermissionHandlerThread = new HandlerThread("audioHandlerThread");
+        audioPermissionHandlerThread.start();
+        Handler mHandler = new Handler(audioPermissionHandlerThread.getLooper());
+        Runnable runnable = () ->
+
+                alert.setCancelable(false)
+                        .setTitle("Audio Permission Required")
+                        .setMessage("Here Before needs permission to record audio during video recording.")
+                        .setPositiveButton("OK", (dialogInterface, i) -> {
+
+                            if (checkPermissionsPicture) {
+
+                                checkPermissionsPicture();
+                            } else {
+
+                                checkPermissionsVideo();
+                            }
+                        })
+                        .create()
+                        .show();
+
+        mHandler.post(runnable);
+    }
+
+    private File createImageFile() throws IOException {
+
+        Log.i(TAG, "createImageFile()");
+
+        // Create an image file name
+        String imageFileName = "HereBefore_" + System.currentTimeMillis() + "_jpeg";
+        File storageDir = this.getCacheDir();
+        image = File.createTempFile(
+                imageFileName,  /* prefix */
+                ".jpeg",         /* suffix */
+                storageDir      /* directory */
+        );
+
+        return image;
+    }
+
+    private File createVideoFile() throws IOException {
+
+        Log.i(TAG, "createVideoFile()");
+
+        // Create a video file name
+        String videoFileName = "HereBefore_" + System.currentTimeMillis() + "_mp4";
+        File storageDir = this.getCacheDir();
+        video = File.createTempFile(
+                videoFileName,  /* prefix */
+                ".mp4",         /* suffix */
+                storageDir      /* directory */
+        );
+
+        return video;
     }
 
     @Override
@@ -582,6 +792,7 @@ public class Map extends FragmentActivity implements
         if (circleButton != null) {
 
             circleButton.setOnClickListener(null);
+            circleButton.setOnLongClickListener(null);
         }
 
         if (mMap != null) {
@@ -839,27 +1050,123 @@ public class Map extends FragmentActivity implements
 
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
-        // If request is cancelled, the result arrays are empty.
-        if (requestCode == Request_User_Location_Code) {
+        switch (requestCode) {
 
-            if (grantResults.length > 0) {
+            case Request_User_Location_Code: {
 
-                if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION)) {
+                if (grantResults.length > 0) {
 
-                    locationPermissionAlertAsync();
-                } else if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION)) {
 
-                    // Permission was granted, yay! Do the location-related task you need to do.
-                    if (ContextCompat.checkSelfPermission(this,
-                            Manifest.permission.ACCESS_FINE_LOCATION)
-                            == PackageManager.PERMISSION_GRANTED) {
+                        locationPermissionAlertAsync();
+                    } else if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
 
-                        startLocationUpdates();
+                        // Permission was granted, yay! Do the location-related task you need to do.
+                        if (ContextCompat.checkSelfPermission(this,
+                                Manifest.permission.ACCESS_FINE_LOCATION)
+                                == PackageManager.PERMISSION_GRANTED) {
+
+                            startLocationUpdates();
+                        }
+                    } else {
+
+                        toastMessageLong("Location permission is required. Please enable it manually through the Android settings menu.");
                     }
-                } else if (grantResults[0] != PackageManager.PERMISSION_GRANTED) {
-
-                    toastMessageLong("Location permission is required. Please enable it manually through the Android settings menu.");
                 }
+
+                break;
+            }
+
+            case Request_ID_Take_Photo: {
+
+                HashMap<String, Integer> perms = new HashMap<>();
+                perms.put(Manifest.permission.CAMERA, PackageManager.PERMISSION_GRANTED);
+                perms.put(Manifest.permission.WRITE_EXTERNAL_STORAGE, PackageManager.PERMISSION_GRANTED);
+
+                if (grantResults.length > 0) {
+
+                    for (int i = 0; i < permissions.length; i++)
+                        perms.put(permissions[i], grantResults[i]);
+
+                    Integer cameraPermissions = perms.get(Manifest.permission.CAMERA);
+                    Integer externalStoragePermissions = perms.get(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+
+                    if (cameraPermissions != null && externalStoragePermissions != null) {
+
+                        if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.CAMERA)) {
+
+                            Log.d(TAG, "Request_ID_Take_Photo -> Camera permissions were not granted. Ask again.");
+
+                            cameraPermissionAlertAsync(checkPermissionsPicture);
+                        } else if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+
+                            Log.d(TAG, "Request_ID_Take_Photo -> Storage permissions were not granted. Ask again.");
+
+                            writeExternalStoragePermissionAlertAsync(checkPermissionsPicture);
+                        } else if (cameraPermissions == PackageManager.PERMISSION_GRANTED
+                                && externalStoragePermissions == PackageManager.PERMISSION_GRANTED) {
+
+                            Log.d(TAG, "Request_ID_Take_Photo -> Camera and Write External Storage permission granted.");
+                            // Process the normal workflow.
+                            startActivityTakePhoto();
+                        } else if (grantResults[0] != PackageManager.PERMISSION_GRANTED) {
+
+                            toastMessageLong("Camera and External Storage permissions are required. Please enable them manually through the Android settings menu.");
+                        }
+                    }
+                }
+
+                break;
+            }
+
+            case Request_ID_Record_Video: {
+
+                HashMap<String, Integer> perms = new HashMap<>();
+                perms.put(Manifest.permission.CAMERA, PackageManager.PERMISSION_GRANTED);
+                perms.put(Manifest.permission.WRITE_EXTERNAL_STORAGE, PackageManager.PERMISSION_GRANTED);
+                perms.put(Manifest.permission.RECORD_AUDIO, PackageManager.PERMISSION_GRANTED);
+
+                if (grantResults.length > 0) {
+
+                    for (int i = 0; i < permissions.length; i++)
+                        perms.put(permissions[i], grantResults[i]);
+
+                    Integer cameraPermissions = perms.get(Manifest.permission.CAMERA);
+                    Integer externalStoragePermissions = perms.get(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+                    Integer audioPermissions = perms.get(Manifest.permission.RECORD_AUDIO);
+
+                    if (cameraPermissions != null && externalStoragePermissions != null && audioPermissions != null) {
+
+                        if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.CAMERA)) {
+
+                            Log.d(TAG, "Request_ID_Take_Photo -> Camera permissions were not granted. Ask again.");
+
+                            cameraPermissionAlertAsync(checkPermissionsPicture);
+                        } else if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+
+                            Log.d(TAG, "Request_ID_Take_Photo -> Storage permissions were not granted. Ask again.");
+
+                            writeExternalStoragePermissionAlertAsync(checkPermissionsPicture);
+                        } else if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.RECORD_AUDIO)) {
+
+                            Log.d(TAG, "Request_ID_Record_Video -> Audio permissions were not granted. Ask again.");
+
+                            audioPermissionAlertAsync(checkPermissionsPicture);
+                        } else if (cameraPermissions == PackageManager.PERMISSION_GRANTED
+                                && externalStoragePermissions == PackageManager.PERMISSION_GRANTED
+                                && audioPermissions == PackageManager.PERMISSION_GRANTED) {
+
+                            Log.d(TAG, "Request_ID_Record_Video -> Camera, Write External Storage, and Record Audio permission granted.");
+                            // Process the normal workflow.
+                            startActivityRecordVideo();
+                        } else if (grantResults[0] != PackageManager.PERMISSION_GRANTED) {
+
+                            toastMessageLong("Camera, External Storage, and Audio permissions are required. Please enable them manually through the Android settings menu.");
+                        }
+                    }
+                }
+
+                break;
             }
         }
     }
@@ -1079,59 +1386,59 @@ public class Map extends FragmentActivity implements
         // If getIntent().getExtras != null, user is entering a circle from a notification and seenByUser needs to be set to true. Else, enter circle like normal.
         if (getIntent().getExtras() != null) {
 
-                String userUUID = getIntent().getExtras().getString("userUUID");
-                Activity.putExtra("UUIDToHighlight", userUUID);
+            String userUUID = getIntent().getExtras().getString("userUUID");
+            Activity.putExtra("UUIDToHighlight", userUUID);
 
-                // If user has a Google account, get email one way. Else, get email another way.
-                GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(this);
-                String email;
-                if (acct != null) {
+            // If user has a Google account, get email one way. Else, get email another way.
+            GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(this);
+            String email;
+            if (acct != null) {
 
-                    email = acct.getEmail();
-                } else {
+                email = acct.getEmail();
+            } else {
 
-                    SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-                    email = sharedPreferences.getString("userToken", "null");
-                }
-                // Firebase does not allow ".", so replace them with ",".
-                String userEmailFirebase = email.replace(".", ",");
+                SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+                email = sharedPreferences.getString("userToken", "null");
+            }
+            // Firebase does not allow ".", so replace them with ",".
+            String userEmailFirebase = email.replace(".", ",");
 
-                // Set "seenByUser" to true so it is not highlighted in the future.
-                DatabaseReference Dms = FirebaseDatabase.getInstance().getReference().child("Users").child(userEmailFirebase).child("ReceivedDms");
-                Dms.addListenerForSingleValueEvent(new ValueEventListener() {
+            // Set "seenByUser" to true so it is not highlighted in the future.
+            DatabaseReference Dms = FirebaseDatabase.getInstance().getReference().child("Users").child(userEmailFirebase).child("ReceivedDms");
+            Dms.addListenerForSingleValueEvent(new ValueEventListener() {
 
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
 
-                        for (DataSnapshot ds : snapshot.getChildren()) {
+                    for (DataSnapshot ds : snapshot.getChildren()) {
 
-                            String mUserUUID = (String) ds.child("userUUID").getValue();
+                        String mUserUUID = (String) ds.child("userUUID").getValue();
 
-                            if (mUserUUID != null) {
+                        if (mUserUUID != null) {
 
-                                if (mUserUUID.equals(userUUID)) {
+                            if (mUserUUID.equals(userUUID)) {
 
-                                    if (!(Boolean) ds.child("seenByUser").getValue()) {
+                                if (!(Boolean) ds.child("seenByUser").getValue()) {
 
-                                        ds.child("seenByUser").getRef().setValue(true);
+                                    ds.child("seenByUser").getRef().setValue(true);
 
-                                        loadingIcon.setVisibility(View.GONE);
+                                    loadingIcon.setVisibility(View.GONE);
 
-                                        startActivity(Activity);
+                                    startActivity(Activity);
 
-                                        return;
-                                    }
+                                    return;
                                 }
                             }
                         }
                     }
+                }
 
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError error) {
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
 
-                        toastMessageLong(error.getMessage());
-                    }
-                });
+                    toastMessageLong(error.getMessage());
+                }
+            });
         } else {
 
             loadingIcon.setVisibility(View.GONE);

@@ -120,7 +120,7 @@ public class Chat extends Fragment implements
         SuggestionsVisibilityManager {
 
     private static final String TAG = "Chat";
-    private static final int Request_ID_Take_Photo = 1700, Request_ID_Record_Video = 1800;
+    private static final int Request_ID_Take_Photo = 69, Request_ID_Record_Video = 420;
     private MentionsEditText mInput;
     private ArrayList<String> removedDuplicatesMentions, mTime, mUser, mImage, mVideo, mSuggestions, allMentions, emailsAL;
     private ArrayList<SpannableString> mText;
