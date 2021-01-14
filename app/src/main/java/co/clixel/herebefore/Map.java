@@ -102,6 +102,7 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> newNearLeft, newFarLeft, newNearRight, newFarRight;
     private List<Pair<Integer, Integer>> loadedCoordinates;
 
+    // Get updated location when returning from taking picture / video - possibly compress picture or video in Map to allow time for location to update, possibly enable button on onResume?
     // Create a chat if one doesn't exist at the user's location. Else, create a chat.
     // Create timer that kicks people out of a new Chat if they haven't posted within an amount of time (or take the photo/video before entering Chat and keep tracking location - should increase accuracy), or keep updating their location. Or have them take media before entering chat and have the media being sent to Firebase create the chat.
     // Prevent data scraping (hide email addresses and other personal information).
@@ -620,6 +621,88 @@ public class Map extends FragmentActivity implements
     }
 
     @Override
+    public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+
+        super.onActivityResult(requestCode, resultCode, data);
+
+        loadingIcon.setVisibility(View.VISIBLE);
+
+        // Disable buttons while content is being compressed and next activity is opened.
+        circleButton.setEnabled(false);
+        dmButton.setEnabled(false);
+        settingsButton.setEnabled(false);
+
+        // Check location permissions.
+        if (ContextCompat.checkSelfPermission(getBaseContext(),
+                Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
+
+            // Create a point and go to Chat.java or SignIn.java.
+            FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
+            mFusedLocationClient.getLastLocation()
+                    .addOnSuccessListener(Map.this, location -> {
+
+                        if (location != null) {
+
+                            if (!locationProviderDisabled) {
+
+                                // If user is within a circle, enter it. Else, cycle through all circles that are 2 meters away and enter the closest one. Else, enter a new one.
+                                float[] oldDistance = new float[2];
+                                oldDistance[0] = 2f;
+                                LatLng latLng = null;
+                                String uuid = null;
+                                for (int i = 0; i < circleCentersAL.size(); i++) {
+
+                                    float[] newDistance = new float[2];
+                                    Location.distanceBetween(circleCentersAL.get(i).latitude, circleCentersAL.get(i).longitude, location.getLatitude(), location.getLongitude(), newDistance);
+
+                                    if (newDistance[0] <= 1) {
+
+                                        if (requestCode == 3 && resultCode == RESULT_OK) {
+
+                                            Log.i(TAG, "onActivityResult() -> Camera");
+
+                                            enterCircle(location, circleCentersAL.get(i), circleUUIDsAL.get(i), false, true);
+                                            return;
+                                        } else if (requestCode == 4 && resultCode == RESULT_OK) {
+
+                                            Log.i(TAG, "onActivityResult() -> Video");
+
+                                            enterCircle(location, circleCentersAL.get(i), circleUUIDsAL.get(i), false, true);
+                                            return;
+                                        }
+                                    } else if (newDistance[0] <= oldDistance[0]) {
+
+                                        oldDistance[0] = newDistance[0];
+                                        latLng = circleCentersAL.get(i);
+                                        uuid = circleUUIDsAL.get(i);
+                                    }
+                                }
+
+                                if (requestCode == 3 && resultCode == RESULT_OK) {
+
+                                    Log.i(TAG, "onActivityResult() -> Camera");
+
+                                    // latLng and uuid will be null if it is a new circle, and newShape will be true.
+                                    enterCircle(location, latLng, uuid, latLng == null, true);
+                                } else if (requestCode == 4 && resultCode == RESULT_OK) {
+
+                                    Log.i(TAG, "onActivityResult() -> Video");
+
+                                    // latLng and uuid will be null if it is a new circle, and newShape will be true.
+                                    enterCircle(location, latLng, uuid, latLng == null, true);
+                                }
+                            } else {
+
+                                loadingIcon.setVisibility(View.GONE);
+                                toastMessageLong("Enable your location provider and try again.");
+                            }
+                        }
+                    });
+        }
+    }
+
+    @Override
     protected void onRestart() {
 
         super.onRestart();
@@ -929,7 +1012,7 @@ public class Map extends FragmentActivity implements
 
                     loadingIcon.setVisibility(View.VISIBLE);
 
-                    // Create a point and to to Chat.java or SignIn.java.
+                    // Create a point and go to Chat.java or SignIn.java.
                     FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
 
                     mFusedLocationClient.getLastLocation()
