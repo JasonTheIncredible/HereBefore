@@ -86,11 +86,10 @@ public class Map extends FragmentActivity implements
     private Circle circleTemp;
     private ChildEventListener childEventListenerDms, childEventListenerNearLeft, childEventListenerFarLeft, childEventListenerNearRight, childEventListenerFarRight;
     private String circleTempUUID, circleTempUUIDTemp;
+    protected static String imageFile, videoFile;
     private Button circleButton, mapTypeButton, settingsButton;
     private ImageButton dmButton;
     private PopupMenu popupMapType;
-    private Uri imageURI, videoURI;
-    private File image, video;
     private boolean locationProviderDisabled = false, firstLoadCamera = true, cameraMoved = false, waitingForBetterLocationAccuracy = false, badAccuracy = false, restarted = false, mapCleared = false, checkPermissionsPicture;
     private final ArrayList<String> circleUUIDsAL = new ArrayList<>();
     private final ArrayList<LatLng> circleCentersAL = new ArrayList<>();
@@ -102,12 +101,12 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> newNearLeft, newFarLeft, newNearRight, newFarRight;
     private List<Pair<Integer, Integer>> loadedCoordinates;
 
-    // Get updated location when returning from taking picture / video - possibly compress picture or video in Map to allow time for location to update, possibly enable button on onResume?
-    // Create a chat if one doesn't exist at the user's location. Else, create a chat.
-    // Create timer that kicks people out of a new Chat if they haven't posted within an amount of time (or take the photo/video before entering Chat and keep tracking location - should increase accuracy), or keep updating their location. Or have them take media before entering chat and have the media being sent to Firebase create the chat.
+    // Prevent creating Chat if no picture / video.
+    // When creating a circle, track user's location until they send the image, then create a circle at that location.
+    // Deal with leaks.
     // Prevent data scraping (hide email addresses and other personal information).
 
-    // Require picture on creating a shape? Also, long press a shape to see a popup of that picture.
+    // Long press a shape to see a popup of that picture.
     // Allow users to get "likes". Allow more likes per second with a higher "level" like DS.
     // If user is outside of circle, show how far outside - requires checking location every time before posting new message.
     // After clicking on a DM and going to that Chat, allow user to find that same shape on the map.
@@ -158,6 +157,9 @@ public class Map extends FragmentActivity implements
 
         super.onCreate(savedInstanceState);
         Log.i(TAG, "onCreate()");
+
+        // Clear the cache.
+        deleteDirectory(this.getCacheDir());
 
         // This will be called if user opens app using a notification.
         onNewIntent(getIntent());
@@ -368,9 +370,6 @@ public class Map extends FragmentActivity implements
 
             return false;
         });
-
-        // Clear the cache. This should clear the issue where Chat.java was creating files that were never deleted.
-        deleteDirectory(this.getCacheDir());
     }
 
     private boolean checkPermissionsPicture() {
@@ -460,7 +459,7 @@ public class Map extends FragmentActivity implements
             // Continue only if the File was successfully created
             if (photoFile != null) {
 
-                imageURI = FileProvider.getUriForFile(this,
+                Uri imageURI = FileProvider.getUriForFile(this,
                         "com.example.android.fileprovider",
                         photoFile);
                 cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, imageURI);
@@ -490,7 +489,7 @@ public class Map extends FragmentActivity implements
             // Continue only if the File was successfully created
             if (videoFile != null) {
 
-                videoURI = FileProvider.getUriForFile(this,
+                Uri videoURI = FileProvider.getUriForFile(this,
                         "com.example.android.fileprovider",
                         videoFile);
                 videoIntent.putExtra(MediaStore.EXTRA_OUTPUT, videoURI);
@@ -593,13 +592,17 @@ public class Map extends FragmentActivity implements
         Log.i(TAG, "createImageFile()");
 
         // Create an image file name
-        String imageFileName = "HereBefore_" + System.currentTimeMillis() + "_jpeg";
+        String fileName = "HereBefore_" + System.currentTimeMillis();
         File storageDir = this.getCacheDir();
-        image = File.createTempFile(
-                imageFileName,  /* prefix */
+
+        File image = File.createTempFile(
+                fileName,  /* prefix */
                 ".jpeg",         /* suffix */
                 storageDir      /* directory */
         );
+
+        // Pass this info to Chat.
+        imageFile = image.toString();
 
         return image;
     }
@@ -609,13 +612,17 @@ public class Map extends FragmentActivity implements
         Log.i(TAG, "createVideoFile()");
 
         // Create a video file name
-        String videoFileName = "HereBefore_" + System.currentTimeMillis() + "_mp4";
+        String fileName = "HereBefore_" + System.currentTimeMillis();
         File storageDir = this.getCacheDir();
-        video = File.createTempFile(
-                videoFileName,  /* prefix */
+
+        File video = File.createTempFile(
+                fileName,  /* prefix */
                 ".mp4",         /* suffix */
                 storageDir      /* directory */
         );
+
+        // Pass this info to Chat.
+        videoFile = video.toString();
 
         return video;
     }
@@ -1462,6 +1469,8 @@ public class Map extends FragmentActivity implements
         Activity.putExtra("userIsWithinShape", userIsWithinShape);
         Activity.putExtra("circleLatitude", circleToEnterLatLng.latitude);
         Activity.putExtra("circleLongitude", circleToEnterLatLng.longitude);
+        Activity.putExtra("imageFile", imageFile);
+        Activity.putExtra("videoFile", videoFile);
 
         // Prevent previous activities from being in the back stack.
         Activity.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
@@ -1523,6 +1532,10 @@ public class Map extends FragmentActivity implements
                 }
             });
         } else {
+
+            circleButton.setEnabled(true);
+            dmButton.setEnabled(true);
+            settingsButton.setEnabled(true);
 
             loadingIcon.setVisibility(View.GONE);
 

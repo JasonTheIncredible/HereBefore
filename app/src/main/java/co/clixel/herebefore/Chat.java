@@ -8,7 +8,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
@@ -130,10 +129,10 @@ public class Chat extends Fragment implements
     private Integer index, top, last, datesALSize;
     private ChildEventListener childEventListener;
     private FloatingActionButton sendButton, mediaButton;
-    private boolean firstLoad, loadingOlderMessages = false, clickedOnMention = false, fromDms = false, noMoreMessages = false, fromVideo, needProgressIconIndeterminate, reachedEndOfRecyclerView = false, messageSent = false, fileIsImage, checkPermissionsPicture, newShape;
+    private boolean firstLoad, loadingOlderMessages = false, clickedOnMention = false, fromDms = false, noMoreMessages = false, showProgressIndeterminate = false, reachedEndOfRecyclerView = false, messageSent = false, fileIsImage, checkPermissionsPicture, newShape;
     private Boolean userIsWithinShape;
     private View.OnLayoutChangeListener onLayoutChangeListener;
-    private String shapeUUID, reportedUser, UUIDToHighlight;
+    private String shapeUUID, reportedUser, UUIDToHighlight, imageFile, videoFile;
     private double circleLatitude, circleLongitude;
     private PopupMenu mediaButtonMenu;
     private ImageView imageView, videoImageView;
@@ -183,6 +182,8 @@ public class Chat extends Fragment implements
                 userIsWithinShape = extras.getBoolean("userIsWithinShape");
                 circleLatitude = extras.getDouble("circleLatitude");
                 circleLongitude = extras.getDouble("circleLongitude");
+                imageFile = extras.getString("imageFile");
+                videoFile = extras.getString("videoFile");
 
                 // Get a value with 1 decimal point and use it for Firebase.
                 double nearLeftPrecisionLat = Math.pow(10, 1);
@@ -237,6 +238,18 @@ public class Chat extends Fragment implements
         chatRecyclerViewLinearLayoutManager = new LinearLayoutManager(mActivity);
         mentionsRecyclerViewLinearLayoutManager = new LinearLayoutManager(mActivity);
 
+        // If file was created in Map, do work on them here.
+        if (imageFile != null) {
+
+            imageCompressAndAddToGalleryAsync();
+            fileIsImage = true;
+            showProgressIndeterminate = true;
+        } else if (videoFile != null) {
+
+            videoCompressAndAddToGalleryAsync();
+            fileIsImage = false;
+        }
+
         if (datesALSize == null) {
 
             datesAL = new ArrayList<>();
@@ -259,12 +272,10 @@ public class Chat extends Fragment implements
         }
 
         // Make the progressIconIndeterminate visible upon the first load, as it can sometimes take a while to show anything. It should be made invisible in initChatAdapter.
-        if (progressIconIndeterminate != null && !fromVideo) {
+        if (progressIconIndeterminate != null && showProgressIndeterminate) {
 
             progressIconIndeterminate.setVisibility(View.VISIBLE);
         }
-
-        fromVideo = false;
 
         if (userIsWithinShape) {
 
@@ -425,6 +436,14 @@ public class Chat extends Fragment implements
                 imageView.setImageDrawable(null);
                 videoImageView.setVisibility(View.GONE);
                 videoImageView.setImageDrawable(null);
+
+                if (image != null) {
+
+                    deleteDirectory(image);
+                } else if (video != null) {
+
+                    deleteDirectory(video);
+                }
             }
 
             // Keep "return false" or the enter key will not go to the next line.
@@ -1177,7 +1196,7 @@ public class Chat extends Fragment implements
         datesALSize = null;
 
         // After the initial load, make the progressIconIndeterminate invisible.
-        if (progressIconIndeterminate != null && !needProgressIconIndeterminate) {
+        if (progressIconIndeterminate != null && !showProgressIndeterminate) {
 
             progressIconIndeterminate.setVisibility(View.GONE);
         }
@@ -2075,8 +2094,6 @@ public class Chat extends Fragment implements
                 startActivityForResult(videoIntent, 4);
             }
         }
-
-        fromVideo = true;
     }
 
     private void cameraPermissionAlertAsync(Boolean checkPermissionsPicture) {
@@ -2171,10 +2188,10 @@ public class Chat extends Fragment implements
         Log.i(TAG, "createImageFile()");
 
         // Create an image file name
-        String imageFileName = "HereBefore_" + System.currentTimeMillis() + "_jpeg";
+        String fileName = "HereBefore_" + System.currentTimeMillis();
         File storageDir = mActivity.getCacheDir();
         image = File.createTempFile(
-                imageFileName,  /* prefix */
+                fileName,  /* prefix */
                 ".jpeg",         /* suffix */
                 storageDir      /* directory */
         );
@@ -2187,10 +2204,10 @@ public class Chat extends Fragment implements
         Log.i(TAG, "createVideoFile()");
 
         // Create a video file name
-        String videoFileName = "HereBefore_" + System.currentTimeMillis() + "_mp4";
+        String fileName = "HereBefore_" + System.currentTimeMillis();
         File storageDir = mActivity.getCacheDir();
         video = File.createTempFile(
-                videoFileName,  /* prefix */
+                fileName,  /* prefix */
                 ".mp4",         /* suffix */
                 storageDir      /* directory */
         );
@@ -2228,7 +2245,7 @@ public class Chat extends Fragment implements
             videoDrawable = null;
 
             // Prevents the progressIconIndeterminate from being removed by initChatAdapter().
-            needProgressIconIndeterminate = true;
+            showProgressIndeterminate = true;
 
             fileIsImage = true;
 
@@ -2270,6 +2287,8 @@ public class Chat extends Fragment implements
     // Save a non-compressed version to the gallery and add a compressed version to the imageView.
     private void imageCompressAndAddToGalleryAsync() {
 
+        Log.i(TAG, "imageCompressAndAddToGalleryAsync()");
+
         progressIconIndeterminate.setVisibility(View.VISIBLE);
 
         HandlerThread imageCompressAndAddToGalleryHandlerThread = new HandlerThread("imageCompressAndAddToGalleryHandlerThread");
@@ -2279,6 +2298,15 @@ public class Chat extends Fragment implements
 
             // Save a non-compressed image to the gallery.
             try {
+
+                // If fileName is not null, file was created in Map and needs to be found here.
+                if (imageFile != null) {
+
+                    image = new File(imageFile);
+                    imageURI = FileProvider.getUriForFile(mContext,
+                            "com.example.android.fileprovider",
+                            image);
+                }
 
                 Bitmap imageBitmapFull = new Compressor(mContext)
                         .setMaxWidth(10000)
@@ -2303,6 +2331,11 @@ public class Chat extends Fragment implements
                 mImageBitmap.compress(Bitmap.CompressFormat.JPEG, 50, buffer);
                 byteArray = buffer.toByteArray();
 
+                // Prevent re-compression on restart.
+                imageFile = null;
+                // Make the value in Map null so it does not have a value when backing into Map and entering a circle.
+                Map.imageFile = null;
+
                 // Update UI thread.
                 new Handler(Looper.getMainLooper()).post(() -> {
 
@@ -2315,7 +2348,7 @@ public class Chat extends Fragment implements
                     progressIconIndeterminate.setVisibility(View.GONE);
                     sendButton.setEnabled(true);
                     // Allow initChatAdapter() to get rid of the progressIconIndeterminate with this boolean.
-                    needProgressIconIndeterminate = false;
+                    showProgressIndeterminate = false;
                 });
             } catch (IOException ex) {
 
@@ -2329,6 +2362,8 @@ public class Chat extends Fragment implements
     // Save a non-compressed version to the gallery and add a compressed version to the imageView.
     private void videoCompressAndAddToGalleryAsync() {
 
+        Log.i(TAG, "videoCompressAndAddToGalleryAsync()");
+
         progressIcon.setProgress(0);
         progressIcon.setVisibility(View.VISIBLE);
 
@@ -2336,6 +2371,25 @@ public class Chat extends Fragment implements
         videoCompressAndAddToGalleryHandlerThread.start();
         Handler handler = new Handler(videoCompressAndAddToGalleryHandlerThread.getLooper());
         Runnable runnable = () -> {
+
+            // If fileName is not null, file was created in Map and needs to be found here.
+            if (videoFile != null) {
+
+                video = new File(videoFile);
+                videoURI = FileProvider.getUriForFile(mContext,
+                        "com.example.android.fileprovider",
+                        video);
+            } else {
+
+                try {
+                    video = File.createTempFile(
+                            videoFile,  /* prefix */
+                            ".mp4",         /* suffix */
+                            mActivity.getCacheDir());     /* directory */
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
 
             File videoTemp = null;
             String filePathTemp = "HereBefore_" + System.currentTimeMillis() + "_mp4";
@@ -2375,14 +2429,29 @@ public class Chat extends Fragment implements
                                 Log.i(TAG, "Transcoder.SUCCESS_NOT_NEEDED");
                                 onTranscodeFinished(video.getAbsolutePath());
                             }
+
+                            // Prevent re-compression on restart.
+                            videoFile = null;
+                            // Make the value in Map null so it does not have a value when backing into Map and entering a circle.
+                            Map.videoFile = null;
                         }
 
                         public void onTranscodeCanceled() {
+
+                            // Prevent re-compression on restart.
+                            videoFile = null;
+                            // Make the value in Map null so it does not have a value when backing into Map and entering a circle.
+                            Map.videoFile = null;
 
                             sendButton.setEnabled(true);
                         }
 
                         public void onTranscodeFailed(@NonNull Throwable exception) {
+
+                            // Prevent re-compression on restart.
+                            videoFile = null;
+                            // Make the value in Map null so it does not have a value when backing into Map and entering a circle.
+                            Map.videoFile = null;
 
                             sendButton.setEnabled(true);
                             Log.e(TAG, "Transcoder error occurred: " + exception.getMessage());
