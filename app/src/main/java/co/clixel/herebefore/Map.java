@@ -101,8 +101,8 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> newNearLeft, newFarLeft, newNearRight, newFarRight;
     private List<Pair<Integer, Integer>> loadedCoordinates;
 
-    // Prevent creating Chat if no picture / video.
     // When creating a circle, track user's location until they send the image, then create a circle at that location.
+    // Fix bug where after sending a message and restarting Chat, date in datesAL will not match the value in Firebase as date in Firebase gets updated soon after getting the initial value. Will probably need to switch from date to something else.
     // Deal with leaks.
     // Prevent data scraping (hide email addresses and other personal information).
 
@@ -194,6 +194,8 @@ public class Map extends FragmentActivity implements
         dmButton = findViewById(R.id.dmButton);
         circleButton = findViewById(R.id.circleButton);
         loadingIcon = findViewById(R.id.loadingIcon);
+
+        loadedCoordinates = new ArrayList<>();
     }
 
     @Override
@@ -221,12 +223,6 @@ public class Map extends FragmentActivity implements
 
             settingsButton.setVisibility(View.GONE);
             dmButton.setVisibility(View.GONE);
-        }
-
-        // Create the arrayList if the activity didn't restart.
-        if (!restarted) {
-
-            loadedCoordinates = new ArrayList<>();
         }
 
         // Shows a menu to change the map type.
@@ -632,12 +628,18 @@ public class Map extends FragmentActivity implements
 
         super.onActivityResult(requestCode, resultCode, data);
 
-        loadingIcon.setVisibility(View.VISIBLE);
+        if (resultCode == RESULT_OK) {
 
-        // Disable buttons while content is being compressed and next activity is opened.
-        circleButton.setEnabled(false);
-        dmButton.setEnabled(false);
-        settingsButton.setEnabled(false);
+            loadingIcon.setVisibility(View.VISIBLE);
+
+            // Disable buttons while content is being compressed and next activity is opened.
+            circleButton.setEnabled(false);
+            dmButton.setEnabled(false);
+            settingsButton.setEnabled(false);
+        } else {
+
+            return;
+        }
 
         // Check location permissions.
         if (ContextCompat.checkSelfPermission(getBaseContext(),

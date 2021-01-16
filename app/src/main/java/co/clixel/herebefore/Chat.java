@@ -486,6 +486,13 @@ public class Chat extends Fragment implements
                 }
             }
 
+            // Prevent creating a new shape if image / video doesn't exist.
+            if (newShape && (imageView.getDrawable() == null && videoImageView.getDrawable() == null)) {
+
+                toastMessageShort("Picture or video required.");
+                return;
+            }
+
             String input = mInput.getText().toString().trim();
 
             // Send recyclerviewlayout to Firebase.
@@ -2227,6 +2234,11 @@ public class Chat extends Fragment implements
 
             Log.i(TAG, "onActivityResult() -> Camera");
 
+            if (newShape) {
+
+                addQuery();
+            }
+
             // Set the views to GONE to prevent anything else from being sent to Firebase.
             if (videoImageView != null) {
 
@@ -2260,6 +2272,11 @@ public class Chat extends Fragment implements
         if (requestCode == 4 && resultCode == RESULT_OK) {
 
             Log.i(TAG, "onActivityResult() -> Video");
+
+            if (newShape) {
+
+                addQuery();
+            }
 
             // Set the views to GONE to prevent anything else from being sent to Firebase.
             if (videoImageView != null) {
@@ -2379,16 +2396,6 @@ public class Chat extends Fragment implements
                 videoURI = FileProvider.getUriForFile(mContext,
                         "com.example.android.fileprovider",
                         video);
-            } else {
-
-                try {
-                    video = File.createTempFile(
-                            videoFile,  /* prefix */
-                            ".mp4",         /* suffix */
-                            mActivity.getCacheDir());     /* directory */
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
             }
 
             File videoTemp = null;
