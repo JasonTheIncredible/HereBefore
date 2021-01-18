@@ -84,7 +84,7 @@ public class Map extends FragmentActivity implements
     private static final int Request_User_Location_Code = 69420, Request_ID_Take_Photo = 69, Request_ID_Record_Video = 420;
     private GoogleMap mMap;
     private Circle circleTemp;
-    private ChildEventListener childEventListenerDms, childEventListenerNearLeft, childEventListenerFarLeft, childEventListenerNearRight, childEventListenerFarRight;
+    private ChildEventListener childEventListenerNearLeft, childEventListenerFarLeft, childEventListenerNearRight, childEventListenerFarRight;
     private String circleTempUUID, circleTempUUIDTemp;
     protected static String imageFile, videoFile;
     private Button circleButton, mapTypeButton, settingsButton;
@@ -97,7 +97,7 @@ public class Map extends FragmentActivity implements
     private Toast longToast;
     private View loadingIcon;
     private LocationManager locationManager;
-    private Query queryDms, queryNearLeft, queryFarLeft, queryNearRight, queryFarRight;
+    private Query queryNearLeft, queryFarLeft, queryNearRight, queryFarRight;
     private Pair<Integer, Integer> newNearLeft, newFarLeft, newNearRight, newFarRight;
     private List<Pair<Integer, Integer>> loadedCoordinates;
 
@@ -667,13 +667,13 @@ public class Map extends FragmentActivity implements
 
                                     if (newDistance[0] <= 1) {
 
-                                        if (requestCode == 3 && resultCode == RESULT_OK) {
+                                        if (requestCode == 3) {
 
                                             Log.i(TAG, "onActivityResult() -> Camera");
 
                                             enterCircle(location, circleCentersAL.get(i), circleUUIDsAL.get(i), false, true);
                                             return;
-                                        } else if (requestCode == 4 && resultCode == RESULT_OK) {
+                                        } else if (requestCode == 4) {
 
                                             Log.i(TAG, "onActivityResult() -> Video");
 
@@ -688,13 +688,13 @@ public class Map extends FragmentActivity implements
                                     }
                                 }
 
-                                if (requestCode == 3 && resultCode == RESULT_OK) {
+                                if (requestCode == 3) {
 
                                     Log.i(TAG, "onActivityResult() -> Camera");
 
                                     // latLng and uuid will be null if it is a new circle, and newShape will be true.
                                     enterCircle(location, latLng, uuid, latLng == null, true);
-                                } else if (requestCode == 4 && resultCode == RESULT_OK) {
+                                } else if (requestCode == 4) {
 
                                     Log.i(TAG, "onActivityResult() -> Video");
 
@@ -850,35 +850,28 @@ public class Map extends FragmentActivity implements
             dmButton.setOnClickListener(null);
         }
 
-        if (queryDms != null) {
-
-            queryDms.removeEventListener(childEventListenerDms);
-            queryDms = null;
-        }
-
-        if (childEventListenerDms != null) {
-
-            childEventListenerDms = null;
-        }
-
         if (queryNearLeft != null) {
 
             queryNearLeft.removeEventListener(childEventListenerNearLeft);
+            queryNearLeft = null;
         }
 
         if (queryFarLeft != null) {
 
             queryFarLeft.removeEventListener(childEventListenerFarLeft);
+            queryFarLeft = null;
         }
 
         if (queryNearRight != null) {
 
             queryNearRight.removeEventListener(childEventListenerNearRight);
+            queryNearRight = null;
         }
 
         if (queryFarRight != null) {
 
             queryFarRight.removeEventListener(childEventListenerFarRight);
+            queryFarRight = null;
         }
 
         if (circleButton != null) {
@@ -1553,108 +1546,111 @@ public class Map extends FragmentActivity implements
 
         String preferredMapType = sharedPreferences.getString(SettingsFragment.KEY_MAP_TYPE, getResources().getString(R.string.hybrid_view));
 
-        switch (preferredMapType) {
+        if (preferredMapType != null) {
 
-            case "Road map view":
+            switch (preferredMapType) {
 
-                Log.i(TAG, "updatePreferences() -> Road map view");
+                case "Road map view":
 
-                // Use the "road map" map type if the map is not null.
-                if (mMap != null) {
+                    Log.i(TAG, "updatePreferences() -> Road map view");
 
-                    Log.i(TAG, "updatePreferences() -> Road Map");
+                    // Use the "road map" map type if the map is not null.
+                    if (mMap != null) {
 
-                    mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
+                        Log.i(TAG, "updatePreferences() -> Road Map");
 
-                    adjustMapColors();
-                } else {
+                        mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
 
-                    Log.e(TAG, "updatePreferences() -> Road Map -> mMap == null");
-                    toastMessageLong("An error occurred while loading the map.");
-                }
+                        adjustMapColors();
+                    } else {
 
-                break;
+                        Log.e(TAG, "updatePreferences() -> Road Map -> mMap == null");
+                        toastMessageLong("An error occurred while loading the map.");
+                    }
 
-            case "Satellite view":
+                    break;
 
-                Log.i(TAG, "updatePreferences() -> Satellite view");
+                case "Satellite view":
 
-                // Use the "satellite" map type if the map is not null.
-                if (mMap != null) {
+                    Log.i(TAG, "updatePreferences() -> Satellite view");
 
-                    Log.i(TAG, "updatePreferences() -> Satellite Map");
+                    // Use the "satellite" map type if the map is not null.
+                    if (mMap != null) {
 
-                    mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
+                        Log.i(TAG, "updatePreferences() -> Satellite Map");
 
-                    adjustMapColors();
-                } else {
+                        mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
 
-                    Log.e(TAG, "updatePreferences() -> Satellite Map -> mMap == null");
-                    toastMessageLong("An error occurred while loading the map.");
-                }
+                        adjustMapColors();
+                    } else {
 
-                break;
+                        Log.e(TAG, "updatePreferences() -> Satellite Map -> mMap == null");
+                        toastMessageLong("An error occurred while loading the map.");
+                    }
 
-            case "Hybrid view":
+                    break;
 
-                Log.i(TAG, "updatePreferences() -> Hybrid view");
+                case "Hybrid view":
 
-                // Use the "hybrid" map type if the map is not null.
-                if (mMap != null) {
+                    Log.i(TAG, "updatePreferences() -> Hybrid view");
 
-                    Log.i(TAG, "updatePreferences() -> Hybrid Map");
+                    // Use the "hybrid" map type if the map is not null.
+                    if (mMap != null) {
 
-                    mMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
+                        Log.i(TAG, "updatePreferences() -> Hybrid Map");
 
-                    adjustMapColors();
-                } else {
+                        mMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
 
-                    Log.e(TAG, "updatePreferences() -> Hybrid Map -> mMap == null");
-                    toastMessageLong("An error occurred while loading the map.");
-                }
+                        adjustMapColors();
+                    } else {
 
-                break;
+                        Log.e(TAG, "updatePreferences() -> Hybrid Map -> mMap == null");
+                        toastMessageLong("An error occurred while loading the map.");
+                    }
 
-            case "Terrain view":
+                    break;
 
-                Log.i(TAG, "updatePreferences() -> Terrain view");
+                case "Terrain view":
 
-                // Use the "terrain" map type if the map is not null.
-                if (mMap != null) {
+                    Log.i(TAG, "updatePreferences() -> Terrain view");
 
-                    Log.i(TAG, "updatePreferences() -> Terrain Map");
+                    // Use the "terrain" map type if the map is not null.
+                    if (mMap != null) {
 
-                    mMap.setMapType(GoogleMap.MAP_TYPE_TERRAIN);
+                        Log.i(TAG, "updatePreferences() -> Terrain Map");
 
-                    adjustMapColors();
-                } else {
+                        mMap.setMapType(GoogleMap.MAP_TYPE_TERRAIN);
 
-                    Log.e(TAG, "updatePreferences() -> Terrain Map -> mMap == null");
-                    toastMessageLong("An error occurred while loading the map.");
-                }
+                        adjustMapColors();
+                    } else {
 
-                break;
+                        Log.e(TAG, "updatePreferences() -> Terrain Map -> mMap == null");
+                        toastMessageLong("An error occurred while loading the map.");
+                    }
 
-            default:
+                    break;
 
-                Log.i(TAG, "updatePreferences() -> default (something went wrong, error probably on next line)");
-                Log.i(TAG, "updatePreferences(): preferredMapType: " + preferredMapType);
+                default:
 
-                // Use the "hybrid" map type if the map is not null.
-                if (mMap != null) {
+                    Log.i(TAG, "updatePreferences() -> default (something went wrong, error probably on next line)");
+                    Log.i(TAG, "updatePreferences(): preferredMapType: " + preferredMapType);
 
-                    Log.i(TAG, "updatePreferences() -> Hybrid Map, default");
+                    // Use the "hybrid" map type if the map is not null.
+                    if (mMap != null) {
 
-                    mMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
+                        Log.i(TAG, "updatePreferences() -> Hybrid Map, default");
 
-                    adjustMapColors();
-                } else {
+                        mMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
 
-                    Log.e(TAG, "updatePreferences() -> default -> mMap == null");
-                    toastMessageLong("An error occurred while loading the map.");
-                }
+                        adjustMapColors();
+                    } else {
 
-                break;
+                        Log.e(TAG, "updatePreferences() -> default -> mMap == null");
+                        toastMessageLong("An error occurred while loading the map.");
+                    }
+
+                    break;
+            }
         }
     }
 

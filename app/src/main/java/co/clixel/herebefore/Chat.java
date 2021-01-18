@@ -2227,10 +2227,16 @@ public class Chat extends Fragment implements
 
         super.onActivityResult(requestCode, resultCode, data);
 
-        // Disable the sendButton while content is being compressed.
-        sendButton.setEnabled(false);
+        if (resultCode == RESULT_OK) {
 
-        if (requestCode == 3 && resultCode == RESULT_OK) {
+            // Disable the sendButton while content is being compressed.
+            sendButton.setEnabled(false);
+        } else {
+
+            return;
+        }
+
+        if (requestCode == 3) {
 
             Log.i(TAG, "onActivityResult() -> Camera");
 
@@ -2269,7 +2275,7 @@ public class Chat extends Fragment implements
             imageCompressAndAddToGalleryAsync();
         }
 
-        if (requestCode == 4 && resultCode == RESULT_OK) {
+        if (requestCode == 4) {
 
             Log.i(TAG, "onActivityResult() -> Video");
 
