@@ -52,6 +52,11 @@ import com.google.android.gms.ads.MobileAds;
 import com.google.android.gms.ads.RequestConfiguration;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.LocationSettingsRequest;
+import com.google.android.gms.location.SettingsClient;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -111,6 +116,7 @@ import java.util.regex.Pattern;
 import id.zelory.compressor.Compressor;
 
 import static android.app.Activity.RESULT_OK;
+import static com.google.android.gms.location.LocationServices.getFusedLocationProviderClient;
 import static java.text.DateFormat.getDateTimeInstance;
 
 public class Chat extends Fragment implements
@@ -119,7 +125,7 @@ public class Chat extends Fragment implements
         SuggestionsVisibilityManager {
 
     private static final String TAG = "Chat";
-    private static final int Request_ID_Take_Photo = 69, Request_ID_Record_Video = 420;
+    private static final int Request_User_Location_Code = 69420, Request_ID_Take_Photo = 69, Request_ID_Record_Video = 420;
     private MentionsEditText mInput;
     private ArrayList<String> removedDuplicatesMentions, mTime, mUser, mImage, mVideo, mSuggestions, allMentions, emailsAL;
     private ArrayList<SpannableString> mText;
@@ -179,28 +185,60 @@ public class Chat extends Fragment implements
                 fromDms = extras.getBoolean("fromDms");
                 newShape = extras.getBoolean("newShape");
                 shapeUUID = extras.getString("shapeUUID");
-                userIsWithinShape = extras.getBoolean("userIsWithinShape");
-                circleLatitude = extras.getDouble("circleLatitude");
-                circleLongitude = extras.getDouble("circleLongitude");
+                // No need to get these if it's a new shape, as the most up-to-date location information will be received here.
+                if (!newShape) {
+                    circleLatitude = extras.getDouble("circleLatitude");
+                    circleLongitude = extras.getDouble("circleLongitude");
+                    userIsWithinShape = extras.getBoolean("userIsWithinShape");
+                }
                 imageFile = extras.getString("imageFile");
                 videoFile = extras.getString("videoFile");
 
-                // Get a value with 1 decimal point and use it for Firebase.
-                double nearLeftPrecisionLat = Math.pow(10, 1);
-                // Can't create a firebase path with '.', so get rid of decimal.
-                double nearLeftLatTemp = (int) (nearLeftPrecisionLat * circleLatitude) / nearLeftPrecisionLat;
-                nearLeftLatTemp *= 10;
-                shapeLatInt = (int) nearLeftLatTemp;
+                if (newShape) {
 
-                double nearLeftPrecisionLon = Math.pow(10, 1);
-                // Can't create a firebase path with '.', so get rid of decimal.
-                double nearLeftLonTemp = (int) (nearLeftPrecisionLon * circleLongitude) / nearLeftPrecisionLon;
-                nearLeftLonTemp *= 10;
-                shapeLonInt = (int) nearLeftLonTemp;
+                    // Check location permissions.
+                    if (ContextCompat.checkSelfPermission(mContext,
+                            Manifest.permission.ACCESS_FINE_LOCATION)
+                            == PackageManager.PERMISSION_GRANTED) {
+
+                        startLocationUpdates();
+                    } else {
+
+                        checkLocationPermissions();
+                    }
+                } else {
+
+                    // Get a value with 1 decimal point and use it for Firebase.
+                    double nearLeftPrecisionLat = Math.pow(10, 1);
+                    // Can't create a firebase path with '.', so get rid of decimal.
+                    double nearLeftLatTemp = (int) (nearLeftPrecisionLat * circleLatitude) / nearLeftPrecisionLat;
+                    nearLeftLatTemp *= 10;
+                    shapeLatInt = (int) nearLeftLatTemp;
+
+                    double nearLeftPrecisionLon = Math.pow(10, 1);
+                    // Can't create a firebase path with '.', so get rid of decimal.
+                    double nearLeftLonTemp = (int) (nearLeftPrecisionLon * circleLongitude) / nearLeftPrecisionLon;
+                    nearLeftLonTemp *= 10;
+                    shapeLonInt = (int) nearLeftLonTemp;
+                }
             } else {
 
                 Log.e(TAG, "onCreateView() -> extras == null");
             }
+        }
+    }
+
+    private void checkLocationPermissions() {
+
+        Log.i(TAG, "checkLocationPermissions()");
+
+        if (ContextCompat.checkSelfPermission(mContext,
+                Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            ActivityCompat.requestPermissions(mActivity,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    Request_User_Location_Code);
         }
     }
 
@@ -277,7 +315,7 @@ public class Chat extends Fragment implements
             progressIconIndeterminate.setVisibility(View.VISIBLE);
         }
 
-        if (userIsWithinShape) {
+        if (newShape || userIsWithinShape) {
 
             mInput.setHint("Message from within shape...");
         } else {
@@ -469,6 +507,8 @@ public class Chat extends Fragment implements
 
             Log.i(TAG, "onStart() -> sendButton -> onClick");
 
+            sendButton.setEnabled(false);
+
             // Close keyboard.
             if (mActivity.getCurrentFocus() != null) {
 
@@ -493,107 +533,144 @@ public class Chat extends Fragment implements
                 return;
             }
 
-            String input = mInput.getText().toString().trim();
+            progressIconIndeterminate.setVisibility(View.VISIBLE);
 
-            // Send recyclerviewlayout to Firebase.
-            if (!input.equals("") || imageView.getVisibility() != View.GONE || videoImageView.getVisibility() != View.GONE) {
+            // Set the circle's location to the user's current location.
+            if (newShape) {
 
-                sendButton.setEnabled(false);
+                // Check location permissions.
+                if (ContextCompat.checkSelfPermission(mContext,
+                        Manifest.permission.ACCESS_FINE_LOCATION)
+                        == PackageManager.PERMISSION_GRANTED) {
 
-                if (imageView.getVisibility() != View.GONE || videoImageView.getVisibility() != View.GONE) {
+                    FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(mActivity);
 
-                    firebaseUpload();
+                    mFusedLocationClient.getLastLocation()
+                            .addOnSuccessListener(mActivity, location -> {
+
+                                if (location != null) {
+
+                                    userIsWithinShape = true;
+                                    circleLatitude = location.getLatitude();
+                                    circleLongitude = location.getLongitude();
+
+                                    // Get a value with 1 decimal point and use it for Firebase.
+                                    double nearLeftPrecisionLat = Math.pow(10, 1);
+                                    // Can't create a firebase path with '.', so get rid of decimal.
+                                    double nearLeftLatTemp = (int) (nearLeftPrecisionLat * circleLatitude) / nearLeftPrecisionLat;
+                                    nearLeftLatTemp *= 10;
+                                    shapeLatInt = (int) nearLeftLatTemp;
+
+                                    double nearLeftPrecisionLon = Math.pow(10, 1);
+                                    // Can't create a firebase path with '.', so get rid of decimal.
+                                    double nearLeftLonTemp = (int) (nearLeftPrecisionLon * circleLongitude) / nearLeftPrecisionLon;
+                                    nearLeftLonTemp *= 10;
+                                    shapeLonInt = (int) nearLeftLonTemp;
+
+                                    // Add the query, as it will not be added previously because shapeLat and shapeLon will be null;
+                                    addQuery();
+
+                                    firebaseUpload();
+                                } else {
+
+                                    progressIconIndeterminate.setVisibility(View.GONE);
+                                    sendButton.setEnabled(true);
+                                    toastMessageLong("Enable your location provider and try again.");
+                                }
+                            });
                 } else {
 
-                    // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter).
-                    messageSent = true;
+                    progressIconIndeterminate.setVisibility(View.GONE);
+                    sendButton.setEnabled(true);
+                    checkLocationPermissions();
+                }
+            } else {
 
-                    if (newShape) {
+                String input = mInput.getText().toString().trim();
 
-                        // Since the UUID doesn't already exist in Firebase, add the circle.
-                        CircleOptions circleOptions = new CircleOptions()
-                                .center(new LatLng(circleLatitude, circleLongitude))
-                                .clickable(true)
-                                .radius(1.0);
-                        CircleInformation circleInformation = new CircleInformation();
-                        circleInformation.setCircleOptions(circleOptions);
-                        circleInformation.setShapeUUID(shapeUUID);
-                        DatabaseReference newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child("Points").push();
-                        newFirebaseShape.setValue(circleInformation);
+                // Send recyclerviewlayout to Firebase.
+                if (!input.equals("") || imageView.getVisibility() != View.GONE || videoImageView.getVisibility() != View.GONE) {
 
-                        newShape = false;
-                    }
+                    if (imageView.getVisibility() != View.GONE || videoImageView.getVisibility() != View.GONE) {
 
-                    String userUUID = UUID.randomUUID().toString();
+                        firebaseUpload();
+                    } else {
 
-                    // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                    // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                    Object date = ServerValue.TIMESTAMP;
+                        // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter).
+                        messageSent = true;
 
-                    // If mentions exist, add to the user's DMs.
-                    if (removedDuplicatesMentions != null) {
+                        String userUUID = UUID.randomUUID().toString();
 
-                        ArrayList<String> messagedUsersAL = new ArrayList<>();
-                        for (String mention : removedDuplicatesMentions) {
+                        // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+                        // This will cause onDataChange to fire twice; optimizations could be made in the future.
+                        Object date = ServerValue.TIMESTAMP;
 
-                            for (int i = 0; i < mUser.size(); i++) {
+                        // If mentions exist, add to the user's DMs.
+                        if (removedDuplicatesMentions != null) {
 
-                                String userEmail = emailsAL.get(i);
-                                if (mUser.get(i).equals(mention) && !messagedUsersAL.contains(userEmail)) {
+                            ArrayList<String> messagedUsersAL = new ArrayList<>();
+                            for (String mention : removedDuplicatesMentions) {
 
-                                    // Prevent sending the same DM to a user multiple times.
-                                    messagedUsersAL.add(userEmail);
+                                for (int i = 0; i < mUser.size(); i++) {
 
-                                    String email = emailsAL.get(i);
+                                    String userEmail = emailsAL.get(i);
+                                    if (mUser.get(i).equals(mention) && !messagedUsersAL.contains(userEmail)) {
 
-                                    DmInformation dmInformation = new DmInformation();
-                                    dmInformation.setDate(date);
-                                    dmInformation.setLat(circleLatitude);
-                                    dmInformation.setLon(circleLongitude);
-                                    dmInformation.setMessage(input);
-                                    dmInformation.setSeenByUser(false);
-                                    dmInformation.setShapeUUID(shapeUUID);
-                                    dmInformation.setUserIsWithinShape(userIsWithinShape);
-                                    dmInformation.setUserUUID(userUUID);
+                                        // Prevent sending the same DM to a user multiple times.
+                                        messagedUsersAL.add(userEmail);
 
-                                    // Firebase does not allow ".", so replace them with ",".
-                                    String receiverEmailFirebase = email.replace(".", ",");
-                                    DatabaseReference newDm = FirebaseDatabase.getInstance().getReference().child("Users").child(receiverEmailFirebase).child("ReceivedDms").push();
-                                    newDm.setValue(dmInformation);
-                                    break;
+                                        String email = emailsAL.get(i);
+
+                                        DmInformation dmInformation = new DmInformation();
+                                        dmInformation.setDate(date);
+                                        dmInformation.setLat(circleLatitude);
+                                        dmInformation.setLon(circleLongitude);
+                                        dmInformation.setMessage(input);
+                                        dmInformation.setSeenByUser(false);
+                                        dmInformation.setShapeUUID(shapeUUID);
+                                        dmInformation.setUserIsWithinShape(userIsWithinShape);
+                                        dmInformation.setUserUUID(userUUID);
+
+                                        // Firebase does not allow ".", so replace them with ",".
+                                        String receiverEmailFirebase = email.replace(".", ",");
+                                        DatabaseReference newDm = FirebaseDatabase.getInstance().getReference().child("Users").child(receiverEmailFirebase).child("ReceivedDms").push();
+                                        newDm.setValue(dmInformation);
+                                        break;
+                                    }
                                 }
                             }
                         }
+
+                        MessageInformation messageInformation = new MessageInformation();
+                        messageInformation.setDate(date);
+                        // If user has a Google account, get email one way. Else, get email another way.
+                        GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
+                        String email;
+                        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+                        if (acct != null) {
+                            email = acct.getEmail();
+                        } else {
+                            email = sharedPreferences.getString("userToken", "null");
+                        }
+                        messageInformation.setEmail(email);
+                        messageInformation.setMessage(input);
+                        messageInformation.setUserIsWithinShape(userIsWithinShape);
+                        messageInformation.setUserUUID(userUUID);
+                        DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child(shapeUUID).push();
+                        newMessage.setValue(messageInformation);
+
+                        mInput.getText().clear();
+
+                        if (removedDuplicatesMentions != null && !removedDuplicatesMentions.isEmpty()) {
+
+                            removedDuplicatesMentions.clear();
+                        }
+
+                        // For some reason, if the text begins with a mention and onCreateView was called after the mention was added, the mention is not cleared with one call to clear().
+                        mInput.getText().clear();
+                        progressIconIndeterminate.setVisibility(View.GONE);
+                        sendButton.setEnabled(true);
                     }
-
-                    MessageInformation messageInformation = new MessageInformation();
-                    messageInformation.setDate(date);
-                    // If user has a Google account, get email one way. Else, get email another way.
-                    GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
-                    String email;
-                    SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-                    if (acct != null) {
-                        email = acct.getEmail();
-                    } else {
-                        email = sharedPreferences.getString("userToken", "null");
-                    }
-                    messageInformation.setEmail(email);
-                    messageInformation.setMessage(input);
-                    messageInformation.setUserIsWithinShape(userIsWithinShape);
-                    messageInformation.setUserUUID(userUUID);
-                    DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child(shapeUUID).push();
-                    newMessage.setValue(messageInformation);
-
-                    mInput.getText().clear();
-
-                    if (removedDuplicatesMentions != null && !removedDuplicatesMentions.isEmpty()) {
-
-                        removedDuplicatesMentions.clear();
-                    }
-
-                    // For some reason, if the text begins with a mention and onCreateView was called after the mention was added, the mention is not cleared with one call to clear().
-                    mInput.getText().clear();
-                    sendButton.setEnabled(true);
                 }
             }
         });
@@ -790,7 +867,7 @@ public class Chat extends Fragment implements
                     }
                 }
 
-                if (!loadingOlderMessages) {
+                if (!loadingOlderMessages && !newShape) {
 
                     addQuery();
                 }
@@ -1203,7 +1280,7 @@ public class Chat extends Fragment implements
         datesALSize = null;
 
         // After the initial load, make the progressIconIndeterminate invisible.
-        if (progressIconIndeterminate != null && !showProgressIndeterminate) {
+        if (!newShape && progressIconIndeterminate != null && !showProgressIndeterminate) {
 
             progressIconIndeterminate.setVisibility(View.GONE);
         }
@@ -1947,6 +2024,31 @@ public class Chat extends Fragment implements
 
         switch (requestCode) {
 
+            case Request_User_Location_Code: {
+
+                if (grantResults.length > 0) {
+
+                    if (ActivityCompat.shouldShowRequestPermissionRationale(mActivity, Manifest.permission.ACCESS_FINE_LOCATION)) {
+
+                        locationPermissionAlertAsync();
+                    } else if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+                        // Permission was granted, yay! Do the location-related task you need to do.
+                        if (ContextCompat.checkSelfPermission(mContext,
+                                Manifest.permission.ACCESS_FINE_LOCATION)
+                                == PackageManager.PERMISSION_GRANTED) {
+
+                            startLocationUpdates();
+                        }
+                    } else {
+
+                        toastMessageLong("Location permission is required. Please enable it manually through the Android settings menu.");
+                    }
+                }
+
+                break;
+            }
+
             case Request_ID_Take_Photo: {
 
                 HashMap<String, Integer> perms = new HashMap<>();
@@ -2041,66 +2143,53 @@ public class Chat extends Fragment implements
         }
     }
 
-    private void startActivityTakePhoto() {
+    protected void startLocationUpdates() {
 
-        Log.i(TAG, "startActivityTakePhoto()");
+        Log.i(TAG, "startLocationUpdates()");
 
-        // Permission was granted, yay! Do the task you need to do.
-        Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        if (cameraIntent.resolveActivity(mActivity.getPackageManager()) != null) {
+        // Create the location request to start receiving updates
+        LocationRequest mLocationRequest = new LocationRequest();
+        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
-            // Create the File where the photo should go
-            File photoFile = null;
-            try {
+        /* 1000 = 1 sec */
+        long UPDATE_INTERVAL = 0;
+        mLocationRequest.setInterval(UPDATE_INTERVAL);
 
-                photoFile = createImageFile();
-            } catch (IOException ex) {
+        /* 1000 = 1 sec */
+        long FASTEST_INTERVAL = 0;
+        mLocationRequest.setFastestInterval(FASTEST_INTERVAL);
 
-                // Error occurred while creating the File
-                toastMessageLong(ex.getMessage());
-            }
-            // Continue only if the File was successfully created
-            if (photoFile != null) {
+        // Create LocationSettingsRequest object using location request
+        LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder();
+        builder.addLocationRequest(mLocationRequest);
+        LocationSettingsRequest locationSettingsRequest = builder.build();
 
-                imageURI = FileProvider.getUriForFile(mContext,
-                        "com.example.android.fileprovider",
-                        photoFile);
-                cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, imageURI);
-                startActivityForResult(cameraIntent, 3);
-            }
-        }
+        // Check whether location settings are satisfied
+        // https://developers.google.com/android/reference/com/google/android/gms/location/SettingsClient
+        SettingsClient settingsClient = LocationServices.getSettingsClient(mContext);
+        settingsClient.checkLocationSettings(locationSettingsRequest);
     }
 
-    private void startActivityRecordVideo() {
+    private void locationPermissionAlertAsync() {
 
-        Log.i(TAG, "startActivityRecordVideo()");
+        AlertDialog.Builder alert;
+        alert = new AlertDialog.Builder(mContext);
 
-        // Permission was granted, yay! Do the task you need to do.
-        Intent videoIntent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
-        if (videoIntent.resolveActivity(mActivity.getPackageManager()) != null) {
+        HandlerThread locationPermissionHandlerThread = new HandlerThread("locationPermissionHandlerThread");
+        locationPermissionHandlerThread.start();
+        Handler mHandler = new Handler(locationPermissionHandlerThread.getLooper());
+        Runnable runnable = () ->
 
-            // Create the File where the video should go
-            File videoFile = null;
-            try {
+                alert.setCancelable(false)
+                        .setTitle("Device Location Required")
+                        .setMessage("Here Before needs permission to use your location to find chat areas around you.")
+                        .setPositiveButton("OK", (dialogInterface, i) -> ActivityCompat.requestPermissions(mActivity,
+                                new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                                Request_User_Location_Code))
+                        .create()
+                        .show();
 
-                videoFile = createVideoFile();
-            } catch (IOException ex) {
-
-                // Error occurred while creating the File
-                toastMessageLong(ex.getMessage());
-            }
-            // Continue only if the File was successfully created
-            if (videoFile != null) {
-
-                videoURI = FileProvider.getUriForFile(mContext,
-                        "com.example.android.fileprovider",
-                        videoFile);
-                videoIntent.putExtra(MediaStore.EXTRA_OUTPUT, videoURI);
-                // Limit the amount of time a video can be recorded (in seconds).
-                videoIntent.putExtra(MediaStore.EXTRA_DURATION_LIMIT, 30);
-                startActivityForResult(videoIntent, 4);
-            }
-        }
+        mHandler.post(runnable);
     }
 
     private void cameraPermissionAlertAsync(Boolean checkPermissionsPicture) {
@@ -2188,6 +2277,68 @@ public class Chat extends Fragment implements
                         .show();
 
         mHandler.post(runnable);
+    }
+
+    private void startActivityTakePhoto() {
+
+        Log.i(TAG, "startActivityTakePhoto()");
+
+        // Permission was granted, yay! Do the task you need to do.
+        Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        if (cameraIntent.resolveActivity(mActivity.getPackageManager()) != null) {
+
+            // Create the File where the photo should go
+            File photoFile = null;
+            try {
+
+                photoFile = createImageFile();
+            } catch (IOException ex) {
+
+                // Error occurred while creating the File
+                toastMessageLong(ex.getMessage());
+            }
+            // Continue only if the File was successfully created
+            if (photoFile != null) {
+
+                imageURI = FileProvider.getUriForFile(mContext,
+                        "com.example.android.fileprovider",
+                        photoFile);
+                cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, imageURI);
+                startActivityForResult(cameraIntent, 3);
+            }
+        }
+    }
+
+    private void startActivityRecordVideo() {
+
+        Log.i(TAG, "startActivityRecordVideo()");
+
+        // Permission was granted, yay! Do the task you need to do.
+        Intent videoIntent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
+        if (videoIntent.resolveActivity(mActivity.getPackageManager()) != null) {
+
+            // Create the File where the video should go
+            File videoFile = null;
+            try {
+
+                videoFile = createVideoFile();
+            } catch (IOException ex) {
+
+                // Error occurred while creating the File
+                toastMessageLong(ex.getMessage());
+            }
+            // Continue only if the File was successfully created
+            if (videoFile != null) {
+
+                videoURI = FileProvider.getUriForFile(mContext,
+                        "com.example.android.fileprovider",
+                        videoFile);
+                videoIntent.putExtra(MediaStore.EXTRA_OUTPUT, videoURI);
+                // Limit the amount of time a video can be recorded (in seconds).
+                videoIntent.putExtra(MediaStore.EXTRA_DURATION_LIMIT, 30);
+                startActivityForResult(videoIntent, 4);
+            }
+        }
     }
 
     private File createImageFile() throws IOException {
@@ -2601,8 +2752,6 @@ public class Chat extends Fragment implements
 
         Log.i(TAG, "firebaseUpload()");
 
-        // Show the loading icon while the image is being uploaded to Firebase.
-        progressIconIndeterminate.setVisibility(View.VISIBLE);
         progressIcon.setProgress(0);
 
         // Get the input early so we can clear it before the content begins uploading.
@@ -2738,15 +2887,16 @@ public class Chat extends Fragment implements
 
                         if (snapshot.getBytesTransferred() != 0) {
 
-                            progressIconIndeterminate.setVisibility(View.GONE);
-                        } else if (progressIcon.getVisibility() != View.VISIBLE) {
+                            if (progressIcon.getVisibility() != View.VISIBLE) {
 
-                            progressIcon.setVisibility(View.VISIBLE);
+                                progressIconIndeterminate.setVisibility(View.GONE);
+                                progressIcon.setVisibility(View.VISIBLE);
+                            }
+
+                            int progress = (int) ((int) (snapshot.getBytesTransferred() * 100) / snapshot.getTotalByteCount());
+
+                            progressIcon.setProgress(progress, true);
                         }
-
-                        int progress = (int) ((int) (snapshot.getBytesTransferred() * 100) / snapshot.getTotalByteCount());
-
-                        progressIcon.setProgress(progress, true);
                     })
 
                     .addOnFailureListener(ex -> {
@@ -2880,15 +3030,16 @@ public class Chat extends Fragment implements
 
                         if (snapshot.getBytesTransferred() != 0) {
 
-                            progressIconIndeterminate.setVisibility(View.GONE);
-                        } else if (progressIcon.getVisibility() != View.VISIBLE) {
+                            if (progressIcon.getVisibility() != View.VISIBLE) {
 
-                            progressIcon.setVisibility(View.VISIBLE);
+                                progressIconIndeterminate.setVisibility(View.GONE);
+                                progressIcon.setVisibility(View.VISIBLE);
+                            }
+
+                            int progress = (int) ((int) (snapshot.getBytesTransferred() * 100) / snapshot.getTotalByteCount());
+
+                            progressIcon.setProgress(progress, true);
                         }
-
-                        int progress = (int) ((int) (snapshot.getBytesTransferred() * 100) / snapshot.getTotalByteCount());
-
-                        progressIcon.setProgress(progress, true);
                     })
 
                     .addOnFailureListener(ex -> {

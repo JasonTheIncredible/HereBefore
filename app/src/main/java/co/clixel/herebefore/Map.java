@@ -101,7 +101,11 @@ public class Map extends FragmentActivity implements
     private Pair<Integer, Integer> newNearLeft, newFarLeft, newNearRight, newFarRight;
     private List<Pair<Integer, Integer>> loadedCoordinates;
 
-    // When creating a circle, track user's location until they send the image, then create a circle at that location.
+    // Make Chat location more accurate.
+    // Deal with user sending new message at previous circle's location - send circle location AL to Chat and check for new circles when sending message?
+    // Stop location updates in Map, Chat, and DirectMentions onStop. https://stackoverflow.com/questions/51733587/how-to-remove-fusedlocationproviderclient-location-updates-from-within-non-activ
+    // Use the user's most up-to-date location information in DirectMentions.
+    // Stop tracking location in Chat and DirectMentions after user sends the first message.
     // Fix bug where after sending a message and restarting Chat, date in datesAL will not match the value in Firebase as date in Firebase gets updated soon after getting the initial value. Will probably need to switch from date to something else.
     // Deal with leaks.
     // Prevent data scraping (hide email addresses and other personal information).
@@ -638,6 +642,8 @@ public class Map extends FragmentActivity implements
             settingsButton.setEnabled(false);
         } else {
 
+            imageFile = null;
+            videoFile = null;
             return;
         }
 
@@ -1099,7 +1105,7 @@ public class Map extends FragmentActivity implements
             }
         });
 
-        // Updates the boolean value for onLocationChanged() to prevent updating the camera position if the user has already changed it manually.
+        // Updates the boolean value for onLocationChanged to prevent updating the camera position if the user has already changed it manually.
         mMap.setOnCameraMoveListener(() -> {
 
             if (waitingForBetterLocationAccuracy && !cameraMoved) {
@@ -1406,11 +1412,10 @@ public class Map extends FragmentActivity implements
 
         Log.i(TAG, "enterCircle()");
 
-        LatLng circleToEnterLatLng;
+        LatLng circleToEnterLatLng = null;
         String circleToEnterUUID;
         if (circleLatLng == null && newShape) {
             // New circle.
-            circleToEnterLatLng = new LatLng(userLocation.getLatitude(), userLocation.getLongitude());
             circleToEnterUUID = UUID.randomUUID().toString();
         } else if (circleLatLng == null) {
             // User is entering a circle by clicking on it, so circleTemp != null.
@@ -1440,30 +1445,34 @@ public class Map extends FragmentActivity implements
         // Pass this boolean value to Chat.java.
         Activity.putExtra("newShape", newShape);
 
-        // Get a value with 1 decimal point and use it for Firebase.
-        double nearLeftPrecisionLat = Math.pow(10, 1);
-        // Can't create a firebase path with '.', so get rid of decimal.
-        double nearLeftLatTemp = (int) (nearLeftPrecisionLat * circleToEnterLatLng.latitude) / nearLeftPrecisionLat;
-        nearLeftLatTemp *= 10;
-        int shapeLat = (int) nearLeftLatTemp;
+        if (!newShape) {
 
-        double nearLeftPrecisionLon = Math.pow(10, 1);
-        // Can't create a firebase path with '.', so get rid of decimal.
-        double nearLeftLonTemp = (int) (nearLeftPrecisionLon * circleToEnterLatLng.longitude) / nearLeftPrecisionLon;
-        nearLeftLonTemp *= 10;
-        int shapeLon = (int) nearLeftLonTemp;
+            // Get a value with 1 decimal point and use it for Firebase.
+            double nearLeftPrecisionLat = Math.pow(10, 1);
+            // Can't create a firebase path with '.', so get rid of decimal.
+            double nearLeftLatTemp = (int) (nearLeftPrecisionLat * circleToEnterLatLng.latitude) / nearLeftPrecisionLat;
+            nearLeftLatTemp *= 10;
+            int shapeLat = (int) nearLeftLatTemp;
 
-        Activity.putExtra("shapeLat", shapeLat);
-        Activity.putExtra("shapeLon", shapeLon);
-        // UserLatitude and userLongitude are used in DirectMentions.
-        Activity.putExtra("userLatitude", userLocation.getLatitude());
-        Activity.putExtra("userLongitude", userLocation.getLongitude());
+            double nearLeftPrecisionLon = Math.pow(10, 1);
+            // Can't create a firebase path with '.', so get rid of decimal.
+            double nearLeftLonTemp = (int) (nearLeftPrecisionLon * circleToEnterLatLng.longitude) / nearLeftPrecisionLon;
+            nearLeftLonTemp *= 10;
+            int shapeLon = (int) nearLeftLonTemp;
+
+            Activity.putExtra("shapeLat", shapeLat);
+            Activity.putExtra("shapeLon", shapeLon);
+            // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
+            Activity.putExtra("userIsWithinShape", userIsWithinShape);
+            // UserLatitude and userLongitude are used in DirectMentions.
+            Activity.putExtra("userLatitude", userLocation.getLatitude());
+            Activity.putExtra("userLongitude", userLocation.getLongitude());
+            Activity.putExtra("circleLatitude", circleToEnterLatLng.latitude);
+            Activity.putExtra("circleLongitude", circleToEnterLatLng.longitude);
+        }
+        
         // Pass this value to Chat.java to identify the shape.
         Activity.putExtra("shapeUUID", circleToEnterUUID);
-        // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
-        Activity.putExtra("userIsWithinShape", userIsWithinShape);
-        Activity.putExtra("circleLatitude", circleToEnterLatLng.latitude);
-        Activity.putExtra("circleLongitude", circleToEnterLatLng.longitude);
         Activity.putExtra("imageFile", imageFile);
         Activity.putExtra("videoFile", videoFile);
 
