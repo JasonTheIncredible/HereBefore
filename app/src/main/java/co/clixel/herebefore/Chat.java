@@ -11,6 +11,9 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.Bundle;
@@ -31,6 +34,7 @@ import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Parcel;
 import android.provider.MediaStore;
+import android.provider.Settings;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.method.LinkMovementMethod;
@@ -53,7 +57,9 @@ import com.google.android.gms.ads.RequestConfiguration;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.LocationSettingsRequest;
 import com.google.android.gms.location.SettingsClient;
@@ -121,11 +127,12 @@ import static java.text.DateFormat.getDateTimeInstance;
 
 public class Chat extends Fragment implements
         PopupMenu.OnMenuItemClickListener,
+        LocationListener,
         QueryTokenReceiver,
         SuggestionsVisibilityManager {
 
     private static final String TAG = "Chat";
-    private static final int Request_User_Location_Code = 69420, Request_ID_Take_Photo = 69, Request_ID_Record_Video = 420;
+    private static final int Request_User_Location_Code = 42, Request_ID_Take_Photo = 69, Request_ID_Record_Video = 420;
     private MentionsEditText mInput;
     private ArrayList<String> removedDuplicatesMentions, mTime, mUser, mImage, mVideo, mSuggestions, allMentions, emailsAL;
     private ArrayList<SpannableString> mText;
@@ -159,6 +166,9 @@ public class Chat extends Fragment implements
     private Drawable imageDrawable, videoDrawable;
     private int shapeLatInt, shapeLonInt;
     private Integer previouslyHighlightedPosition;
+    private LocationManager locationManager;
+    private FusedLocationProviderClient mFusedLocationClient;
+    private LocationCallback mLocationCallback;
     private final WordTokenizerConfig tokenizerConfig = new WordTokenizerConfig
             .Builder()
             .setWordBreakChars(", ")
@@ -193,34 +203,6 @@ public class Chat extends Fragment implements
                 }
                 imageFile = extras.getString("imageFile");
                 videoFile = extras.getString("videoFile");
-
-                if (newShape) {
-
-                    // Check location permissions.
-                    if (ContextCompat.checkSelfPermission(mContext,
-                            Manifest.permission.ACCESS_FINE_LOCATION)
-                            == PackageManager.PERMISSION_GRANTED) {
-
-                        startLocationUpdates();
-                    } else {
-
-                        checkLocationPermissions();
-                    }
-                } else {
-
-                    // Get a value with 1 decimal point and use it for Firebase.
-                    double nearLeftPrecisionLat = Math.pow(10, 1);
-                    // Can't create a firebase path with '.', so get rid of decimal.
-                    double nearLeftLatTemp = (int) (nearLeftPrecisionLat * circleLatitude) / nearLeftPrecisionLat;
-                    nearLeftLatTemp *= 10;
-                    shapeLatInt = (int) nearLeftLatTemp;
-
-                    double nearLeftPrecisionLon = Math.pow(10, 1);
-                    // Can't create a firebase path with '.', so get rid of decimal.
-                    double nearLeftLonTemp = (int) (nearLeftPrecisionLon * circleLongitude) / nearLeftPrecisionLon;
-                    nearLeftLonTemp *= 10;
-                    shapeLonInt = (int) nearLeftLonTemp;
-                }
             } else {
 
                 Log.e(TAG, "onCreateView() -> extras == null");
@@ -331,6 +313,22 @@ public class Chat extends Fragment implements
 
         super.onStart();
         Log.i(TAG, "onStart()");
+
+        if (!newShape) {
+
+            // Get a value with 1 decimal point and use it for Firebase.
+            double nearLeftPrecisionLat = Math.pow(10, 1);
+            // Can't create a firebase path with '.', so get rid of decimal.
+            double nearLeftLatTemp = (int) (nearLeftPrecisionLat * circleLatitude) / nearLeftPrecisionLat;
+            nearLeftLatTemp *= 10;
+            shapeLatInt = (int) nearLeftLatTemp;
+
+            double nearLeftPrecisionLon = Math.pow(10, 1);
+            // Can't create a firebase path with '.', so get rid of decimal.
+            double nearLeftLonTemp = (int) (nearLeftPrecisionLon * circleLongitude) / nearLeftPrecisionLon;
+            nearLeftLonTemp *= 10;
+            shapeLonInt = (int) nearLeftLonTemp;
+        }
 
         // Set to true to scroll to the bottom of chatRecyclerView. Also prevents duplicate items in addQuery.
         firstLoad = true;
@@ -507,8 +505,6 @@ public class Chat extends Fragment implements
 
             Log.i(TAG, "onStart() -> sendButton -> onClick");
 
-            sendButton.setEnabled(false);
-
             // Close keyboard.
             if (mActivity.getCurrentFocus() != null) {
 
@@ -532,6 +528,8 @@ public class Chat extends Fragment implements
                 toastMessageShort("Picture or video required.");
                 return;
             }
+
+            sendButton.setEnabled(false);
 
             progressIconIndeterminate.setVisibility(View.VISIBLE);
 
@@ -571,11 +569,6 @@ public class Chat extends Fragment implements
                                     addQuery();
 
                                     firebaseUpload();
-                                } else {
-
-                                    progressIconIndeterminate.setVisibility(View.GONE);
-                                    sendButton.setEnabled(true);
-                                    toastMessageLong("Enable your location provider and try again.");
                                 }
                             });
                 } else {
@@ -1082,6 +1075,55 @@ public class Chat extends Fragment implements
         }
 
         return spannableMessageText;
+    }
+
+    @Override
+    public void onResume() {
+
+        super.onResume();
+        Log.i(TAG, "onResume()");
+
+        sendButton.setEnabled(true);
+
+        locationManager = (LocationManager) mContext.getSystemService(Context.LOCATION_SERVICE);
+
+        // Start updating location.
+        if (ContextCompat.checkSelfPermission(mContext,
+                Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
+
+            String provider = LocationManager.NETWORK_PROVIDER;
+            if (locationManager != null) {
+
+                locationManager.requestLocationUpdates(provider, 0, 0, this);
+                startLocationUpdates();
+            } else {
+
+                Log.e(TAG, "onResume() -> locationManager == null");
+                toastMessageLong("Error retrieving your location.");
+            }
+        } else {
+
+            checkLocationPermissions();
+        }
+    }
+
+    @Override
+    public void onPause() {
+
+        Log.i(TAG, "onPause()");
+
+        if (locationManager != null) {
+
+            locationManager.removeUpdates(this);
+        }
+
+        if (mFusedLocationClient != null) {
+
+            mFusedLocationClient.removeLocationUpdates(mLocationCallback);
+        }
+
+        super.onPause();
     }
 
     @Override
@@ -2148,26 +2190,88 @@ public class Chat extends Fragment implements
         Log.i(TAG, "startLocationUpdates()");
 
         // Create the location request to start receiving updates
-        LocationRequest mLocationRequest = new LocationRequest();
-        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        LocationRequest locationRequest = new LocationRequest();
+        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
         /* 1000 = 1 sec */
         long UPDATE_INTERVAL = 0;
-        mLocationRequest.setInterval(UPDATE_INTERVAL);
+        locationRequest.setInterval(UPDATE_INTERVAL);
 
         /* 1000 = 1 sec */
         long FASTEST_INTERVAL = 0;
-        mLocationRequest.setFastestInterval(FASTEST_INTERVAL);
+        locationRequest.setFastestInterval(FASTEST_INTERVAL);
 
         // Create LocationSettingsRequest object using location request
         LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder();
-        builder.addLocationRequest(mLocationRequest);
+        builder.addLocationRequest(locationRequest);
         LocationSettingsRequest locationSettingsRequest = builder.build();
 
         // Check whether location settings are satisfied
         // https://developers.google.com/android/reference/com/google/android/gms/location/SettingsClient
         SettingsClient settingsClient = LocationServices.getSettingsClient(mContext);
         settingsClient.checkLocationSettings(locationSettingsRequest);
+
+        // New Google API SDK v11 uses getFusedLocationProviderClient(this).
+        if (ContextCompat.checkSelfPermission(mContext,
+                Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
+
+            mFusedLocationClient = getFusedLocationProviderClient(mActivity);
+
+            mLocationCallback = new LocationCallback() {
+
+                @Override
+                public void onLocationResult(LocationResult locationResult) {
+
+                    if (locationResult != null) {
+
+                        onLocationChanged(locationResult.getLastLocation());
+                    }
+                }
+            };
+
+            getFusedLocationProviderClient(mContext).requestLocationUpdates(locationRequest, mLocationCallback, Looper.myLooper());
+        } else {
+
+            checkLocationPermissions();
+        }
+    }
+
+    @Override
+    public void onLocationChanged(@NonNull Location location) {
+    }
+
+    @Override
+    public void onProviderEnabled(@NonNull String provider) {
+
+        Log.i(TAG, "onProviderEnabled()");
+    }
+
+    @Override
+    public void onProviderDisabled(@NonNull String provider) {
+
+        Log.i(TAG, "onProviderDisabled()");
+        buildAlertNoGPS();
+    }
+
+    private void buildAlertNoGPS() {
+
+        AlertDialog.Builder alert;
+        alert = new AlertDialog.Builder(mContext);
+
+        HandlerThread GPSHandlerThread = new HandlerThread("GPSHandlerThread");
+        GPSHandlerThread.start();
+        Handler mHandler = new Handler(GPSHandlerThread.getLooper());
+        Runnable runnable = () ->
+
+                alert.setCancelable(false)
+                        .setTitle("GPS Disabled")
+                        .setMessage("Please enable your location services on the following screen.")
+                        .setPositiveButton("OK", (dialog, i) -> startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)))
+                        .create()
+                        .show();
+
+        mHandler.post(runnable);
     }
 
     private void locationPermissionAlertAsync() {

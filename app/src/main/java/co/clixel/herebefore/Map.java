@@ -81,7 +81,7 @@ public class Map extends FragmentActivity implements
         PopupMenu.OnMenuItemClickListener {
 
     private static final String TAG = "Map";
-    private static final int Request_User_Location_Code = 69420, Request_ID_Take_Photo = 69, Request_ID_Record_Video = 420;
+    private static final int Request_User_Location_Code = 42, Request_ID_Take_Photo = 69, Request_ID_Record_Video = 420;
     private GoogleMap mMap;
     private Circle circleTemp;
     private ChildEventListener childEventListenerNearLeft, childEventListenerFarLeft, childEventListenerNearRight, childEventListenerFarRight;
@@ -90,23 +90,25 @@ public class Map extends FragmentActivity implements
     private Button circleButton, mapTypeButton, settingsButton;
     private ImageButton dmButton;
     private PopupMenu popupMapType;
-    private boolean locationProviderDisabled = false, firstLoadCamera = true, cameraMoved = false, waitingForBetterLocationAccuracy = false, badAccuracy = false, restarted = false, mapCleared = false, checkPermissionsPicture;
+    private boolean firstLoadCamera = true, cameraMoved = false, waitingForBetterLocationAccuracy = false, badAccuracy = false, restarted = false, mapCleared = false, checkPermissionsPicture;
     private final ArrayList<String> circleUUIDsAL = new ArrayList<>();
     private final ArrayList<LatLng> circleCentersAL = new ArrayList<>();
     private int newNearLeftLat, newNearLeftLon, newFarLeftLat, newFarLeftLon, newNearRightLat, newNearRightLon, newFarRightLat, newFarRightLon;
     private Toast longToast;
     private View loadingIcon;
-    private LocationManager locationManager;
     private Query queryNearLeft, queryFarLeft, queryNearRight, queryFarRight;
     private Pair<Integer, Integer> newNearLeft, newFarLeft, newNearRight, newFarRight;
     private List<Pair<Integer, Integer>> loadedCoordinates;
+    private LocationManager locationManager;
+    private FusedLocationProviderClient mFusedLocationClient;
+    private LocationCallback mLocationCallback;
 
+    // Track user's location even if it's not a new circle but be more lenient about whether they're inside the circle.
     // Make Chat location more accurate.
     // Deal with user sending new message at previous circle's location - send circle location AL to Chat and check for new circles when sending message?
-    // Stop location updates in Map, Chat, and DirectMentions onStop. https://stackoverflow.com/questions/51733587/how-to-remove-fusedlocationproviderclient-location-updates-from-within-non-activ
     // Use the user's most up-to-date location information in DirectMentions.
-    // Stop tracking location in Chat and DirectMentions after user sends the first message.
     // Fix bug where after sending a message and restarting Chat, date in datesAL will not match the value in Firebase as date in Firebase gets updated soon after getting the initial value. Will probably need to switch from date to something else.
+    // Show picture upon opening circle or show picture at the top at all times.
     // Deal with leaks.
     // Prevent data scraping (hide email addresses and other personal information).
 
@@ -252,37 +254,26 @@ public class Map extends FragmentActivity implements
 
                 loadingIcon.setVisibility(View.VISIBLE);
 
-                FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
-
                 mFusedLocationClient.getLastLocation()
                         .addOnSuccessListener(Map.this, location -> {
 
                             if (location != null) {
 
-                                if (!locationProviderDisabled) {
+                                cancelToasts();
 
-                                    cancelToasts();
+                                Intent Activity = new Intent(Map.this, Navigation.class);
 
-                                    Intent Activity = new Intent(Map.this, Navigation.class);
+                                Activity.putExtra("userLatitude", location.getLatitude());
+                                Activity.putExtra("userLongitude", location.getLongitude());
 
-                                    Activity.putExtra("userLatitude", location.getLatitude());
-                                    Activity.putExtra("userLongitude", location.getLongitude());
+                                Activity.putExtra("noChat", true);
 
-                                    Activity.putExtra("noChat", true);
+                                loadingIcon.setVisibility(View.GONE);
 
-                                    loadingIcon.setVisibility(View.GONE);
-
-                                    startActivity(Activity);
-                                } else {
-
-                                    loadingIcon.setVisibility(View.GONE);
-                                    Log.e(TAG, "onStart() -> settingsButton -> location == null");
-                                    toastMessageLong("An error occurred: your location is null.");
-                                }
+                                startActivity(Activity);
                             } else {
 
                                 loadingIcon.setVisibility(View.GONE);
-                                toastMessageLong("Enable your location provider and try again.");
                             }
                         });
             } else {
@@ -303,38 +294,27 @@ public class Map extends FragmentActivity implements
 
                 loadingIcon.setVisibility(View.VISIBLE);
 
-                FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
-
                 mFusedLocationClient.getLastLocation()
                         .addOnSuccessListener(Map.this, location -> {
 
                             if (location != null) {
 
-                                if (!locationProviderDisabled) {
+                                cancelToasts();
 
-                                    cancelToasts();
+                                Intent Activity = new Intent(Map.this, Navigation.class);
 
-                                    Intent Activity = new Intent(Map.this, Navigation.class);
+                                Activity.putExtra("userLatitude", location.getLatitude());
+                                Activity.putExtra("userLongitude", location.getLongitude());
 
-                                    Activity.putExtra("userLatitude", location.getLatitude());
-                                    Activity.putExtra("userLongitude", location.getLongitude());
+                                Activity.putExtra("noChat", true);
+                                Activity.putExtra("fromDms", true);
 
-                                    Activity.putExtra("noChat", true);
-                                    Activity.putExtra("fromDms", true);
+                                loadingIcon.setVisibility(View.GONE);
 
-                                    loadingIcon.setVisibility(View.GONE);
-
-                                    startActivity(Activity);
-                                } else {
-
-                                    loadingIcon.setVisibility(View.GONE);
-                                    Log.e(TAG, "onStart() -> dmButton -> location == null");
-                                    toastMessageLong("An error occurred: your location is null.");
-                                }
+                                startActivity(Activity);
                             } else {
 
                                 loadingIcon.setVisibility(View.GONE);
-                                toastMessageLong("Enable your location provider and try again.");
                             }
                         });
             } else {
@@ -636,7 +616,7 @@ public class Map extends FragmentActivity implements
 
             loadingIcon.setVisibility(View.VISIBLE);
 
-            // Disable buttons while content is being compressed and next activity is opened.
+            // Disable buttons while next activity is opened.
             circleButton.setEnabled(false);
             dmButton.setEnabled(false);
             settingsButton.setEnabled(false);
@@ -653,65 +633,60 @@ public class Map extends FragmentActivity implements
                 == PackageManager.PERMISSION_GRANTED) {
 
             // Create a point and go to Chat.java or SignIn.java.
-            FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
             mFusedLocationClient.getLastLocation()
                     .addOnSuccessListener(Map.this, location -> {
 
                         if (location != null) {
 
-                            if (!locationProviderDisabled) {
+                            // If user is within a circle, enter it. Else, cycle through all circles that are 2 meters away and enter the closest one. Else, enter a new one.
+                            float[] oldDistance = new float[2];
+                            oldDistance[0] = 2f;
+                            LatLng latLng = null;
+                            String uuid = null;
+                            for (int i = 0; i < circleCentersAL.size(); i++) {
 
-                                // If user is within a circle, enter it. Else, cycle through all circles that are 2 meters away and enter the closest one. Else, enter a new one.
-                                float[] oldDistance = new float[2];
-                                oldDistance[0] = 2f;
-                                LatLng latLng = null;
-                                String uuid = null;
-                                for (int i = 0; i < circleCentersAL.size(); i++) {
+                                float[] newDistance = new float[2];
+                                Location.distanceBetween(circleCentersAL.get(i).latitude, circleCentersAL.get(i).longitude, location.getLatitude(), location.getLongitude(), newDistance);
 
-                                    float[] newDistance = new float[2];
-                                    Location.distanceBetween(circleCentersAL.get(i).latitude, circleCentersAL.get(i).longitude, location.getLatitude(), location.getLongitude(), newDistance);
+                                if (newDistance[0] <= 1) {
 
-                                    if (newDistance[0] <= 1) {
+                                    if (requestCode == 3) {
 
-                                        if (requestCode == 3) {
+                                        Log.i(TAG, "onActivityResult() -> Camera");
 
-                                            Log.i(TAG, "onActivityResult() -> Camera");
+                                        enterCircle(location, circleCentersAL.get(i), circleUUIDsAL.get(i), false, true);
+                                        return;
+                                    } else if (requestCode == 4) {
 
-                                            enterCircle(location, circleCentersAL.get(i), circleUUIDsAL.get(i), false, true);
-                                            return;
-                                        } else if (requestCode == 4) {
+                                        Log.i(TAG, "onActivityResult() -> Video");
 
-                                            Log.i(TAG, "onActivityResult() -> Video");
-
-                                            enterCircle(location, circleCentersAL.get(i), circleUUIDsAL.get(i), false, true);
-                                            return;
-                                        }
-                                    } else if (newDistance[0] <= oldDistance[0]) {
-
-                                        oldDistance[0] = newDistance[0];
-                                        latLng = circleCentersAL.get(i);
-                                        uuid = circleUUIDsAL.get(i);
+                                        enterCircle(location, circleCentersAL.get(i), circleUUIDsAL.get(i), false, true);
+                                        return;
                                     }
+                                } else if (newDistance[0] <= oldDistance[0]) {
+
+                                    oldDistance[0] = newDistance[0];
+                                    latLng = circleCentersAL.get(i);
+                                    uuid = circleUUIDsAL.get(i);
                                 }
-
-                                if (requestCode == 3) {
-
-                                    Log.i(TAG, "onActivityResult() -> Camera");
-
-                                    // latLng and uuid will be null if it is a new circle, and newShape will be true.
-                                    enterCircle(location, latLng, uuid, latLng == null, true);
-                                } else if (requestCode == 4) {
-
-                                    Log.i(TAG, "onActivityResult() -> Video");
-
-                                    // latLng and uuid will be null if it is a new circle, and newShape will be true.
-                                    enterCircle(location, latLng, uuid, latLng == null, true);
-                                }
-                            } else {
-
-                                loadingIcon.setVisibility(View.GONE);
-                                toastMessageLong("Enable your location provider and try again.");
                             }
+
+                            if (requestCode == 3) {
+
+                                Log.i(TAG, "onActivityResult() -> Camera");
+
+                                // latLng and uuid will be null if it is a new circle, and newShape will be true.
+                                enterCircle(location, latLng, uuid, latLng == null, true);
+                            } else if (requestCode == 4) {
+
+                                Log.i(TAG, "onActivityResult() -> Video");
+
+                                // latLng and uuid will be null if it is a new circle, and newShape will be true.
+                                enterCircle(location, latLng, uuid, latLng == null, true);
+                            }
+                        } else {
+
+                            loadingIcon.setVisibility(View.GONE);
                         }
                     });
         }
@@ -724,7 +699,6 @@ public class Map extends FragmentActivity implements
         Log.i(TAG, "onRestart()");
 
         restarted = true;
-        firstLoadCamera = false;
 
         // Clear map before adding new Firebase circles in onStart() to prevent overlap.
         // Set shape to null so changing chatSizeSeekBar in onStart() will create a circle and circleButton will reset itself.
@@ -750,20 +724,11 @@ public class Map extends FragmentActivity implements
         circleTempUUID = null;
         circleTemp = null;
 
+        circleButton.setEnabled(true);
+        dmButton.setEnabled(true);
+        settingsButton.setEnabled(true);
+
         locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
-
-        // Check if GPS is enabled.
-        if (locationManager != null) {
-
-            if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-
-                buildAlertNoGPS();
-            }
-        } else {
-
-            Log.e(TAG, "onResume() -> manager == null");
-            toastMessageLong("An error occurred while checking if GPS is enabled.");
-        }
 
         // Start updating location.
         if (ContextCompat.checkSelfPermission(Map.this,
@@ -780,34 +745,17 @@ public class Map extends FragmentActivity implements
             String provider = LocationManager.NETWORK_PROVIDER;
             if (locationManager != null) {
 
-                locationManager.requestLocationUpdates(provider, 5000, 0, this);
+                locationManager.requestLocationUpdates(provider, 0, 0, this);
                 startLocationUpdates();
             } else {
 
                 Log.e(TAG, "onResume() -> locationManager == null");
                 toastMessageLong("Error retrieving your location.");
             }
+        } else {
+
+            checkLocationPermissions();
         }
-    }
-
-    private void buildAlertNoGPS() {
-
-        AlertDialog.Builder alert;
-        alert = new AlertDialog.Builder(this);
-
-        HandlerThread GPSHandlerThread = new HandlerThread("GPSHandlerThread");
-        GPSHandlerThread.start();
-        Handler mHandler = new Handler(GPSHandlerThread.getLooper());
-        Runnable runnable = () ->
-
-                alert.setCancelable(false)
-                        .setTitle("GPS Disabled")
-                        .setMessage("Please enable your location services on the following screen.")
-                        .setPositiveButton("OK", (dialog, i) -> startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)))
-                        .create()
-                        .show();
-
-        mHandler.post(runnable);
     }
 
     @Override
@@ -829,7 +777,11 @@ public class Map extends FragmentActivity implements
         if (locationManager != null) {
 
             locationManager.removeUpdates(this);
-            locationManager = null;
+        }
+
+        if (mFusedLocationClient != null) {
+
+            mFusedLocationClient.removeLocationUpdates(mLocationCallback);
         }
 
         super.onPause();
@@ -936,51 +888,39 @@ public class Map extends FragmentActivity implements
                     Manifest.permission.ACCESS_FINE_LOCATION)
                     == PackageManager.PERMISSION_GRANTED) {
 
-                FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
-
                 mFusedLocationClient.getLastLocation()
                         .addOnSuccessListener(Map.this, location -> {
 
                             if (location != null) {
 
-                                if (!locationProviderDisabled) {
+                                String circleUUID = extras.getString("shapeUUID");
 
-                                    String circleUUID = extras.getString("shapeUUID");
+                                // If the user clicks on a notification while the app is running, lat !=0 && lon != 0, so the if statement will run.
+                                double lat = extras.getDouble("lat");
+                                double lon = extras.getDouble("lon");
+                                if (lat != 0 && lon != 0 && circleUUID != null) {
 
-                                    // If the user clicks on a notification while the app is running, lat !=0 && lon != 0, so the if statement will run.
-                                    double lat = extras.getDouble("lat");
-                                    double lon = extras.getDouble("lon");
-                                    if (lat != 0 && lon != 0 && circleUUID != null) {
+                                    // Check distance to circleTemp and enter it.
+                                    float[] distance = new float[2];
+                                    Location.distanceBetween(lat, lon, location.getLatitude(), location.getLongitude(), distance);
 
-                                        // Check distance to circleTemp and enter it.
-                                        float[] distance = new float[2];
-                                        Location.distanceBetween(lat, lon, location.getLatitude(), location.getLongitude(), distance);
-
-                                        // If distance <= 2, enterCircle(location, circleTemp.getCenter(), false, true). Else, enterCircle(location, circleTemp.getCenter(), false, false).
-                                        enterCircle(location, new LatLng(lat, lon), circleUUID, false, distance[0] <= 2);
-                                        return;
-                                    }
-
-                                    // If the code got to this point, the user clicked on a notification while the app was closed.
-                                    double latDouble = Double.parseDouble(extras.getString("lat"));
-                                    double lonDouble = Double.parseDouble(extras.getString("lon"));
-                                    if (circleUUID != null) {
-
-                                        // Check distance to circleTemp and enter it.
-                                        float[] distance = new float[2];
-                                        Location.distanceBetween(latDouble, lonDouble, location.getLatitude(), location.getLongitude(), distance);
-
-                                        // If distance <= 2, enterCircle(location, circleTemp.getCenter(), false, true). Else, enterCircle(location, circleTemp.getCenter(), false, false).
-                                        enterCircle(location, new LatLng(latDouble, lonDouble), circleUUID, false, distance[0] <= 2);
-                                    }
-                                } else {
-
-                                    Log.e(TAG, "onNewIntent -> location == null");
-                                    toastMessageLong("An error occurred: your location is null.");
+                                    // If distance <= 2, enterCircle(location, circleTemp.getCenter(), false, true). Else, enterCircle(location, circleTemp.getCenter(), false, false).
+                                    enterCircle(location, new LatLng(lat, lon), circleUUID, false, distance[0] <= 2);
+                                    return;
                                 }
-                            } else {
 
-                                toastMessageLong("Enable your location provider and try again.");
+                                // If the code got to this point, the user clicked on a notification while the app was closed.
+                                double latDouble = Double.parseDouble(extras.getString("lat"));
+                                double lonDouble = Double.parseDouble(extras.getString("lon"));
+                                if (circleUUID != null) {
+
+                                    // Check distance to circleTemp and enter it.
+                                    float[] distance = new float[2];
+                                    Location.distanceBetween(latDouble, lonDouble, location.getLatitude(), location.getLongitude(), distance);
+
+                                    // If distance <= 2, enterCircle(location, circleTemp.getCenter(), false, true). Else, enterCircle(location, circleTemp.getCenter(), false, false).
+                                    enterCircle(location, new LatLng(latDouble, lonDouble), circleUUID, false, distance[0] <= 2);
+                                }
                             }
                         });
             } else {
@@ -1021,31 +961,22 @@ public class Map extends FragmentActivity implements
                     loadingIcon.setVisibility(View.VISIBLE);
 
                     // Create a point and go to Chat.java or SignIn.java.
-                    FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(Map.this);
-
                     mFusedLocationClient.getLastLocation()
                             .addOnSuccessListener(Map.this, location -> {
 
                                 // Add circle to the map and go to Chat.
                                 if (location != null) {
 
-                                    if (!locationProviderDisabled) {
+                                    // Check distance to circleTemp and enter it.
+                                    float[] distance = new float[2];
+                                    Location.distanceBetween(circleTemp.getCenter().latitude, circleTemp.getCenter().longitude, location.getLatitude(), location.getLongitude(), distance);
 
-                                        // Check distance to circleTemp and enter it.
-                                        float[] distance = new float[2];
-                                        Location.distanceBetween(circleTemp.getCenter().latitude, circleTemp.getCenter().longitude, location.getLatitude(), location.getLongitude(), distance);
-
-                                        // If distance <= 2, enterCircle(location, circleTemp.getCenter(), false, true). Else, enterCircle(location, circleTemp.getCenter(), false, false).
-                                        enterCircle(location, null, null, false, distance[0] <= 2);
-                                    } else {
-
-                                        loadingIcon.setVisibility(View.GONE);
-                                        toastMessageLong("Enable your location provider and try again.");
-                                    }
+                                    // If distance <= 2, enterCircle(location, circleTemp.getCenter(), false, true). Else, enterCircle(location, circleTemp.getCenter(), false, false).
+                                    enterCircle(location, null, null, false, distance[0] <= 2);
                                 } else {
 
                                     loadingIcon.setVisibility(View.GONE);
-                                    Log.e(TAG, "onStart() -> creatChatButton -> location == null");
+                                    Log.e(TAG, "onStart() -> onCircleClick -> location == null");
                                     toastMessageLong("An error occurred: your location is null.");
                                 }
                             });
@@ -1289,20 +1220,20 @@ public class Map extends FragmentActivity implements
         Log.i(TAG, "startLocationUpdates()");
 
         // Create the location request to start receiving updates
-        LocationRequest mLocationRequest = new LocationRequest();
-        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        LocationRequest locationRequest = new LocationRequest();
+        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
         /* 1000 = 1 sec */
         long UPDATE_INTERVAL = 0;
-        mLocationRequest.setInterval(UPDATE_INTERVAL);
+        locationRequest.setInterval(UPDATE_INTERVAL);
 
         /* 1000 = 1 sec */
         long FASTEST_INTERVAL = 0;
-        mLocationRequest.setFastestInterval(FASTEST_INTERVAL);
+        locationRequest.setFastestInterval(FASTEST_INTERVAL);
 
         // Create LocationSettingsRequest object using location request
         LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder();
-        builder.addLocationRequest(mLocationRequest);
+        builder.addLocationRequest(locationRequest);
         LocationSettingsRequest locationSettingsRequest = builder.build();
 
         // Check whether location settings are satisfied
@@ -1315,16 +1246,21 @@ public class Map extends FragmentActivity implements
                 Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
 
-            getFusedLocationProviderClient(this).requestLocationUpdates(mLocationRequest, new LocationCallback() {
+            mFusedLocationClient = getFusedLocationProviderClient(Map.this);
 
-                        @Override
-                        public void onLocationResult(LocationResult locationResult) {
+            mLocationCallback = new LocationCallback() {
 
-                            onLocationChanged(locationResult.getLastLocation());
-                        }
-                    },
+                @Override
+                public void onLocationResult(LocationResult locationResult) {
 
-                    Looper.myLooper());
+                    if (locationResult != null) {
+
+                        onLocationChanged(locationResult.getLastLocation());
+                    }
+                }
+            };
+
+            getFusedLocationProviderClient(this).requestLocationUpdates(locationRequest, mLocationCallback, Looper.myLooper());
         } else {
 
             checkLocationPermissions();
@@ -1394,18 +1330,33 @@ public class Map extends FragmentActivity implements
     public void onProviderEnabled(@NonNull String provider) {
 
         Log.i(TAG, "onProviderEnabled()");
-        locationProviderDisabled = false;
-        toastMessageLong("Your location provider is enabled.");
-        loadingIcon.setVisibility(View.GONE);
     }
 
     @Override
     public void onProviderDisabled(@NonNull String provider) {
 
         Log.i(TAG, "onProviderDisabled()");
-        locationProviderDisabled = true;
-        toastMessageLong("Your location provider is disabled.");
-        loadingIcon.setVisibility(View.GONE);
+        buildAlertNoGPS();
+    }
+
+    private void buildAlertNoGPS() {
+
+        AlertDialog.Builder alert;
+        alert = new AlertDialog.Builder(this);
+
+        HandlerThread GPSHandlerThread = new HandlerThread("GPSHandlerThread");
+        GPSHandlerThread.start();
+        Handler mHandler = new Handler(GPSHandlerThread.getLooper());
+        Runnable runnable = () ->
+
+                alert.setCancelable(false)
+                        .setTitle("GPS Disabled")
+                        .setMessage("Please enable your location services on the following screen.")
+                        .setPositiveButton("OK", (dialog, i) -> startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)))
+                        .create()
+                        .show();
+
+        mHandler.post(runnable);
     }
 
     private void enterCircle(Location userLocation, LatLng circleLatLng, String circleUUID, boolean newShape, boolean userIsWithinShape) {
@@ -1470,7 +1421,7 @@ public class Map extends FragmentActivity implements
             Activity.putExtra("circleLatitude", circleToEnterLatLng.latitude);
             Activity.putExtra("circleLongitude", circleToEnterLatLng.longitude);
         }
-        
+
         // Pass this value to Chat.java to identify the shape.
         Activity.putExtra("shapeUUID", circleToEnterUUID);
         Activity.putExtra("imageFile", imageFile);
