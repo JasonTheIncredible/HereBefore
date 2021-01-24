@@ -132,7 +132,7 @@ public class Chat extends Fragment implements
         SuggestionsVisibilityManager {
 
     private static final String TAG = "Chat";
-    private static final int Request_User_Location_Code = 42, Request_ID_Take_Photo = 69, Request_ID_Record_Video = 420;
+    private static final int Request_User_Location_Code = 42, Request_ID_Take_Photo = 69, Request_ID_Record_Video = 420, Min_Update_Time = 5000, Max_Update_Time = 5000;
     private MentionsEditText mInput;
     private ArrayList<String> removedDuplicatesMentions, mTime, mUser, mImage, mVideo, mSuggestions, allMentions, emailsAL;
     private ArrayList<SpannableString> mText;
@@ -143,7 +143,7 @@ public class Chat extends Fragment implements
     private ChildEventListener childEventListener;
     private FloatingActionButton sendButton, mediaButton;
     private boolean firstLoad, loadingOlderMessages = false, clickedOnMention = false, fromDms = false, noMoreMessages = false, showProgressIndeterminate = false, reachedEndOfRecyclerView = false, messageSent = false, fileIsImage, checkPermissionsPicture, newShape;
-    private Boolean userIsWithinShape;
+    private Boolean userWasWithinShapeOriginally, userIsWithinShape;
     private View.OnLayoutChangeListener onLayoutChangeListener;
     private String shapeUUID, reportedUser, UUIDToHighlight, imageFile, videoFile;
     private double circleLatitude, circleLongitude;
@@ -199,7 +199,7 @@ public class Chat extends Fragment implements
                 if (!newShape) {
                     circleLatitude = extras.getDouble("circleLatitude");
                     circleLongitude = extras.getDouble("circleLongitude");
-                    userIsWithinShape = extras.getBoolean("userIsWithinShape");
+                    userWasWithinShapeOriginally = extras.getBoolean("userIsWithinShape");
                 }
                 imageFile = extras.getString("imageFile");
                 videoFile = extras.getString("videoFile");
@@ -297,7 +297,7 @@ public class Chat extends Fragment implements
             progressIconIndeterminate.setVisibility(View.VISIBLE);
         }
 
-        if (newShape || userIsWithinShape) {
+        if (newShape || userWasWithinShapeOriginally) {
 
             mInput.setHint("Message from within shape...");
         } else {
@@ -1095,7 +1095,7 @@ public class Chat extends Fragment implements
             String provider = LocationManager.NETWORK_PROVIDER;
             if (locationManager != null) {
 
-                locationManager.requestLocationUpdates(provider, 0, 0, this);
+                locationManager.requestLocationUpdates(provider, Min_Update_Time, 0, this);
                 startLocationUpdates();
             } else {
 
@@ -2194,12 +2194,10 @@ public class Chat extends Fragment implements
         locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
         /* 1000 = 1 sec */
-        long UPDATE_INTERVAL = 0;
-        locationRequest.setInterval(UPDATE_INTERVAL);
+        locationRequest.setInterval(Max_Update_Time);
 
         /* 1000 = 1 sec */
-        long FASTEST_INTERVAL = 0;
-        locationRequest.setFastestInterval(FASTEST_INTERVAL);
+        locationRequest.setFastestInterval(Min_Update_Time);
 
         // Create LocationSettingsRequest object using location request
         LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder();
@@ -2239,6 +2237,42 @@ public class Chat extends Fragment implements
 
     @Override
     public void onLocationChanged(@NonNull Location location) {
+
+        if (!newShape) {
+
+            float[] newDistance = new float[2];
+            Location.distanceBetween(circleLatitude, circleLongitude, location.getLatitude(), location.getLongitude(), newDistance);
+
+            // Only update these parameters if the location accuracy is reasonable.
+            if (location.getAccuracy() < 10) {
+
+                // If user was originally inside of a shape originally, give a buffer zone of what is considered inside the shape now, as the accuracy is not amazing.
+                // Else, be more strict about what is considered "inside" the shape.
+                if (userWasWithinShapeOriginally) {
+
+                    if (newDistance[0] < 5) {
+
+                        mInput.setHint("Message from within shape...");
+                        userIsWithinShape = true;
+                    } else {
+
+                        mInput.setHint("Message from outside shape...");
+                        userIsWithinShape = false;
+                    }
+                } else {
+
+                    if (newDistance[0] < 2) {
+
+                        mInput.setHint("Message from within shape...");
+                        userIsWithinShape = true;
+                    } else {
+
+                        mInput.setHint("Message from outside shape...");
+                        userIsWithinShape = false;
+                    }
+                }
+            }
+        }
     }
 
     @Override
@@ -2903,6 +2937,7 @@ public class Chat extends Fragment implements
                             DatabaseReference newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child("Points").push();
                             newFirebaseShape.setValue(circleInformation);
 
+                            userWasWithinShapeOriginally = true;
                             newShape = false;
                         }
 
@@ -3046,6 +3081,7 @@ public class Chat extends Fragment implements
                             DatabaseReference newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child("Points").push();
                             newFirebaseShape.setValue(circleInformation);
 
+                            userWasWithinShapeOriginally = true;
                             newShape = false;
                         }
 

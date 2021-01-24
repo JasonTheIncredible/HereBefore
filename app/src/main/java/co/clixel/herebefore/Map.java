@@ -103,13 +103,12 @@ public class Map extends FragmentActivity implements
     private FusedLocationProviderClient mFusedLocationClient;
     private LocationCallback mLocationCallback;
 
-    // Track user's location even if it's not a new circle but be more lenient about whether they're inside the circle.
-    // Make Chat location more accurate.
+    // Create a more consistent visual to let the user know their location with a circle has changed.
+    // Make creating the original circle more accurate.
     // Deal with user sending new message at previous circle's location - send circle location AL to Chat and check for new circles when sending message?
     // Use the user's most up-to-date location information in DirectMentions.
     // Fix bug where after sending a message and restarting Chat, date in datesAL will not match the value in Firebase as date in Firebase gets updated soon after getting the initial value. Will probably need to switch from date to something else.
     // Show picture upon opening circle or show picture at the top at all times.
-    // Deal with leaks.
     // Prevent data scraping (hide email addresses and other personal information).
 
     // Long press a shape to see a popup of that picture.
@@ -144,6 +143,7 @@ public class Map extends FragmentActivity implements
     // Panoramic view, like gMaps.
 
     // Update to Node.js 10.
+    // Deal with leaks.
     // Test on multiple devices.
     // Remember the AC: Origins inspiration. Also, airdrop - create items in the world. Also, gMaps drag and drop. Also, DS virtual items in the world.
     // Unit testing.
