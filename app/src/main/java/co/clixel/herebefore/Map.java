@@ -103,8 +103,7 @@ public class Map extends FragmentActivity implements
     private FusedLocationProviderClient mFusedLocationClient;
     private LocationCallback mLocationCallback;
 
-    // Create a more consistent visual to let the user know their location with a circle has changed.
-    // Make creating the original circle more accurate.
+    // If GPS is disabled after user takes a picture, enable it and continue to next activity.
     // Deal with user sending new message at previous circle's location - send circle location AL to Chat and check for new circles when sending message?
     // Use the user's most up-to-date location information in DirectMentions.
     // Fix bug where after sending a message and restarting Chat, date in datesAL will not match the value in Firebase as date in Firebase gets updated soon after getting the initial value. Will probably need to switch from date to something else.

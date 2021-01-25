@@ -201,6 +201,7 @@ public class Chat extends Fragment implements
                     circleLongitude = extras.getDouble("circleLongitude");
                     userWasWithinShapeOriginally = extras.getBoolean("userIsWithinShape");
                 }
+                userIsWithinShape = extras.getBoolean("userIsWithinShape");
                 imageFile = extras.getString("imageFile");
                 videoFile = extras.getString("videoFile");
             } else {
@@ -541,12 +542,20 @@ public class Chat extends Fragment implements
                         Manifest.permission.ACCESS_FINE_LOCATION)
                         == PackageManager.PERMISSION_GRANTED) {
 
-                    FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(mActivity);
+                    FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(mContext);
 
                     mFusedLocationClient.getLastLocation()
                             .addOnSuccessListener(mActivity, location -> {
 
                                 if (location != null) {
+
+                                    if (location.getAccuracy() > 15) {
+
+                                        toastMessageLong("Please wait for your location accuracy to increase and try again.");
+                                        sendButton.setEnabled(true);
+                                        progressIconIndeterminate.setVisibility(View.GONE);
+                                        return;
+                                    }
 
                                     userIsWithinShape = true;
                                     circleLatitude = location.getLatitude();
@@ -2214,7 +2223,7 @@ public class Chat extends Fragment implements
                 Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
 
-            mFusedLocationClient = getFusedLocationProviderClient(mActivity);
+            mFusedLocationClient = getFusedLocationProviderClient(mContext);
 
             mLocationCallback = new LocationCallback() {
 
@@ -2252,23 +2261,39 @@ public class Chat extends Fragment implements
 
                     if (newDistance[0] < 5) {
 
-                        mInput.setHint("Message from within shape...");
-                        userIsWithinShape = true;
+                        if (!userIsWithinShape) {
+
+                            toastMessageShort("You are now inside the circle.");
+                            mInput.setHint("Message from within shape...");
+                            userIsWithinShape = true;
+                        }
                     } else {
 
-                        mInput.setHint("Message from outside shape...");
-                        userIsWithinShape = false;
+                        if (userIsWithinShape) {
+
+                            toastMessageShort("You are now outside the circle.");
+                            mInput.setHint("Message from outside shape...");
+                            userIsWithinShape = false;
+                        }
                     }
                 } else {
 
                     if (newDistance[0] < 2) {
 
-                        mInput.setHint("Message from within shape...");
-                        userIsWithinShape = true;
+                        if (!userIsWithinShape) {
+
+                            toastMessageShort("You are now inside the circle.");
+                            mInput.setHint("Message from within shape...");
+                            userIsWithinShape = true;
+                        }
                     } else {
 
-                        mInput.setHint("Message from outside shape...");
-                        userIsWithinShape = false;
+                        if (userIsWithinShape) {
+
+                            toastMessageShort("You are now outside the circle.");
+                            mInput.setHint("Message from outside shape...");
+                            userIsWithinShape = false;
+                        }
                     }
                 }
             }
