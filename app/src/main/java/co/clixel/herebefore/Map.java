@@ -90,7 +90,7 @@ public class Map extends FragmentActivity implements
     private Button circleButton, mapTypeButton, settingsButton;
     private ImageButton dmButton;
     private PopupMenu popupMapType;
-    private boolean firstLoadCamera = true, cameraMoved = false, waitingForBetterLocationAccuracy = false, badAccuracy = false, restarted = false, mapCleared = false, checkPermissionsPicture;
+    private boolean firstLoadCamera = true, cameraMoved = false, waitingForBetterLocationAccuracy = false, badAccuracy = false, restarted = false, mapCleared = false, checkPermissionsPicture, onActivityResult = false;
     private final ArrayList<String> circleUUIDsAL = new ArrayList<>();
     private final ArrayList<LatLng> circleCentersAL = new ArrayList<>();
     private int newNearLeftLat, newNearLeftLon, newFarLeftLat, newFarLeftLon, newNearRightLat, newNearRightLon, newFarRightLat, newFarRightLon;
@@ -103,8 +103,8 @@ public class Map extends FragmentActivity implements
     private FusedLocationProviderClient mFusedLocationClient;
     private LocationCallback mLocationCallback;
 
-    // If GPS is disabled after user takes a picture, enable it and continue to next activity.
-    // Deal with user sending new message at previous circle's location - send circle location AL to Chat and check for new circles when sending message?
+    // Require better accuracy before creating circle, and update toast with explanation and possibly the current accuracy.
+    // Deal with user sending new message at previous circle's location - send circle location AL to Chat and check for new circles when sending message? If user clicks on shape and enters Chat, stay in that circle. Else, check for current circles and either post to existing circle or create a new one.
     // Use the user's most up-to-date location information in DirectMentions.
     // Fix bug where after sending a message and restarting Chat, date in datesAL will not match the value in Firebase as date in Firebase gets updated soon after getting the initial value. Will probably need to switch from date to something else.
     // Show picture upon opening circle or show picture at the top at all times.
@@ -613,6 +613,8 @@ public class Map extends FragmentActivity implements
 
         if (resultCode == RESULT_OK) {
 
+            onActivityResult = true;
+
             loadingIcon.setVisibility(View.VISIBLE);
 
             // Disable buttons while next activity is opened.
@@ -698,6 +700,8 @@ public class Map extends FragmentActivity implements
         Log.i(TAG, "onRestart()");
 
         restarted = true;
+        // Set onActivityResult to false, as onActivityResult should be called AFTER onRestart and it will be set to true if needed.
+        onActivityResult = false;
 
         // Clear map before adding new Firebase circles in onStart() to prevent overlap.
         // Set shape to null so changing chatSizeSeekBar in onStart() will create a circle and circleButton will reset itself.
@@ -723,9 +727,19 @@ public class Map extends FragmentActivity implements
         circleTempUUID = null;
         circleTemp = null;
 
-        circleButton.setEnabled(true);
-        dmButton.setEnabled(true);
-        settingsButton.setEnabled(true);
+        // Enable buttons, unless the user took a photo or video and is entering the next activity.
+        if (imageFile == null && videoFile == null && !onActivityResult) {
+
+            circleButton.setEnabled(true);
+            dmButton.setEnabled(true);
+            settingsButton.setEnabled(true);
+        } else {
+
+            loadingIcon.setVisibility(View.VISIBLE);
+            circleButton.setEnabled(false);
+            dmButton.setEnabled(false);
+            settingsButton.setEnabled(false);
+        }
 
         locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
 
@@ -786,7 +800,6 @@ public class Map extends FragmentActivity implements
         super.onPause();
     }
 
-    @SuppressLint("PotentialBehaviorOverride")
     @Override
     protected void onStop() {
 
@@ -1281,6 +1294,57 @@ public class Map extends FragmentActivity implements
             if (ContextCompat.checkSelfPermission(getBaseContext(),
                     Manifest.permission.ACCESS_FINE_LOCATION)
                     == PackageManager.PERMISSION_GRANTED) {
+
+                // If the user took a photo or video, entered Map, got the message that GPS is disabled, and enabled it, this will trigger.
+                if ((imageFile != null || videoFile != null) && !onActivityResult) {
+
+                    // If user is within a circle, enter it. Else, cycle through all circles that are 2 meters away and enter the closest one. Else, enter a new one.
+                    float[] oldDistance = new float[2];
+                    oldDistance[0] = 2f;
+                    LatLng latLng = null;
+                    String uuid = null;
+                    for (int i = 0; i < circleCentersAL.size(); i++) {
+
+                        float[] newDistance = new float[2];
+                        Location.distanceBetween(circleCentersAL.get(i).latitude, circleCentersAL.get(i).longitude, location.getLatitude(), location.getLongitude(), newDistance);
+
+                        if (newDistance[0] <= 1) {
+
+                            if (imageFile != null) {
+
+                                Log.i(TAG, "onLocationChanged -> Camera");
+
+                                enterCircle(location, circleCentersAL.get(i), circleUUIDsAL.get(i), false, true);
+                                return;
+                            } else if (videoFile != null) {
+
+                                Log.i(TAG, "onLocationChanged -> Video");
+
+                                enterCircle(location, circleCentersAL.get(i), circleUUIDsAL.get(i), false, true);
+                                return;
+                            }
+                        } else if (newDistance[0] <= oldDistance[0]) {
+
+                            oldDistance[0] = newDistance[0];
+                            latLng = circleCentersAL.get(i);
+                            uuid = circleUUIDsAL.get(i);
+                        }
+                    }
+
+                    if (imageFile != null) {
+
+                        Log.i(TAG, "onLocationChanged -> Camera");
+
+                        // latLng and uuid will be null if it is a new circle, and newShape will be true.
+                        enterCircle(location, latLng, uuid, latLng == null, true);
+                    } else if (videoFile != null) {
+
+                        Log.i(TAG, "onLocationChanged -> Video");
+
+                        // latLng and uuid will be null if it is a new circle, and newShape will be true.
+                        enterCircle(location, latLng, uuid, latLng == null, true);
+                    }
+                }
 
                 mMap.setMyLocationEnabled(true);
                 if (firstLoadCamera && !cameraMoved && location.getAccuracy() < 60) {
@@ -1912,6 +1976,12 @@ public class Map extends FragmentActivity implements
 
         Log.i(TAG, "loadShapes()");
 
+        // No need to load shapes when user is entering the next activity after taking a picture / video.
+        if (imageFile != null || videoFile != null) {
+
+            return;
+        }
+
         // Don't load more than 7 areas at a time.
         if (loadedCoordinates.size() == 7) {
 
@@ -2064,11 +2134,11 @@ public class Map extends FragmentActivity implements
             });
         }
 
+        // Check if the latest value in Firebase equals the saved value. If not, load the new shapes.
         if (!mapCleared || restarted) {
 
             loadingIcon.setVisibility(View.VISIBLE);
 
-            // Check if the latest value in Firebase equals the saved value. If not, load the new shapes.
             for (Pair<Integer, Integer> coordinates : removedDuplicatesCoordinatesNotJustLoadedTo) {
 
                 Query query = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + coordinates.first + ", " + coordinates.second + ")").child("Points").limitToLast(1);
@@ -2433,8 +2503,12 @@ public class Map extends FragmentActivity implements
 
             queryFarRight.addChildEventListener(childEventListenerFarRight);
         }
+        
+        // Prevent getting rid of the loading icon if the user takes a picture or video, gets the notification about GPS being turned off, then turns it on and returns.
+        if (imageFile == null && videoFile == null) {
 
-        loadingIcon.setVisibility(View.GONE);
+            loadingIcon.setVisibility(View.GONE);
+        }
     }
 
     private void deleteDirectory(File file) {
