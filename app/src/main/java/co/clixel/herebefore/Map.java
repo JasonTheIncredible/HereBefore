@@ -1,7 +1,6 @@
 package co.clixel.herebefore;
 
 import android.Manifest;
-import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
@@ -90,7 +89,7 @@ public class Map extends FragmentActivity implements
     private Button circleButton, mapTypeButton, settingsButton;
     private ImageButton dmButton;
     private PopupMenu popupMapType;
-    private boolean firstLoadCamera = true, cameraMoved = false, waitingForBetterLocationAccuracy = false, badAccuracy = false, restarted = false, mapCleared = false, checkPermissionsPicture, onActivityResult = false;
+    private boolean firstLoadCamera = true, cameraMoved = false, waitingForBetterLocationAccuracy = false, badAccuracy = false, restarted = false, mapCleared = false, checkPermissionsPicture;
     private final ArrayList<String> circleUUIDsAL = new ArrayList<>();
     private final ArrayList<LatLng> circleCentersAL = new ArrayList<>();
     private int newNearLeftLat, newNearLeftLon, newFarLeftLat, newFarLeftLon, newNearRightLat, newNearRightLon, newFarRightLat, newFarRightLon;
@@ -102,8 +101,7 @@ public class Map extends FragmentActivity implements
     private LocationManager locationManager;
     private FusedLocationProviderClient mFusedLocationClient;
     private LocationCallback mLocationCallback;
-
-    // Require better accuracy before creating circle, and update toast with explanation and possibly the current accuracy.
+    
     // Deal with user sending new message at previous circle's location - send circle location AL to Chat and check for new circles when sending message? If user clicks on shape and enters Chat, stay in that circle. Else, check for current circles and either post to existing circle or create a new one.
     // Use the user's most up-to-date location information in DirectMentions.
     // Fix bug where after sending a message and restarting Chat, date in datesAL will not match the value in Firebase as date in Firebase gets updated soon after getting the initial value. Will probably need to switch from date to something else.
@@ -613,8 +611,6 @@ public class Map extends FragmentActivity implements
 
         if (resultCode == RESULT_OK) {
 
-            onActivityResult = true;
-
             loadingIcon.setVisibility(View.VISIBLE);
 
             // Disable buttons while next activity is opened.
@@ -700,8 +696,6 @@ public class Map extends FragmentActivity implements
         Log.i(TAG, "onRestart()");
 
         restarted = true;
-        // Set onActivityResult to false, as onActivityResult should be called AFTER onRestart and it will be set to true if needed.
-        onActivityResult = false;
 
         // Clear map before adding new Firebase circles in onStart() to prevent overlap.
         // Set shape to null so changing chatSizeSeekBar in onStart() will create a circle and circleButton will reset itself.
@@ -728,7 +722,7 @@ public class Map extends FragmentActivity implements
         circleTemp = null;
 
         // Enable buttons, unless the user took a photo or video and is entering the next activity.
-        if (imageFile == null && videoFile == null && !onActivityResult) {
+        if (imageFile == null && videoFile == null) {
 
             circleButton.setEnabled(true);
             dmButton.setEnabled(true);
@@ -1296,7 +1290,7 @@ public class Map extends FragmentActivity implements
                     == PackageManager.PERMISSION_GRANTED) {
 
                 // If the user took a photo or video, entered Map, got the message that GPS is disabled, and enabled it, this will trigger.
-                if ((imageFile != null || videoFile != null) && !onActivityResult) {
+                if (imageFile != null || videoFile != null) {
 
                     // If user is within a circle, enter it. Else, cycle through all circles that are 2 meters away and enter the closest one. Else, enter a new one.
                     float[] oldDistance = new float[2];

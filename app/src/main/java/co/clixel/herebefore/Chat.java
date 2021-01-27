@@ -549,9 +549,9 @@ public class Chat extends Fragment implements
 
                                 if (location != null) {
 
-                                    if (location.getAccuracy() > 15) {
+                                    if (location.getAccuracy() >= 10) {
 
-                                        toastMessageLong("Please wait for your location accuracy to increase and try again.");
+                                        toastMessageLong("Please wait for better location accuracy." + "\n" + "Moving your phone around should help." + "\n" + "Current: " + location.getAccuracy() + "\n" + "Required: < 10");
                                         sendButton.setEnabled(true);
                                         progressIconIndeterminate.setVisibility(View.GONE);
                                         return;
