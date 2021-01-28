@@ -101,8 +101,14 @@ public class Map extends FragmentActivity implements
     private LocationManager locationManager;
     private FusedLocationProviderClient mFusedLocationClient;
     private LocationCallback mLocationCallback;
-    
-    // Deal with user sending new message at previous circle's location - send circle location AL to Chat and check for new circles when sending message? If user clicks on shape and enters Chat, stay in that circle. Else, check for current circles and either post to existing circle or create a new one.
+
+    // Should all circles be searched through after taking a picture in Map, or should it just always be blank before uploading if user clicks on circleButton rather than circle? The new location probably makes Map's location null anyway. And if Chat is always going to be blank first, what should be displayed?
+    // If user takes a picture too quickly (before shapes are able to load) then ALs in Chat will be null. When sending a message and checking for updated circles, first check for AL being empty and upload all information if needed.
+    // Check for new shapes before checking if user is within a shape in Chat.
+    // If user is too far away from an area before uploading a picture, require taking a new picture?
+    // In Chat, doing onStop() then restarting will cause recyclerView to flash as it initializes - is this necessary?
+    // Crash happening occasionally after clicking circle when returning from Chat. 1/27
+    // Send serializable after clicking on settingsButton and dmsButton from Map.
     // Use the user's most up-to-date location information in DirectMentions.
     // Fix bug where after sending a message and restarting Chat, date in datesAL will not match the value in Firebase as date in Firebase gets updated soon after getting the initial value. Will probably need to switch from date to something else.
     // Show picture upon opening circle or show picture at the top at all times.
@@ -635,9 +641,9 @@ public class Map extends FragmentActivity implements
 
                         if (location != null) {
 
-                            // If user is within a circle, enter it. Else, cycle through all circles that are 2 meters away and enter the closest one. Else, enter a new one.
+                            // If user is within a circle, enter it. Else, enter a new one.
                             float[] oldDistance = new float[2];
-                            oldDistance[0] = 2f;
+                            oldDistance[0] = 3f;
                             LatLng latLng = null;
                             String uuid = null;
                             for (int i = 0; i < circleCentersAL.size(); i++) {
@@ -647,20 +653,9 @@ public class Map extends FragmentActivity implements
 
                                 if (newDistance[0] <= 1) {
 
-                                    if (requestCode == 3) {
-
-                                        Log.i(TAG, "onActivityResult() -> Camera");
-
-                                        enterCircle(location, circleCentersAL.get(i), circleUUIDsAL.get(i), false, true);
-                                        return;
-                                    } else if (requestCode == 4) {
-
-                                        Log.i(TAG, "onActivityResult() -> Video");
-
-                                        enterCircle(location, circleCentersAL.get(i), circleUUIDsAL.get(i), false, true);
-                                        return;
-                                    }
-                                } else if (newDistance[0] <= oldDistance[0]) {
+                                    enterCircle(location, circleCentersAL.get(i), circleUUIDsAL.get(i), false, true);
+                                    return;
+                                } else if (newDistance[0] <= 2 && newDistance[0] <= oldDistance[0]) {
 
                                     oldDistance[0] = newDistance[0];
                                     latLng = circleCentersAL.get(i);
@@ -668,19 +663,8 @@ public class Map extends FragmentActivity implements
                                 }
                             }
 
-                            if (requestCode == 3) {
-
-                                Log.i(TAG, "onActivityResult() -> Camera");
-
-                                // latLng and uuid will be null if it is a new circle, and newShape will be true.
-                                enterCircle(location, latLng, uuid, latLng == null, true);
-                            } else if (requestCode == 4) {
-
-                                Log.i(TAG, "onActivityResult() -> Video");
-
-                                // latLng and uuid will be null if it is a new circle, and newShape will be true.
-                                enterCircle(location, latLng, uuid, latLng == null, true);
-                            }
+                            // latLng and uuid will be null if it is a new circle, and newShape will be true.
+                            enterCircle(location, latLng, uuid, latLng == null, oldDistance[0] <= 2);
                         } else {
 
                             loadingIcon.setVisibility(View.GONE);
@@ -1294,7 +1278,7 @@ public class Map extends FragmentActivity implements
 
                     // If user is within a circle, enter it. Else, cycle through all circles that are 2 meters away and enter the closest one. Else, enter a new one.
                     float[] oldDistance = new float[2];
-                    oldDistance[0] = 2f;
+                    oldDistance[0] = 3f;
                     LatLng latLng = null;
                     String uuid = null;
                     for (int i = 0; i < circleCentersAL.size(); i++) {
@@ -1304,20 +1288,9 @@ public class Map extends FragmentActivity implements
 
                         if (newDistance[0] <= 1) {
 
-                            if (imageFile != null) {
-
-                                Log.i(TAG, "onLocationChanged -> Camera");
-
-                                enterCircle(location, circleCentersAL.get(i), circleUUIDsAL.get(i), false, true);
-                                return;
-                            } else if (videoFile != null) {
-
-                                Log.i(TAG, "onLocationChanged -> Video");
-
-                                enterCircle(location, circleCentersAL.get(i), circleUUIDsAL.get(i), false, true);
-                                return;
-                            }
-                        } else if (newDistance[0] <= oldDistance[0]) {
+                            enterCircle(location, circleCentersAL.get(i), circleUUIDsAL.get(i), false, true);
+                            return;
+                        } else if (newDistance[0] <= 2 && newDistance[0] <= oldDistance[0]) {
 
                             oldDistance[0] = newDistance[0];
                             latLng = circleCentersAL.get(i);
@@ -1325,19 +1298,8 @@ public class Map extends FragmentActivity implements
                         }
                     }
 
-                    if (imageFile != null) {
-
-                        Log.i(TAG, "onLocationChanged -> Camera");
-
-                        // latLng and uuid will be null if it is a new circle, and newShape will be true.
-                        enterCircle(location, latLng, uuid, latLng == null, true);
-                    } else if (videoFile != null) {
-
-                        Log.i(TAG, "onLocationChanged -> Video");
-
-                        // latLng and uuid will be null if it is a new circle, and newShape will be true.
-                        enterCircle(location, latLng, uuid, latLng == null, true);
-                    }
+                    // If distance <= 2, enterCircle(location, circleTemp.getCenter(), false, true). Else, enterCircle(location, circleTemp.getCenter(), false, false).
+                    enterCircle(location, latLng, uuid, latLng == null, oldDistance[0] <= 2);
                 }
 
                 mMap.setMyLocationEnabled(true);
@@ -1477,6 +1439,10 @@ public class Map extends FragmentActivity implements
             Activity.putExtra("userLongitude", userLocation.getLongitude());
             Activity.putExtra("circleLatitude", circleToEnterLatLng.latitude);
             Activity.putExtra("circleLongitude", circleToEnterLatLng.longitude);
+        } else {
+
+            Activity.putExtra("circleCentersAL", circleCentersAL);
+            Activity.putExtra("circleUUIDsAL", circleUUIDsAL);
         }
 
         // Pass this value to Chat.java to identify the shape.
@@ -2497,7 +2463,7 @@ public class Map extends FragmentActivity implements
 
             queryFarRight.addChildEventListener(childEventListenerFarRight);
         }
-        
+
         // Prevent getting rid of the loading icon if the user takes a picture or video, gets the notification about GPS being turned off, then turns it on and returns.
         if (imageFile == null && videoFile == null) {
 

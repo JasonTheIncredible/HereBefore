@@ -138,11 +138,13 @@ public class Chat extends Fragment implements
     private ArrayList<SpannableString> mText;
     private ArrayList<Boolean> mUserIsWithinShape;
     private ArrayList<Long> datesAL;
+    private ArrayList<String> circleUUIDsAL = new ArrayList<>();
+    private ArrayList<LatLng> circleCentersAL = new ArrayList<>();
     private RecyclerView chatRecyclerView, mentionsRecyclerView;
     private Integer index, top, last, datesALSize;
     private ChildEventListener childEventListener;
     private FloatingActionButton sendButton, mediaButton;
-    private boolean firstLoad, loadingOlderMessages = false, clickedOnMention = false, fromDms = false, noMoreMessages = false, showProgressIndeterminate = false, reachedEndOfRecyclerView = false, messageSent = false, fileIsImage, checkPermissionsPicture, newShape;
+    private boolean firstLoad, loadingOlderMessages = false, clickedOnMention = false, fromDms = false, noMoreMessages = false, showProgressIndeterminate = false, reachedEndOfRecyclerView = false, messageSent = false, fileIsImage, checkPermissionsPicture, newShape, uploadNeeded = false;
     private Boolean userWasWithinShapeOriginally, userIsWithinShape;
     private View.OnLayoutChangeListener onLayoutChangeListener;
     private String shapeUUID, reportedUser, UUIDToHighlight, imageFile, videoFile;
@@ -200,6 +202,9 @@ public class Chat extends Fragment implements
                     circleLatitude = extras.getDouble("circleLatitude");
                     circleLongitude = extras.getDouble("circleLongitude");
                     userWasWithinShapeOriginally = extras.getBoolean("userIsWithinShape");
+                } else {
+                    circleUUIDsAL = (ArrayList<String>) extras.getSerializable("circleUUIDsAL");
+                    circleCentersAL = (ArrayList<LatLng>) extras.getSerializable("circleCentersAL");
                 }
                 userIsWithinShape = extras.getBoolean("userIsWithinShape");
                 imageFile = extras.getString("imageFile");
@@ -208,20 +213,6 @@ public class Chat extends Fragment implements
 
                 Log.e(TAG, "onCreateView() -> extras == null");
             }
-        }
-    }
-
-    private void checkLocationPermissions() {
-
-        Log.i(TAG, "checkLocationPermissions()");
-
-        if (ContextCompat.checkSelfPermission(mContext,
-                Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
-
-            ActivityCompat.requestPermissions(mActivity,
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                    Request_User_Location_Code);
         }
     }
 
@@ -381,6 +372,8 @@ public class Chat extends Fragment implements
 
                         progressIconIndeterminate.setVisibility(View.GONE);
                         mInput.setFocusable(false);
+                        mediaButton.setEnabled(false);
+                        sendButton.setEnabled(false);
                         toastMessageLong("Shape was deleted. Please return to map.");
                         return;
                     }
@@ -523,6 +516,11 @@ public class Chat extends Fragment implements
                 }
             }
 
+            if (mInput.getText().toString().trim().isEmpty() && imageView.getVisibility() == View.GONE && videoImageView.getVisibility() == View.GONE) {
+
+                return;
+            }
+
             // Prevent creating a new shape if image / video doesn't exist.
             if (newShape && (imageView.getDrawable() == null && videoImageView.getDrawable() == null)) {
 
@@ -557,27 +555,79 @@ public class Chat extends Fragment implements
                                         return;
                                     }
 
+                                    // Get rid of the previous toast (as user will probably click the send button quickly).
+                                    cancelToasts();
+
+                                    // If user is within a circle, enter it. Else, enter a new one.
+                                    float[] oldDistance = new float[2];
+                                    oldDistance[0] = 3f;
+                                    for (int i = 0; i < circleCentersAL.size(); i++) {
+
+                                        float[] newDistance = new float[2];
+                                        Location.distanceBetween(circleCentersAL.get(i).latitude, circleCentersAL.get(i).longitude, location.getLatitude(), location.getLongitude(), newDistance);
+
+                                        if (newDistance[0] <= 1) {
+
+                                            newShape = false;
+                                            circleLatitude = circleCentersAL.get(i).latitude;
+                                            circleLongitude = circleCentersAL.get(i).longitude;
+                                            shapeUUID = circleUUIDsAL.get(i);
+                                            break;
+                                        } else if (newDistance[0] <= 2 && newDistance[0] <= oldDistance[0]) {
+
+                                            oldDistance[0] = newDistance[0];
+                                            newShape = false;
+                                            circleLatitude = circleCentersAL.get(i).latitude;
+                                            circleLongitude = circleCentersAL.get(i).longitude;
+                                            shapeUUID = circleUUIDsAL.get(i);
+                                        }
+                                    }
+
+                                    userWasWithinShapeOriginally = true;
                                     userIsWithinShape = true;
-                                    circleLatitude = location.getLatitude();
-                                    circleLongitude = location.getLongitude();
+                                    uploadNeeded = true;
 
-                                    // Get a value with 1 decimal point and use it for Firebase.
-                                    double nearLeftPrecisionLat = Math.pow(10, 1);
-                                    // Can't create a firebase path with '.', so get rid of decimal.
-                                    double nearLeftLatTemp = (int) (nearLeftPrecisionLat * circleLatitude) / nearLeftPrecisionLat;
-                                    nearLeftLatTemp *= 10;
-                                    shapeLatInt = (int) nearLeftLatTemp;
+                                    if (newShape) {
 
-                                    double nearLeftPrecisionLon = Math.pow(10, 1);
-                                    // Can't create a firebase path with '.', so get rid of decimal.
-                                    double nearLeftLonTemp = (int) (nearLeftPrecisionLon * circleLongitude) / nearLeftPrecisionLon;
-                                    nearLeftLonTemp *= 10;
-                                    shapeLonInt = (int) nearLeftLonTemp;
+                                        circleLatitude = location.getLatitude();
+                                        circleLongitude = location.getLongitude();
 
-                                    // Add the query, as it will not be added previously because shapeLat and shapeLon will be null;
-                                    addQuery();
+                                        // Get a value with 1 decimal point and use it for Firebase.
+                                        double nearLeftPrecisionLat = Math.pow(10, 1);
+                                        // Can't create a firebase path with '.', so get rid of decimal.
+                                        double nearLeftLatTemp = (int) (nearLeftPrecisionLat * circleLatitude) / nearLeftPrecisionLat;
+                                        nearLeftLatTemp *= 10;
+                                        shapeLatInt = (int) nearLeftLatTemp;
 
-                                    firebaseUpload();
+                                        double nearLeftPrecisionLon = Math.pow(10, 1);
+                                        // Can't create a firebase path with '.', so get rid of decimal.
+                                        double nearLeftLonTemp = (int) (nearLeftPrecisionLon * circleLongitude) / nearLeftPrecisionLon;
+                                        nearLeftLonTemp *= 10;
+                                        shapeLonInt = (int) nearLeftLonTemp;
+
+                                        // Add the query, as it will not be added previously because shapeLat and shapeLon will be null;
+                                        addQuery();
+                                    } else {
+
+                                        // Get a value with 1 decimal point and use it for Firebase.
+                                        double nearLeftPrecisionLat = Math.pow(10, 1);
+                                        // Can't create a firebase path with '.', so get rid of decimal.
+                                        double nearLeftLatTemp = (int) (nearLeftPrecisionLat * circleLatitude) / nearLeftPrecisionLat;
+                                        nearLeftLatTemp *= 10;
+                                        shapeLatInt = (int) nearLeftLatTemp;
+
+                                        double nearLeftPrecisionLon = Math.pow(10, 1);
+                                        // Can't create a firebase path with '.', so get rid of decimal.
+                                        double nearLeftLonTemp = (int) (nearLeftPrecisionLon * circleLongitude) / nearLeftPrecisionLon;
+                                        nearLeftLonTemp *= 10;
+                                        shapeLonInt = (int) nearLeftLonTemp;
+
+                                        getFirebaseMessages(null);
+                                    }
+                                    // Message will be uploaded in addQuery.
+                                } else {
+
+                                    progressIconIndeterminate.setVisibility(View.GONE);
                                 }
                             });
                 } else {
@@ -591,88 +641,85 @@ public class Chat extends Fragment implements
                 String input = mInput.getText().toString().trim();
 
                 // Send recyclerviewlayout to Firebase.
-                if (!input.equals("") || imageView.getVisibility() != View.GONE || videoImageView.getVisibility() != View.GONE) {
+                if (imageView.getVisibility() != View.GONE || videoImageView.getVisibility() != View.GONE) {
 
-                    if (imageView.getVisibility() != View.GONE || videoImageView.getVisibility() != View.GONE) {
+                    firebaseUpload();
+                } else {
 
-                        firebaseUpload();
-                    } else {
+                    // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter).
+                    messageSent = true;
 
-                        // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter).
-                        messageSent = true;
+                    String userUUID = UUID.randomUUID().toString();
 
-                        String userUUID = UUID.randomUUID().toString();
+                    // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+                    // This will cause onDataChange to fire twice; optimizations could be made in the future.
+                    Object date = ServerValue.TIMESTAMP;
 
-                        // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                        // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                        Object date = ServerValue.TIMESTAMP;
+                    // If mentions exist, add to the user's DMs.
+                    if (removedDuplicatesMentions != null) {
 
-                        // If mentions exist, add to the user's DMs.
-                        if (removedDuplicatesMentions != null) {
+                        ArrayList<String> messagedUsersAL = new ArrayList<>();
+                        for (String mention : removedDuplicatesMentions) {
 
-                            ArrayList<String> messagedUsersAL = new ArrayList<>();
-                            for (String mention : removedDuplicatesMentions) {
+                            for (int i = 0; i < mUser.size(); i++) {
 
-                                for (int i = 0; i < mUser.size(); i++) {
+                                String userEmail = emailsAL.get(i);
+                                if (mUser.get(i).equals(mention) && !messagedUsersAL.contains(userEmail)) {
 
-                                    String userEmail = emailsAL.get(i);
-                                    if (mUser.get(i).equals(mention) && !messagedUsersAL.contains(userEmail)) {
+                                    // Prevent sending the same DM to a user multiple times.
+                                    messagedUsersAL.add(userEmail);
 
-                                        // Prevent sending the same DM to a user multiple times.
-                                        messagedUsersAL.add(userEmail);
+                                    String email = emailsAL.get(i);
 
-                                        String email = emailsAL.get(i);
+                                    DmInformation dmInformation = new DmInformation();
+                                    dmInformation.setDate(date);
+                                    dmInformation.setLat(circleLatitude);
+                                    dmInformation.setLon(circleLongitude);
+                                    dmInformation.setMessage(input);
+                                    dmInformation.setSeenByUser(false);
+                                    dmInformation.setShapeUUID(shapeUUID);
+                                    dmInformation.setUserIsWithinShape(userIsWithinShape);
+                                    dmInformation.setUserUUID(userUUID);
 
-                                        DmInformation dmInformation = new DmInformation();
-                                        dmInformation.setDate(date);
-                                        dmInformation.setLat(circleLatitude);
-                                        dmInformation.setLon(circleLongitude);
-                                        dmInformation.setMessage(input);
-                                        dmInformation.setSeenByUser(false);
-                                        dmInformation.setShapeUUID(shapeUUID);
-                                        dmInformation.setUserIsWithinShape(userIsWithinShape);
-                                        dmInformation.setUserUUID(userUUID);
-
-                                        // Firebase does not allow ".", so replace them with ",".
-                                        String receiverEmailFirebase = email.replace(".", ",");
-                                        DatabaseReference newDm = FirebaseDatabase.getInstance().getReference().child("Users").child(receiverEmailFirebase).child("ReceivedDms").push();
-                                        newDm.setValue(dmInformation);
-                                        break;
-                                    }
+                                    // Firebase does not allow ".", so replace them with ",".
+                                    String receiverEmailFirebase = email.replace(".", ",");
+                                    DatabaseReference newDm = FirebaseDatabase.getInstance().getReference().child("Users").child(receiverEmailFirebase).child("ReceivedDms").push();
+                                    newDm.setValue(dmInformation);
+                                    break;
                                 }
                             }
                         }
-
-                        MessageInformation messageInformation = new MessageInformation();
-                        messageInformation.setDate(date);
-                        // If user has a Google account, get email one way. Else, get email another way.
-                        GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
-                        String email;
-                        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-                        if (acct != null) {
-                            email = acct.getEmail();
-                        } else {
-                            email = sharedPreferences.getString("userToken", "null");
-                        }
-                        messageInformation.setEmail(email);
-                        messageInformation.setMessage(input);
-                        messageInformation.setUserIsWithinShape(userIsWithinShape);
-                        messageInformation.setUserUUID(userUUID);
-                        DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child(shapeUUID).push();
-                        newMessage.setValue(messageInformation);
-
-                        mInput.getText().clear();
-
-                        if (removedDuplicatesMentions != null && !removedDuplicatesMentions.isEmpty()) {
-
-                            removedDuplicatesMentions.clear();
-                        }
-
-                        // For some reason, if the text begins with a mention and onCreateView was called after the mention was added, the mention is not cleared with one call to clear().
-                        mInput.getText().clear();
-                        progressIconIndeterminate.setVisibility(View.GONE);
-                        sendButton.setEnabled(true);
                     }
+
+                    MessageInformation messageInformation = new MessageInformation();
+                    messageInformation.setDate(date);
+                    // If user has a Google account, get email one way. Else, get email another way.
+                    GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
+                    String email;
+                    SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+                    if (acct != null) {
+                        email = acct.getEmail();
+                    } else {
+                        email = sharedPreferences.getString("userToken", "null");
+                    }
+                    messageInformation.setEmail(email);
+                    messageInformation.setMessage(input);
+                    messageInformation.setUserIsWithinShape(userIsWithinShape);
+                    messageInformation.setUserUUID(userUUID);
+                    DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child(shapeUUID).push();
+                    newMessage.setValue(messageInformation);
+
+                    mInput.getText().clear();
+
+                    if (removedDuplicatesMentions != null && !removedDuplicatesMentions.isEmpty()) {
+
+                        removedDuplicatesMentions.clear();
+                    }
+
+                    // For some reason, if the text begins with a mention and onCreateView was called after the mention was added, the mention is not cleared with one call to clear().
+                    mInput.getText().clear();
+                    progressIconIndeterminate.setVisibility(View.GONE);
+                    sendButton.setEnabled(true);
                 }
             }
         });
@@ -755,6 +802,8 @@ public class Chat extends Fragment implements
 
                     progressIconIndeterminate.setVisibility(View.GONE);
                     mInput.setFocusable(false);
+                    mediaButton.setEnabled(false);
+                    sendButton.setEnabled(false);
                     toastMessageLong("Shape was deleted. Please return to map.");
                 }
 
@@ -986,6 +1035,14 @@ public class Chat extends Fragment implements
         };
 
         mQuery.addChildEventListener(childEventListener);
+
+        // This is called after user enters a new shape and tries to send a message for the first time.
+        if (uploadNeeded) {
+
+            firebaseUpload();
+            showProgressIndeterminate = true;
+            uploadNeeded = false;
+        }
     }
 
     private SpannableString createSpannableMessage(String messageText) {
@@ -2244,6 +2301,20 @@ public class Chat extends Fragment implements
         }
     }
 
+    private void checkLocationPermissions() {
+
+        Log.i(TAG, "checkLocationPermissions()");
+
+        if (ContextCompat.checkSelfPermission(mContext,
+                Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            ActivityCompat.requestPermissions(mActivity,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    Request_User_Location_Code);
+        }
+    }
+
     @Override
     public void onLocationChanged(@NonNull Location location) {
 
@@ -2554,11 +2625,6 @@ public class Chat extends Fragment implements
 
             Log.i(TAG, "onActivityResult() -> Camera");
 
-            if (newShape) {
-
-                addQuery();
-            }
-
             // Set the views to GONE to prevent anything else from being sent to Firebase.
             if (videoImageView != null) {
 
@@ -2576,7 +2642,7 @@ public class Chat extends Fragment implements
             imageDrawable = null;
             videoDrawable = null;
 
-            // Prevents the progressIconIndeterminate from being removed by initChatAdapter().
+            // Prevents the progressIconIndeterminate from being removed by initChatAdapter.
             showProgressIndeterminate = true;
 
             fileIsImage = true;
@@ -2592,11 +2658,6 @@ public class Chat extends Fragment implements
         if (requestCode == 4) {
 
             Log.i(TAG, "onActivityResult() -> Video");
-
-            if (newShape) {
-
-                addQuery();
-            }
 
             // Set the views to GONE to prevent anything else from being sent to Firebase.
             if (videoImageView != null) {
@@ -2684,7 +2745,7 @@ public class Chat extends Fragment implements
                     imageView.setVisibility(View.VISIBLE);
                     progressIconIndeterminate.setVisibility(View.GONE);
                     sendButton.setEnabled(true);
-                    // Allow initChatAdapter() to get rid of the progressIconIndeterminate with this boolean.
+                    // Allow initChatAdapter to get rid of the progressIconIndeterminate with this boolean.
                     showProgressIndeterminate = false;
                 });
             } catch (IOException ex) {
@@ -2946,7 +3007,7 @@ public class Chat extends Fragment implements
 
                         Log.i(TAG, "firebaseUpload() -> onSuccess");
 
-                        // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter()).
+                        // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter).
                         messageSent = true;
 
                         if (newShape) {
@@ -3045,6 +3106,8 @@ public class Chat extends Fragment implements
 
                         sendButton.setEnabled(true);
                         progressIcon.setVisibility(View.GONE);
+                        progressIconIndeterminate.setVisibility(View.VISIBLE);
+                        showProgressIndeterminate = false;
                     }))
 
                     .addOnProgressListener(snapshot -> {
@@ -3090,7 +3153,7 @@ public class Chat extends Fragment implements
 
                         Log.i(TAG, "uploadImage() -> onSuccess");
 
-                        // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter()).
+                        // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter).
                         messageSent = true;
 
                         if (newShape) {
@@ -3189,6 +3252,8 @@ public class Chat extends Fragment implements
 
                         sendButton.setEnabled(true);
                         progressIcon.setVisibility(View.GONE);
+                        progressIconIndeterminate.setVisibility(View.VISIBLE);
+                        showProgressIndeterminate = false;
                     }))
 
                     .addOnProgressListener(snapshot -> {
