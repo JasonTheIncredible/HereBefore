@@ -102,9 +102,7 @@ public class Map extends FragmentActivity implements
     private FusedLocationProviderClient mFusedLocationClient;
     private LocationCallback mLocationCallback;
 
-    // Should all circles be searched through after taking a picture in Map, or should it just always be blank before uploading if user clicks on circleButton rather than circle? The new location probably makes Map's location null anyway. And if Chat is always going to be blank first, what should be displayed?
     // If user takes a picture too quickly (before shapes are able to load) then ALs in Chat will be null. When sending a message and checking for updated circles, first check for AL being empty and upload all information if needed.
-    // Check for new shapes before checking if user is within a shape in Chat.
     // If user is too far away from an area before uploading a picture, require taking a new picture?
     // In Chat, doing onStop() then restarting will cause recyclerView to flash as it initializes - is this necessary?
     // Crash happening occasionally after clicking circle when returning from Chat. 1/27
@@ -641,30 +639,7 @@ public class Map extends FragmentActivity implements
 
                         if (location != null) {
 
-                            // If user is within a circle, enter it. Else, enter a new one.
-                            float[] oldDistance = new float[2];
-                            oldDistance[0] = 3f;
-                            LatLng latLng = null;
-                            String uuid = null;
-                            for (int i = 0; i < circleCentersAL.size(); i++) {
-
-                                float[] newDistance = new float[2];
-                                Location.distanceBetween(circleCentersAL.get(i).latitude, circleCentersAL.get(i).longitude, location.getLatitude(), location.getLongitude(), newDistance);
-
-                                if (newDistance[0] <= 1) {
-
-                                    enterCircle(location, circleCentersAL.get(i), circleUUIDsAL.get(i), false, true);
-                                    return;
-                                } else if (newDistance[0] <= 2 && newDistance[0] <= oldDistance[0]) {
-
-                                    oldDistance[0] = newDistance[0];
-                                    latLng = circleCentersAL.get(i);
-                                    uuid = circleUUIDsAL.get(i);
-                                }
-                            }
-
-                            // latLng and uuid will be null if it is a new circle, and newShape will be true.
-                            enterCircle(location, latLng, uuid, latLng == null, oldDistance[0] <= 2);
+                            enterCircle(location, null, null, true, true);
                         } else {
 
                             loadingIcon.setVisibility(View.GONE);
@@ -1276,30 +1251,7 @@ public class Map extends FragmentActivity implements
                 // If the user took a photo or video, entered Map, got the message that GPS is disabled, and enabled it, this will trigger.
                 if (imageFile != null || videoFile != null) {
 
-                    // If user is within a circle, enter it. Else, cycle through all circles that are 2 meters away and enter the closest one. Else, enter a new one.
-                    float[] oldDistance = new float[2];
-                    oldDistance[0] = 3f;
-                    LatLng latLng = null;
-                    String uuid = null;
-                    for (int i = 0; i < circleCentersAL.size(); i++) {
-
-                        float[] newDistance = new float[2];
-                        Location.distanceBetween(circleCentersAL.get(i).latitude, circleCentersAL.get(i).longitude, location.getLatitude(), location.getLongitude(), newDistance);
-
-                        if (newDistance[0] <= 1) {
-
-                            enterCircle(location, circleCentersAL.get(i), circleUUIDsAL.get(i), false, true);
-                            return;
-                        } else if (newDistance[0] <= 2 && newDistance[0] <= oldDistance[0]) {
-
-                            oldDistance[0] = newDistance[0];
-                            latLng = circleCentersAL.get(i);
-                            uuid = circleUUIDsAL.get(i);
-                        }
-                    }
-
-                    // If distance <= 2, enterCircle(location, circleTemp.getCenter(), false, true). Else, enterCircle(location, circleTemp.getCenter(), false, false).
-                    enterCircle(location, latLng, uuid, latLng == null, oldDistance[0] <= 2);
+                    enterCircle(location, null, null, true, true);
                 }
 
                 mMap.setMyLocationEnabled(true);

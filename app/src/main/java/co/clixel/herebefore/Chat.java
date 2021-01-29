@@ -171,6 +171,7 @@ public class Chat extends Fragment implements
     private LocationManager locationManager;
     private FusedLocationProviderClient mFusedLocationClient;
     private LocationCallback mLocationCallback;
+    private TextView newShapeTextView;
     private final WordTokenizerConfig tokenizerConfig = new WordTokenizerConfig
             .Builder()
             .setWordBreakChars(", ")
@@ -246,6 +247,7 @@ public class Chat extends Fragment implements
         mentionsRecyclerView = rootView.findViewById(R.id.suggestionsList);
         progressIconIndeterminate = rootView.findViewById(R.id.progressIconIndeterminate);
         progressIcon = rootView.findViewById(R.id.progressIcon);
+        newShapeTextView = rootView.findViewById(R.id.newShapeTextView);
 
         chatRecyclerViewLinearLayoutManager = new LinearLayoutManager(mActivity);
         mentionsRecyclerViewLinearLayoutManager = new LinearLayoutManager(mActivity);
@@ -320,6 +322,9 @@ public class Chat extends Fragment implements
             double nearLeftLonTemp = (int) (nearLeftPrecisionLon * circleLongitude) / nearLeftPrecisionLon;
             nearLeftLonTemp *= 10;
             shapeLonInt = (int) nearLeftLonTemp;
+        } else {
+
+            newShapeTextView.setVisibility(View.VISIBLE);
         }
 
         // Set to true to scroll to the bottom of chatRecyclerView. Also prevents duplicate items in addQuery.
@@ -400,7 +405,7 @@ public class Chat extends Fragment implements
                 public void onCancelled(@NonNull DatabaseError error) {
                 }
             });
-        } else {
+        } else if (!newShape) {
 
             getFirebaseMessages(null);
         }
@@ -547,9 +552,11 @@ public class Chat extends Fragment implements
 
                                 if (location != null) {
 
+                                    newShapeTextView.setVisibility(View.GONE);
+
                                     if (location.getAccuracy() >= 10) {
 
-                                        toastMessageLong("Please wait for better location accuracy." + "\n" + "Moving your phone around should help." + "\n" + "Current: " + location.getAccuracy() + "\n" + "Required: < 10");
+                                        toastMessageLong("Please wait for better location accuracy." + "\n" + "The longer you wait, the more accurate your location will become." + "\n" + "Current: " + location.getAccuracy() + "\n" + "Required: < 10");
                                         sendButton.setEnabled(true);
                                         progressIconIndeterminate.setVisibility(View.GONE);
                                         return;
@@ -1320,6 +1327,11 @@ public class Chat extends Fragment implements
         if (mentionsRecyclerViewLinearLayoutManager != null) {
 
             mentionsRecyclerViewLinearLayoutManager = null;
+        }
+
+        if (newShapeTextView != null) {
+
+            newShapeTextView = null;
         }
 
         if (rootView != null) {
