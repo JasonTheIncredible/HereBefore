@@ -562,76 +562,105 @@ public class Chat extends Fragment implements
                                         return;
                                     }
 
+                                    uploadNeeded = true;
+                                    userWasWithinShapeOriginally = true;
+                                    userIsWithinShape = true;
+
                                     // Get rid of the previous toast (as user will probably click the send button quickly).
                                     cancelToasts();
 
-                                    // If user is within a circle, enter it. Else, enter a new one.
-                                    float[] oldDistance = new float[2];
-                                    oldDistance[0] = 3f;
-                                    for (int i = 0; i < circleCentersAL.size(); i++) {
+                                    circleLatitude = location.getLatitude();
+                                    circleLongitude = location.getLongitude();
 
-                                        float[] newDistance = new float[2];
-                                        Location.distanceBetween(circleCentersAL.get(i).latitude, circleCentersAL.get(i).longitude, location.getLatitude(), location.getLongitude(), newDistance);
+                                    // Get a value with 1 decimal point and use it for Firebase.
+                                    double nearLeftPrecisionLat = Math.pow(10, 1);
+                                    // Can't create a firebase path with '.', so get rid of decimal.
+                                    double nearLeftLatTemp = (int) (nearLeftPrecisionLat * circleLatitude) / nearLeftPrecisionLat;
+                                    nearLeftLatTemp *= 10;
+                                    shapeLatInt = (int) nearLeftLatTemp;
 
-                                        if (newDistance[0] <= 1) {
+                                    double nearLeftPrecisionLon = Math.pow(10, 1);
+                                    // Can't create a firebase path with '.', so get rid of decimal.
+                                    double nearLeftLonTemp = (int) (nearLeftPrecisionLon * circleLongitude) / nearLeftPrecisionLon;
+                                    nearLeftLonTemp *= 10;
+                                    shapeLonInt = (int) nearLeftLonTemp;
 
-                                            newShape = false;
-                                            circleLatitude = circleCentersAL.get(i).latitude;
-                                            circleLongitude = circleCentersAL.get(i).longitude;
-                                            shapeUUID = circleUUIDsAL.get(i);
-                                            break;
-                                        } else if (newDistance[0] <= 2 && newDistance[0] <= oldDistance[0]) {
+                                    // If circleUUIDsAL == null or circleCentersAL == null, load them and check whether a new circle should be created. Else, check for new circles at the user's location and possibly add to an existing shape.
+                                    if (circleUUIDsAL == null || circleCentersAL == null) {
 
-                                            oldDistance[0] = newDistance[0];
-                                            newShape = false;
-                                            circleLatitude = circleCentersAL.get(i).latitude;
-                                            circleLongitude = circleCentersAL.get(i).longitude;
-                                            shapeUUID = circleUUIDsAL.get(i);
-                                        }
-                                    }
+                                        DatabaseReference firebasePoints = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child("Points");
 
-                                    userWasWithinShapeOriginally = true;
-                                    userIsWithinShape = true;
-                                    uploadNeeded = true;
+                                        firebasePoints.addListenerForSingleValueEvent(new ValueEventListener() {
 
-                                    if (newShape) {
+                                            @Override
+                                            public void onDataChange(@NonNull DataSnapshot snapshot) {
 
-                                        circleLatitude = location.getLatitude();
-                                        circleLongitude = location.getLongitude();
+                                                loadCirclesODC(snapshot, location);
+                                            }
 
-                                        // Get a value with 1 decimal point and use it for Firebase.
-                                        double nearLeftPrecisionLat = Math.pow(10, 1);
-                                        // Can't create a firebase path with '.', so get rid of decimal.
-                                        double nearLeftLatTemp = (int) (nearLeftPrecisionLat * circleLatitude) / nearLeftPrecisionLat;
-                                        nearLeftLatTemp *= 10;
-                                        shapeLatInt = (int) nearLeftLatTemp;
+                                            @Override
+                                            public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                                        double nearLeftPrecisionLon = Math.pow(10, 1);
-                                        // Can't create a firebase path with '.', so get rid of decimal.
-                                        double nearLeftLonTemp = (int) (nearLeftPrecisionLon * circleLongitude) / nearLeftPrecisionLon;
-                                        nearLeftLonTemp *= 10;
-                                        shapeLonInt = (int) nearLeftLonTemp;
-
-                                        // Add the query, as it will not be added previously because shapeLat and shapeLon will be null;
-                                        addQuery();
+                                                Log.e(TAG, "DatabaseError");
+                                                progressIconIndeterminate.setVisibility(View.GONE);
+                                                toastMessageLong(databaseError.getMessage());
+                                            }
+                                        });
                                     } else {
 
-                                        // Get a value with 1 decimal point and use it for Firebase.
-                                        double nearLeftPrecisionLat = Math.pow(10, 1);
-                                        // Can't create a firebase path with '.', so get rid of decimal.
-                                        double nearLeftLatTemp = (int) (nearLeftPrecisionLat * circleLatitude) / nearLeftPrecisionLat;
-                                        nearLeftLatTemp *= 10;
-                                        shapeLatInt = (int) nearLeftLatTemp;
+                                        Query query = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child("Points").limitToLast(1);
 
-                                        double nearLeftPrecisionLon = Math.pow(10, 1);
-                                        // Can't create a firebase path with '.', so get rid of decimal.
-                                        double nearLeftLonTemp = (int) (nearLeftPrecisionLon * circleLongitude) / nearLeftPrecisionLon;
-                                        nearLeftLonTemp *= 10;
-                                        shapeLonInt = (int) nearLeftLonTemp;
+                                        query.addListenerForSingleValueEvent(new ValueEventListener() {
 
-                                        getFirebaseMessages(null);
+                                            @Override
+                                            public void onDataChange(@NonNull DataSnapshot snapshot) {
+
+                                                // If childrenCount == 0, this is a new shape.
+                                                if (snapshot.getChildrenCount() == 0) {
+
+                                                    addQuery();
+                                                    return;
+                                                }
+
+                                                for (DataSnapshot ds : snapshot.getChildren()) {
+
+                                                    String shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                                                    if (shapeUUID != null) {
+
+                                                        // If new circles exist, add them to the map. Else, add the query to add new shapes in the future.
+                                                        if (!circleUUIDsAL.contains(shapeUUID)) {
+
+                                                            Query query = FirebaseDatabase.getInstance().getReference()
+                                                                    .child("Shapes").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child("Points")
+                                                                    .orderByKey()
+                                                                    .startAt(ds.getKey());
+
+                                                            query.addListenerForSingleValueEvent(new ValueEventListener() {
+
+                                                                @Override
+                                                                public void onDataChange(@NonNull DataSnapshot snapshot) {
+
+                                                                    loadCirclesODC(snapshot, location);
+                                                                }
+
+                                                                @Override
+                                                                public void onCancelled(@NonNull DatabaseError error) {
+                                                                }
+                                                            });
+                                                        } else {
+
+                                                            compareShapesToLocation(location);
+                                                        }
+                                                    }
+                                                }
+                                            }
+
+                                            @Override
+                                            public void onCancelled(@NonNull DatabaseError databaseError) {
+                                            }
+                                        });
                                     }
-                                    // Message will be uploaded in addQuery.
                                 } else {
 
                                     progressIconIndeterminate.setVisibility(View.GONE);
@@ -752,6 +781,68 @@ public class Chat extends Fragment implements
             Activity.putExtra("videoUrl", videoURI.toString());
             Chat.this.startActivity(Activity);
         });
+    }
+
+    private void loadCirclesODC(DataSnapshot snapshot, Location location) {
+
+        for (DataSnapshot ds : snapshot.getChildren()) {
+
+            if (ds.child("circleOptions").exists()) {
+
+                LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
+
+                // Prevents duplicates.
+                if (circleCentersAL.contains(center)) {
+
+                    break;
+                }
+
+                circleCentersAL.add(center);
+                circleUUIDsAL.add((String) ds.child("shapeUUID").getValue());
+            }
+        }
+
+        compareShapesToLocation(location);
+    }
+
+    private void compareShapesToLocation(Location location) {
+
+        Log.i(TAG, "compareShapesToLocation()");
+
+        // If user is within a circle, enter it. Else, enter a new one.
+        float[] oldDistance = new float[2];
+        oldDistance[0] = 3f;
+        for (int i = 0; i < circleCentersAL.size(); i++) {
+
+            float[] newDistance = new float[2];
+            Location.distanceBetween(circleCentersAL.get(i).latitude, circleCentersAL.get(i).longitude, location.getLatitude(), location.getLongitude(), newDistance);
+
+            if (newDistance[0] <= 1) {
+
+                newShape = false;
+                circleLatitude = circleCentersAL.get(i).latitude;
+                circleLongitude = circleCentersAL.get(i).longitude;
+                shapeUUID = circleUUIDsAL.get(i);
+                break;
+            } else if (newDistance[0] <= 2 && newDistance[0] <= oldDistance[0]) {
+
+                oldDistance[0] = newDistance[0];
+                newShape = false;
+                circleLatitude = circleCentersAL.get(i).latitude;
+                circleLongitude = circleCentersAL.get(i).longitude;
+                shapeUUID = circleUUIDsAL.get(i);
+            }
+        }
+
+        if (newShape) {
+
+            addQuery();
+        } else {
+
+            getFirebaseMessages(null);
+        }
+
+        // Message will be uploaded in addQuery.
     }
 
     private void getFirebaseMessages(String referenceUserUUID) {

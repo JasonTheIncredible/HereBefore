@@ -102,7 +102,6 @@ public class Map extends FragmentActivity implements
     private FusedLocationProviderClient mFusedLocationClient;
     private LocationCallback mLocationCallback;
 
-    // If user takes a picture too quickly (before shapes are able to load) then ALs in Chat will be null. When sending a message and checking for updated circles, first check for AL being empty and upload all information if needed.
     // If user is too far away from an area before uploading a picture, require taking a new picture?
     // In Chat, doing onStop() then restarting will cause recyclerView to flash as it initializes - is this necessary?
     // Crash happening occasionally after clicking circle when returning from Chat. 1/27
@@ -112,6 +111,7 @@ public class Map extends FragmentActivity implements
     // Show picture upon opening circle or show picture at the top at all times.
     // Prevent data scraping (hide email addresses and other personal information).
 
+    // Make creating a circle more accurate.
     // Long press a shape to see a popup of that picture.
     // Allow users to get "likes". Allow more likes per second with a higher "level" like DS.
     // If user is outside of circle, show how far outside - requires checking location every time before posting new message.
@@ -144,6 +144,7 @@ public class Map extends FragmentActivity implements
     // Panoramic view, like gMaps.
 
     // Update to Node.js 10.
+    // Check whether addQuery works with multiple devices for multiple circles - specifically, make sure only the new circles are added with the addition of the "break" statement (in Map and Chat).
     // Deal with leaks.
     // Test on multiple devices.
     // Remember the AC: Origins inspiration. Also, airdrop - create items in the world. Also, gMaps drag and drop. Also, DS virtual items in the world.
@@ -2124,6 +2125,12 @@ public class Map extends FragmentActivity implements
             if (ds.child("circleOptions").exists()) {
 
                 LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
+
+                // Prevents duplicates.
+                if (circleCentersAL.contains(center)) {
+
+                    break;
+                }
 
                 circleCentersAL.add(center);
                 circleUUIDsAL.add((String) ds.child("shapeUUID").getValue());
