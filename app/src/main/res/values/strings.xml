@@ -30,7 +30,7 @@
     <string name="feedback_warning">As this feedback is anonymous, please provide additional details (e.g. email address) if you want a follow-up with your specific account.</string>
     <string name="you_have_no_dms">You have no DMs</string>
     <string name="atUsername">"@"%1$s</string>
-    <string name="new_shape_text_view">Previous messages from your location may load after pressing send</string>
+    <string name="new_shape_text_view">Previous messages from your location may load after pressing send.</string>
 
     <string-array name="pref_map_types_entries">
         <item>Road map view</item>

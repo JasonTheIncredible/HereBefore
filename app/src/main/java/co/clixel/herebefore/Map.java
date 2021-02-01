@@ -103,8 +103,6 @@ public class Map extends FragmentActivity implements
     private LocationCallback mLocationCallback;
 
     // If user is too far away from an area before uploading a picture, require taking a new picture?
-    // In Chat, doing onStop() then restarting will cause recyclerView to flash as it initializes - is this necessary?
-    // Crash happening occasionally after clicking circle when returning from Chat. 1/27
     // Send serializable after clicking on settingsButton and dmsButton from Map.
     // Use the user's most up-to-date location information in DirectMentions.
     // Fix bug where after sending a message and restarting Chat, date in datesAL will not match the value in Firebase as date in Firebase gets updated soon after getting the initial value. Will probably need to switch from date to something else.
