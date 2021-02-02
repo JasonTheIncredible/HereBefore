@@ -103,8 +103,6 @@ public class Map extends FragmentActivity implements
     private LocationCallback mLocationCallback;
 
     // If user is too far away from an area before uploading a picture, require taking a new picture?
-    // Send serializable after clicking on settingsButton and dmsButton from Map.
-    // Use the user's most up-to-date location information in DirectMentions.
     // Fix bug where after sending a message and restarting Chat, date in datesAL will not match the value in Firebase as date in Firebase gets updated soon after getting the initial value. Will probably need to switch from date to something else.
     // Show picture upon opening circle or show picture at the top at all times.
     // Prevent data scraping (hide email addresses and other personal information).
@@ -247,39 +245,7 @@ public class Map extends FragmentActivity implements
 
             Log.i(TAG, "onStart() -> settingsButton -> onClick");
 
-            // Check location permissions.
-            if (ContextCompat.checkSelfPermission(getBaseContext(),
-                    Manifest.permission.ACCESS_FINE_LOCATION)
-                    == PackageManager.PERMISSION_GRANTED) {
-
-                loadingIcon.setVisibility(View.VISIBLE);
-
-                mFusedLocationClient.getLastLocation()
-                        .addOnSuccessListener(Map.this, location -> {
-
-                            if (location != null) {
-
-                                cancelToasts();
-
-                                Intent Activity = new Intent(Map.this, Navigation.class);
-
-                                Activity.putExtra("userLatitude", location.getLatitude());
-                                Activity.putExtra("userLongitude", location.getLongitude());
-
-                                Activity.putExtra("noChat", true);
-
-                                loadingIcon.setVisibility(View.GONE);
-
-                                startActivity(Activity);
-                            } else {
-
-                                loadingIcon.setVisibility(View.GONE);
-                            }
-                        });
-            } else {
-
-                checkLocationPermissions();
-            }
+            goToNextActivity(null, null, false, "settings");
         });
 
         // Go to DMs.
@@ -287,40 +253,7 @@ public class Map extends FragmentActivity implements
 
             Log.i(TAG, "onStart() -> dmButton -> onClick");
 
-            // Check location permissions.
-            if (ContextCompat.checkSelfPermission(getBaseContext(),
-                    Manifest.permission.ACCESS_FINE_LOCATION)
-                    == PackageManager.PERMISSION_GRANTED) {
-
-                loadingIcon.setVisibility(View.VISIBLE);
-
-                mFusedLocationClient.getLastLocation()
-                        .addOnSuccessListener(Map.this, location -> {
-
-                            if (location != null) {
-
-                                cancelToasts();
-
-                                Intent Activity = new Intent(Map.this, Navigation.class);
-
-                                Activity.putExtra("userLatitude", location.getLatitude());
-                                Activity.putExtra("userLongitude", location.getLongitude());
-
-                                Activity.putExtra("noChat", true);
-                                Activity.putExtra("fromDms", true);
-
-                                loadingIcon.setVisibility(View.GONE);
-
-                                startActivity(Activity);
-                            } else {
-
-                                loadingIcon.setVisibility(View.GONE);
-                            }
-                        });
-            } else {
-
-                checkLocationPermissions();
-            }
+            goToNextActivity(null, null, false, "dms");
         });
 
         // Take a photo. Create chat if one doesn't exist.
@@ -615,11 +548,6 @@ public class Map extends FragmentActivity implements
         if (resultCode == RESULT_OK) {
 
             loadingIcon.setVisibility(View.VISIBLE);
-
-            // Disable buttons while next activity is opened.
-            circleButton.setEnabled(false);
-            dmButton.setEnabled(false);
-            settingsButton.setEnabled(false);
         } else {
 
             imageFile = null;
@@ -627,24 +555,7 @@ public class Map extends FragmentActivity implements
             return;
         }
 
-        // Check location permissions.
-        if (ContextCompat.checkSelfPermission(getBaseContext(),
-                Manifest.permission.ACCESS_FINE_LOCATION)
-                == PackageManager.PERMISSION_GRANTED) {
-
-            // Create a point and go to Chat.java or SignIn.java.
-            mFusedLocationClient.getLastLocation()
-                    .addOnSuccessListener(Map.this, location -> {
-
-                        if (location != null) {
-
-                            enterCircle(location, null, null, true, true);
-                        } else {
-
-                            loadingIcon.setVisibility(View.GONE);
-                        }
-                    });
-        }
+        goToNextActivity(null, null, true, "chat");
     }
 
     @Override
@@ -654,6 +565,13 @@ public class Map extends FragmentActivity implements
         Log.i(TAG, "onRestart()");
 
         restarted = true;
+
+        // If the user took a photo or video, entered Map, got the message that GPS is disabled, and enabled it, this will trigger.
+        if (imageFile != null || videoFile != null) {
+
+            goToNextActivity(null, null, true, "chat");
+            return;
+        }
 
         // Clear map before adding new Firebase circles in onStart() to prevent overlap.
         // Set shape to null so changing chatSizeSeekBar in onStart() will create a circle and circleButton will reset itself.
@@ -864,12 +782,7 @@ public class Map extends FragmentActivity implements
                                 double lon = extras.getDouble("lon");
                                 if (lat != 0 && lon != 0 && circleUUID != null) {
 
-                                    // Check distance to circleTemp and enter it.
-                                    float[] distance = new float[2];
-                                    Location.distanceBetween(lat, lon, location.getLatitude(), location.getLongitude(), distance);
-
-                                    // If distance <= 2, enterCircle(location, circleTemp.getCenter(), false, true). Else, enterCircle(location, circleTemp.getCenter(), false, false).
-                                    enterCircle(location, new LatLng(lat, lon), circleUUID, false, distance[0] <= 2);
+                                    goToNextActivity(new LatLng(lat, lon), circleUUID, false, "chat");
                                     return;
                                 }
 
@@ -878,12 +791,7 @@ public class Map extends FragmentActivity implements
                                 double lonDouble = Double.parseDouble(extras.getString("lon"));
                                 if (circleUUID != null) {
 
-                                    // Check distance to circleTemp and enter it.
-                                    float[] distance = new float[2];
-                                    Location.distanceBetween(latDouble, lonDouble, location.getLatitude(), location.getLongitude(), distance);
-
-                                    // If distance <= 2, enterCircle(location, circleTemp.getCenter(), false, true). Else, enterCircle(location, circleTemp.getCenter(), false, false).
-                                    enterCircle(location, new LatLng(latDouble, lonDouble), circleUUID, false, distance[0] <= 2);
+                                    goToNextActivity(new LatLng(latDouble, lonDouble), circleUUID, false, "chat");
                                 }
                             }
                         });
@@ -931,12 +839,7 @@ public class Map extends FragmentActivity implements
                                 // Add circle to the map and go to Chat.
                                 if (location != null) {
 
-                                    // Check distance to circleTemp and enter it.
-                                    float[] distance = new float[2];
-                                    Location.distanceBetween(circleTemp.getCenter().latitude, circleTemp.getCenter().longitude, location.getLatitude(), location.getLongitude(), distance);
-
-                                    // If distance <= 2, enterCircle(location, circleTemp.getCenter(), false, true). Else, enterCircle(location, circleTemp.getCenter(), false, false).
-                                    enterCircle(location, null, null, false, distance[0] <= 2);
+                                    goToNextActivity(circleTemp.getCenter(), circleTempUUID, false, "chat");
                                 } else {
 
                                     loadingIcon.setVisibility(View.GONE);
@@ -1247,12 +1150,6 @@ public class Map extends FragmentActivity implements
                     Manifest.permission.ACCESS_FINE_LOCATION)
                     == PackageManager.PERMISSION_GRANTED) {
 
-                // If the user took a photo or video, entered Map, got the message that GPS is disabled, and enabled it, this will trigger.
-                if (imageFile != null || videoFile != null) {
-
-                    enterCircle(location, null, null, true, true);
-                }
-
                 mMap.setMyLocationEnabled(true);
                 if (firstLoadCamera && !cameraMoved && location.getAccuracy() < 60) {
 
@@ -1329,77 +1226,74 @@ public class Map extends FragmentActivity implements
         mHandler.post(runnable);
     }
 
-    private void enterCircle(Location userLocation, LatLng circleLatLng, String circleUUID, boolean newShape, boolean userIsWithinShape) {
+    private void goToNextActivity(LatLng circleLatLng, String circleUUID, boolean newShape, String activity) {
 
-        Log.i(TAG, "enterCircle()");
+        Log.i(TAG, "goToNextActivity()");
 
         LatLng circleToEnterLatLng = null;
         String circleToEnterUUID;
-        if (circleLatLng == null && newShape) {
+        if (!activity.equals("chat")) {
+
+            circleToEnterUUID = null;
+        } else if (circleLatLng == null && newShape) {
+
             // New circle.
             circleToEnterUUID = UUID.randomUUID().toString();
         } else if (circleLatLng == null) {
+
             // User is entering a circle by clicking on it, so circleTemp != null.
             circleToEnterLatLng = circleTemp.getCenter();
             circleToEnterUUID = circleTempUUID;
         } else {
+
             // User clicked on the circle button and is entering a circle close to their location, OR user clicked on a notification.
             circleToEnterLatLng = circleLatLng;
             circleToEnterUUID = circleUUID;
         }
 
-        Intent Activity;
-
-        // Check if the user is already signed in.
-        if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) != null) {
-
-            // User signed in.
-            Activity = new Intent(Map.this, Navigation.class);
-        } else {
-
-            // User NOT signed in.
-            Activity = new Intent(Map.this, SignIn.class);
-        }
-
         cancelToasts();
 
-        // Pass this boolean value to Chat.java.
-        Activity.putExtra("newShape", newShape);
+        Intent Activity = null;
 
-        if (!newShape) {
+        // Check if the user is already signed in.
+        if (activity.equals("chat")) {
 
-            // Get a value with 1 decimal point and use it for Firebase.
-            double nearLeftPrecisionLat = Math.pow(10, 1);
-            // Can't create a firebase path with '.', so get rid of decimal.
-            double nearLeftLatTemp = (int) (nearLeftPrecisionLat * circleToEnterLatLng.latitude) / nearLeftPrecisionLat;
-            nearLeftLatTemp *= 10;
-            int shapeLat = (int) nearLeftLatTemp;
+            if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) != null) {
 
-            double nearLeftPrecisionLon = Math.pow(10, 1);
-            // Can't create a firebase path with '.', so get rid of decimal.
-            double nearLeftLonTemp = (int) (nearLeftPrecisionLon * circleToEnterLatLng.longitude) / nearLeftPrecisionLon;
-            nearLeftLonTemp *= 10;
-            int shapeLon = (int) nearLeftLonTemp;
+                // User signed in.
+                Activity = new Intent(Map.this, Navigation.class);
+            } else {
 
-            Activity.putExtra("shapeLat", shapeLat);
-            Activity.putExtra("shapeLon", shapeLon);
-            // Pass this value to Chat.java to tell where the user can leave a message in the recyclerView.
-            Activity.putExtra("userIsWithinShape", userIsWithinShape);
-            // UserLatitude and userLongitude are used in DirectMentions.
-            Activity.putExtra("userLatitude", userLocation.getLatitude());
-            Activity.putExtra("userLongitude", userLocation.getLongitude());
-            Activity.putExtra("circleLatitude", circleToEnterLatLng.latitude);
-            Activity.putExtra("circleLongitude", circleToEnterLatLng.longitude);
-        } else {
+                // User NOT signed in.
+                Activity = new Intent(Map.this, SignIn.class);
+            }
 
-            Activity.putExtra("circleCentersAL", circleCentersAL);
-            Activity.putExtra("circleUUIDsAL", circleUUIDsAL);
+            // Pass this boolean value to Chat.java.
+            Activity.putExtra("newShape", newShape);
+            if (!newShape) {
+
+                Activity.putExtra("shapeLat", circleToEnterLatLng.latitude);
+                Activity.putExtra("shapeLon", circleToEnterLatLng.longitude);
+            } else {
+
+                Activity.putExtra("circleCentersAL", circleCentersAL);
+                Activity.putExtra("circleUUIDsAL", circleUUIDsAL);
+            }
+
+            // Pass this value to Chat.java to identify the shape.
+            Activity.putExtra("shapeUUID", circleToEnterUUID);
+            Activity.putExtra("imageFile", imageFile);
+            Activity.putExtra("videoFile", videoFile);
+        } else if (activity.equals("settings") || activity.equals("dms")) {
+
+            Activity = new Intent(Map.this, Navigation.class);
+            Activity.putExtra("noChat", true);
+
+            if (activity.equals("dms")) {
+
+                Activity.putExtra("fromDms", true);
+            }
         }
-
-        // Pass this value to Chat.java to identify the shape.
-        Activity.putExtra("shapeUUID", circleToEnterUUID);
-        Activity.putExtra("imageFile", imageFile);
-        Activity.putExtra("videoFile", videoFile);
 
         // Prevent previous activities from being in the back stack.
         Activity.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
@@ -1426,6 +1320,7 @@ public class Map extends FragmentActivity implements
 
             // Set "seenByUser" to true so it is not highlighted in the future.
             DatabaseReference Dms = FirebaseDatabase.getInstance().getReference().child("Users").child(userEmailFirebase).child("ReceivedDms");
+            Intent finalActivity = Activity;
             Dms.addListenerForSingleValueEvent(new ValueEventListener() {
 
                 @Override
@@ -1445,7 +1340,7 @@ public class Map extends FragmentActivity implements
 
                                     loadingIcon.setVisibility(View.GONE);
 
-                                    startActivity(Activity);
+                                    startActivity(finalActivity);
 
                                     return;
                                 }

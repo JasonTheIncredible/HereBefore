@@ -144,11 +144,11 @@ public class Chat extends Fragment implements
     private Integer index, top, last, datesALSize;
     private ChildEventListener childEventListener;
     private FloatingActionButton sendButton, mediaButton;
-    private boolean firstLoad, loadingOlderMessages = false, clickedOnMention = false, fromDms = false, noMoreMessages = false, showProgressIndeterminate = false, reachedEndOfRecyclerView = false, messageSent = false, fileIsImage, checkPermissionsPicture, newShape, uploadNeeded = false;
-    private Boolean userWasWithinShapeOriginally, userIsWithinShape;
+    private boolean firstLoad, loadingOlderMessages = false, clickedOnMention = false, fromDms = false, noMoreMessages = false, showProgressIndeterminate = true, reachedEndOfRecyclerView = false, messageSent = false, fileIsImage, checkPermissionsPicture, newShape, uploadNeeded = false;
+    private Boolean userIsWithinShape;
     private View.OnLayoutChangeListener onLayoutChangeListener;
     private String shapeUUID, reportedUser, UUIDToHighlight, imageFile, videoFile;
-    private double circleLatitude, circleLongitude;
+    private Double shapeLat, shapeLon;
     private PopupMenu mediaButtonMenu;
     private ImageView imageView, videoImageView;
     private Uri imageURI, videoURI;
@@ -197,17 +197,15 @@ public class Chat extends Fragment implements
                 UUIDToHighlight = extras.getString("UUIDToHighlight");
                 fromDms = extras.getBoolean("fromDms");
                 newShape = extras.getBoolean("newShape");
-                shapeUUID = extras.getString("shapeUUID");
                 // No need to get these if it's a new shape, as the most up-to-date location information will be received here.
                 if (!newShape) {
-                    circleLatitude = extras.getDouble("circleLatitude");
-                    circleLongitude = extras.getDouble("circleLongitude");
-                    userWasWithinShapeOriginally = extras.getBoolean("userIsWithinShape");
+                    shapeLat = extras.getDouble("shapeLat");
+                    shapeLon = extras.getDouble("shapeLon");
                 } else {
                     circleUUIDsAL = (ArrayList<String>) extras.getSerializable("circleUUIDsAL");
                     circleCentersAL = (ArrayList<LatLng>) extras.getSerializable("circleCentersAL");
                 }
-                userIsWithinShape = extras.getBoolean("userIsWithinShape");
+                shapeUUID = extras.getString("shapeUUID");
                 imageFile = extras.getString("imageFile");
                 videoFile = extras.getString("videoFile");
             } else {
@@ -252,16 +250,19 @@ public class Chat extends Fragment implements
         chatRecyclerViewLinearLayoutManager = new LinearLayoutManager(mActivity);
         mentionsRecyclerViewLinearLayoutManager = new LinearLayoutManager(mActivity);
 
+        // Show progressIndeterminate after restart until initRecyclerView.
+        showProgressIndeterminate = true;
+
         // If file was created in Map, do work on them here.
         if (imageFile != null) {
 
             imageCompressAndAddToGalleryAsync();
             fileIsImage = true;
-            showProgressIndeterminate = true;
         } else if (videoFile != null) {
 
             videoCompressAndAddToGalleryAsync();
             fileIsImage = false;
+            showProgressIndeterminate = false;
         }
 
         if (datesALSize == null) {
@@ -291,12 +292,15 @@ public class Chat extends Fragment implements
             progressIconIndeterminate.setVisibility(View.VISIBLE);
         }
 
-        if (newShape || userWasWithinShapeOriginally) {
+        if (!newShape && userIsWithinShape == null) {
 
-            mInput.setHint("Message from within shape...");
+            mInput.setHint("Calculating distance to circle...");
+        } else if (newShape || userIsWithinShape) {
+
+            mInput.setHint("Message from within circle...");
         } else {
 
-            mInput.setHint("Message from outside shape...");
+            mInput.setHint("Message from outside circle...");
         }
 
         return rootView;
@@ -313,13 +317,13 @@ public class Chat extends Fragment implements
             // Get a value with 1 decimal point and use it for Firebase.
             double nearLeftPrecisionLat = Math.pow(10, 1);
             // Can't create a firebase path with '.', so get rid of decimal.
-            double nearLeftLatTemp = (int) (nearLeftPrecisionLat * circleLatitude) / nearLeftPrecisionLat;
+            double nearLeftLatTemp = (int) (nearLeftPrecisionLat * shapeLat) / nearLeftPrecisionLat;
             nearLeftLatTemp *= 10;
             shapeLatInt = (int) nearLeftLatTemp;
 
             double nearLeftPrecisionLon = Math.pow(10, 1);
             // Can't create a firebase path with '.', so get rid of decimal.
-            double nearLeftLonTemp = (int) (nearLeftPrecisionLon * circleLongitude) / nearLeftPrecisionLon;
+            double nearLeftLonTemp = (int) (nearLeftPrecisionLon * shapeLon) / nearLeftPrecisionLon;
             nearLeftLonTemp *= 10;
             shapeLonInt = (int) nearLeftLonTemp;
         } else {
@@ -537,51 +541,49 @@ public class Chat extends Fragment implements
 
             progressIconIndeterminate.setVisibility(View.VISIBLE);
 
-            // Set the circle's location to the user's current location.
-            if (newShape) {
+            // Check location permissions.
+            if (ContextCompat.checkSelfPermission(mContext,
+                    Manifest.permission.ACCESS_FINE_LOCATION)
+                    == PackageManager.PERMISSION_GRANTED) {
 
-                // Check location permissions.
-                if (ContextCompat.checkSelfPermission(mContext,
-                        Manifest.permission.ACCESS_FINE_LOCATION)
-                        == PackageManager.PERMISSION_GRANTED) {
+                FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(mContext);
 
-                    FusedLocationProviderClient mFusedLocationClient = getFusedLocationProviderClient(mContext);
+                mFusedLocationClient.getLastLocation()
+                        .addOnSuccessListener(mActivity, location -> {
 
-                    mFusedLocationClient.getLastLocation()
-                            .addOnSuccessListener(mActivity, location -> {
+                            if (location != null) {
 
-                                if (location != null) {
+                                if (location.getAccuracy() >= 10) {
+
+                                    toastMessageLong("Please wait for better location accuracy." + "\n" + "Moving your phone around should help." + "\n" + "Current: " + location.getAccuracy() + "\n" + "Required: < 10");
+                                    sendButton.setEnabled(true);
+                                    progressIconIndeterminate.setVisibility(View.GONE);
+                                    return;
+                                }
+
+                                if (newShape) {
 
                                     newShapeTextView.setVisibility(View.GONE);
 
-                                    if (location.getAccuracy() >= 10) {
-
-                                        toastMessageLong("Please wait for better location accuracy." + "\n" + "The longer you wait, the more accurate your location will become." + "\n" + "Current: " + location.getAccuracy() + "\n" + "Required: < 10");
-                                        sendButton.setEnabled(true);
-                                        progressIconIndeterminate.setVisibility(View.GONE);
-                                        return;
-                                    }
-
                                     uploadNeeded = true;
-                                    userWasWithinShapeOriginally = true;
                                     userIsWithinShape = true;
 
                                     // Get rid of the previous toast (as user will probably click the send button quickly).
                                     cancelToasts();
 
-                                    circleLatitude = location.getLatitude();
-                                    circleLongitude = location.getLongitude();
+                                    shapeLat = location.getLatitude();
+                                    shapeLon = location.getLongitude();
 
                                     // Get a value with 1 decimal point and use it for Firebase.
                                     double nearLeftPrecisionLat = Math.pow(10, 1);
                                     // Can't create a firebase path with '.', so get rid of decimal.
-                                    double nearLeftLatTemp = (int) (nearLeftPrecisionLat * circleLatitude) / nearLeftPrecisionLat;
+                                    double nearLeftLatTemp = (int) (nearLeftPrecisionLat * shapeLat) / nearLeftPrecisionLat;
                                     nearLeftLatTemp *= 10;
                                     shapeLatInt = (int) nearLeftLatTemp;
 
                                     double nearLeftPrecisionLon = Math.pow(10, 1);
                                     // Can't create a firebase path with '.', so get rid of decimal.
-                                    double nearLeftLonTemp = (int) (nearLeftPrecisionLon * circleLongitude) / nearLeftPrecisionLon;
+                                    double nearLeftLonTemp = (int) (nearLeftPrecisionLon * shapeLon) / nearLeftPrecisionLon;
                                     nearLeftLonTemp *= 10;
                                     shapeLonInt = (int) nearLeftLonTemp;
 
@@ -663,100 +665,120 @@ public class Chat extends Fragment implements
                                     }
                                 } else {
 
-                                    progressIconIndeterminate.setVisibility(View.GONE);
-                                }
-                            });
-                } else {
+                                    if (userIsWithinShape == null) {
 
-                    progressIconIndeterminate.setVisibility(View.GONE);
-                    sendButton.setEnabled(true);
-                    checkLocationPermissions();
-                }
+                                        float[] newDistance = new float[2];
+                                        Location.distanceBetween(shapeLat, shapeLon, location.getLatitude(), location.getLongitude(), newDistance);
+
+                                        if (newDistance[0] < 5) {
+
+                                            toastMessageShort("You are now inside the circle.");
+                                            mInput.setHint("Message from within circle...");
+                                            userIsWithinShape = true;
+                                        } else {
+
+                                            toastMessageShort("You are now outside the circle.");
+                                            mInput.setHint("Message from outside circle...");
+                                            userIsWithinShape = false;
+                                        }
+
+                                        return;
+                                    }
+
+                                    String input = mInput.getText().toString().trim();
+
+                                    // Send recyclerviewlayout to Firebase.
+                                    if (imageView.getVisibility() != View.GONE || videoImageView.getVisibility() != View.GONE) {
+
+                                        firebaseUpload();
+                                    } else {
+
+                                        // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter).
+                                        messageSent = true;
+
+                                        String userUUID = UUID.randomUUID().toString();
+
+                                        // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
+                                        // This will cause onDataChange to fire twice; optimizations could be made in the future.
+                                        Object date = ServerValue.TIMESTAMP;
+
+                                        // If mentions exist, add to the user's DMs.
+                                        if (removedDuplicatesMentions != null) {
+
+                                            ArrayList<String> messagedUsersAL = new ArrayList<>();
+                                            for (String mention : removedDuplicatesMentions) {
+
+                                                for (int i = 0; i < mUser.size(); i++) {
+
+                                                    String userEmail = emailsAL.get(i);
+                                                    if (mUser.get(i).equals(mention) && !messagedUsersAL.contains(userEmail)) {
+
+                                                        // Prevent sending the same DM to a user multiple times.
+                                                        messagedUsersAL.add(userEmail);
+
+                                                        String email = emailsAL.get(i);
+
+                                                        DmInformation dmInformation = new DmInformation();
+                                                        dmInformation.setDate(date);
+                                                        dmInformation.setLat(shapeLat);
+                                                        dmInformation.setLon(shapeLon);
+                                                        dmInformation.setMessage(input);
+                                                        dmInformation.setSeenByUser(false);
+                                                        dmInformation.setShapeUUID(shapeUUID);
+                                                        dmInformation.setUserIsWithinShape(userIsWithinShape);
+                                                        dmInformation.setUserUUID(userUUID);
+
+                                                        // Firebase does not allow ".", so replace them with ",".
+                                                        String receiverEmailFirebase = email.replace(".", ",");
+                                                        DatabaseReference newDm = FirebaseDatabase.getInstance().getReference().child("Users").child(receiverEmailFirebase).child("ReceivedDms").push();
+                                                        newDm.setValue(dmInformation);
+                                                        break;
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        MessageInformation messageInformation = new MessageInformation();
+                                        messageInformation.setDate(date);
+                                        // If user has a Google account, get email one way. Else, get email another way.
+                                        GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
+                                        String email;
+                                        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+                                        if (acct != null) {
+                                            email = acct.getEmail();
+                                        } else {
+                                            email = sharedPreferences.getString("userToken", "null");
+                                        }
+                                        messageInformation.setEmail(email);
+                                        messageInformation.setMessage(input);
+                                        messageInformation.setUserIsWithinShape(userIsWithinShape);
+                                        messageInformation.setUserUUID(userUUID);
+                                        DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child(shapeUUID).push();
+                                        newMessage.setValue(messageInformation);
+
+                                        mInput.getText().clear();
+
+                                        if (removedDuplicatesMentions != null && !removedDuplicatesMentions.isEmpty()) {
+
+                                            removedDuplicatesMentions.clear();
+                                        }
+
+                                        // For some reason, if the text begins with a mention and onCreateView was called after the mention was added, the mention is not cleared with one call to clear().
+                                        mInput.getText().clear();
+                                        progressIconIndeterminate.setVisibility(View.GONE);
+                                        sendButton.setEnabled(true);
+                                    }
+                                }
+                            } else {
+
+                                progressIconIndeterminate.setVisibility(View.GONE);
+                            }
+                        });
             } else {
 
-                String input = mInput.getText().toString().trim();
-
-                // Send recyclerviewlayout to Firebase.
-                if (imageView.getVisibility() != View.GONE || videoImageView.getVisibility() != View.GONE) {
-
-                    firebaseUpload();
-                } else {
-
-                    // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter).
-                    messageSent = true;
-
-                    String userUUID = UUID.randomUUID().toString();
-
-                    // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                    // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                    Object date = ServerValue.TIMESTAMP;
-
-                    // If mentions exist, add to the user's DMs.
-                    if (removedDuplicatesMentions != null) {
-
-                        ArrayList<String> messagedUsersAL = new ArrayList<>();
-                        for (String mention : removedDuplicatesMentions) {
-
-                            for (int i = 0; i < mUser.size(); i++) {
-
-                                String userEmail = emailsAL.get(i);
-                                if (mUser.get(i).equals(mention) && !messagedUsersAL.contains(userEmail)) {
-
-                                    // Prevent sending the same DM to a user multiple times.
-                                    messagedUsersAL.add(userEmail);
-
-                                    String email = emailsAL.get(i);
-
-                                    DmInformation dmInformation = new DmInformation();
-                                    dmInformation.setDate(date);
-                                    dmInformation.setLat(circleLatitude);
-                                    dmInformation.setLon(circleLongitude);
-                                    dmInformation.setMessage(input);
-                                    dmInformation.setSeenByUser(false);
-                                    dmInformation.setShapeUUID(shapeUUID);
-                                    dmInformation.setUserIsWithinShape(userIsWithinShape);
-                                    dmInformation.setUserUUID(userUUID);
-
-                                    // Firebase does not allow ".", so replace them with ",".
-                                    String receiverEmailFirebase = email.replace(".", ",");
-                                    DatabaseReference newDm = FirebaseDatabase.getInstance().getReference().child("Users").child(receiverEmailFirebase).child("ReceivedDms").push();
-                                    newDm.setValue(dmInformation);
-                                    break;
-                                }
-                            }
-                        }
-                    }
-
-                    MessageInformation messageInformation = new MessageInformation();
-                    messageInformation.setDate(date);
-                    // If user has a Google account, get email one way. Else, get email another way.
-                    GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
-                    String email;
-                    SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-                    if (acct != null) {
-                        email = acct.getEmail();
-                    } else {
-                        email = sharedPreferences.getString("userToken", "null");
-                    }
-                    messageInformation.setEmail(email);
-                    messageInformation.setMessage(input);
-                    messageInformation.setUserIsWithinShape(userIsWithinShape);
-                    messageInformation.setUserUUID(userUUID);
-                    DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child(shapeUUID).push();
-                    newMessage.setValue(messageInformation);
-
-                    mInput.getText().clear();
-
-                    if (removedDuplicatesMentions != null && !removedDuplicatesMentions.isEmpty()) {
-
-                        removedDuplicatesMentions.clear();
-                    }
-
-                    // For some reason, if the text begins with a mention and onCreateView was called after the mention was added, the mention is not cleared with one call to clear().
-                    mInput.getText().clear();
-                    progressIconIndeterminate.setVisibility(View.GONE);
-                    sendButton.setEnabled(true);
-                }
+                progressIconIndeterminate.setVisibility(View.GONE);
+                sendButton.setEnabled(true);
+                checkLocationPermissions();
             }
         });
 
@@ -820,16 +842,16 @@ public class Chat extends Fragment implements
             if (newDistance[0] <= 1) {
 
                 newShape = false;
-                circleLatitude = circleCentersAL.get(i).latitude;
-                circleLongitude = circleCentersAL.get(i).longitude;
+                shapeLat = circleCentersAL.get(i).latitude;
+                shapeLon = circleCentersAL.get(i).longitude;
                 shapeUUID = circleUUIDsAL.get(i);
                 break;
             } else if (newDistance[0] <= 2 && newDistance[0] <= oldDistance[0]) {
 
                 oldDistance[0] = newDistance[0];
                 newShape = false;
-                circleLatitude = circleCentersAL.get(i).latitude;
-                circleLongitude = circleCentersAL.get(i).longitude;
+                shapeLat = circleCentersAL.get(i).latitude;
+                shapeLon = circleCentersAL.get(i).longitude;
                 shapeUUID = circleUUIDsAL.get(i);
             }
         }
@@ -987,7 +1009,7 @@ public class Chat extends Fragment implements
 
                     int scrollPosition = mUser.indexOf(UUIDToHighlight) - 5;
                     if (scrollPosition < 0 && !noMoreMessages) {
-
+                        ;
                         getFirebaseMessages(UUIDToHighlight);
                         return;
                     } else {
@@ -1138,8 +1160,10 @@ public class Chat extends Fragment implements
         if (uploadNeeded) {
 
             firebaseUpload();
-            showProgressIndeterminate = true;
             uploadNeeded = false;
+        } else {
+
+            showProgressIndeterminate = false;
         }
     }
 
@@ -2424,50 +2448,34 @@ public class Chat extends Fragment implements
         if (!newShape) {
 
             float[] newDistance = new float[2];
-            Location.distanceBetween(circleLatitude, circleLongitude, location.getLatitude(), location.getLongitude(), newDistance);
+            Location.distanceBetween(shapeLat, shapeLon, location.getLatitude(), location.getLongitude(), newDistance);
 
             // Only update these parameters if the location accuracy is reasonable.
             if (location.getAccuracy() < 10) {
 
-                // If user was originally inside of a shape originally, give a buffer zone of what is considered inside the shape now, as the accuracy is not amazing.
-                // Else, be more strict about what is considered "inside" the shape.
-                if (userWasWithinShapeOriginally) {
+                if (newDistance[0] < 5) {
 
-                    if (newDistance[0] < 5) {
+                    if (userIsWithinShape == null) {
 
-                        if (!userIsWithinShape) {
+                        mInput.setHint("Message from within circle...");
+                        userIsWithinShape = true;
+                    } else if (!userIsWithinShape) {
 
-                            toastMessageShort("You are now inside the circle.");
-                            mInput.setHint("Message from within shape...");
-                            userIsWithinShape = true;
-                        }
-                    } else {
-
-                        if (userIsWithinShape) {
-
-                            toastMessageShort("You are now outside the circle.");
-                            mInput.setHint("Message from outside shape...");
-                            userIsWithinShape = false;
-                        }
+                        toastMessageShort("You are now inside the circle.");
+                        mInput.setHint("Message from within circle...");
+                        userIsWithinShape = true;
                     }
                 } else {
 
-                    if (newDistance[0] < 2) {
+                    if (userIsWithinShape == null) {
 
-                        if (!userIsWithinShape) {
+                        mInput.setHint("Message from outside circle...");
+                        userIsWithinShape = false;
+                    } else if (userIsWithinShape) {
 
-                            toastMessageShort("You are now inside the circle.");
-                            mInput.setHint("Message from within shape...");
-                            userIsWithinShape = true;
-                        }
-                    } else {
-
-                        if (userIsWithinShape) {
-
-                            toastMessageShort("You are now outside the circle.");
-                            mInput.setHint("Message from outside shape...");
-                            userIsWithinShape = false;
-                        }
+                        toastMessageShort("You are now outside the circle.");
+                        mInput.setHint("Message from outside circle...");
+                        userIsWithinShape = false;
                     }
                 }
             }
@@ -3117,7 +3125,7 @@ public class Chat extends Fragment implements
 
                             // Since the UUID doesn't already exist in Firebase, add the circle.
                             CircleOptions circleOptions = new CircleOptions()
-                                    .center(new LatLng(circleLatitude, circleLongitude))
+                                    .center(new LatLng(shapeLat, shapeLon))
                                     .clickable(true)
                                     .radius(1.0);
                             CircleInformation circleInformation = new CircleInformation();
@@ -3126,7 +3134,6 @@ public class Chat extends Fragment implements
                             DatabaseReference newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child("Points").push();
                             newFirebaseShape.setValue(circleInformation);
 
-                            userWasWithinShapeOriginally = true;
                             newShape = false;
                         }
 
@@ -3154,8 +3161,8 @@ public class Chat extends Fragment implements
 
                                         DmInformation dmInformation = new DmInformation();
                                         dmInformation.setDate(date);
-                                        dmInformation.setLat(circleLatitude);
-                                        dmInformation.setLon(circleLongitude);
+                                        dmInformation.setLat(shapeLat);
+                                        dmInformation.setLon(shapeLon);
                                         if (input.length() != 0) {
                                             dmInformation.setMessage(input);
                                         }
@@ -3263,7 +3270,7 @@ public class Chat extends Fragment implements
 
                             // Since the UUID doesn't already exist in Firebase, add the circle.
                             CircleOptions circleOptions = new CircleOptions()
-                                    .center(new LatLng(circleLatitude, circleLongitude))
+                                    .center(new LatLng(shapeLat, shapeLon))
                                     .clickable(true)
                                     .radius(1.0);
                             CircleInformation circleInformation = new CircleInformation();
@@ -3272,7 +3279,6 @@ public class Chat extends Fragment implements
                             DatabaseReference newFirebaseShape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child("Points").push();
                             newFirebaseShape.setValue(circleInformation);
 
-                            userWasWithinShapeOriginally = true;
                             newShape = false;
                         }
 
@@ -3301,8 +3307,8 @@ public class Chat extends Fragment implements
                                         DmInformation dmInformation = new DmInformation();
                                         dmInformation.setDate(date);
                                         dmInformation.setImageUrl(uri.toString());
-                                        dmInformation.setLat(circleLatitude);
-                                        dmInformation.setLon(circleLongitude);
+                                        dmInformation.setLat(shapeLat);
+                                        dmInformation.setLon(shapeLon);
                                         if (input.length() != 0) {
                                             dmInformation.setMessage(input);
                                         }

@@ -23,12 +23,15 @@ import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.SignInButton;
 import com.google.android.gms.common.api.ApiException;
+import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.GoogleAuthProvider;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.messaging.FirebaseMessaging;
+
+import java.util.ArrayList;
 
 public class SignUp extends AppCompatActivity {
 
@@ -37,15 +40,16 @@ public class SignUp extends AppCompatActivity {
     private EditText mEmail, mPassword, mConfirmPassword;
     private Button createAccountButton;
     private SignInButton googleSignInButton;
-    private String shapeUUID, email, pass, confirmPass;
-    private Double polygonArea, circleLatitude, circleLongitude, userLatitude, userLongitude, radius, marker0Latitude, marker0Longitude, marker1Latitude, marker1Longitude, marker2Latitude, marker2Longitude, marker3Latitude, marker3Longitude, marker4Latitude, marker4Longitude, marker5Latitude, marker5Longitude, marker6Latitude, marker6Longitude, marker7Latitude, marker7Longitude;
-    private boolean newShape, userIsWithinShape, threeMarkers, fourMarkers, fiveMarkers, sixMarkers, sevenMarkers, eightMarkers;
-    private int shapeLat, shapeLon;
+    private String shapeUUID, email, pass, confirmPass, imageFile, videoFile;
+    private Double shapeLat, shapeLon;
+    private Boolean newShape;
     private GoogleSignInClient mGoogleSignInClient;
     private FirebaseAuth mAuth;
     private GoogleSignInAccount googleAccount;
     private View loadingIcon;
     private Toast shortToast, longToast;
+    private ArrayList<String> circleUUIDsAL = new ArrayList<>();
+    private ArrayList<LatLng> circleCentersAL = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -85,40 +89,16 @@ public class SignUp extends AppCompatActivity {
         if (extras != null) {
 
             newShape = extras.getBoolean("newShape");
-            shapeLat = extras.getInt("shapeLat");
-            shapeLon = extras.getInt("shapeLon");
-            userLatitude = extras.getDouble("userLatitude");
-            userLongitude = extras.getDouble("userLongitude");
+            if (!newShape) {
+                shapeLat = extras.getDouble("shapeLat");
+                shapeLon = extras.getDouble("shapeLon");
+            } else {
+                imageFile = extras.getString("imageFile");
+                videoFile = extras.getString("videoFile");
+                circleUUIDsAL = (ArrayList<String>) extras.getSerializable("circleUUIDsAL");
+                circleCentersAL = (ArrayList<LatLng>) extras.getSerializable("circleCentersAL");
+            }
             shapeUUID = extras.getString("shapeUUID");
-            userIsWithinShape = extras.getBoolean("userIsWithinShape");
-            // circleLatitude, circleLongitude, and radius will be null if the circle is not new (as a new circle is not being created).
-            circleLatitude = extras.getDouble("circleLatitude");
-            circleLongitude = extras.getDouble("circleLongitude");
-            radius = extras.getDouble("radius");
-            // Most of these will be null if the polygon does not have eight markers, or if the polygon is not new.
-            polygonArea = extras.getDouble("polygonArea");
-            threeMarkers = extras.getBoolean("threeMarkers");
-            fourMarkers = extras.getBoolean("fourMarkers");
-            fiveMarkers = extras.getBoolean("fiveMarkers");
-            sixMarkers = extras.getBoolean("sixMarkers");
-            sevenMarkers = extras.getBoolean("sevenMarkers");
-            eightMarkers = extras.getBoolean("eightMarkers");
-            marker0Latitude = extras.getDouble("marker0Latitude");
-            marker0Longitude = extras.getDouble("marker0Longitude");
-            marker1Latitude = extras.getDouble("marker1Latitude");
-            marker1Longitude = extras.getDouble("marker1Longitude");
-            marker2Latitude = extras.getDouble("marker2Latitude");
-            marker2Longitude = extras.getDouble("marker2Longitude");
-            marker3Latitude = extras.getDouble("marker3Latitude");
-            marker3Longitude = extras.getDouble("marker3Longitude");
-            marker4Latitude = extras.getDouble("marker4Latitude");
-            marker4Longitude = extras.getDouble("marker4Longitude");
-            marker5Latitude = extras.getDouble("marker5Latitude");
-            marker5Longitude = extras.getDouble("marker5Longitude");
-            marker6Latitude = extras.getDouble("marker6Latitude");
-            marker6Longitude = extras.getDouble("marker6Longitude");
-            marker7Latitude = extras.getDouble("marker7Latitude");
-            marker7Longitude = extras.getDouble("marker7Longitude");
         } else {
 
             Log.e(TAG, "onStart() -> extras == null");
@@ -208,61 +188,38 @@ public class SignUp extends AppCompatActivity {
 
                     FirebaseMessaging.getInstance().getToken().addOnCompleteListener(task1 -> {
 
-                       if (task1.isSuccessful()) {
+                        if (task1.isSuccessful()) {
 
-                           String token = task1.getResult();
+                            String token = task1.getResult();
 
-                           SharedPreferences.Editor editor = sharedPreferences.edit()
-                                   .putString("userToken", email)
-                                   .putString("passToken", pass)
-                                   .putString("FIREBASE_TOKEN", String.valueOf(token));
-                           editor.apply();
+                            SharedPreferences.Editor editor = sharedPreferences.edit()
+                                    .putString("userToken", email)
+                                    .putString("passToken", pass)
+                                    .putString("FIREBASE_TOKEN", String.valueOf(token));
+                            editor.apply();
 
-                           // Firebase does not allow ".", so replace them with ",".
-                           String userEmailFirebase = email.replace(".", ",");
+                            // Firebase does not allow ".", so replace them with ",".
+                            String userEmailFirebase = email.replace(".", ",");
 
-                           FirebaseDatabase.getInstance().getReference().child("Users").child(userEmailFirebase).child("Token").setValue(token);
+                            FirebaseDatabase.getInstance().getReference().child("Users").child(userEmailFirebase).child("Token").setValue(token);
 
-                           // Go to Chat.java with the extras.
-                           Intent Activity = new Intent(SignUp.this, Navigation.class);
-                           Activity.putExtra("newShape", newShape);
-                           Activity.putExtra("shapeLat", shapeLat);
-                           Activity.putExtra("shapeLon", shapeLon);
-                           // UserLatitude and userLongitude are used in DirectMentions.
-                           Activity.putExtra("userLatitude", userLatitude);
-                           Activity.putExtra("userLongitude", userLongitude);
-                           Activity.putExtra("shapeUUID", shapeUUID);
-                           Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                           Activity.putExtra("circleLatitude", circleLatitude);
-                           Activity.putExtra("circleLongitude", circleLongitude);
-                           Activity.putExtra("radius", radius);
-                           Activity.putExtra("polygonArea", polygonArea);
-                           Activity.putExtra("threeMarkers", threeMarkers);
-                           Activity.putExtra("fourMarkers", fourMarkers);
-                           Activity.putExtra("fiveMarkers", fiveMarkers);
-                           Activity.putExtra("sixMarkers", sixMarkers);
-                           Activity.putExtra("sevenMarkers", sevenMarkers);
-                           Activity.putExtra("eightMarkers", eightMarkers);
-                           Activity.putExtra("marker0Latitude", marker0Latitude);
-                           Activity.putExtra("marker0Longitude", marker0Longitude);
-                           Activity.putExtra("marker1Latitude", marker1Latitude);
-                           Activity.putExtra("marker1Longitude", marker1Longitude);
-                           Activity.putExtra("marker2Latitude", marker2Latitude);
-                           Activity.putExtra("marker2Longitude", marker2Longitude);
-                           Activity.putExtra("marker3Latitude", marker3Latitude);
-                           Activity.putExtra("marker3Longitude", marker3Longitude);
-                           Activity.putExtra("marker4Latitude", marker4Latitude);
-                           Activity.putExtra("marker4Longitude", marker4Longitude);
-                           Activity.putExtra("marker5Latitude", marker5Latitude);
-                           Activity.putExtra("marker5Longitude", marker5Longitude);
-                           Activity.putExtra("marker6Latitude", marker6Latitude);
-                           Activity.putExtra("marker6Longitude", marker6Longitude);
-                           Activity.putExtra("marker7Latitude", marker7Latitude);
-                           Activity.putExtra("marker7Longitude", marker7Longitude);
-                           loadingIcon.setVisibility(View.GONE);
-                           startActivity(Activity);
-                           finish();
-                       }
+                            // Go to Chat.java with the extras.
+                            Intent Activity = new Intent(SignUp.this, Navigation.class);
+                            Activity.putExtra("newShape", newShape);
+                            if (!newShape) {
+                                Activity.putExtra("shapeLat", shapeLat);
+                                Activity.putExtra("shapeLon", shapeLon);
+                            } else {
+                                Activity.putExtra("imageFile", imageFile);
+                                Activity.putExtra("videoFile", videoFile);
+                                Activity.putExtra("circleUUIDsAL", circleUUIDsAL);
+                                Activity.putExtra("circleCentersAL", circleCentersAL);
+                            }
+                            Activity.putExtra("shapeUUID", shapeUUID);
+                            loadingIcon.setVisibility(View.GONE);
+                            startActivity(Activity);
+                            finish();
+                        }
 
                         if (!task1.isSuccessful() && task1.getException() != null) {
 
@@ -399,39 +356,16 @@ public class SignUp extends AppCompatActivity {
                                 toastMessageShort("Signed in");
                                 Intent Activity = new Intent(SignUp.this, Navigation.class);
                                 Activity.putExtra("newShape", newShape);
-                                Activity.putExtra("shapeLat", shapeLat);
-                                Activity.putExtra("shapeLon", shapeLon);
-                                // UserLatitude and userLongitude are used in DirectMentions.
-                                Activity.putExtra("userLatitude", userLatitude);
-                                Activity.putExtra("userLongitude", userLongitude);
+                                if (!newShape) {
+                                    Activity.putExtra("shapeLat", shapeLat);
+                                    Activity.putExtra("shapeLon", shapeLon);
+                                } else {
+                                    Activity.putExtra("imageFile", imageFile);
+                                    Activity.putExtra("videoFile", videoFile);
+                                    Activity.putExtra("circleUUIDsAL", circleUUIDsAL);
+                                    Activity.putExtra("circleCentersAL", circleCentersAL);
+                                }
                                 Activity.putExtra("shapeUUID", shapeUUID);
-                                Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                Activity.putExtra("circleLatitude", circleLatitude);
-                                Activity.putExtra("circleLongitude", circleLongitude);
-                                Activity.putExtra("radius", radius);
-                                Activity.putExtra("polygonArea", polygonArea);
-                                Activity.putExtra("threeMarkers", threeMarkers);
-                                Activity.putExtra("fourMarkers", fourMarkers);
-                                Activity.putExtra("fiveMarkers", fiveMarkers);
-                                Activity.putExtra("sixMarkers", sixMarkers);
-                                Activity.putExtra("sevenMarkers", sevenMarkers);
-                                Activity.putExtra("eightMarkers", eightMarkers);
-                                Activity.putExtra("marker0Latitude", marker0Latitude);
-                                Activity.putExtra("marker0Longitude", marker0Longitude);
-                                Activity.putExtra("marker1Latitude", marker1Latitude);
-                                Activity.putExtra("marker1Longitude", marker1Longitude);
-                                Activity.putExtra("marker2Latitude", marker2Latitude);
-                                Activity.putExtra("marker2Longitude", marker2Longitude);
-                                Activity.putExtra("marker3Latitude", marker3Latitude);
-                                Activity.putExtra("marker3Longitude", marker3Longitude);
-                                Activity.putExtra("marker4Latitude", marker4Latitude);
-                                Activity.putExtra("marker4Longitude", marker4Longitude);
-                                Activity.putExtra("marker5Latitude", marker5Latitude);
-                                Activity.putExtra("marker5Longitude", marker5Longitude);
-                                Activity.putExtra("marker6Latitude", marker6Latitude);
-                                Activity.putExtra("marker6Longitude", marker6Longitude);
-                                Activity.putExtra("marker7Latitude", marker7Latitude);
-                                Activity.putExtra("marker7Longitude", marker7Longitude);
                                 loadingIcon.setVisibility(View.GONE);
                                 startActivity(Activity);
                                 finish();

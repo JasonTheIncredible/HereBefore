@@ -5,7 +5,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
-import android.location.Location;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Gravity;
@@ -30,6 +29,7 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.maps.model.LatLng;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -55,16 +55,16 @@ public class DirectMentions extends Fragment {
     private ArrayList<Boolean> mUserIsWithinShape, mSeenByUser;
     private ArrayList<Long> datesAL;
     private ArrayList<Double> mShapeLat, mShapeLon;
+    private ArrayList<String> circleUUIDsAL = new ArrayList<>();
+    private ArrayList<LatLng> circleCentersAL = new ArrayList<>();
     private RecyclerView dmsRecyclerView;
     private static int index = -1, top = -1, last;
     private ChildEventListener childEventListener;
     private LinearLayoutManager dmsRecyclerViewLinearLayoutManager;
-    private boolean firstLoad, loadingOlderMessages, userIsWithinShape, noMoreMessages = false, reachedEndOfRecyclerView = false;
-    private int latUser, lonUser;
+    private boolean firstLoad, loadingOlderMessages, noMoreMessages = false, reachedEndOfRecyclerView = false;
     private View loadingIcon;
     private Toast longToast;
     private Integer datesALSize;
-    private Double userLatitude, userLongitude;
     private Context mContext;
     private Activity mActivity;
     private View rootView;
@@ -116,21 +116,8 @@ public class DirectMentions extends Fragment {
             Bundle extras = mActivity.getIntent().getExtras();
             if (extras != null) {
 
-                userLatitude = extras.getDouble("userLatitude");
-                userLongitude = extras.getDouble("userLongitude");
-
-                // Get a value with 1 decimal point and use it for Firebase.
-                double nearLeftPrecisionLat = Math.pow(10, 1);
-                // Can't create a firebase path with '.', so get rid of decimal.
-                double nearLeftLatTemp = (int) (nearLeftPrecisionLat * userLatitude) / nearLeftPrecisionLat;
-                nearLeftLatTemp *= 10;
-                latUser = (int) nearLeftLatTemp;
-
-                double nearLeftPrecisionLon = Math.pow(10, 1);
-                // Can't create a firebase path with '.', so get rid of decimal.
-                double nearLeftLonTemp = (int) (nearLeftPrecisionLon * userLongitude) / nearLeftPrecisionLon;
-                nearLeftLonTemp *= 10;
-                lonUser = (int) nearLeftLonTemp;
+                circleUUIDsAL = (ArrayList<String>) extras.getSerializable("circleUUIDsAL");
+                circleCentersAL = (ArrayList<LatLng>) extras.getSerializable("circleCentersAL");
             } else {
 
                 Log.e(TAG, "onCreateView() -> extras == null");
@@ -748,7 +735,20 @@ public class DirectMentions extends Fragment {
                         });
                     }
 
-                    DatabaseReference shape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + latUser + ", " + lonUser + ")").child("Points");
+                    // Get a value with 1 decimal point and use it for Firebase.
+                    double nearLeftPrecisionLat = Math.pow(10, 1);
+                    // Can't create a firebase path with '.', so get rid of decimal.
+                    double nearLeftLatTemp = (int) (nearLeftPrecisionLat * mShapeLat.get(getAdapterPosition())) / nearLeftPrecisionLat;
+                    nearLeftLatTemp *= 10;
+                    int shapeLatInt = (int) nearLeftLatTemp;
+
+                    double nearLeftPrecisionLon = Math.pow(10, 1);
+                    // Can't create a firebase path with '.', so get rid of decimal.
+                    double nearLeftLonTemp = (int) (nearLeftPrecisionLon * mShapeLon.get(getAdapterPosition())) / nearLeftPrecisionLon;
+                    nearLeftLonTemp *= 10;
+                    int shapeLonInt = (int) nearLeftLonTemp;
+
+                    DatabaseReference shape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child("Points");
                     shape.addListenerForSingleValueEvent(new ValueEventListener() {
 
                         @Override
@@ -761,57 +761,26 @@ public class DirectMentions extends Fragment {
 
                                     if (shapeUUID.equals(mShapeUUID.get(getAdapterPosition()))) {
 
-                                        Double mLatitude = (Double) ds.child("circleOptions").child("center").child("latitude").getValue();
-                                        Double mLongitude = (Double) ds.child("circleOptions").child("center").child("longitude").getValue();
-                                        if (mLatitude != null && mLongitude != null) {
+                                        cancelToasts();
 
-                                            float[] distance = new float[2];
+                                        Intent Activity = new Intent(mContext, Navigation.class);
+                                        Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()));
+                                        Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()));
+                                        Activity.putExtra("newShape", false);
+                                        Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
+                                        Activity.putExtra("UUIDToHighlight", mUser.get(getAdapterPosition()));
+                                        Activity.putExtra("circleUUIDsAL", circleUUIDsAL);
+                                        Activity.putExtra("circleCentersAL", circleCentersAL);
 
-                                            Location.distanceBetween(mLatitude, mLongitude,
-                                                    userLatitude, userLongitude, distance);
+                                        loadingIcon.setVisibility(View.GONE);
 
-                                            // Boolean; will be true if user is within the circle (or close to the circle) upon circle click.
-                                            userIsWithinShape = !(distance[0] > 2.0);
+                                        mContext.startActivity(Activity);
 
-                                            cancelToasts();
-
-                                            Intent Activity = new Intent(mContext, Navigation.class);
-                                            Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
-                                            Activity.putExtra("userIsWithinShape", userIsWithinShape);
-                                            Activity.putExtra("circleLatitude", mShapeLat.get(getAdapterPosition()).doubleValue());
-                                            Activity.putExtra("circleLongitude", mShapeLon.get(getAdapterPosition()).doubleValue());
-                                            Activity.putExtra("userLatitude", userLatitude);
-                                            Activity.putExtra("userLongitude", userLongitude);
-                                            Activity.putExtra("UUIDToHighlight", mUser.get(getAdapterPosition()));
-
-                                            loadingIcon.setVisibility(View.GONE);
-
-                                            mContext.startActivity(Activity);
-
-                                            mActivity.finish();
-                                            return;
-                                        }
+                                        mActivity.finish();
+                                        return;
                                     }
                                 }
                             }
-
-                            // If this part is reached, the user is not within the shape because the user's location is not in the same loadable map area as the shape.
-                            cancelToasts();
-
-                            Intent Activity = new Intent(mContext, Navigation.class);
-                            Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
-                            Activity.putExtra("userIsWithinShape", false);
-                            Activity.putExtra("circleLatitude", mShapeLat.get(getAdapterPosition()).doubleValue());
-                            Activity.putExtra("circleLongitude", mShapeLon.get(getAdapterPosition()).doubleValue());
-                            Activity.putExtra("userLatitude", userLatitude);
-                            Activity.putExtra("userLongitude", userLongitude);
-                            Activity.putExtra("UUIDToHighlight", mUser.get(getAdapterPosition()));
-
-                            loadingIcon.setVisibility(View.GONE);
-
-                            mContext.startActivity(Activity);
-
-                            mActivity.finish();
                         }
 
                         @Override
@@ -899,16 +868,6 @@ public class DirectMentions extends Fragment {
             View view = LayoutInflater.from(mContext).inflate(R.layout.directmentionsadapterlayout, parent, false);
 
             loadPreferences();
-
-            Bundle extras = mActivity.getIntent().getExtras();
-            if (extras != null) {
-
-                userLatitude = extras.getDouble("userLatitude");
-                userLongitude = extras.getDouble("userLongitude");
-            } else {
-
-                Log.e(TAG, "DirectMentionsAdapter() -> extras == null");
-            }
 
             return new ViewHolder(view);
         }
