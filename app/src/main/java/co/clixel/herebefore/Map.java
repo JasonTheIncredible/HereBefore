@@ -102,9 +102,8 @@ public class Map extends FragmentActivity implements
     private FusedLocationProviderClient mFusedLocationClient;
     private LocationCallback mLocationCallback;
 
-    // If user is too far away from an area before uploading a picture, require taking a new picture?
+    // If user is too far away from an area before uploading a picture, require taking a new picture.
     // Fix bug where after sending a message and restarting Chat, date in datesAL will not match the value in Firebase as date in Firebase gets updated soon after getting the initial value. Will probably need to switch from date to something else.
-    // Show picture upon opening circle or show picture at the top at all times.
     // Prevent data scraping (hide email addresses and other personal information).
 
     // Make creating a circle more accurate.
@@ -112,11 +111,11 @@ public class Map extends FragmentActivity implements
     // Allow users to get "likes". Allow more likes per second with a higher "level" like DS.
     // If user is outside of circle, show how far outside - requires checking location every time before posting new message.
     // After clicking on a DM and going to that Chat, allow user to find that same shape on the map.
-    // Create a variable with the point's radius and use that instead of "1" to future-proof changes. Also, make "creating a point" more accurate to the user's location.
-    // Deal with deprecated methods.
+    // Show picture upon opening circle or show picture at the top at all times.
     // After clicking on a UUID, keep it expanded after updating recyclerView.
     // Create a "New messages" toast if user is scrolled up (or maybe just if user is scrolled up and restarts?)
     // Only be able to see things you've visited - Kenny.
+    // Create widget for faster picture / creating point.
     // Develop an Apple version.
     // Add ability to add both picture and video to firebase at the same time.
     // Add ability to filter recyclerView by type of content (recorded at the scene...).
@@ -130,7 +129,6 @@ public class Map extends FragmentActivity implements
     //// Add ability to add images and video to general chat and Chat from gallery. Distinguish them from media added from location. Github 8/29.
     // Leave messages in locations that users get notified of when they enter the area by adding geo-fencing.
     // Prevent spamming messages.
-    // Create widget for faster picture / creating point.
     // Increase speed of checking whether user is inside a circle when clicking the circleButton, as it currently cycles through all circles. Also, allow user to choose which circle they enter?
     // Truncate mention in editText to look like userUUID in Chat.
     // Add a function for deleting / decreasing position of DMs after deleting / updating messageThreads - problem: need to store the name of the person being DM'ed, but that's a lot of useless information and possibly increases security risk.
@@ -143,6 +141,7 @@ public class Map extends FragmentActivity implements
     // Check whether addQuery works with multiple devices for multiple circles - specifically, make sure only the new circles are added with the addition of the "break" statement (in Map and Chat).
     // Deal with leaks.
     // Test on multiple devices.
+    // Deal with deprecated methods.
     // Remember the AC: Origins inspiration. Also, airdrop - create items in the world. Also, gMaps drag and drop. Also, DS virtual items in the world.
     // Unit testing.
     // Decrease app size (compress repeating code into methods) / Check on accumulation of size over time.
