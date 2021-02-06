@@ -102,16 +102,15 @@ public class Map extends FragmentActivity implements
     private FusedLocationProviderClient mFusedLocationClient;
     private LocationCallback mLocationCallback;
 
-    // If user is too far away from an area before uploading a picture, require taking a new picture.
-    // Fix bug where after sending a message and restarting Chat, date in datesAL will not match the value in Firebase as date in Firebase gets updated soon after getting the initial value. Will probably need to switch from date to something else.
     // Prevent data scraping (hide email addresses and other personal information).
 
     // Make creating a circle more accurate.
+    // Show picture upon opening circle or show picture at the top at all times.
     // Long press a shape to see a popup of that picture.
+    // If user is too far away from an area before uploading a picture, require taking a new picture.
     // Allow users to get "likes". Allow more likes per second with a higher "level" like DS.
     // If user is outside of circle, show how far outside - requires checking location every time before posting new message.
     // After clicking on a DM and going to that Chat, allow user to find that same shape on the map.
-    // Show picture upon opening circle or show picture at the top at all times.
     // After clicking on a UUID, keep it expanded after updating recyclerView.
     // Create a "New messages" toast if user is scrolled up (or maybe just if user is scrolled up and restarts?)
     // Only be able to see things you've visited - Kenny.
@@ -1970,6 +1969,8 @@ public class Map extends FragmentActivity implements
                                 // If new circles exist, add them to the map. Else, add the query to add new shapes in the future.
                                 if (!circleUUIDsAL.contains(shapeUUID)) {
 
+                                    Log.i(TAG, "loadShapes() -> new shapes since app restarted");
+
                                     Query query = FirebaseDatabase.getInstance().getReference()
                                             .child("Shapes").child("(" + coordinates.first + ", " + coordinates.second + ")").child("Points")
                                             .orderByKey()
@@ -1991,6 +1992,8 @@ public class Map extends FragmentActivity implements
                                         }
                                     });
                                 } else {
+
+                                    Log.i(TAG, "loadShapes() -> no new shapes");
 
                                     DatabaseReference firebasePoints = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + coordinates.first + ", " + coordinates.second + ")").child("Points");
                                     addCirclesQuery(firebasePoints, coordinates);

@@ -42,6 +42,7 @@ import android.text.style.ClickableSpan;
 import android.util.Base64;
 import android.util.Base64OutputStream;
 import android.util.Log;
+import android.util.Pair;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -137,11 +138,10 @@ public class Chat extends Fragment implements
     private ArrayList<String> removedDuplicatesMentions, mTime, mUser, mImage, mVideo, mSuggestions, allMentions, emailsAL;
     private ArrayList<SpannableString> mText;
     private ArrayList<Boolean> mUserIsWithinShape;
-    private ArrayList<Long> datesAL;
     private ArrayList<String> circleUUIDsAL = new ArrayList<>();
     private ArrayList<LatLng> circleCentersAL = new ArrayList<>();
     private RecyclerView chatRecyclerView, mentionsRecyclerView;
-    private Integer index, top, last, datesALSize;
+    private Integer index, top, last, UUIDDatesPairsSize;
     private ChildEventListener childEventListener;
     private FloatingActionButton sendButton, mediaButton;
     private boolean firstLoad, loadingOlderMessages = false, clickedOnMention = false, fromDms = false, noMoreMessages = false, showProgressIndeterminate = true, reachedEndOfRecyclerView = false, messageSent = false, fileIsImage, checkPermissionsPicture, newShape, uploadNeeded = false;
@@ -172,6 +172,7 @@ public class Chat extends Fragment implements
     private FusedLocationProviderClient mFusedLocationClient;
     private LocationCallback mLocationCallback;
     private TextView newShapeTextView;
+    private List<Pair<String, Long>> UUIDDatesPairs;
     private final WordTokenizerConfig tokenizerConfig = new WordTokenizerConfig
             .Builder()
             .setWordBreakChars(", ")
@@ -265,9 +266,9 @@ public class Chat extends Fragment implements
             showProgressIndeterminate = false;
         }
 
-        if (datesALSize == null) {
+        if (UUIDDatesPairsSize == null) {
 
-            datesAL = new ArrayList<>();
+            UUIDDatesPairs = new ArrayList<>();
             emailsAL = new ArrayList<>();
 
             mTime = new ArrayList<>();
@@ -368,7 +369,7 @@ public class Chat extends Fragment implements
         }
 
         // If the value isn't null, check if the latest date is the same as the one in the recyclerView. If the value is null, it's the first time loading.
-        if (datesALSize != null) {
+        if (UUIDDatesPairsSize != null) {
 
             Query query = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child(shapeUUID).limitToLast(1);
             query.addListenerForSingleValueEvent(new ValueEventListener() {
@@ -391,7 +392,7 @@ public class Chat extends Fragment implements
 
                         Long date = (Long) ds.child("date").getValue();
                         // If the saved date and the latest date match, then there's no need to re-download everything from Firebase.
-                        if (date != null && datesAL != null && !date.equals(datesAL.get(datesAL.size() - 1))) {
+                        if (date != null && UUIDDatesPairs != null && !date.equals(UUIDDatesPairs.get(UUIDDatesPairs.size() - 1).second)) {
 
                             Log.i(TAG, "onStart() -> new messages since app restarted");
 
@@ -553,6 +554,11 @@ public class Chat extends Fragment implements
 
                             if (location != null) {
 
+                                if (newShape) {
+
+                                    newShapeTextView.setVisibility(View.GONE);
+                                }
+
                                 if (location.getAccuracy() >= 10) {
 
                                     toastMessageLong("Please wait for better location accuracy." + "\n" + "Moving your phone around should help." + "\n" + "Current: " + location.getAccuracy() + "\n" + "Required: < 10");
@@ -562,8 +568,6 @@ public class Chat extends Fragment implements
                                 }
 
                                 if (newShape) {
-
-                                    newShapeTextView.setVisibility(View.GONE);
 
                                     uploadNeeded = true;
                                     userIsWithinShape = true;
@@ -872,12 +876,12 @@ public class Chat extends Fragment implements
         Log.i(TAG, "getFirebaseMessages()");
 
         Query query;
-        if (!fromDms && !clickedOnMention && datesALSize != null) {
+        if (!fromDms && !clickedOnMention && UUIDDatesPairsSize != null) {
 
             query = FirebaseDatabase.getInstance().getReference()
                     .child("MessageThreads").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child(shapeUUID)
                     .orderByChild("date")
-                    .startAt(datesAL.get(datesALSize));
+                    .startAt(UUIDDatesPairs.get(UUIDDatesPairsSize).second);
         } else if (referenceUserUUID == null) {
 
             query = FirebaseDatabase.getInstance().getReference()
@@ -892,7 +896,7 @@ public class Chat extends Fragment implements
                 query = FirebaseDatabase.getInstance().getReference()
                         .child("MessageThreads").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child(shapeUUID)
                         .orderByChild("date")
-                        .endAt(datesAL.get(0))
+                        .endAt(UUIDDatesPairs.get(0).second)
                         .limitToLast(20);
             } else {
 
@@ -900,7 +904,7 @@ public class Chat extends Fragment implements
                 query = FirebaseDatabase.getInstance().getReference()
                         .child("MessageThreads").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child(shapeUUID)
                         .orderByChild("date")
-                        .endAt(datesAL.get(mUser.indexOf(referenceUserUUID)))
+                        .endAt(UUIDDatesPairs.get(mUser.indexOf(referenceUserUUID)).second)
                         .limitToLast(20);
             }
         }
@@ -927,7 +931,7 @@ public class Chat extends Fragment implements
                     toastMessageLong("Shape was deleted. Please return to map.");
                 }
 
-                if (datesALSize == null && snapshot.getChildrenCount() < 20) {
+                if (UUIDDatesPairsSize == null && snapshot.getChildrenCount() < 20) {
 
                     noMoreMessages = true;
 
@@ -940,9 +944,9 @@ public class Chat extends Fragment implements
                 }
 
                 int i;
-                if (!fromDms && !loadingOlderMessages && datesAL != null) {
+                if (!fromDms && !loadingOlderMessages && UUIDDatesPairs != null) {
 
-                    i = datesAL.size();
+                    i = UUIDDatesPairs.size();
                 } else {
 
                     i = 0;
@@ -956,12 +960,12 @@ public class Chat extends Fragment implements
                         continue;
                     }
 
-                    // Add dates to this AL for use in pagination.
-                    datesAL.add(i, (Long) ds.child("date").getValue());
-                    emailsAL.add(i, (String) ds.child("email").getValue());
-
-                    Long serverDate = (Long) ds.child("date").getValue();
                     String user = (String) ds.child("userUUID").getValue();
+                    Long serverDate = (Long) ds.child("date").getValue();
+
+                    // Add dates to this AL for use in pagination.
+                    UUIDDatesPairs.add(i, new Pair<>(user, serverDate));
+                    emailsAL.add(i, (String) ds.child("email").getValue());
 
                     // Used when a user mentions another user with "@".
                     mSuggestions.add(i, user);
@@ -1073,7 +1077,7 @@ public class Chat extends Fragment implements
             @Override
             public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
 
-                Log.i(TAG, "addQuery()");
+                Log.i(TAG, "addQuery() -> onChildAdded()");
 
                 // Read RecyclerView scroll position (for use in initChatAdapter to prevent scrolling after Chat gets updated by another user).
                 if (!firstLoad && chatRecyclerViewLinearLayoutManager != null && chatRecyclerView != null) {
@@ -1091,16 +1095,17 @@ public class Chat extends Fragment implements
                     return;
                 }
 
-                emailsAL.add((String) snapshot.child("email").getValue());
-                datesAL.add((Long) snapshot.child("date").getValue());
-
                 String user = (String) snapshot.child("userUUID").getValue();
+                Long serverDate = (Long) snapshot.child("date").getValue();
+
+                emailsAL.add((String) snapshot.child("email").getValue());
+                UUIDDatesPairs.add(new Pair<>(user, serverDate));
+
                 // Prevents duplicates when user adds a message to a new shape then switches between light / dark mode.
                 if (mUser.contains(user)) {
 
                     return;
                 }
-                Long serverDate = (Long) snapshot.child("date").getValue();
                 // Used when a user mentions another user with "@".
                 mSuggestions.add(user);
                 String imageUrl = (String) snapshot.child("imageUrl").getValue();
@@ -1137,6 +1142,22 @@ public class Chat extends Fragment implements
 
             @Override
             public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+
+                Log.i(TAG, "addQuery() -> onChildChanged()");
+
+                // Update the serverDate in UUIDDatesPairs, as the original serverDate will be an estimate and a callback from the server will always be made with an accurate time.
+                for (Pair<String, Long> pair: UUIDDatesPairs) {
+
+                    String user = (String) snapshot.child("userUUID").getValue();
+
+                    if (pair.first.equals(user)) {
+
+                        Long serverDate = (Long) snapshot.child("date").getValue();
+
+                        UUIDDatesPairs.set(UUIDDatesPairs.indexOf(pair), new Pair<>(user, serverDate));
+                        return;
+                    }
+                }
             }
 
             @Override
@@ -1328,7 +1349,7 @@ public class Chat extends Fragment implements
             top = (v == null) ? 0 : (v.getTop() - chatRecyclerView.getPaddingTop());
         }
 
-        datesALSize = datesAL.size() - 1;
+        UUIDDatesPairsSize = UUIDDatesPairs.size() - 1;
 
         if (uploadTask != null) {
 
@@ -1499,7 +1520,7 @@ public class Chat extends Fragment implements
                 // Set RecyclerView scroll position to prevent position change when Firebase gets updated and after screen orientation change.
                 chatRecyclerViewLinearLayoutManager.scrollToPositionWithOffset(index, top);
             }
-        } else if ((last != null && last == (mUser.size() - 2)) || firstLoad && datesALSize == null || messageSent || reachedEndOfRecyclerView) {
+        } else if ((last != null && last == (mUser.size() - 2)) || firstLoad && UUIDDatesPairsSize == null || messageSent || reachedEndOfRecyclerView) {
 
             // Scroll to bottom of recyclerviewlayout after first initialization and after sending a recyclerviewlayout.
             chatRecyclerView.scrollToPosition(mUser.size() - 1);
@@ -1511,8 +1532,8 @@ public class Chat extends Fragment implements
 
         firstLoad = false;
         loadingOlderMessages = false;
-        // Need to make datesALSize null so user can load older messages after restarting the app.
-        datesALSize = null;
+        // Need to make UUIDDatesPairsSize null so user can load older messages after restarting the app.
+        UUIDDatesPairsSize = null;
 
         // After the initial load, make the progressIconIndeterminate invisible.
         if (!newShape && progressIconIndeterminate != null && !showProgressIndeterminate) {

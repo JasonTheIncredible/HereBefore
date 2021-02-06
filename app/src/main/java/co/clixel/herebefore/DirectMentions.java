@@ -7,6 +7,7 @@ import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
+import android.util.Pair;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -41,6 +42,7 @@ import com.google.firebase.database.ValueEventListener;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -53,7 +55,6 @@ public class DirectMentions extends Fragment {
     private String userEmailFirebase;
     private ArrayList<String> mTime, mUser, mImage, mVideo, mText, mShapeUUID;
     private ArrayList<Boolean> mUserIsWithinShape, mSeenByUser;
-    private ArrayList<Long> datesAL;
     private ArrayList<Double> mShapeLat, mShapeLon;
     private ArrayList<String> circleUUIDsAL = new ArrayList<>();
     private ArrayList<LatLng> circleCentersAL = new ArrayList<>();
@@ -64,12 +65,13 @@ public class DirectMentions extends Fragment {
     private boolean firstLoad, loadingOlderMessages, noMoreMessages = false, reachedEndOfRecyclerView = false;
     private View loadingIcon;
     private Toast longToast;
-    private Integer datesALSize;
+    private Integer UUIDDatesPairsSize;
     private Context mContext;
     private Activity mActivity;
     private View rootView;
     private TextView noDmsTextView;
     private Query query;
+    private List<Pair<String, Long>> UUIDDatesPairs;
 
     @Override
     public void onAttach(@NonNull Context context) {
@@ -95,7 +97,7 @@ public class DirectMentions extends Fragment {
 
         dmsRecyclerViewLinearLayoutManager = new LinearLayoutManager(mActivity);
 
-        if (datesALSize == null) {
+        if (UUIDDatesPairsSize == null) {
 
             mTime = new ArrayList<>();
             mUser = new ArrayList<>();
@@ -108,7 +110,7 @@ public class DirectMentions extends Fragment {
             mShapeLon = new ArrayList<>();
             mSeenByUser = new ArrayList<>();
 
-            datesAL = new ArrayList<>();
+            UUIDDatesPairs = new ArrayList<>();
         }
 
         if (mActivity != null) {
@@ -161,7 +163,7 @@ public class DirectMentions extends Fragment {
         userEmailFirebase = email.replace(".", ",");
 
         // If the string doesn't equal null, check if the latest user is the same as the one in the recyclerView. If string is null, it's the first time loading.
-        if (datesALSize != null) {
+        if (UUIDDatesPairsSize != null) {
 
             Query query = FirebaseDatabase.getInstance().getReference().child("Users").child(userEmailFirebase).child("ReceivedDms").limitToLast(1);
             query.addListenerForSingleValueEvent(new ValueEventListener() {
@@ -182,7 +184,7 @@ public class DirectMentions extends Fragment {
 
                         Long date = (Long) ds.child("date").getValue();
                         // If the saved date and the latest date match, then there's no need to re-download everything from Firebase.
-                        if (date != null && datesAL != null && !date.equals(datesAL.get(datesAL.size() - 1))) {
+                        if (date != null && UUIDDatesPairs != null && !date.equals(UUIDDatesPairs.get(UUIDDatesPairs.size() - 1).second)) {
 
                             Log.i(TAG, "onStart() -> new DMs since app restarted");
 
@@ -226,7 +228,7 @@ public class DirectMentions extends Fragment {
 
                         loadingIcon.setVisibility(View.VISIBLE);
                         loadingOlderMessages = true;
-                        getFirebaseDms(datesAL.get(0));
+                        getFirebaseDms(UUIDDatesPairs.get(0).second);
                     }
 
                     // If RecyclerView can't be scrolled down, reachedEndOfRecyclerView = true.
@@ -241,12 +243,12 @@ public class DirectMentions extends Fragment {
         Log.i(TAG, "getFirebaseDms()");
 
         Query query;
-        if (datesALSize != null) {
+        if (UUIDDatesPairsSize != null) {
 
             query = FirebaseDatabase.getInstance().getReference()
                     .child("Users").child(userEmailFirebase).child("ReceivedDms")
                     .orderByChild("date")
-                    .startAt(datesAL.get(datesALSize));
+                    .startAt(UUIDDatesPairs.get(UUIDDatesPairsSize).second);
         } else if (nodeID == null) {
 
             query = FirebaseDatabase.getInstance().getReference()
@@ -273,15 +275,15 @@ public class DirectMentions extends Fragment {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
 
-                if (datesALSize == null && snapshot.getChildrenCount() < 20) {
+                if (UUIDDatesPairsSize == null && snapshot.getChildrenCount() < 20) {
 
                     noMoreMessages = true;
                 }
 
                 int i;
-                if (!loadingOlderMessages && datesAL != null) {
+                if (!loadingOlderMessages && UUIDDatesPairs != null) {
 
-                    i = datesAL.size();
+                    i = UUIDDatesPairs.size();
                 } else {
 
                     i = 0;
@@ -295,10 +297,11 @@ public class DirectMentions extends Fragment {
                         continue;
                     }
 
-                    datesAL.add(i, (Long) ds.child("date").getValue());
-
-                    Long serverDate = (Long) ds.child("date").getValue();
                     String user = (String) ds.child("userUUID").getValue();
+                    Long serverDate = (Long) ds.child("date").getValue();
+
+                    UUIDDatesPairs.add(i, new Pair<>(user, serverDate));
+
                     String imageUrl = (String) ds.child("imageUrl").getValue();
                     String videoUrl = (String) ds.child("videoUrl").getValue();
                     String messageText = (String) ds.child("message").getValue();
@@ -420,7 +423,7 @@ public class DirectMentions extends Fragment {
             @Override
             public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
 
-                Log.i(TAG, "addQuery()");
+                Log.i(TAG, "addQuery() -> onChildAdded()");
 
                 // If this is the first time calling this eventListener, prevent double posts (as onStart() already added the last item).
                 if (firstLoad) {
@@ -438,10 +441,11 @@ public class DirectMentions extends Fragment {
                     top = (v == null) ? 0 : (v.getTop() - dmsRecyclerView.getPaddingTop());
                 }
 
-                datesAL.add((Long) snapshot.child("date").getValue());
-
-                Long serverDate = (Long) snapshot.child("date").getValue();
                 String user = (String) snapshot.child("userUUID").getValue();
+                Long serverDate = (Long) snapshot.child("date").getValue();
+
+                UUIDDatesPairs.add(new Pair<>(user, serverDate));
+
                 String imageUrl = (String) snapshot.child("imageUrl").getValue();
                 String videoUrl = (String) snapshot.child("videoUrl").getValue();
                 String messageText = (String) snapshot.child("message").getValue();
@@ -514,6 +518,22 @@ public class DirectMentions extends Fragment {
 
             @Override
             public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+
+                Log.i(TAG, "addQuery() -> onChildChanged()");
+
+                // Update the serverDate in UUIDDatesPairs, as the original serverDate will be an estimate and a callback from the server will always be made with an accurate time.
+                for (Pair<String, Long> pair: UUIDDatesPairs) {
+
+                    String user = (String) snapshot.child("userUUID").getValue();
+
+                    if (pair.first.equals(user)) {
+
+                        Long serverDate = (Long) snapshot.child("date").getValue();
+
+                        UUIDDatesPairs.set(UUIDDatesPairs.indexOf(pair), new Pair<>(user, serverDate));
+                        return;
+                    }
+                }
             }
 
             @Override
@@ -550,7 +570,7 @@ public class DirectMentions extends Fragment {
         dmsRecyclerView.setHasFixedSize(true);
         dmsRecyclerView.setLayoutManager(dmsRecyclerViewLinearLayoutManager);
 
-        if (last == (mTime.size() - 2) || firstLoad && datesALSize == null || reachedEndOfRecyclerView) {
+        if (last == (mTime.size() - 2) || firstLoad && UUIDDatesPairsSize == null || reachedEndOfRecyclerView) {
 
             // Scroll to bottom of recyclerviewlayout after first initialization and after sending a recyclerviewlayout.
             dmsRecyclerView.scrollToPosition(mTime.size() - 1);
@@ -562,8 +582,8 @@ public class DirectMentions extends Fragment {
 
         firstLoad = false;
         loadingOlderMessages = false;
-        // Need to make datesALSize null so user can load older messages after restarting the app.
-        datesALSize = null;
+        // Need to make UUIDDatesPairsSize null so user can load older messages after restarting the app.
+        UUIDDatesPairsSize = null;
 
         // After the initial load, make the loadingIcon invisible.
         if (loadingIcon != null) {
@@ -594,7 +614,7 @@ public class DirectMentions extends Fragment {
             top = (v == null) ? 0 : (v.getTop() - dmsRecyclerView.getPaddingTop());
         }
 
-        datesALSize = datesAL.size() - 1;
+        UUIDDatesPairsSize = UUIDDatesPairs.size() - 1;
 
         if (query != null) {
 
