@@ -1013,7 +1013,7 @@ public class Chat extends Fragment implements
 
                     int scrollPosition = mUser.indexOf(UUIDToHighlight) - 5;
                     if (scrollPosition < 0 && !noMoreMessages) {
-                        ;
+
                         getFirebaseMessages(UUIDToHighlight);
                         return;
                     } else {

@@ -102,8 +102,6 @@ public class Map extends FragmentActivity implements
     private FusedLocationProviderClient mFusedLocationClient;
     private LocationCallback mLocationCallback;
 
-    // Prevent data scraping (hide email addresses and other personal information).
-
     // Make creating a circle more accurate.
     // Show picture upon opening circle or show picture at the top at all times.
     // Long press a shape to see a popup of that picture.
@@ -127,31 +125,32 @@ public class Map extends FragmentActivity implements
     // Create a "general chat" where everyone can chat anonymously, maybe with more specific location rooms too? Delete general chat after x amount of time or # of items.
     //// Add ability to add images and video to general chat and Chat from gallery. Distinguish them from media added from location. Github 8/29.
     // Leave messages in locations that users get notified of when they enter the area by adding geo-fencing.
-    // Prevent spamming messages.
     // Increase speed of checking whether user is inside a circle when clicking the circleButton, as it currently cycles through all circles. Also, allow user to choose which circle they enter?
     // Truncate mention in editText to look like userUUID in Chat.
     // Add a function for deleting / decreasing position of DMs after deleting / updating messageThreads - problem: need to store the name of the person being DM'ed, but that's a lot of useless information and possibly increases security risk.
     // Load user-specific shared preferences - looks like it might require saving info to database; is this worth it?
     // Increase viral potential - make it easier to share?
-    // Update general look of app.
     // Panoramic view, like gMaps.
 
-    // Update to Node.js 10.
     // Check whether addQuery works with multiple devices for multiple circles - specifically, make sure only the new circles are added with the addition of the "break" statement (in Map and Chat).
+    // Update to Node.js 10, set limits, and make sure Firebase has enough bandwidth.
+    // Prevent data scraping (hide email addresses and other personal information by moving it server side).
+    // Finish setting up Google ads, then add more ads. Then get rid of testID in Chat.
+    // Prevent spamming messages.
+    // Adjust AppIntro.
+    // Deal with deprecated methods.
     // Deal with leaks.
     // Test on multiple devices.
-    // Deal with deprecated methods.
-    // Remember the AC: Origins inspiration. Also, airdrop - create items in the world. Also, gMaps drag and drop. Also, DS virtual items in the world.
-    // Unit testing.
-    // Decrease app size (compress repeating code into methods) / Check on accumulation of size over time.
-    // Work on deprecated methods.
+    // Analyze app size.
     // Check warning messages.
-    // Finish setting up Google ads, then add more ads. Then get rid of testID in Chat.
-    // Adjust AppIntro.
-    // Make sure Firebase has enough bandwidth.
+    // Move this list to a doc for privacy.
     // Make sure aboutLibraries includes all libraries, and make sure all licenses are fair use (NOT GPL).
-    // Make sure the secret stuff is secret.
     // Switch existing values in Firebase (including storage).
+
+    // Release checklist:
+    // Unit testing.
+
+    // Remember the AC: Origins inspiration. Also, airdrop - create items in the world. Also, gMaps drag and drop. Also, DS virtual items in the world.
     // Form LLC?
 
     @Override
@@ -1823,7 +1822,7 @@ public class Map extends FragmentActivity implements
 
                     loadCirclesODC(snapshot);
 
-                    addCirclesQuery(firebasePoints, newNearLeft);
+                    addQuery(firebasePoints, newNearLeft);
                 }
 
                 @Override
@@ -1857,7 +1856,7 @@ public class Map extends FragmentActivity implements
 
                     loadCirclesODC(snapshot);
 
-                    addCirclesQuery(firebasePoints, newFarLeft);
+                    addQuery(firebasePoints, newFarLeft);
                 }
 
                 @Override
@@ -1891,7 +1890,7 @@ public class Map extends FragmentActivity implements
 
                     loadCirclesODC(snapshot);
 
-                    addCirclesQuery(firebasePoints, newNearRight);
+                    addQuery(firebasePoints, newNearRight);
                 }
 
                 @Override
@@ -1925,7 +1924,7 @@ public class Map extends FragmentActivity implements
 
                     loadCirclesODC(snapshot);
 
-                    addCirclesQuery(firebasePoints, newFarRight);
+                    addQuery(firebasePoints, newFarRight);
                 }
 
                 @Override
@@ -1956,7 +1955,7 @@ public class Map extends FragmentActivity implements
                         if (snapshot.getChildrenCount() == 0) {
 
                             DatabaseReference firebasePoints = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + coordinates.first + ", " + coordinates.second + ")").child("Points");
-                            addCirclesQuery(firebasePoints, coordinates);
+                            addQuery(firebasePoints, coordinates);
                             return;
                         }
 
@@ -1984,7 +1983,7 @@ public class Map extends FragmentActivity implements
                                             loadCirclesODC(snapshot);
 
                                             DatabaseReference firebasePoints = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + coordinates.first + ", " + coordinates.second + ")").child("Points");
-                                            addCirclesQuery(firebasePoints, coordinates);
+                                            addQuery(firebasePoints, coordinates);
                                         }
 
                                         @Override
@@ -1996,7 +1995,7 @@ public class Map extends FragmentActivity implements
                                     Log.i(TAG, "loadShapes() -> no new shapes");
 
                                     DatabaseReference firebasePoints = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + coordinates.first + ", " + coordinates.second + ")").child("Points");
-                                    addCirclesQuery(firebasePoints, coordinates);
+                                    addQuery(firebasePoints, coordinates);
                                 }
                             }
                         }
@@ -2067,7 +2066,7 @@ public class Map extends FragmentActivity implements
     }
 
     // Change to .limitToLast(1) to cut down on data usage. Otherwise, EVERY child at this node will be downloaded every time the child is updated.
-    private void addCirclesQuery(DatabaseReference databaseReference, Pair<Integer, Integer> cornerReference) {
+    private void addQuery(DatabaseReference databaseReference, Pair<Integer, Integer> cornerReference) {
 
         if (newNearLeft.equals(cornerReference)) {
 
@@ -2077,52 +2076,7 @@ public class Map extends FragmentActivity implements
                 @Override
                 public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
 
-                    if (snapshot.child("circleOptions").exists()) {
-
-                        // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady to identify the chatCircle.
-                        String shapeUUID = (String) snapshot.child("shapeUUID").getValue();
-
-                        // Prevent duplicates.
-                        if (circleUUIDsAL.contains(shapeUUID)) {
-
-                            return;
-                        }
-
-                        if (shapeUUID != null && circleUUIDsAL.contains(shapeUUID)) {
-
-                            return;
-                        }
-
-                        LatLng center = new LatLng((double) snapshot.child("circleOptions/center/latitude/").getValue(), (double) snapshot.child("circleOptions/center/longitude/").getValue());
-
-                        // Load different colored circles depending on the map type.
-                        Circle circle;
-                        if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
-
-                            // Yellow circle.
-                            circle = mMap.addCircle(
-                                    new CircleOptions()
-                                            .center(center)
-                                            .clickable(true)
-                                            .radius(1.0)
-                                            .strokeColor(Color.YELLOW)
-                                            .strokeWidth(3f)
-                            );
-                        } else {
-
-                            // Purple circle.
-                            circle = mMap.addCircle(
-                                    new CircleOptions()
-                                            .center(center)
-                                            .clickable(true)
-                                            .radius(1.0)
-                                            .strokeColor(Color.rgb(255, 0, 255))
-                                            .strokeWidth(3f)
-                            );
-                        }
-
-                        circle.setTag(shapeUUID);
-                    }
+                    addQueryOCA(snapshot);
                 }
 
                 @Override
@@ -2153,55 +2107,7 @@ public class Map extends FragmentActivity implements
                 @Override
                 public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
 
-                    if (snapshot.child("circleOptions").exists()) {
-
-                        // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady to identify the chatCircle.
-                        String shapeUUID = (String) snapshot.child("shapeUUID").getValue();
-
-                        // Prevent duplicates.
-                        if (circleUUIDsAL.contains(shapeUUID)) {
-
-                            return;
-                        }
-
-                        if (shapeUUID != null && circleUUIDsAL.contains(shapeUUID)) {
-
-                            return;
-                        }
-
-                        if (snapshot.child("circleOptions").exists()) {
-
-                            LatLng center = new LatLng((double) snapshot.child("circleOptions/center/latitude/").getValue(), (double) snapshot.child("circleOptions/center/longitude/").getValue());
-
-                            // Load different colored circles depending on the map type.
-                            Circle circle;
-                            if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
-
-                                // Yellow circle.
-                                circle = mMap.addCircle(
-                                        new CircleOptions()
-                                                .center(center)
-                                                .clickable(true)
-                                                .radius(1.0)
-                                                .strokeColor(Color.YELLOW)
-                                                .strokeWidth(3f)
-                                );
-                            } else {
-
-                                // Purple circle.
-                                circle = mMap.addCircle(
-                                        new CircleOptions()
-                                                .center(center)
-                                                .clickable(true)
-                                                .radius(1.0)
-                                                .strokeColor(Color.rgb(255, 0, 255))
-                                                .strokeWidth(3f)
-                                );
-                            }
-
-                            circle.setTag(shapeUUID);
-                        }
-                    }
+                    addQueryOCA(snapshot);
                 }
 
                 @Override
@@ -2232,22 +2138,7 @@ public class Map extends FragmentActivity implements
                 @Override
                 public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
 
-                    if (snapshot.child("circleOptions").exists()) {
-
-                        // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady to identify the chatCircle.
-                        String shapeUUID = (String) snapshot.child("shapeUUID").getValue();
-
-                        // Prevent duplicates.
-                        if (circleUUIDsAL.contains(shapeUUID)) {
-
-                            return;
-                        }
-
-                        if (shapeUUID != null && circleUUIDsAL.contains(shapeUUID)) {
-
-                            return;
-                        }
-                    }
+                    addQueryOCA(snapshot);
                 }
 
                 @Override
@@ -2278,22 +2169,7 @@ public class Map extends FragmentActivity implements
                 @Override
                 public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
 
-                    if (snapshot.child("circleOptions").exists()) {
-
-                        // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady to identify the chatCircle.
-                        String shapeUUID = (String) snapshot.child("shapeUUID").getValue();
-
-                        // Prevent duplicates.
-                        if (circleUUIDsAL.contains(shapeUUID)) {
-
-                            return;
-                        }
-
-                        if (shapeUUID != null && circleUUIDsAL.contains(shapeUUID)) {
-
-                            return;
-                        }
-                    }
+                    addQueryOCA(snapshot);
                 }
 
                 @Override
@@ -2322,6 +2198,56 @@ public class Map extends FragmentActivity implements
         if (imageFile == null && videoFile == null) {
 
             loadingIcon.setVisibility(View.GONE);
+        }
+    }
+
+    private void addQueryOCA(DataSnapshot snapshot) {
+
+        if (snapshot.child("circleOptions").exists()) {
+
+            // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady to identify the chatCircle.
+            String shapeUUID = (String) snapshot.child("shapeUUID").getValue();
+
+            // Prevent duplicates.
+            if (circleUUIDsAL.contains(shapeUUID)) {
+
+                return;
+            }
+
+            if (shapeUUID != null && circleUUIDsAL.contains(shapeUUID)) {
+
+                return;
+            }
+
+            LatLng center = new LatLng((double) snapshot.child("circleOptions/center/latitude/").getValue(), (double) snapshot.child("circleOptions/center/longitude/").getValue());
+
+            // Load different colored circles depending on the map type.
+            Circle circle;
+            if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
+
+                // Yellow circle.
+                circle = mMap.addCircle(
+                        new CircleOptions()
+                                .center(center)
+                                .clickable(true)
+                                .radius(1.0)
+                                .strokeColor(Color.YELLOW)
+                                .strokeWidth(3f)
+                );
+            } else {
+
+                // Purple circle.
+                circle = mMap.addCircle(
+                        new CircleOptions()
+                                .center(center)
+                                .clickable(true)
+                                .radius(1.0)
+                                .strokeColor(Color.rgb(255, 0, 255))
+                                .strokeWidth(3f)
+                );
+            }
+
+            circle.setTag(shapeUUID);
         }
     }
 

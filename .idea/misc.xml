@@ -1,5 +1,39 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="EntryPointsManager">
+    <entry_points version="2.0">
+      <entry_point TYPE="field" FQNAME="co.clixel.herebefore.CircleInformation circleOptions" />
+      <entry_point TYPE="field" FQNAME="co.clixel.herebefore.CircleInformation shapeUUID" />
+      <entry_point TYPE="field" FQNAME="co.clixel.herebefore.ReportPostInformation lat" />
+      <entry_point TYPE="field" FQNAME="co.clixel.herebefore.ReportPostInformation lon" />
+      <entry_point TYPE="field" FQNAME="co.clixel.herebefore.ReportPostInformation pushID" />
+      <entry_point TYPE="field" FQNAME="co.clixel.herebefore.ReportPostInformation shapeUUID" />
+      <entry_point TYPE="field" FQNAME="co.clixel.herebefore.MessageInformation date" />
+      <entry_point TYPE="field" FQNAME="co.clixel.herebefore.MessageInformation email" />
+      <entry_point TYPE="field" FQNAME="co.clixel.herebefore.MessageInformation imageUrl" />
+      <entry_point TYPE="field" FQNAME="co.clixel.herebefore.MessageInformation message" />
+      <entry_point TYPE="field" FQNAME="co.clixel.herebefore.MessageInformation userIsWithinShape" />
+      <entry_point TYPE="field" FQNAME="co.clixel.herebefore.MessageInformation userUUID" />
+      <entry_point TYPE="field" FQNAME="co.clixel.herebefore.MessageInformation videoUrl" />
+      <entry_point TYPE="field" FQNAME="co.clixel.herebefore.FeedbackInformation date" />
+      <entry_point TYPE="field" FQNAME="co.clixel.herebefore.FeedbackInformation feedback" />
+      <entry_point TYPE="field" FQNAME="co.clixel.herebefore.DmInformation date" />
+      <entry_point TYPE="field" FQNAME="co.clixel.herebefore.DmInformation imageUrl" />
+      <entry_point TYPE="field" FQNAME="co.clixel.herebefore.DmInformation lat" />
+      <entry_point TYPE="field" FQNAME="co.clixel.herebefore.DmInformation lon" />
+      <entry_point TYPE="field" FQNAME="co.clixel.herebefore.DmInformation message" />
+      <entry_point TYPE="field" FQNAME="co.clixel.herebefore.DmInformation seenByUser" />
+      <entry_point TYPE="field" FQNAME="co.clixel.herebefore.DmInformation shapeUUID" />
+      <entry_point TYPE="field" FQNAME="co.clixel.herebefore.DmInformation userIsWithinShape" />
+      <entry_point TYPE="field" FQNAME="co.clixel.herebefore.DmInformation userUUID" />
+      <entry_point TYPE="field" FQNAME="co.clixel.herebefore.DmInformation videoUrl" />
+    </entry_points>
+    <pattern value="co.clixel.herebefore.CircleInformation" />
+    <pattern value="co.clixel.herebefore.ReportPostInformation" />
+    <pattern value="co.clixel.herebefore.MessageInformation" />
+    <pattern value="co.clixel.herebefore.FeedbackInformation" />
+    <pattern value="co.clixel.herebefore.DmInformation" />
+  </component>
   <component name="NullableNotNullManager">
     <option name="myDefaultNullable" value="org.jetbrains.annotations.Nullable" />
     <option name="myDefaultNotNull" value="androidx.annotation.NonNull" />
