@@ -386,6 +386,10 @@ public class Chat extends Fragment implements
                         sendButton.setEnabled(false);
                         toastMessageLong("Shape was deleted. Please return to map.");
                         return;
+                    } else if (snapshot.getChildrenCount() == 0) {
+
+                        // If the user has to leave this activity (when no messages exist) to turn on GPS and re-enters, this will trigger.
+                        progressIconIndeterminate.setVisibility(View.GONE);
                     }
 
                     for (DataSnapshot ds : snapshot.getChildren()) {
@@ -775,7 +779,14 @@ public class Chat extends Fragment implements
                                 }
                             } else {
 
+                                // If user leaves this activity to turn on GPS and returns, GPS will originally be null so this will trigger at first.
+                                if (newShape) {
+
+                                    newShapeTextView.setVisibility(View.GONE);
+                                }
+                                sendButton.setEnabled(true);
                                 progressIconIndeterminate.setVisibility(View.GONE);
+                                toastMessageLong("Please wait a moment and try again.");
                             }
                         });
             } else {
@@ -876,7 +887,7 @@ public class Chat extends Fragment implements
         Log.i(TAG, "getFirebaseMessages()");
 
         Query query;
-        if (!fromDms && !clickedOnMention && UUIDDatesPairsSize != null) {
+        if (!fromDms && !clickedOnMention && UUIDDatesPairsSize != null && UUIDDatesPairsSize != 0) {
 
             query = FirebaseDatabase.getInstance().getReference()
                     .child("MessageThreads").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child(shapeUUID)
