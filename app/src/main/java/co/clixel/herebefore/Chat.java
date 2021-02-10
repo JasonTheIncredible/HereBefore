@@ -99,7 +99,9 @@ import com.linkedin.android.spyglass.tokenization.interfaces.QueryTokenReceiver;
 import com.linkedin.android.spyglass.ui.MentionsEditText;
 import com.otaliastudios.transcoder.Transcoder;
 import com.otaliastudios.transcoder.TranscoderListener;
-import com.otaliastudios.transcoder.strategy.DefaultVideoStrategies;
+import com.otaliastudios.transcoder.strategy.DefaultVideoStrategy;
+import com.otaliastudios.transcoder.strategy.size.AspectRatioResizer;
+import com.otaliastudios.transcoder.strategy.size.FractionResizer;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -147,7 +149,7 @@ public class Chat extends Fragment implements
     private boolean firstLoad, loadingOlderMessages = false, clickedOnMention = false, fromDms = false, noMoreMessages = false, showProgressIndeterminate = true, reachedEndOfRecyclerView = false, messageSent = false, fileIsImage, checkPermissionsPicture, newShape, uploadNeeded = false;
     private Boolean userIsWithinShape;
     private View.OnLayoutChangeListener onLayoutChangeListener;
-    private String shapeUUID, reportedUser, UUIDToHighlight, imageFile, videoFile;
+    private String shapeUUID, reportedUser, UUIDToHighlight, imageFile, videoFile, lastKnownKey;
     private Double shapeLat, shapeLon;
     private PopupMenu mediaButtonMenu;
     private ImageView imageView, videoImageView;
@@ -209,6 +211,7 @@ public class Chat extends Fragment implements
                 shapeUUID = extras.getString("shapeUUID");
                 imageFile = extras.getString("imageFile");
                 videoFile = extras.getString("videoFile");
+                lastKnownKey = extras.getString("lastKnownKey");
             } else {
 
                 Log.e(TAG, "onCreateView() -> extras == null");
@@ -641,10 +644,19 @@ public class Chat extends Fragment implements
                                                         // If new circles exist, add them to the map. Else, add the query to add new shapes in the future.
                                                         if (!circleUUIDsAL.contains(shapeUUID)) {
 
-                                                            Query query = FirebaseDatabase.getInstance().getReference()
-                                                                    .child("Shapes").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child("Points")
-                                                                    .orderByKey()
-                                                                    .startAt(ds.getKey());
+                                                            // If lastKnownKey is null, no shapes existed before user put app into the background and all shapes need to be retrieved.
+                                                            Query query;
+                                                            if (lastKnownKey == null) {
+
+                                                                query = FirebaseDatabase.getInstance().getReference()
+                                                                        .child("Shapes").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child("Points");
+                                                            } else {
+
+                                                                query = FirebaseDatabase.getInstance().getReference()
+                                                                        .child("Shapes").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child("Points")
+                                                                        .orderByKey()
+                                                                        .startAt(lastKnownKey);
+                                                            }
 
                                                             query.addListenerForSingleValueEvent(new ValueEventListener() {
 
@@ -831,7 +843,7 @@ public class Chat extends Fragment implements
                 // Prevents duplicates.
                 if (circleCentersAL.contains(center)) {
 
-                    break;
+                    continue;
                 }
 
                 circleCentersAL.add(center);
@@ -887,7 +899,7 @@ public class Chat extends Fragment implements
         Log.i(TAG, "getFirebaseMessages()");
 
         Query query;
-        if (!fromDms && !clickedOnMention && UUIDDatesPairsSize != null && UUIDDatesPairsSize != 0) {
+        if (!fromDms && !clickedOnMention && UUIDDatesPairsSize != null && UUIDDatesPairsSize != -1) {
 
             query = FirebaseDatabase.getInstance().getReference()
                     .child("MessageThreads").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child(shapeUUID)
@@ -1302,8 +1314,6 @@ public class Chat extends Fragment implements
 
         super.onResume();
         Log.i(TAG, "onResume()");
-
-        sendButton.setEnabled(true);
 
         locationManager = (LocationManager) mContext.getSystemService(Context.LOCATION_SERVICE);
 
@@ -2755,11 +2765,7 @@ public class Chat extends Fragment implements
 
         super.onActivityResult(requestCode, resultCode, data);
 
-        if (resultCode == RESULT_OK) {
-
-            // Disable the sendButton while content is being compressed.
-            sendButton.setEnabled(false);
-        } else {
+        if (resultCode != RESULT_OK) {
 
             return;
         }
@@ -2832,6 +2838,9 @@ public class Chat extends Fragment implements
 
         progressIconIndeterminate.setVisibility(View.VISIBLE);
 
+        // Disable the sendButton while content is being compressed.
+        sendButton.setEnabled(false);
+
         HandlerThread imageCompressAndAddToGalleryHandlerThread = new HandlerThread("imageCompressAndAddToGalleryHandlerThread");
         imageCompressAndAddToGalleryHandlerThread.start();
         Handler mHandler = new Handler(imageCompressAndAddToGalleryHandlerThread.getLooper());
@@ -2863,13 +2872,13 @@ public class Chat extends Fragment implements
                 Bitmap mImageBitmap = new Compressor(mContext)
                         .setMaxWidth(480)
                         .setMaxHeight(640)
-                        .setQuality(50)
+                        .setQuality(25)
                         .setCompressFormat(Bitmap.CompressFormat.JPEG)
                         .compressToBitmap(image);
 
                 // Convert the bitmap to a byteArray for use in uploadImage().
                 ByteArrayOutputStream buffer = new ByteArrayOutputStream(mImageBitmap.getWidth() * mImageBitmap.getHeight());
-                mImageBitmap.compress(Bitmap.CompressFormat.JPEG, 50, buffer);
+                mImageBitmap.compress(Bitmap.CompressFormat.JPEG, 25, buffer);
                 byteArray = buffer.toByteArray();
 
                 // Prevent re-compression on restart.
@@ -2908,6 +2917,9 @@ public class Chat extends Fragment implements
         progressIcon.setProgress(0);
         progressIcon.setVisibility(View.VISIBLE);
 
+        // Disable the sendButton while content is being compressed.
+        sendButton.setEnabled(false);
+
         HandlerThread videoCompressAndAddToGalleryHandlerThread = new HandlerThread("videoCompressAndAddToGalleryHandlerThread");
         videoCompressAndAddToGalleryHandlerThread.start();
         Handler handler = new Handler(videoCompressAndAddToGalleryHandlerThread.getLooper());
@@ -2937,9 +2949,15 @@ public class Chat extends Fragment implements
 
             String filePath = videoTemp.getAbsolutePath();
 
+            DefaultVideoStrategy mTranscodeVideoStrategy = new DefaultVideoStrategy.Builder()
+                    .addResizer(new AspectRatioResizer(16F / 9F))
+                    .addResizer(new FractionResizer(1F / 8F))
+                    .frameRate(24)
+                    .build();
+
             Transcoder.into(filePath)
                     .addDataSource(video.getAbsolutePath())
-                    .setVideoTrackStrategy(DefaultVideoStrategies.for720x1280())
+                    .setVideoTrackStrategy(mTranscodeVideoStrategy)
                     .setListener(new TranscoderListener() {
 
                         public void onTranscodeProgress(double progress) {

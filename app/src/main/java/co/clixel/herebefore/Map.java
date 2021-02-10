@@ -84,7 +84,7 @@ public class Map extends FragmentActivity implements
     private GoogleMap mMap;
     private Circle circleTemp;
     private ChildEventListener childEventListenerNearLeft, childEventListenerFarLeft, childEventListenerNearRight, childEventListenerFarRight;
-    private String circleTempUUID, circleTempUUIDTemp;
+    private String circleTempUUID, circleTempUUIDTemp, lastKnownKey;
     protected static String imageFile, videoFile;
     private Button circleButton, mapTypeButton, settingsButton;
     private ImageButton dmButton;
@@ -132,16 +132,16 @@ public class Map extends FragmentActivity implements
     // Increase viral potential - make it easier to share?
     // Panoramic view, like gMaps.
 
-    // Check whether addQuery works with multiple devices for multiple circles - specifically, make sure only the new circles are added with the addition of the "break" statement (in Map and Chat).
-    // Update to Node.js 10, set limits, and make sure Firebase has enough bandwidth.
+    // Problem with functions not always deleting all shapes and media.
     // Prevent data scraping (hide email addresses and other personal information by moving it server side).
-    // Finish setting up Google ads, then add more ads. Then get rid of testID in Chat.
-    // Prevent spamming messages.
+    // Finish setting up Google ads, then add more ads. Then get rid of testID in Chat. Adjust video and image resolution based on projected revenue.
     // Adjust AppIntro.
+    // Register social media accounts / switch cloud account's email address to the new one.
     // Deal with deprecated methods.
     // Deal with leaks.
     // Test on multiple devices.
     // Analyze app size.
+    // Prevent spamming messages.
     // Check warning messages.
     // Move this list to a doc for privacy.
     // Make sure aboutLibraries includes all libraries, and make sure all licenses are fair use (NOT GPL).
@@ -562,13 +562,6 @@ public class Map extends FragmentActivity implements
         Log.i(TAG, "onRestart()");
 
         restarted = true;
-
-        // If the user took a photo or video, entered Map, got the message that GPS is disabled, and enabled it, this will trigger.
-        if (imageFile != null || videoFile != null) {
-
-            goToNextActivity(null, null, true, "chat");
-            return;
-        }
 
         // Clear map before adding new Firebase circles in onStart() to prevent overlap.
         // Set shape to null so changing chatSizeSeekBar in onStart() will create a circle and circleButton will reset itself.
@@ -1281,6 +1274,7 @@ public class Map extends FragmentActivity implements
             Activity.putExtra("shapeUUID", circleToEnterUUID);
             Activity.putExtra("imageFile", imageFile);
             Activity.putExtra("videoFile", videoFile);
+            Activity.putExtra("lastKnownKey", lastKnownKey);
         } else if (activity.equals("settings") || activity.equals("dms")) {
 
             Activity = new Intent(Map.this, Navigation.class);
@@ -1970,10 +1964,19 @@ public class Map extends FragmentActivity implements
 
                                     Log.i(TAG, "loadShapes() -> new shapes since app restarted");
 
-                                    Query query = FirebaseDatabase.getInstance().getReference()
-                                            .child("Shapes").child("(" + coordinates.first + ", " + coordinates.second + ")").child("Points")
-                                            .orderByKey()
-                                            .startAt(ds.getKey());
+                                    // If lastKnownKey is null, no shapes existed before user put app into the background and all shapes need to be retrieved.
+                                    Query query;
+                                    if (lastKnownKey == null) {
+
+                                        query = FirebaseDatabase.getInstance().getReference()
+                                                .child("Shapes").child("(" + coordinates.first + ", " + coordinates.second + ")").child("Points");
+                                    } else {
+
+                                        query = FirebaseDatabase.getInstance().getReference()
+                                                .child("Shapes").child("(" + coordinates.first + ", " + coordinates.second + ")").child("Points")
+                                                .orderByKey()
+                                                .startAt(lastKnownKey);
+                                    }
 
                                     query.addListenerForSingleValueEvent(new ValueEventListener() {
 
@@ -2023,11 +2026,12 @@ public class Map extends FragmentActivity implements
                 // Prevents duplicates.
                 if (circleCentersAL.contains(center)) {
 
-                    break;
+                    continue;
                 }
 
                 circleCentersAL.add(center);
                 circleUUIDsAL.add((String) ds.child("shapeUUID").getValue());
+                lastKnownKey = ds.getKey();
 
                 // Load different colored circles depending on the map type.
                 Circle circle;
@@ -2220,6 +2224,10 @@ public class Map extends FragmentActivity implements
             }
 
             LatLng center = new LatLng((double) snapshot.child("circleOptions/center/latitude/").getValue(), (double) snapshot.child("circleOptions/center/longitude/").getValue());
+
+            circleCentersAL.add(center);
+            circleUUIDsAL.add((String) snapshot.child("shapeUUID").getValue());
+            lastKnownKey = snapshot.getKey();
 
             // Load different colored circles depending on the map type.
             Circle circle;

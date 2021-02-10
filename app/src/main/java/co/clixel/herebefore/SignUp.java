@@ -40,7 +40,7 @@ public class SignUp extends AppCompatActivity {
     private EditText mEmail, mPassword, mConfirmPassword;
     private Button createAccountButton;
     private SignInButton googleSignInButton;
-    private String shapeUUID, email, pass, confirmPass, imageFile, videoFile;
+    private String shapeUUID, email, pass, confirmPass, imageFile, videoFile, lastKnownKey;
     private Double shapeLat, shapeLon;
     private Boolean newShape;
     private GoogleSignInClient mGoogleSignInClient;
@@ -97,6 +97,7 @@ public class SignUp extends AppCompatActivity {
                 videoFile = extras.getString("videoFile");
                 circleUUIDsAL = (ArrayList<String>) extras.getSerializable("circleUUIDsAL");
                 circleCentersAL = (ArrayList<LatLng>) extras.getSerializable("circleCentersAL");
+                lastKnownKey = extras.getString("lastKnownKey");
             }
             shapeUUID = extras.getString("shapeUUID");
         } else {
@@ -214,6 +215,7 @@ public class SignUp extends AppCompatActivity {
                                 Activity.putExtra("videoFile", videoFile);
                                 Activity.putExtra("circleUUIDsAL", circleUUIDsAL);
                                 Activity.putExtra("circleCentersAL", circleCentersAL);
+                                Activity.putExtra("lastKnownKey", lastKnownKey);
                             }
                             Activity.putExtra("shapeUUID", shapeUUID);
                             loadingIcon.setVisibility(View.GONE);
@@ -364,6 +366,7 @@ public class SignUp extends AppCompatActivity {
                                     Activity.putExtra("videoFile", videoFile);
                                     Activity.putExtra("circleUUIDsAL", circleUUIDsAL);
                                     Activity.putExtra("circleCentersAL", circleCentersAL);
+                                    Activity.putExtra("lastKnownKey", lastKnownKey);
                                 }
                                 Activity.putExtra("shapeUUID", shapeUUID);
                                 loadingIcon.setVisibility(View.GONE);

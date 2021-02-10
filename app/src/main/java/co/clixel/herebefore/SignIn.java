@@ -40,7 +40,7 @@ public class SignIn extends AppCompatActivity {
     private EditText mEmail, mPassword;
     private Button signInButton, resetPasswordButton, goToCreateAccountButton;
     private SignInButton googleSignInButton;
-    private String shapeUUID, email, pass, imageFile, videoFile;
+    private String shapeUUID, email, pass, imageFile, videoFile, lastKnownKey;
     private Double shapeLat, shapeLon;
     private Boolean newShape;
     private GoogleSignInClient mGoogleSignInClient;
@@ -99,6 +99,7 @@ public class SignIn extends AppCompatActivity {
                 videoFile = extras.getString("videoFile");
                 circleUUIDsAL = (ArrayList<String>) extras.getSerializable("circleUUIDsAL");
                 circleCentersAL = (ArrayList<LatLng>) extras.getSerializable("circleCentersAL");
+                lastKnownKey = extras.getString("lastKnownKey");
             }
             shapeUUID = extras.getString("shapeUUID");
         } else {
@@ -198,6 +199,7 @@ public class SignIn extends AppCompatActivity {
                                 Activity.putExtra("videoFile", videoFile);
                                 Activity.putExtra("circleUUIDsAL", circleUUIDsAL);
                                 Activity.putExtra("circleCentersAL", circleCentersAL);
+                                Activity.putExtra("lastKnownKey", lastKnownKey);
                             }
                             Activity.putExtra("shapeUUID", shapeUUID);
                             loadingIcon.setVisibility(View.GONE);
@@ -262,6 +264,7 @@ public class SignIn extends AppCompatActivity {
                 Activity.putExtra("videoFile", videoFile);
                 Activity.putExtra("circleUUIDsAL", circleUUIDsAL);
                 Activity.putExtra("circleCentersAL", circleCentersAL);
+                Activity.putExtra("lastKnownKey", lastKnownKey);
             }
             Activity.putExtra("shapeUUID", shapeUUID);
             loadingIcon.setVisibility(View.GONE);
@@ -401,6 +404,7 @@ public class SignIn extends AppCompatActivity {
                                     Activity.putExtra("videoFile", videoFile);
                                     Activity.putExtra("circleUUIDsAL", circleUUIDsAL);
                                     Activity.putExtra("circleCentersAL", circleCentersAL);
+                                    Activity.putExtra("lastKnownKey", lastKnownKey);
                                 }
                                 Activity.putExtra("shapeUUID", shapeUUID);
                                 loadingIcon.setVisibility(View.GONE);
