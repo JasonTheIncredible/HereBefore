@@ -137,17 +137,16 @@ public class Map extends FragmentActivity implements
     // Finish setting up Google ads, then add more ads. Then get rid of testID in Chat. Adjust video and image resolution based on projected revenue.
     // Adjust AppIntro.
     // Register social media accounts / switch cloud account's email address to the new one.
-    // Deal with deprecated methods.
     // Deal with leaks.
     // Test on multiple devices.
     // Analyze app size.
-    // Prevent spamming messages.
     // Check warning messages.
     // Move this list to a doc for privacy.
     // Make sure aboutLibraries includes all libraries, and make sure all licenses are fair use (NOT GPL).
     // Switch existing values in Firebase (including storage).
 
     // Release checklist:
+    // Deal with deprecated methods.
     // Unit testing.
 
     // Remember the AC: Origins inspiration. Also, airdrop - create items in the world. Also, gMaps drag and drop. Also, DS virtual items in the world.

@@ -33,6 +33,7 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Parcel;
+import android.os.SystemClock;
 import android.provider.MediaStore;
 import android.provider.Settings;
 import android.text.SpannableString;
@@ -175,6 +176,7 @@ public class Chat extends Fragment implements
     private LocationCallback mLocationCallback;
     private TextView newShapeTextView;
     private List<Pair<String, Long>> UUIDDatesPairs;
+    private Long lastClickTime = 0L;
     private final WordTokenizerConfig tokenizerConfig = new WordTokenizerConfig
             .Builder()
             .setWordBreakChars(", ")
@@ -566,6 +568,15 @@ public class Chat extends Fragment implements
                                     newShapeTextView.setVisibility(View.GONE);
                                 }
 
+                                // Preventing multiple clicks, using threshold of 10 seconds.
+                                if (SystemClock.elapsedRealtime() - lastClickTime < 10000) {
+
+                                    toastMessageLong("Please wait " + (int)(10 - ((SystemClock.elapsedRealtime() - lastClickTime) / 1000)) + "s before sending another message.");
+                                    sendButton.setEnabled(true);
+                                    progressIconIndeterminate.setVisibility(View.GONE);
+                                    return;
+                                }
+
                                 if (location.getAccuracy() >= 10) {
 
                                     toastMessageLong("Please wait for better location accuracy." + "\n" + "Moving your phone around should help." + "\n" + "Current: " + location.getAccuracy() + "\n" + "Required: < 10");
@@ -573,6 +584,11 @@ public class Chat extends Fragment implements
                                     progressIconIndeterminate.setVisibility(View.GONE);
                                     return;
                                 }
+
+                                lastClickTime = SystemClock.elapsedRealtime();
+
+                                // Cancel any of the previous 2 toasts.
+                                cancelToasts();
 
                                 if (newShape) {
 
@@ -701,8 +717,6 @@ public class Chat extends Fragment implements
                                             mInput.setHint("Message from outside circle...");
                                             userIsWithinShape = false;
                                         }
-
-                                        return;
                                     }
 
                                     String input = mInput.getText().toString().trim();
