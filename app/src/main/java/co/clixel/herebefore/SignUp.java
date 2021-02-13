@@ -11,6 +11,7 @@ import androidx.preference.PreferenceManager;
 
 import android.util.Log;
 import android.util.Patterns;
+import android.view.Gravity;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
@@ -95,7 +96,9 @@ public class SignUp extends AppCompatActivity {
             } else {
                 imageFile = extras.getString("imageFile");
                 videoFile = extras.getString("videoFile");
+                //noinspection unchecked
                 circleUUIDsAL = (ArrayList<String>) extras.getSerializable("circleUUIDsAL");
+                //noinspection unchecked
                 circleCentersAL = (ArrayList<LatLng>) extras.getSerializable("circleCentersAL");
                 lastKnownKey = extras.getString("lastKnownKey");
             }
@@ -181,8 +184,7 @@ public class SignUp extends AppCompatActivity {
 
                 if (task.isSuccessful()) {
 
-                    Toast signedUpToast = Toast.makeText(SignUp.this, "Signed up", Toast.LENGTH_SHORT);
-                    signedUpToast.show();
+                    toastMessageShort("Signed up");
 
                     // Get Firebase FCM token and save it to preferences and Firebase.
                     SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(SignUp.this);
@@ -423,6 +425,7 @@ public class SignUp extends AppCompatActivity {
 
         cancelToasts();
         shortToast = Toast.makeText(this, message, Toast.LENGTH_SHORT);
+        shortToast.setGravity(Gravity.CENTER, 0, 250);
         shortToast.show();
     }
 
@@ -430,6 +433,7 @@ public class SignUp extends AppCompatActivity {
 
         cancelToasts();
         longToast = Toast.makeText(this, message, Toast.LENGTH_LONG);
+        longToast.setGravity(Gravity.CENTER, 0, 250);
         longToast.show();
     }
 }

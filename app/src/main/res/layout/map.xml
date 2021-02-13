@@ -28,7 +28,7 @@
         android:layout_alignParentEnd="true"
         android:layout_marginTop="10dp"
         android:layout_marginEnd="65dp"
-        android:background="@drawable/ic_more_vert_yellow_24dp"
+        android:background="@drawable/ic_more_vertical_yellow_24dp"
         android:visibility="gone" />
 
     <ImageButton
@@ -40,7 +40,7 @@
         android:layout_marginEnd="10dp"
         android:background="@drawable/dm_button"
         android:clickable="true"
-        android:contentDescription="TODO"
+        android:contentDescription="@string/dms_button_description"
         android:focusable="true"
         android:src="@drawable/ic_dm"
         android:visibility="gone" />

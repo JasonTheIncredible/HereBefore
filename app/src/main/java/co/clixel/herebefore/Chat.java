@@ -207,7 +207,9 @@ public class Chat extends Fragment implements
                     shapeLat = extras.getDouble("shapeLat");
                     shapeLon = extras.getDouble("shapeLon");
                 } else {
+                    //noinspection unchecked
                     circleUUIDsAL = (ArrayList<String>) extras.getSerializable("circleUUIDsAL");
+                    //noinspection unchecked
                     circleCentersAL = (ArrayList<LatLng>) extras.getSerializable("circleCentersAL");
                 }
                 shapeUUID = extras.getString("shapeUUID");
@@ -571,7 +573,7 @@ public class Chat extends Fragment implements
                                 // Preventing multiple clicks, using threshold of 10 seconds.
                                 if (SystemClock.elapsedRealtime() - lastClickTime < 10000) {
 
-                                    toastMessageLong("Please wait " + (int)(10 - ((SystemClock.elapsedRealtime() - lastClickTime) / 1000)) + "s before sending another message.");
+                                    toastMessageLong("Please wait " + (int) (10 - ((SystemClock.elapsedRealtime() - lastClickTime) / 1000)) + "s before sending another message.");
                                     sendButton.setEnabled(true);
                                     progressIconIndeterminate.setVisibility(View.GONE);
                                     return;
@@ -991,13 +993,14 @@ public class Chat extends Fragment implements
 
                 for (DataSnapshot ds : snapshot.getChildren()) {
 
+                    String user = (String) ds.child("userUUID").getValue();
+
                     // Prevents duplicates during getFirebaseMessages.
-                    if (mUser.contains(ds.child("userUUID").getValue())) {
+                    if (mUser.contains(user)) {
 
                         continue;
                     }
 
-                    String user = (String) ds.child("userUUID").getValue();
                     Long serverDate = (Long) ds.child("date").getValue();
 
                     // Add dates to this AL for use in pagination.
@@ -1183,7 +1186,7 @@ public class Chat extends Fragment implements
                 Log.i(TAG, "addQuery() -> onChildChanged()");
 
                 // Update the serverDate in UUIDDatesPairs, as the original serverDate will be an estimate and a callback from the server will always be made with an accurate time.
-                for (Pair<String, Long> pair: UUIDDatesPairs) {
+                for (Pair<String, Long> pair : UUIDDatesPairs) {
 
                     String user = (String) snapshot.child("userUUID").getValue();
 
@@ -2248,17 +2251,11 @@ public class Chat extends Fragment implements
         checkPermissionsPicture = true;
 
         int permissionCamera = ContextCompat.checkSelfPermission(mContext, Manifest.permission.CAMERA);
-        int permissionWriteExternalStorage = ContextCompat.checkSelfPermission(mContext, Manifest.permission.WRITE_EXTERNAL_STORAGE);
         List<String> listPermissionsNeeded = new ArrayList<>();
 
         if (permissionCamera != PackageManager.PERMISSION_GRANTED) {
 
             listPermissionsNeeded.add(Manifest.permission.CAMERA);
-        }
-
-        if (permissionWriteExternalStorage != PackageManager.PERMISSION_GRANTED) {
-
-            listPermissionsNeeded.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
         }
 
         if (!listPermissionsNeeded.isEmpty()) {
@@ -2278,18 +2275,12 @@ public class Chat extends Fragment implements
         checkPermissionsPicture = false;
 
         int permissionCamera = ContextCompat.checkSelfPermission(mContext, Manifest.permission.CAMERA);
-        int permissionWriteExternalStorage = ContextCompat.checkSelfPermission(mContext, Manifest.permission.WRITE_EXTERNAL_STORAGE);
         int permissionRecordAudio = ContextCompat.checkSelfPermission(mContext, Manifest.permission.RECORD_AUDIO);
         List<String> listPermissionsNeeded = new ArrayList<>();
 
         if (permissionCamera != PackageManager.PERMISSION_GRANTED) {
 
             listPermissionsNeeded.add(Manifest.permission.CAMERA);
-        }
-
-        if (permissionWriteExternalStorage != PackageManager.PERMISSION_GRANTED) {
-
-            listPermissionsNeeded.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
         }
 
         if (permissionRecordAudio != PackageManager.PERMISSION_GRANTED) {
@@ -2344,7 +2335,6 @@ public class Chat extends Fragment implements
 
                 HashMap<String, Integer> perms = new HashMap<>();
                 perms.put(Manifest.permission.CAMERA, PackageManager.PERMISSION_GRANTED);
-                perms.put(Manifest.permission.WRITE_EXTERNAL_STORAGE, PackageManager.PERMISSION_GRANTED);
 
                 if (grantResults.length > 0) {
 
@@ -2352,29 +2342,22 @@ public class Chat extends Fragment implements
                         perms.put(permissions[i], grantResults[i]);
 
                     Integer cameraPermissions = perms.get(Manifest.permission.CAMERA);
-                    Integer externalStoragePermissions = perms.get(Manifest.permission.WRITE_EXTERNAL_STORAGE);
 
-                    if (cameraPermissions != null && externalStoragePermissions != null) {
+                    if (cameraPermissions != null) {
 
                         if (ActivityCompat.shouldShowRequestPermissionRationale(mActivity, Manifest.permission.CAMERA)) {
 
                             Log.d(TAG, "Request_ID_Take_Photo -> Camera permissions were not granted. Ask again.");
 
                             cameraPermissionAlertAsync(checkPermissionsPicture);
-                        } else if (ActivityCompat.shouldShowRequestPermissionRationale(mActivity, Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+                        } else if (cameraPermissions == PackageManager.PERMISSION_GRANTED) {
 
-                            Log.d(TAG, "Request_ID_Take_Photo -> Storage permissions were not granted. Ask again.");
-
-                            writeExternalStoragePermissionAlertAsync(checkPermissionsPicture);
-                        } else if (cameraPermissions == PackageManager.PERMISSION_GRANTED
-                                && externalStoragePermissions == PackageManager.PERMISSION_GRANTED) {
-
-                            Log.d(TAG, "Request_ID_Take_Photo -> Camera and Write External Storage permission granted.");
+                            Log.d(TAG, "Request_ID_Take_Photo -> Camera permission granted.");
                             // Process the normal workflow.
                             startActivityTakePhoto();
                         } else if (grantResults[0] != PackageManager.PERMISSION_GRANTED) {
 
-                            toastMessageLong("Camera and External Storage permissions are required. Please enable them manually through the Android settings menu.");
+                            toastMessageLong("Camera permission is required. Please enable it manually through the Android settings menu.");
                         }
                     }
                 }
@@ -2386,7 +2369,6 @@ public class Chat extends Fragment implements
 
                 HashMap<String, Integer> perms = new HashMap<>();
                 perms.put(Manifest.permission.CAMERA, PackageManager.PERMISSION_GRANTED);
-                perms.put(Manifest.permission.WRITE_EXTERNAL_STORAGE, PackageManager.PERMISSION_GRANTED);
                 perms.put(Manifest.permission.RECORD_AUDIO, PackageManager.PERMISSION_GRANTED);
 
                 if (grantResults.length > 0) {
@@ -2395,36 +2377,29 @@ public class Chat extends Fragment implements
                         perms.put(permissions[i], grantResults[i]);
 
                     Integer cameraPermissions = perms.get(Manifest.permission.CAMERA);
-                    Integer externalStoragePermissions = perms.get(Manifest.permission.WRITE_EXTERNAL_STORAGE);
                     Integer audioPermissions = perms.get(Manifest.permission.RECORD_AUDIO);
 
-                    if (cameraPermissions != null && externalStoragePermissions != null && audioPermissions != null) {
+                    if (cameraPermissions != null && audioPermissions != null) {
 
                         if (ActivityCompat.shouldShowRequestPermissionRationale(mActivity, Manifest.permission.CAMERA)) {
 
                             Log.d(TAG, "Request_ID_Take_Photo -> Camera permissions were not granted. Ask again.");
 
                             cameraPermissionAlertAsync(checkPermissionsPicture);
-                        } else if (ActivityCompat.shouldShowRequestPermissionRationale(mActivity, Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
-
-                            Log.d(TAG, "Request_ID_Take_Photo -> Storage permissions were not granted. Ask again.");
-
-                            writeExternalStoragePermissionAlertAsync(checkPermissionsPicture);
                         } else if (ActivityCompat.shouldShowRequestPermissionRationale(mActivity, Manifest.permission.RECORD_AUDIO)) {
 
                             Log.d(TAG, "Request_ID_Record_Video -> Audio permissions were not granted. Ask again.");
 
                             audioPermissionAlertAsync(checkPermissionsPicture);
                         } else if (cameraPermissions == PackageManager.PERMISSION_GRANTED
-                                && externalStoragePermissions == PackageManager.PERMISSION_GRANTED
                                 && audioPermissions == PackageManager.PERMISSION_GRANTED) {
 
-                            Log.d(TAG, "Request_ID_Record_Video -> Camera, Write External Storage, and Record Audio permission granted.");
+                            Log.d(TAG, "Request_ID_Record_Video -> Camera and Record Audio permission granted.");
                             // Process the normal workflow.
                             startActivityRecordVideo();
                         } else if (grantResults[0] != PackageManager.PERMISSION_GRANTED) {
 
-                            toastMessageLong("Camera, External Storage, and Audio permissions are required. Please enable them manually through the Android settings menu.");
+                            toastMessageLong("Camera and Audio permissions are required. Please enable them manually through the Android settings menu.");
                         }
                     }
                 }
@@ -2606,35 +2581,6 @@ public class Chat extends Fragment implements
                 alert.setCancelable(false)
                         .setTitle("Camera Permission Required")
                         .setMessage("Here Before needs permission to use your camera to take pictures and video.")
-                        .setPositiveButton("OK", (dialogInterface, i) -> {
-
-                            if (checkPermissionsPicture) {
-
-                                checkPermissionsPicture();
-                            } else {
-
-                                checkPermissionsVideo();
-                            }
-                        })
-                        .create()
-                        .show();
-
-        mHandler.post(runnable);
-    }
-
-    private void writeExternalStoragePermissionAlertAsync(Boolean checkPermissionsPicture) {
-
-        AlertDialog.Builder alert;
-        alert = new AlertDialog.Builder(mContext);
-
-        HandlerThread writeExternalStoragePermissionHandlerThread = new HandlerThread("writeExternalStorageHandlerThread");
-        writeExternalStoragePermissionHandlerThread.start();
-        Handler mHandler = new Handler(writeExternalStoragePermissionHandlerThread.getLooper());
-        Runnable runnable = () ->
-
-                alert.setCancelable(false)
-                        .setTitle("Storage Permission Required")
-                        .setMessage("Here Before needs permission to use your storage to save photos and videos.")
                         .setPositiveButton("OK", (dialogInterface, i) -> {
 
                             if (checkPermissionsPicture) {

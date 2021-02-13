@@ -4,6 +4,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.view.Gravity;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatDelegate;
@@ -117,7 +118,9 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
                     AuthUI.getInstance().signOut(getActivity());
                     PreferenceManager.getDefaultSharedPreferences(getActivity()).edit().clear().apply();
 
-                    Toast.makeText(getActivity(), "Signed out", Toast.LENGTH_SHORT).show();
+                    Toast signedOutToast = Toast.makeText(getActivity(), "Signed out", Toast.LENGTH_SHORT);
+                    signedOutToast.setGravity(Gravity.CENTER, 0, 250);
+                    signedOutToast.show();
 
                     Intent Activity = new Intent(getActivity(), Map.class);
 

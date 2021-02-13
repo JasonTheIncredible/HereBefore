@@ -31,6 +31,15 @@
     <string name="you_have_no_dms">You have no DMs</string>
     <string name="atUsername">"@"%1$s</string>
     <string name="new_shape_text_view">Previous messages from your location may load after pressing send.</string>
+    <string name="media_button_description">Media button: add an image or video to your message.</string>
+    <string name="chat_image_description">Image: A holder for an image you just added.</string>
+    <string name="chat_video_description">Video: A holder for the video you just added.</string>
+    <string name="send_button_description">Send button: Add your image, video, or message to the chat.</string>
+    <string name="recyclerView_image_inside_description">Image: A holder for an image added to the chat from inside the shape.</string>
+    <string name="recyclerView_video_inside_description">Video: A holder for a video added to the chat from inside the shape.</string>
+    <string name="recyclerView_image_outside_description">Image: A holder for an image added to the chat from outside the shape.</string>
+    <string name="recyclerView_video_outside_description">Video: A holder for a video added to the chat from outside the shape.</string>
+    <string name="dms_button_description">Direct Mentions button: go to your direct mentions without first entering a shape.</string>
 
     <string-array name="pref_map_types_entries">
         <item>Road map view</item>

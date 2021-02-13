@@ -42,7 +42,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             app:bt_colorInactive="@color/gray"
-            app:bt_icon="@drawable/ic_more_vert_white_24dp"
+            app:bt_icon="@drawable/ic_more_vertical_white_24dp"
             app:bt_title="Settings" />
 
     </com.gauravk.bubblenavigation.BubbleNavigationConstraintView>

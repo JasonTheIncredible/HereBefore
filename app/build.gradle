@@ -77,6 +77,7 @@ dependencies {
     implementation 'com.github.chrisbanes:PhotoView:2.3.0'
 
     // zelory.compressor following can't be upgraded to 3.0.0 because 3.x only works with kt.
+    //noinspection GradleDependency
     implementation 'id.zelory:compressor:2.1.0'
 
     implementation 'com.otaliastudios:transcoder:0.9.1'

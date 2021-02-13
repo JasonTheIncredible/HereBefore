@@ -68,6 +68,7 @@
                     android:layout_marginTop="30dp"
                     android:layout_marginRight="50dp"
                     android:hint="@string/feedback"
+                    android:importantForAutofill="no"
                     android:inputType="textCapSentences|textMultiLine"
                     android:maxLength="1000"
                     android:maxLines="4"

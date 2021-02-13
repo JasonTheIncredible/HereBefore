@@ -132,13 +132,11 @@ public class Map extends FragmentActivity implements
     // Increase viral potential - make it easier to share?
     // Panoramic view, like gMaps.
 
-    // Problem with functions not always deleting all shapes and media.
     // Prevent data scraping (hide email addresses and other personal information by moving it server side).
     // Finish setting up Google ads, then add more ads. Then get rid of testID in Chat. Adjust video and image resolution based on projected revenue.
     // Adjust AppIntro.
     // Register social media accounts / switch cloud account's email address to the new one.
     // Deal with leaks.
-    // Test on multiple devices.
     // Analyze app size.
     // Check warning messages.
     // Move this list to a doc for privacy.
@@ -147,6 +145,7 @@ public class Map extends FragmentActivity implements
 
     // Release checklist:
     // Deal with deprecated methods.
+    // Test on multiple devices.
     // Unit testing.
 
     // Remember the AC: Origins inspiration. Also, airdrop - create items in the world. Also, gMaps drag and drop. Also, DS virtual items in the world.
@@ -289,17 +288,11 @@ public class Map extends FragmentActivity implements
         checkPermissionsPicture = true;
 
         int permissionCamera = ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA);
-        int permissionWriteExternalStorage = ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
         List<String> listPermissionsNeeded = new ArrayList<>();
 
         if (permissionCamera != PackageManager.PERMISSION_GRANTED) {
 
             listPermissionsNeeded.add(Manifest.permission.CAMERA);
-        }
-
-        if (permissionWriteExternalStorage != PackageManager.PERMISSION_GRANTED) {
-
-            listPermissionsNeeded.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
         }
 
         if (!listPermissionsNeeded.isEmpty()) {
@@ -319,18 +312,12 @@ public class Map extends FragmentActivity implements
         checkPermissionsPicture = false;
 
         int permissionCamera = ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA);
-        int permissionWriteExternalStorage = ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
         int permissionRecordAudio = ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO);
         List<String> listPermissionsNeeded = new ArrayList<>();
 
         if (permissionCamera != PackageManager.PERMISSION_GRANTED) {
 
             listPermissionsNeeded.add(Manifest.permission.CAMERA);
-        }
-
-        if (permissionWriteExternalStorage != PackageManager.PERMISSION_GRANTED) {
-
-            listPermissionsNeeded.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
         }
 
         if (permissionRecordAudio != PackageManager.PERMISSION_GRANTED) {
@@ -422,35 +409,6 @@ public class Map extends FragmentActivity implements
                 alert.setCancelable(false)
                         .setTitle("Camera Permission Required")
                         .setMessage("Here Before needs permission to use your camera to take pictures and video.")
-                        .setPositiveButton("OK", (dialogInterface, i) -> {
-
-                            if (checkPermissionsPicture) {
-
-                                checkPermissionsPicture();
-                            } else {
-
-                                checkPermissionsVideo();
-                            }
-                        })
-                        .create()
-                        .show();
-
-        mHandler.post(runnable);
-    }
-
-    private void writeExternalStoragePermissionAlertAsync(Boolean checkPermissionsPicture) {
-
-        AlertDialog.Builder alert;
-        alert = new AlertDialog.Builder(this);
-
-        HandlerThread writeExternalStoragePermissionHandlerThread = new HandlerThread("writeExternalStorageHandlerThread");
-        writeExternalStoragePermissionHandlerThread.start();
-        Handler mHandler = new Handler(writeExternalStoragePermissionHandlerThread.getLooper());
-        Runnable runnable = () ->
-
-                alert.setCancelable(false)
-                        .setTitle("Storage Permission Required")
-                        .setMessage("Here Before needs permission to use your storage to save photos and videos.")
                         .setPositiveButton("OK", (dialogInterface, i) -> {
 
                             if (checkPermissionsPicture) {
@@ -959,7 +917,6 @@ public class Map extends FragmentActivity implements
 
                 HashMap<String, Integer> perms = new HashMap<>();
                 perms.put(Manifest.permission.CAMERA, PackageManager.PERMISSION_GRANTED);
-                perms.put(Manifest.permission.WRITE_EXTERNAL_STORAGE, PackageManager.PERMISSION_GRANTED);
 
                 if (grantResults.length > 0) {
 
@@ -967,29 +924,22 @@ public class Map extends FragmentActivity implements
                         perms.put(permissions[i], grantResults[i]);
 
                     Integer cameraPermissions = perms.get(Manifest.permission.CAMERA);
-                    Integer externalStoragePermissions = perms.get(Manifest.permission.WRITE_EXTERNAL_STORAGE);
 
-                    if (cameraPermissions != null && externalStoragePermissions != null) {
+                    if (cameraPermissions != null) {
 
                         if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.CAMERA)) {
 
                             Log.d(TAG, "Request_ID_Take_Photo -> Camera permissions were not granted. Ask again.");
 
                             cameraPermissionAlertAsync(checkPermissionsPicture);
-                        } else if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+                        } else if (cameraPermissions == PackageManager.PERMISSION_GRANTED) {
 
-                            Log.d(TAG, "Request_ID_Take_Photo -> Storage permissions were not granted. Ask again.");
-
-                            writeExternalStoragePermissionAlertAsync(checkPermissionsPicture);
-                        } else if (cameraPermissions == PackageManager.PERMISSION_GRANTED
-                                && externalStoragePermissions == PackageManager.PERMISSION_GRANTED) {
-
-                            Log.d(TAG, "Request_ID_Take_Photo -> Camera and Write External Storage permission granted.");
+                            Log.d(TAG, "Request_ID_Take_Photo -> Camera permission granted.");
                             // Process the normal workflow.
                             startActivityTakePhoto();
                         } else if (grantResults[0] != PackageManager.PERMISSION_GRANTED) {
 
-                            toastMessageLong("Camera and External Storage permissions are required. Please enable them manually through the Android settings menu.");
+                            toastMessageLong("Camera permission is required. Please enable it manually through the Android settings menu.");
                         }
                     }
                 }
@@ -1001,7 +951,6 @@ public class Map extends FragmentActivity implements
 
                 HashMap<String, Integer> perms = new HashMap<>();
                 perms.put(Manifest.permission.CAMERA, PackageManager.PERMISSION_GRANTED);
-                perms.put(Manifest.permission.WRITE_EXTERNAL_STORAGE, PackageManager.PERMISSION_GRANTED);
                 perms.put(Manifest.permission.RECORD_AUDIO, PackageManager.PERMISSION_GRANTED);
 
                 if (grantResults.length > 0) {
@@ -1010,36 +959,29 @@ public class Map extends FragmentActivity implements
                         perms.put(permissions[i], grantResults[i]);
 
                     Integer cameraPermissions = perms.get(Manifest.permission.CAMERA);
-                    Integer externalStoragePermissions = perms.get(Manifest.permission.WRITE_EXTERNAL_STORAGE);
                     Integer audioPermissions = perms.get(Manifest.permission.RECORD_AUDIO);
 
-                    if (cameraPermissions != null && externalStoragePermissions != null && audioPermissions != null) {
+                    if (cameraPermissions != null && audioPermissions != null) {
 
                         if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.CAMERA)) {
 
                             Log.d(TAG, "Request_ID_Take_Photo -> Camera permissions were not granted. Ask again.");
 
                             cameraPermissionAlertAsync(checkPermissionsPicture);
-                        } else if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
-
-                            Log.d(TAG, "Request_ID_Take_Photo -> Storage permissions were not granted. Ask again.");
-
-                            writeExternalStoragePermissionAlertAsync(checkPermissionsPicture);
                         } else if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.RECORD_AUDIO)) {
 
                             Log.d(TAG, "Request_ID_Record_Video -> Audio permissions were not granted. Ask again.");
 
                             audioPermissionAlertAsync(checkPermissionsPicture);
                         } else if (cameraPermissions == PackageManager.PERMISSION_GRANTED
-                                && externalStoragePermissions == PackageManager.PERMISSION_GRANTED
                                 && audioPermissions == PackageManager.PERMISSION_GRANTED) {
 
-                            Log.d(TAG, "Request_ID_Record_Video -> Camera, Write External Storage, and Record Audio permission granted.");
+                            Log.d(TAG, "Request_ID_Record_Video -> Camera and Record Audio permission granted.");
                             // Process the normal workflow.
                             startActivityRecordVideo();
                         } else if (grantResults[0] != PackageManager.PERMISSION_GRANTED) {
 
-                            toastMessageLong("Camera, External Storage, and Audio permissions are required. Please enable them manually through the Android settings menu.");
+                            toastMessageLong("Camera and Audio permissions are required. Please enable them manually through the Android settings menu.");
                         }
                     }
                 }
@@ -1693,7 +1635,7 @@ public class Map extends FragmentActivity implements
 
             circleButton.setBackgroundResource(R.drawable.circle_button);
 
-            settingsButton.setBackgroundResource(R.drawable.ic_more_vert_yellow_24dp);
+            settingsButton.setBackgroundResource(R.drawable.ic_more_vertical_yellow_24dp);
 
             dmButton.setBackgroundResource(R.drawable.dm_button);
 
@@ -1714,7 +1656,7 @@ public class Map extends FragmentActivity implements
 
             circleButton.setBackgroundResource(R.drawable.circle_button_purple);
 
-            settingsButton.setBackgroundResource(R.drawable.ic_more_vert_purple_24dp);
+            settingsButton.setBackgroundResource(R.drawable.ic_more_vertical_purple_24dp);
 
             dmButton.setBackgroundResource(R.drawable.dm_button_purple);
 

@@ -46,6 +46,7 @@
                 android:layout_below="@id/createAccountWithPassword"
                 android:layout_marginLeft="50dp"
                 android:layout_marginRight="50dp"
+                android:autofillHints="email"
                 android:hint="@string/email_address"
                 android:inputType="textEmailAddress"
                 android:singleLine="true" />

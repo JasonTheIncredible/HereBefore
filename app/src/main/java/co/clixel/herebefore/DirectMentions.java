@@ -118,7 +118,9 @@ public class DirectMentions extends Fragment {
             Bundle extras = mActivity.getIntent().getExtras();
             if (extras != null) {
 
+                //noinspection unchecked
                 circleUUIDsAL = (ArrayList<String>) extras.getSerializable("circleUUIDsAL");
+                //noinspection unchecked
                 circleCentersAL = (ArrayList<LatLng>) extras.getSerializable("circleCentersAL");
             } else {
 
@@ -291,13 +293,14 @@ public class DirectMentions extends Fragment {
 
                 for (DataSnapshot ds : snapshot.getChildren()) {
 
+                    String user = (String) ds.child("userUUID").getValue();
+
                     // Prevents duplicates during getFirebaseDMs.
-                    if (mUser.contains(ds.child("userUUID").getValue())) {
+                    if (mUser.contains(user)) {
 
                         continue;
                     }
 
-                    String user = (String) ds.child("userUUID").getValue();
                     Long serverDate = (Long) ds.child("date").getValue();
 
                     UUIDDatesPairs.add(i, new Pair<>(user, serverDate));
