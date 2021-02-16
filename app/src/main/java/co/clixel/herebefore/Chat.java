@@ -115,10 +115,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -138,7 +136,7 @@ public class Chat extends Fragment implements
     private static final String TAG = "Chat";
     private static final int Request_User_Location_Code = 42, Request_ID_Take_Photo = 69, Request_ID_Record_Video = 420, Min_Update_Time = 5000, Max_Update_Time = 5000;
     private MentionsEditText mInput;
-    private ArrayList<String> removedDuplicatesMentions, mTime, mUser, mImage, mVideo, mSuggestions, allMentions, emailsAL;
+    private ArrayList<String> mTime, mUser, mImage, mVideo, mSuggestions;
     private ArrayList<SpannableString> mText;
     private ArrayList<Boolean> mUserIsWithinShape;
     private ArrayList<String> circleUUIDsAL = new ArrayList<>();
@@ -276,7 +274,6 @@ public class Chat extends Fragment implements
         if (UUIDDatesPairsSize == null) {
 
             UUIDDatesPairs = new ArrayList<>();
-            emailsAL = new ArrayList<>();
 
             mTime = new ArrayList<>();
             mUser = new ArrayList<>();
@@ -284,14 +281,7 @@ public class Chat extends Fragment implements
             mVideo = new ArrayList<>();
             mText = new ArrayList<>();
             mSuggestions = new ArrayList<>();
-            allMentions = new ArrayList<>();
             mUserIsWithinShape = new ArrayList<>();
-        }
-
-        // Prevents clearing this list if user adds a DM and takes a picture.
-        if (removedDuplicatesMentions == null) {
-
-            removedDuplicatesMentions = new ArrayList<>();
         }
 
         // Make the progressIconIndeterminate visible upon the first load, as it can sometimes take a while to show anything. It should be made invisible in initChatAdapter.
@@ -320,21 +310,19 @@ public class Chat extends Fragment implements
         super.onStart();
         Log.i(TAG, "onStart()");
 
-        if (!newShape) {
+        if (!newShape && (shapeLatInt == 0 || shapeLonInt == 0)) {
 
             // Get a value with 1 decimal point and use it for Firebase.
             double nearLeftPrecisionLat = Math.pow(10, 1);
             // Can't create a firebase path with '.', so get rid of decimal.
             double nearLeftLatTemp = (int) (nearLeftPrecisionLat * shapeLat) / nearLeftPrecisionLat;
-            nearLeftLatTemp *= 10;
             shapeLatInt = (int) nearLeftLatTemp;
 
             double nearLeftPrecisionLon = Math.pow(10, 1);
             // Can't create a firebase path with '.', so get rid of decimal.
             double nearLeftLonTemp = (int) (nearLeftPrecisionLon * shapeLon) / nearLeftPrecisionLon;
-            nearLeftLonTemp *= 10;
             shapeLonInt = (int) nearLeftLonTemp;
-        } else {
+        } else if (newShape) {
 
             newShapeTextView.setVisibility(View.VISIBLE);
         }
@@ -721,8 +709,6 @@ public class Chat extends Fragment implements
                                         }
                                     }
 
-                                    String input = mInput.getText().toString().trim();
-
                                     // Send recyclerviewlayout to Firebase.
                                     if (imageView.getVisibility() != View.GONE || videoImageView.getVisibility() != View.GONE) {
 
@@ -732,49 +718,8 @@ public class Chat extends Fragment implements
                                         // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter).
                                         messageSent = true;
 
-                                        String userUUID = UUID.randomUUID().toString();
-
-                                        // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                                        // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                                        Object date = ServerValue.TIMESTAMP;
-
-                                        // If mentions exist, add to the user's DMs.
-                                        if (removedDuplicatesMentions != null) {
-
-                                            ArrayList<String> messagedUsersAL = new ArrayList<>();
-                                            for (String mention : removedDuplicatesMentions) {
-
-                                                for (int i = 0; i < mUser.size(); i++) {
-
-                                                    String userEmail = emailsAL.get(i);
-                                                    if (mUser.get(i).equals(mention) && !messagedUsersAL.contains(userEmail)) {
-
-                                                        // Prevent sending the same DM to a user multiple times.
-                                                        messagedUsersAL.add(userEmail);
-
-                                                        String email = emailsAL.get(i);
-
-                                                        DmInformation dmInformation = new DmInformation();
-                                                        dmInformation.setDate(date);
-                                                        dmInformation.setLat(shapeLat);
-                                                        dmInformation.setLon(shapeLon);
-                                                        dmInformation.setMessage(input);
-                                                        dmInformation.setSeenByUser(false);
-                                                        dmInformation.setShapeUUID(shapeUUID);
-                                                        dmInformation.setUserIsWithinShape(userIsWithinShape);
-                                                        dmInformation.setUserUUID(userUUID);
-
-                                                        // Firebase does not allow ".", so replace them with ",".
-                                                        String receiverEmailFirebase = email.replace(".", ",");
-                                                        DatabaseReference newDm = FirebaseDatabase.getInstance().getReference().child("Users").child(receiverEmailFirebase).child("ReceivedDms").push();
-                                                        newDm.setValue(dmInformation);
-                                                        break;
-                                                    }
-                                                }
-                                            }
-                                        }
-
                                         MessageInformation messageInformation = new MessageInformation();
+                                        Object date = ServerValue.TIMESTAMP;
                                         messageInformation.setDate(date);
                                         // If user has a Google account, get email one way. Else, get email another way.
                                         GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
@@ -786,18 +731,15 @@ public class Chat extends Fragment implements
                                             email = sharedPreferences.getString("userToken", "null");
                                         }
                                         messageInformation.setEmail(email);
+                                        String input = mInput.getText().toString().trim();
                                         messageInformation.setMessage(input);
                                         messageInformation.setUserIsWithinShape(userIsWithinShape);
+                                        String userUUID = UUID.randomUUID().toString();
                                         messageInformation.setUserUUID(userUUID);
                                         DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child(shapeUUID).push();
                                         newMessage.setValue(messageInformation);
 
                                         mInput.getText().clear();
-
-                                        if (removedDuplicatesMentions != null && !removedDuplicatesMentions.isEmpty()) {
-
-                                            removedDuplicatesMentions.clear();
-                                        }
 
                                         // For some reason, if the text begins with a mention and onCreateView was called after the mention was added, the mention is not cleared with one call to clear().
                                         mInput.getText().clear();
@@ -1005,7 +947,6 @@ public class Chat extends Fragment implements
 
                     // Add dates to this AL for use in pagination.
                     UUIDDatesPairs.add(i, new Pair<>(user, serverDate));
-                    emailsAL.add(i, (String) ds.child("email").getValue());
 
                     // Used when a user mentions another user with "@".
                     mSuggestions.add(i, user);
@@ -1021,8 +962,6 @@ public class Chat extends Fragment implements
 
                     Boolean userIsWithinShape = (Boolean) ds.child("userIsWithinShape").getValue();
                     DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
-                    // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                    // This will cause onDataChange to fire twice; optimizations could be made in the future.
                     if (serverDate != null) {
 
                         Date netDate = (new Date(serverDate));
@@ -1138,7 +1077,6 @@ public class Chat extends Fragment implements
                 String user = (String) snapshot.child("userUUID").getValue();
                 Long serverDate = (Long) snapshot.child("date").getValue();
 
-                emailsAL.add((String) snapshot.child("email").getValue());
                 UUIDDatesPairs.add(new Pair<>(user, serverDate));
 
                 // Prevents duplicates when user adds a message to a new shape then switches between light / dark mode.
@@ -1160,8 +1098,6 @@ public class Chat extends Fragment implements
 
                 Boolean userIsWithinShape = (Boolean) snapshot.child("userIsWithinShape").getValue();
                 DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
-                // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                // This will cause onDataChange to fire twice; optimizations could be made in the future.
                 if (serverDate != null) {
 
                     Date netDate = (new Date(serverDate));
@@ -2048,17 +1984,12 @@ public class Chat extends Fragment implements
                     @Override
                     public String getTextForDisplayMode(@NonNull MentionDisplayMode mode) {
 
-                        // Add mentions to this list. Duplicates will be added and later cleared from this list.
-                        allMentions.add(mSuggestions.get(position));
-
                         return "@" + mSuggestions.get(position);
                     }
 
                     @NonNull
                     @Override
                     public MentionDeleteStyle getDeleteStyle() {
-
-                        removedDuplicatesMentions.remove(mSuggestions.get(position));
 
                         return MentionDeleteStyle.FULL_DELETE;
                     }
@@ -2096,19 +2027,11 @@ public class Chat extends Fragment implements
 
                 mInput.insertMention(mentionable);
 
-                // A set will not allow duplicates, so this will get rid of any duplicates before they are added to the final list.
-                // The final list will be sent to Firebase to notify users of messages.
-                Set<String> hashSet = new LinkedHashSet<>(allMentions);
-                removedDuplicatesMentions = new ArrayList<>(hashSet);
-
                 // Add a space after inserting mention.
                 mInput.append(" ");
             });
 
             loadPreferences();
-
-            // Clear list so if user deletes a mention, it won't appear in this list.
-            allMentions.clear();
 
             // Change the color of every other row for visual purposes.
             if (!theme) {
@@ -3147,52 +3070,8 @@ public class Chat extends Fragment implements
                             newShape = false;
                         }
 
-                        String userUUID = UUID.randomUUID().toString();
-
-                        // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                        // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                        Object date = ServerValue.TIMESTAMP;
-
-                        // If mentions exist, add to the user's DMs.
-                        if (removedDuplicatesMentions != null) {
-
-                            ArrayList<String> messagedUsersAL = new ArrayList<>();
-                            for (String mention : removedDuplicatesMentions) {
-
-                                for (int i = 0; i < mUser.size(); i++) {
-
-                                    String userEmail = emailsAL.get(i);
-                                    if (mUser.get(i).equals(mention) && !messagedUsersAL.contains(userEmail)) {
-
-                                        // Prevent sending the same DM to a user multiple times.
-                                        messagedUsersAL.add(userEmail);
-
-                                        String email = emailsAL.get(i);
-
-                                        DmInformation dmInformation = new DmInformation();
-                                        dmInformation.setDate(date);
-                                        dmInformation.setLat(shapeLat);
-                                        dmInformation.setLon(shapeLon);
-                                        if (input.length() != 0) {
-                                            dmInformation.setMessage(input);
-                                        }
-                                        dmInformation.setSeenByUser(false);
-                                        dmInformation.setShapeUUID(shapeUUID);
-                                        dmInformation.setUserIsWithinShape(userIsWithinShape);
-                                        dmInformation.setUserUUID(userUUID);
-                                        dmInformation.setVideoUrl(uri.toString());
-
-                                        // Firebase does not allow ".", so replace them with ",".
-                                        String receiverEmailFirebase = email.replace(".", ",");
-                                        DatabaseReference newDm = FirebaseDatabase.getInstance().getReference().child("Users").child(receiverEmailFirebase).child("ReceivedDms").push();
-                                        newDm.setValue(dmInformation);
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-
                         MessageInformation messageInformation = new MessageInformation();
+                        Object date = ServerValue.TIMESTAMP;
                         messageInformation.setDate(date);
                         // If user has a Google account, get email one way. Else, get email another way.
                         GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
@@ -3209,15 +3088,11 @@ public class Chat extends Fragment implements
                             messageInformation.setMessage(input);
                         }
                         messageInformation.setUserIsWithinShape(userIsWithinShape);
+                        String userUUID = UUID.randomUUID().toString();
                         messageInformation.setUserUUID(userUUID);
                         messageInformation.setVideoUrl(uri.toString());
                         DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child(shapeUUID).push();
                         newMessage.setValue(messageInformation);
-
-                        if (removedDuplicatesMentions != null && !removedDuplicatesMentions.isEmpty()) {
-
-                            removedDuplicatesMentions.clear();
-                        }
 
                         if (video != null) {
 
@@ -3292,52 +3167,8 @@ public class Chat extends Fragment implements
                             newShape = false;
                         }
 
-                        String userUUID = UUID.randomUUID().toString();
-
-                        // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                        // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                        Object date = ServerValue.TIMESTAMP;
-
-                        // If mentions exist, add to the user's DMs.
-                        if (removedDuplicatesMentions != null) {
-
-                            ArrayList<String> messagedUsersAL = new ArrayList<>();
-                            for (String mention : removedDuplicatesMentions) {
-
-                                for (int i = 0; i < mUser.size(); i++) {
-
-                                    String userEmail = emailsAL.get(i);
-                                    if (mUser.get(i).equals(mention) && !messagedUsersAL.contains(userEmail)) {
-
-                                        // Prevent sending the same DM to a user multiple times.
-                                        messagedUsersAL.add(userEmail);
-
-                                        String email = emailsAL.get(i);
-
-                                        DmInformation dmInformation = new DmInformation();
-                                        dmInformation.setDate(date);
-                                        dmInformation.setImageUrl(uri.toString());
-                                        dmInformation.setLat(shapeLat);
-                                        dmInformation.setLon(shapeLon);
-                                        if (input.length() != 0) {
-                                            dmInformation.setMessage(input);
-                                        }
-                                        dmInformation.setSeenByUser(false);
-                                        dmInformation.setShapeUUID(shapeUUID);
-                                        dmInformation.setUserIsWithinShape(userIsWithinShape);
-                                        dmInformation.setUserUUID(userUUID);
-
-                                        // Firebase does not allow ".", so replace them with ",".
-                                        String receiverEmailFirebase = email.replace(".", ",");
-                                        DatabaseReference newDm = FirebaseDatabase.getInstance().getReference().child("Users").child(receiverEmailFirebase).child("ReceivedDms").push();
-                                        newDm.setValue(dmInformation);
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-
                         MessageInformation messageInformation = new MessageInformation();
+                        Object date = ServerValue.TIMESTAMP;
                         messageInformation.setDate(date);
                         // If user has a Google account, get email one way. Else, get email another way.
                         GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
@@ -3355,14 +3186,10 @@ public class Chat extends Fragment implements
                             messageInformation.setMessage(input);
                         }
                         messageInformation.setUserIsWithinShape(userIsWithinShape);
+                        String userUUID = UUID.randomUUID().toString();
                         messageInformation.setUserUUID(userUUID);
                         DatabaseReference newMessage = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child(shapeUUID).push();
                         newMessage.setValue(messageInformation);
-
-                        if (removedDuplicatesMentions != null && !removedDuplicatesMentions.isEmpty()) {
-
-                            removedDuplicatesMentions.clear();
-                        }
 
                         if (image != null) {
 

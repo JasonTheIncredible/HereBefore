@@ -339,8 +339,8 @@ public class DirectMentions extends Fragment {
 
                     String shapeUUID = (String) ds.child("shapeUUID").getValue();
                     Boolean userIsWithinShape = (Boolean) ds.child("userIsWithinShape").getValue();
-                    Double lat = (Double) ds.child("lat").getValue();
-                    Double lon = (Double) ds.child("lon").getValue();
+                    Double lat = ((Long) ds.child("lat").getValue()).doubleValue();
+                    Double lon = ((Long) ds.child("lon").getValue()).doubleValue();
                     Boolean seenByUser = (Boolean) ds.child("seenByUser").getValue();
                     DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
                     // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
@@ -483,8 +483,8 @@ public class DirectMentions extends Fragment {
 
                 String shapeUUID = (String) snapshot.child("shapeUUID").getValue();
                 Boolean userIsWithinShape = (Boolean) snapshot.child("userIsWithinShape").getValue();
-                Double lat = (Double) snapshot.child("lat").getValue();
-                Double lon = (Double) snapshot.child("lon").getValue();
+                Double lat = ((Long) snapshot.child("lat").getValue()).doubleValue();
+                Double lon = ((Long) snapshot.child("lon").getValue()).doubleValue();
                 Boolean seenByUser = (Boolean) snapshot.child("seenByUser").getValue();
                 DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
                 // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
@@ -762,13 +762,11 @@ public class DirectMentions extends Fragment {
                     double nearLeftPrecisionLat = Math.pow(10, 1);
                     // Can't create a firebase path with '.', so get rid of decimal.
                     double nearLeftLatTemp = (int) (nearLeftPrecisionLat * mShapeLat.get(getAdapterPosition())) / nearLeftPrecisionLat;
-                    nearLeftLatTemp *= 10;
                     int shapeLatInt = (int) nearLeftLatTemp;
 
                     double nearLeftPrecisionLon = Math.pow(10, 1);
                     // Can't create a firebase path with '.', so get rid of decimal.
                     double nearLeftLonTemp = (int) (nearLeftPrecisionLon * mShapeLon.get(getAdapterPosition())) / nearLeftPrecisionLon;
-                    nearLeftLonTemp *= 10;
                     int shapeLonInt = (int) nearLeftLonTemp;
 
                     DatabaseReference shape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child("Points");

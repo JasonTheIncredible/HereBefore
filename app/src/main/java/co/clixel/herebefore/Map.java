@@ -103,9 +103,9 @@ public class Map extends FragmentActivity implements
     private LocationCallback mLocationCallback;
 
     // Make creating a circle more accurate.
+    // If user is too far away from an area before uploading a picture, require taking a new picture.
     // Show picture upon opening circle or show picture at the top at all times.
     // Long press a shape to see a popup of that picture.
-    // If user is too far away from an area before uploading a picture, require taking a new picture.
     // Allow users to get "likes". Allow more likes per second with a higher "level" like DS.
     // If user is outside of circle, show how far outside - requires checking location every time before posting new message.
     // After clicking on a DM and going to that Chat, allow user to find that same shape on the map.
@@ -132,9 +132,11 @@ public class Map extends FragmentActivity implements
     // Increase viral potential - make it easier to share?
     // Panoramic view, like gMaps.
 
-    // Prevent data scraping (hide email addresses and other personal information by moving it server side).
-    // Finish setting up Google ads, then add more ads. Then get rid of testID in Chat. Adjust video and image resolution based on projected revenue.
+    // Toast in Android 11 is being shown at bottom of screen.
+    // Don't store user email in messageThreads.
+    // After taking a picture in Chat, position is not maintained.
     // Adjust AppIntro.
+    // Finish setting up Google ads, then add more ads. Then get rid of testID in Chat. Adjust video and image resolution based on projected revenue.
     // Register social media accounts / switch cloud account's email address to the new one.
     // Deal with leaks.
     // Analyze app size.
@@ -1203,8 +1205,8 @@ public class Map extends FragmentActivity implements
             Activity.putExtra("newShape", newShape);
             if (!newShape) {
 
-                Activity.putExtra("shapeLat", circleToEnterLatLng.latitude);
-                Activity.putExtra("shapeLon", circleToEnterLatLng.longitude);
+                Activity.putExtra("shapeLat", circleToEnterLatLng.latitude * 10);
+                Activity.putExtra("shapeLon", circleToEnterLatLng.longitude * 10);
             } else {
 
                 Activity.putExtra("circleCentersAL", circleCentersAL);
