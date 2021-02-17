@@ -142,10 +142,10 @@ public class Chat extends Fragment implements
     private ArrayList<String> circleUUIDsAL = new ArrayList<>();
     private ArrayList<LatLng> circleCentersAL = new ArrayList<>();
     private RecyclerView chatRecyclerView, mentionsRecyclerView;
-    private Integer index, top, last, UUIDDatesPairsSize;
+    private Integer index, top, UUIDDatesPairsSize;
     private ChildEventListener childEventListener;
     private FloatingActionButton sendButton, mediaButton;
-    private boolean firstLoad, loadingOlderMessages = false, clickedOnMention = false, fromDms = false, noMoreMessages = false, showProgressIndeterminate = true, reachedEndOfRecyclerView = false, messageSent = false, fileIsImage, checkPermissionsPicture, newShape, uploadNeeded = false;
+    private boolean firstLoad, loadingOlderMessages = false, clickedOnMention = false, fromDms = false, noMoreMessages = false, showProgressIndeterminate = true, reachedEndOfRecyclerView = true, messageSent = false, fileIsImage, checkPermissionsPicture, newShape, uploadNeeded = false;
     private Boolean userIsWithinShape;
     private View.OnLayoutChangeListener onLayoutChangeListener;
     private String shapeUUID, reportedUser, UUIDToHighlight, imageFile, videoFile, lastKnownKey;
@@ -1062,7 +1062,6 @@ public class Chat extends Fragment implements
                 if (!firstLoad && chatRecyclerViewLinearLayoutManager != null && chatRecyclerView != null) {
 
                     index = chatRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
-                    last = chatRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
                     View v = chatRecyclerView.getChildAt(0);
                     top = (v == null) ? 0 : (v.getTop() - chatRecyclerView.getPaddingTop());
                 }
@@ -1318,7 +1317,6 @@ public class Chat extends Fragment implements
         if (chatRecyclerViewLinearLayoutManager != null && chatRecyclerView != null) {
 
             index = chatRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
-            last = chatRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
             View v = chatRecyclerView.getChildAt(0);
             top = (v == null) ? 0 : (v.getTop() - chatRecyclerView.getPaddingTop());
         }
@@ -1494,7 +1492,7 @@ public class Chat extends Fragment implements
                 // Set RecyclerView scroll position to prevent position change when Firebase gets updated and after screen orientation change.
                 chatRecyclerViewLinearLayoutManager.scrollToPositionWithOffset(index, top);
             }
-        } else if ((last != null && last == (mUser.size() - 2)) || firstLoad && UUIDDatesPairsSize == null || messageSent || reachedEndOfRecyclerView) {
+        } else if (firstLoad && UUIDDatesPairsSize == null || messageSent || reachedEndOfRecyclerView) {
 
             // Scroll to bottom of recyclerviewlayout after first initialization and after sending a recyclerviewlayout.
             chatRecyclerView.scrollToPosition(mUser.size() - 1);

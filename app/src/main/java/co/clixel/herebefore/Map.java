@@ -134,7 +134,6 @@ public class Map extends FragmentActivity implements
 
     // Toast in Android 11 is being shown at bottom of screen.
     // Don't store user email in messageThreads.
-    // After taking a picture in Chat, position is not maintained.
     // Adjust AppIntro.
     // Finish setting up Google ads, then add more ads. Then get rid of testID in Chat. Adjust video and image resolution based on projected revenue.
     // Register social media accounts / switch cloud account's email address to the new one.

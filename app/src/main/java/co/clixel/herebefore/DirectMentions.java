@@ -59,10 +59,10 @@ public class DirectMentions extends Fragment {
     private ArrayList<String> circleUUIDsAL = new ArrayList<>();
     private ArrayList<LatLng> circleCentersAL = new ArrayList<>();
     private RecyclerView dmsRecyclerView;
-    private static int index = -1, top = -1, last;
+    private static int index = -1, top = -1;
     private ChildEventListener childEventListener;
     private LinearLayoutManager dmsRecyclerViewLinearLayoutManager;
-    private boolean firstLoad, loadingOlderMessages, noMoreMessages = false, reachedEndOfRecyclerView = false;
+    private boolean firstLoad, loadingOlderMessages, noMoreMessages = false, reachedEndOfRecyclerView = true;
     private View loadingIcon;
     private Toast longToast;
     private Integer UUIDDatesPairsSize;
@@ -439,7 +439,6 @@ public class DirectMentions extends Fragment {
                 if (dmsRecyclerViewLinearLayoutManager != null && dmsRecyclerView != null) {
 
                     index = dmsRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
-                    last = dmsRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
                     View v = dmsRecyclerView.getChildAt(0);
                     top = (v == null) ? 0 : (v.getTop() - dmsRecyclerView.getPaddingTop());
                 }
@@ -573,7 +572,7 @@ public class DirectMentions extends Fragment {
         dmsRecyclerView.setHasFixedSize(true);
         dmsRecyclerView.setLayoutManager(dmsRecyclerViewLinearLayoutManager);
 
-        if (last == (mTime.size() - 2) || firstLoad && UUIDDatesPairsSize == null || reachedEndOfRecyclerView) {
+        if (firstLoad && UUIDDatesPairsSize == null || reachedEndOfRecyclerView) {
 
             // Scroll to bottom of recyclerviewlayout after first initialization and after sending a recyclerviewlayout.
             dmsRecyclerView.scrollToPosition(mTime.size() - 1);
@@ -612,7 +611,6 @@ public class DirectMentions extends Fragment {
         if (dmsRecyclerViewLinearLayoutManager != null && dmsRecyclerView != null) {
 
             index = dmsRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
-            last = dmsRecyclerViewLinearLayoutManager.findLastCompletelyVisibleItemPosition();
             View v = dmsRecyclerView.getChildAt(0);
             top = (v == null) ? 0 : (v.getTop() - dmsRecyclerView.getPaddingTop());
         }
