@@ -2,12 +2,15 @@ package co.clixel.herebefore;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Patterns;
+import android.view.Gravity;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -18,6 +21,7 @@ import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.ads.MobileAds;
 import com.google.android.gms.ads.RequestConfiguration;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
 
 public class ResetPassword extends AppCompatActivity {
@@ -25,7 +29,7 @@ public class ResetPassword extends AppCompatActivity {
     private EditText mEmailAddress;
     private String emailAddress;
     private Button sendEmail, goBack;
-    private View loadingIcon;
+    private View loadingIcon, rootView;
     private Toast shortToast, longToast;
 
     @Override
@@ -37,6 +41,8 @@ public class ResetPassword extends AppCompatActivity {
         updatePreferences();
 
         setContentView(R.layout.resetpassword);
+
+        rootView = findViewById(R.id.rootViewResetPassword);
 
         AdView bannerAd = findViewById(R.id.chatBanner);
 
@@ -87,13 +93,13 @@ public class ResetPassword extends AppCompatActivity {
 
             if (emailAddress.equals("")) {
 
-                toastMessageShort("Email address required");
+                showMessageShort("Email address required");
                 mEmailAddress.requestFocus();
                 return;
             }
             if (!Patterns.EMAIL_ADDRESS.matcher(emailAddress).matches()) {
 
-                toastMessageShort("Please enter a valid email address");
+                showMessageShort("Please enter a valid email address");
                 mEmailAddress.requestFocus();
                 return;
             }
@@ -117,7 +123,7 @@ public class ResetPassword extends AppCompatActivity {
 
                 if (task.isSuccessful()) {
 
-                    toastMessageLong("Password reset instructions sent to your email");
+                    showMessageLong("Password reset instructions sent to your email");
                     loadingIcon.setVisibility(View.GONE);
                 }
 
@@ -125,12 +131,12 @@ public class ResetPassword extends AppCompatActivity {
 
                     // Tell the user what happened.
                     loadingIcon.setVisibility(View.GONE);
-                    toastMessageLong("Email not sent: " + task.getException().getMessage());
+                    showMessageLong("Email not sent: " + task.getException().getMessage());
                 } else if (!task.isSuccessful() && task.getException() == null) {
 
                     // Tell the user something happened.
                     loadingIcon.setVisibility(View.GONE);
-                    toastMessageLong("An unknown error occurred. Please try again.");
+                    showMessageLong("An unknown error occurred. Please try again.");
                 }
             });
         });
@@ -177,15 +183,39 @@ public class ResetPassword extends AppCompatActivity {
         }
     }
 
-    private void toastMessageShort(String message) {
+    private void showMessageShort(String message) {
 
-        shortToast = Toast.makeText(this, message, Toast.LENGTH_SHORT);
-        shortToast.show();
+        if (android.os.Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
+
+            Snackbar snackBar = Snackbar.make(rootView, message, Snackbar.LENGTH_SHORT);
+            View snackBarView = snackBar.getView();
+            TextView snackTextView = (TextView) snackBarView.findViewById(com.google.android.material.R.id.snackbar_text);
+            snackTextView.setMaxLines(10);
+            snackBar.show();
+        } else {
+
+            cancelToasts();
+            shortToast = Toast.makeText(this, message, Toast.LENGTH_SHORT);
+            shortToast.setGravity(Gravity.CENTER, 0, 0);
+            shortToast.show();
+        }
     }
 
-    private void toastMessageLong(String message) {
+    private void showMessageLong(String message) {
 
-        longToast = Toast.makeText(this, message, Toast.LENGTH_LONG);
-        longToast.show();
+        if (android.os.Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
+
+            Snackbar snackBar = Snackbar.make(rootView, message, Snackbar.LENGTH_LONG);
+            View snackBarView = snackBar.getView();
+            TextView snackTextView = snackBarView.findViewById(com.google.android.material.R.id.snackbar_text);
+            snackTextView.setMaxLines(10);
+            snackBar.show();
+        } else {
+
+            cancelToasts();
+            longToast = Toast.makeText(this, message, Toast.LENGTH_LONG);
+            longToast.setGravity(Gravity.CENTER, 0, 0);
+            longToast.show();
+        }
     }
 }

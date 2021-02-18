@@ -2,12 +2,15 @@ package co.clixel.herebefore;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.Bundle;
+import android.view.Gravity;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.RelativeLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -18,6 +21,7 @@ import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.ads.MobileAds;
 import com.google.android.gms.ads.RequestConfiguration;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ServerValue;
@@ -27,7 +31,7 @@ public class Feedback extends AppCompatActivity {
     private EditText mFeedback;
     private String feedback;
     private Button sendFeedback, goBack;
-    private View loadingIcon;
+    private View loadingIcon, rootView;
     private Toast shortToast;
 
     @Override
@@ -39,6 +43,8 @@ public class Feedback extends AppCompatActivity {
         updatePreferences();
 
         setContentView(R.layout.feedback);
+
+        rootView = findViewById(R.id.rootViewFeedback);
 
         AdView bannerAd = findViewById(R.id.chatBanner);
 
@@ -89,7 +95,7 @@ public class Feedback extends AppCompatActivity {
 
             if (feedback.equals("")) {
 
-                toastMessageShort("Please enter feedback");
+                showMessageShort("Please enter feedback");
                 mFeedback.requestFocus();
                 return;
             }
@@ -118,7 +124,7 @@ public class Feedback extends AppCompatActivity {
             RelativeLayout layout = findViewById(R.id.layout);
             layout.requestFocus();
             loadingIcon.setVisibility(View.GONE);
-            toastMessageShort("Feedback sent. Thank you!");
+            showMessageShort("Feedback sent. Thank you!");
         });
 
         goBack.setOnClickListener(v -> onBackPressed());
@@ -158,9 +164,21 @@ public class Feedback extends AppCompatActivity {
         }
     }
 
-    private void toastMessageShort(String message) {
+    private void showMessageShort(String message) {
 
-        shortToast = Toast.makeText(this, message, Toast.LENGTH_SHORT);
-        shortToast.show();
+        if (android.os.Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
+
+            Snackbar snackBar = Snackbar.make(rootView, message, Snackbar.LENGTH_SHORT);
+            View snackBarView = snackBar.getView();
+            TextView snackTextView = snackBarView.findViewById(com.google.android.material.R.id.snackbar_text);
+            snackTextView.setMaxLines(10);
+            snackBar.show();
+        } else {
+
+            cancelToasts();
+            shortToast = Toast.makeText(this, message, Toast.LENGTH_SHORT);
+            shortToast.setGravity(Gravity.CENTER, 0, 0);
+            shortToast.show();
+        }
     }
 }

@@ -3,6 +3,7 @@ package co.clixel.herebefore;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -16,6 +17,7 @@ import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
@@ -26,6 +28,7 @@ import com.google.android.gms.common.SignInButton;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.tasks.Task;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.GoogleAuthProvider;
@@ -47,7 +50,7 @@ public class SignIn extends AppCompatActivity {
     private GoogleSignInClient mGoogleSignInClient;
     private FirebaseAuth mAuth;
     private GoogleSignInAccount googleAccount;
-    private View loadingIcon;
+    private View loadingIcon, rootView;
     private Toast shortToast, longToast;
     private ArrayList<String> circleUUIDsAL = new ArrayList<>();
     private ArrayList<LatLng> circleCentersAL = new ArrayList<>();
@@ -59,6 +62,8 @@ public class SignIn extends AppCompatActivity {
         Log.i(TAG, "onCreate()");
 
         setContentView(R.layout.signin);
+
+        rootView = findViewById(R.id.rootViewSignIn);
 
         mEmail = findViewById(R.id.emailAddress);
         mPassword = findViewById(R.id.password);
@@ -127,25 +132,25 @@ public class SignIn extends AppCompatActivity {
 
             if (email.equals("") && !pass.equals("")) {
 
-                toastMessageShort("Email address required");
+                showMessageShort("Email address required");
                 mEmail.requestFocus();
                 return;
             }
             if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
 
-                toastMessageShort("Please enter a valid email address");
+                showMessageShort("Please enter a valid email address");
                 mEmail.requestFocus();
                 return;
             }
             if (pass.equals("") && !email.equals("")) {
 
-                toastMessageShort("Password required");
+                showMessageShort("Password required");
                 mPassword.requestFocus();
                 return;
             }
             if (pass.length() < 6) {
 
-                toastMessageShort("Password must be at least 6 characters long");
+                showMessageShort("Password must be at least 6 characters long");
                 mPassword.requestFocus();
                 return;
             }
@@ -167,8 +172,6 @@ public class SignIn extends AppCompatActivity {
             FirebaseAuth.getInstance().signInWithEmailAndPassword(email, pass).addOnCompleteListener(task -> {
 
                 if (task.isSuccessful()) {
-
-                    toastMessageShort("Signed in");
 
                     // Get Firebase FCM token and save it to preferences and Firebase.
                     SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(SignIn.this);
@@ -213,12 +216,12 @@ public class SignIn extends AppCompatActivity {
 
                             // Tell the user what happened.
                             loadingIcon.setVisibility(View.GONE);
-                            toastMessageLong(task1.getException().getMessage());
+                            showMessageLong(task1.getException().getMessage());
                         } else if (!task1.isSuccessful() && task1.getException() == null) {
 
                             // Tell the user something happened.
                             loadingIcon.setVisibility(View.GONE);
-                            toastMessageLong("An unknown error occurred. Please try again.");
+                            showMessageLong("An unknown error occurred. Please try again.");
                             Log.e(TAG, "onStart() -> signInButton -> OnClick -> FirebaseAuth -> task1.getException == null");
                         }
                     });
@@ -228,12 +231,12 @@ public class SignIn extends AppCompatActivity {
 
                     // Tell the user what happened.
                     loadingIcon.setVisibility(View.GONE);
-                    toastMessageLong("User authentication failed: " + task.getException().getMessage());
+                    showMessageLong("User authentication failed: " + task.getException().getMessage());
                 } else if (!task.isSuccessful() && task.getException() == null) {
 
                     // Tell the user something happened.
                     loadingIcon.setVisibility(View.GONE);
-                    toastMessageLong("An unknown error occurred. Please try again.");
+                    showMessageLong("An unknown error occurred. Please try again.");
                     Log.e(TAG, "onStart() -> signInButton -> OnClick -> FirebaseAuth -> task.getException == null");
                 }
             });
@@ -354,13 +357,13 @@ public class SignIn extends AppCompatActivity {
                 } else {
 
                     Log.w(TAG, "onActivityResult() -> account == null");
-                    toastMessageLong("Sign-in failed. Try again later.");
+                    showMessageLong("Sign-in failed. Try again later.");
                 }
             } catch (ApiException e) {
 
                 // Google sign in failed, update UI appropriately
                 Log.w(TAG, "Google sign-in failed: " + e);
-                toastMessageLong("Google sign-in failed: " + e);
+                showMessageLong("Google sign-in failed: " + e);
             }
         }
     }
@@ -395,7 +398,6 @@ public class SignIn extends AppCompatActivity {
                                 FirebaseDatabase.getInstance().getReference().child("Users").child(userEmailFirebase).child("Token").setValue(token);
 
                                 // Go to Chat.java with the extras.
-                                toastMessageShort("Signed in");
                                 Intent Activity = new Intent(SignIn.this, Navigation.class);
                                 Activity.putExtra("newShape", newShape);
                                 if (!newShape) {
@@ -418,12 +420,12 @@ public class SignIn extends AppCompatActivity {
 
                                 // Tell the user what happened.
                                 loadingIcon.setVisibility(View.GONE);
-                                toastMessageLong(task1.getException().getMessage());
+                                showMessageLong(task1.getException().getMessage());
                             } else if (!task1.isSuccessful() && task1.getException() == null) {
 
                                 // Tell the user something happened.
                                 loadingIcon.setVisibility(View.GONE);
-                                toastMessageLong("An unknown error occurred. Please try again.");
+                                showMessageLong("An unknown error occurred. Please try again.");
                                 Log.e(TAG, "firebaseAuthWithGoogle() -> task.getException == null");
                             }
                         });
@@ -433,12 +435,12 @@ public class SignIn extends AppCompatActivity {
 
                         // Tell the user what happened.
                         loadingIcon.setVisibility(View.GONE);
-                        toastMessageLong("Google sign-in failed: " + task.getException().getMessage());
+                        showMessageLong("Google sign-in failed: " + task.getException().getMessage());
                     } else if (!task.isSuccessful() && task.getException() == null) {
 
                         // Tell the user something happened.
                         loadingIcon.setVisibility(View.GONE);
-                        toastMessageLong("An unknown error occurred. Please try again.");
+                        showMessageLong("An unknown error occurred. Please try again.");
                         Log.e(TAG, "firebaseAuthWithGoogle() -> task.getException == null");
                     }
                 });
@@ -459,19 +461,39 @@ public class SignIn extends AppCompatActivity {
         }
     }
 
-    private void toastMessageShort(String message) {
+    private void showMessageShort(String message) {
 
-        cancelToasts();
-        shortToast = Toast.makeText(this, message, Toast.LENGTH_SHORT);
-        shortToast.setGravity(Gravity.CENTER, 0, 250);
-        shortToast.show();
+        if (android.os.Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
+
+            Snackbar snackBar = Snackbar.make(rootView, message, Snackbar.LENGTH_SHORT);
+            View snackBarView = snackBar.getView();
+            TextView snackTextView = (TextView) snackBarView.findViewById(com.google.android.material.R.id.snackbar_text);
+            snackTextView.setMaxLines(10);
+            snackBar.show();
+        } else {
+
+            cancelToasts();
+            shortToast = Toast.makeText(this, message, Toast.LENGTH_SHORT);
+            shortToast.setGravity(Gravity.CENTER, 0, 0);
+            shortToast.show();
+        }
     }
 
-    private void toastMessageLong(String message) {
+    private void showMessageLong(String message) {
 
-        cancelToasts();
-        longToast = Toast.makeText(this, message, Toast.LENGTH_LONG);
-        longToast.setGravity(Gravity.CENTER, 0, 250);
-        longToast.show();
+        if (android.os.Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
+
+            Snackbar snackBar = Snackbar.make(rootView, message, Snackbar.LENGTH_LONG);
+            View snackBarView = snackBar.getView();
+            TextView snackTextView = snackBarView.findViewById(com.google.android.material.R.id.snackbar_text);
+            snackTextView.setMaxLines(10);
+            snackBar.show();
+        } else {
+
+            cancelToasts();
+            longToast = Toast.makeText(this, message, Toast.LENGTH_LONG);
+            longToast.setGravity(Gravity.CENTER, 0, 0);
+            longToast.show();
+        }
     }
 }

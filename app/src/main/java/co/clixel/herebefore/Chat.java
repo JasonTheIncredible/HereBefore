@@ -16,6 +16,7 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
@@ -80,6 +81,7 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -172,9 +174,10 @@ public class Chat extends Fragment implements
     private LocationManager locationManager;
     private FusedLocationProviderClient mFusedLocationClient;
     private LocationCallback mLocationCallback;
-    private TextView newShapeTextView;
+    private TextView newShapeTextView, positionRelativeToShapeTextView;
     private List<Pair<String, Long>> UUIDDatesPairs;
     private Long lastClickTime = 0L;
+    private Snackbar snackBar;
     private final WordTokenizerConfig tokenizerConfig = new WordTokenizerConfig
             .Builder()
             .setWordBreakChars(", ")
@@ -252,6 +255,7 @@ public class Chat extends Fragment implements
         progressIconIndeterminate = rootView.findViewById(R.id.progressIconIndeterminate);
         progressIcon = rootView.findViewById(R.id.progressIcon);
         newShapeTextView = rootView.findViewById(R.id.newShapeTextView);
+        positionRelativeToShapeTextView = rootView.findViewById(R.id.positionRelativeToShapeTextView);
 
         chatRecyclerViewLinearLayoutManager = new LinearLayoutManager(mActivity);
         mentionsRecyclerViewLinearLayoutManager = new LinearLayoutManager(mActivity);
@@ -292,13 +296,16 @@ public class Chat extends Fragment implements
 
         if (!newShape && userIsWithinShape == null) {
 
-            mInput.setHint("Calculating distance to circle...");
+            mInput.setHint(R.string.calculating_distance);
+            positionRelativeToShapeTextView.setText(R.string.calculating_distance);
         } else if (newShape || userIsWithinShape) {
 
-            mInput.setHint("Message from within circle...");
+            mInput.setHint(R.string.message_from_within_circle);
+            positionRelativeToShapeTextView.setText(R.string.inside_circle);
         } else {
 
-            mInput.setHint("Message from outside circle...");
+            mInput.setHint(R.string.message_from_outside_circle);
+            positionRelativeToShapeTextView.setText(R.string.outside_circle);
         }
 
         return rootView;
@@ -312,16 +319,26 @@ public class Chat extends Fragment implements
 
         if (!newShape && (shapeLatInt == 0 || shapeLonInt == 0)) {
 
-            // Get a value with 1 decimal point and use it for Firebase.
-            double nearLeftPrecisionLat = Math.pow(10, 1);
-            // Can't create a firebase path with '.', so get rid of decimal.
-            double nearLeftLatTemp = (int) (nearLeftPrecisionLat * shapeLat) / nearLeftPrecisionLat;
-            shapeLatInt = (int) nearLeftLatTemp;
+            // Don't manipulate the number if user clicked on a DM, as the number is already in the correct format.
+            if (UUIDToHighlight != null) {
 
-            double nearLeftPrecisionLon = Math.pow(10, 1);
-            // Can't create a firebase path with '.', so get rid of decimal.
-            double nearLeftLonTemp = (int) (nearLeftPrecisionLon * shapeLon) / nearLeftPrecisionLon;
-            shapeLonInt = (int) nearLeftLonTemp;
+                shapeLatInt = shapeLat.intValue();
+                shapeLonInt = shapeLon.intValue();
+            } else {
+
+                // Get a value with 1 decimal point and use it for Firebase.
+                double nearLeftPrecisionLat = Math.pow(10, 1);
+                // Can't create a firebase path with '.', so get rid of decimal.
+                double nearLeftLatTemp = (int) (nearLeftPrecisionLat * shapeLat) / nearLeftPrecisionLat;
+                nearLeftLatTemp *= 10;
+                shapeLatInt = (int) nearLeftLatTemp;
+
+                double nearLeftPrecisionLon = Math.pow(10, 1);
+                // Can't create a firebase path with '.', so get rid of decimal.
+                double nearLeftLonTemp = (int) (nearLeftPrecisionLon * shapeLon) / nearLeftPrecisionLon;
+                nearLeftLonTemp *= 10;
+                shapeLonInt = (int) nearLeftLonTemp;
+            }
         } else if (newShape) {
 
             newShapeTextView.setVisibility(View.VISIBLE);
@@ -379,7 +396,7 @@ public class Chat extends Fragment implements
                         mInput.setFocusable(false);
                         mediaButton.setEnabled(false);
                         sendButton.setEnabled(false);
-                        toastMessageLong("Shape was deleted. Please return to map.");
+                        showMessageLong("Shape was deleted. Please return to map.");
                         return;
                     } else if (snapshot.getChildrenCount() == 0) {
 
@@ -533,7 +550,7 @@ public class Chat extends Fragment implements
             // Prevent creating a new shape if image / video doesn't exist.
             if (newShape && (imageView.getDrawable() == null && videoImageView.getDrawable() == null)) {
 
-                toastMessageShort("Picture or video required.");
+                showMessageShort("Picture or video required.");
                 return;
             }
 
@@ -561,7 +578,7 @@ public class Chat extends Fragment implements
                                 // Preventing multiple clicks, using threshold of 10 seconds.
                                 if (SystemClock.elapsedRealtime() - lastClickTime < 10000) {
 
-                                    toastMessageLong("Please wait " + (int) (10 - ((SystemClock.elapsedRealtime() - lastClickTime) / 1000)) + "s before sending another message.");
+                                    showMessageLong("Please wait " + (int) (10 - ((SystemClock.elapsedRealtime() - lastClickTime) / 1000)) + "s before sending another message.");
                                     sendButton.setEnabled(true);
                                     progressIconIndeterminate.setVisibility(View.GONE);
                                     return;
@@ -569,7 +586,7 @@ public class Chat extends Fragment implements
 
                                 if (location.getAccuracy() >= 10) {
 
-                                    toastMessageLong("Please wait for better location accuracy." + "\n" + "Moving your phone around should help." + "\n" + "Current: " + location.getAccuracy() + "\n" + "Required: < 10");
+                                    showMessageLong("Please wait for better location accuracy." + "\n" + "Moving your phone around should help." + "\n" + "Current: " + location.getAccuracy() + "\n" + "Required: < 10");
                                     sendButton.setEnabled(true);
                                     progressIconIndeterminate.setVisibility(View.GONE);
                                     return;
@@ -580,13 +597,15 @@ public class Chat extends Fragment implements
                                 // Cancel any of the previous 2 toasts.
                                 cancelToasts();
 
+                                if (snackBar != null && snackBar.isShown()) {
+
+                                    snackBar.dismiss();
+                                }
+
                                 if (newShape) {
 
                                     uploadNeeded = true;
                                     userIsWithinShape = true;
-
-                                    // Get rid of the previous toast (as user will probably click the send button quickly).
-                                    cancelToasts();
 
                                     shapeLat = location.getLatitude();
                                     shapeLon = location.getLongitude();
@@ -622,7 +641,7 @@ public class Chat extends Fragment implements
 
                                                 Log.e(TAG, "DatabaseError");
                                                 progressIconIndeterminate.setVisibility(View.GONE);
-                                                toastMessageLong(databaseError.getMessage());
+                                                showMessageLong(databaseError.getMessage());
                                             }
                                         });
                                     } else {
@@ -698,13 +717,15 @@ public class Chat extends Fragment implements
 
                                         if (newDistance[0] < 5) {
 
-                                            toastMessageShort("You are now inside the circle.");
-                                            mInput.setHint("Message from within circle...");
+                                            showMessageShort("You are now inside the circle.");
+                                            mInput.setHint(R.string.message_from_within_circle);
+                                            positionRelativeToShapeTextView.setText(R.string.inside_circle);
                                             userIsWithinShape = true;
                                         } else {
 
-                                            toastMessageShort("You are now outside the circle.");
-                                            mInput.setHint("Message from outside circle...");
+                                            showMessageShort("You are now outside the circle.");
+                                            mInput.setHint(R.string.message_from_outside_circle);
+                                            positionRelativeToShapeTextView.setText(R.string.outside_circle);
                                             userIsWithinShape = false;
                                         }
                                     }
@@ -756,7 +777,7 @@ public class Chat extends Fragment implements
                                 }
                                 sendButton.setEnabled(true);
                                 progressIconIndeterminate.setVisibility(View.GONE);
-                                toastMessageLong("Please wait a moment and try again.");
+                                showMessageLong("Please wait a moment and try again.");
                             }
                         });
             } else {
@@ -909,7 +930,7 @@ public class Chat extends Fragment implements
                     mInput.setFocusable(false);
                     mediaButton.setEnabled(false);
                     sendButton.setEnabled(false);
-                    toastMessageLong("Shape was deleted. Please return to map.");
+                    showMessageLong("Shape was deleted. Please return to map.");
                 }
 
                 if (UUIDDatesPairsSize == null && snapshot.getChildrenCount() < 20) {
@@ -1030,7 +1051,7 @@ public class Chat extends Fragment implements
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
 
-                toastMessageLong(error.getMessage());
+                showMessageLong(error.getMessage());
             }
         });
     }
@@ -1146,7 +1167,7 @@ public class Chat extends Fragment implements
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
 
-                toastMessageLong(error.getMessage());
+                showMessageLong(error.getMessage());
             }
         };
 
@@ -1282,7 +1303,7 @@ public class Chat extends Fragment implements
             } else {
 
                 Log.e(TAG, "onResume() -> locationManager == null");
-                toastMessageLong("Error retrieving your location.");
+                showMessageLong("Error retrieving your location.");
             }
         } else {
 
@@ -2019,7 +2040,7 @@ public class Chat extends Fragment implements
                 // Don't add the mentionable if it already exists.
                 if (mInput.getText().toString().trim().contains(mSuggestions.get(position))) {
 
-                    toastMessageShort("User has already been mentioned.");
+                    showMessageShort("User has already been mentioned.");
                     return;
                 }
 
@@ -2097,40 +2118,27 @@ public class Chat extends Fragment implements
                                 DatabaseReference newReportedPost = FirebaseDatabase.getInstance().getReference().child("ReportedPost").push();
                                 newReportedPost.setValue(reportPostInformation);
                                 progressIconIndeterminate.setVisibility(View.GONE);
-                                toastMessageShort("Post reported. Thank you!");
+                                showMessageShort("Post reported. Thank you!");
                                 return;
                             }
                         }
                     }
 
-                    // Edge case: user tries to delete a post that has already been manually deleted.
+                    // Edge case: user tries to report a post that has already been manually deleted.
                     progressIconIndeterminate.setVisibility(View.GONE);
-                    toastMessageShort("Post already deleted. Thank you!");
+                    showMessageShort("Post already deleted. Thank you!");
                 }
 
                 @Override
                 public void onCancelled(@NonNull DatabaseError databaseError) {
 
                     progressIconIndeterminate.setVisibility(View.GONE);
-                    toastMessageLong(databaseError.getMessage());
+                    showMessageLong(databaseError.getMessage());
                 }
             });
         }
 
         return super.onContextItemSelected(item);
-    }
-
-    private void cancelToasts() {
-
-        if (shortToast != null) {
-
-            shortToast.cancel();
-        }
-
-        if (longToast != null) {
-
-            longToast.cancel();
-        }
     }
 
     @Override
@@ -2245,7 +2253,7 @@ public class Chat extends Fragment implements
                         }
                     } else {
 
-                        toastMessageLong("Location permission is required. Please enable it manually through the Android settings menu.");
+                        showMessageLong("Location permission is required. Please enable it manually through the Android settings menu.");
                     }
                 }
 
@@ -2278,7 +2286,7 @@ public class Chat extends Fragment implements
                             startActivityTakePhoto();
                         } else if (grantResults[0] != PackageManager.PERMISSION_GRANTED) {
 
-                            toastMessageLong("Camera permission is required. Please enable it manually through the Android settings menu.");
+                            showMessageLong("Camera permission is required. Please enable it manually through the Android settings menu.");
                         }
                     }
                 }
@@ -2320,7 +2328,7 @@ public class Chat extends Fragment implements
                             startActivityRecordVideo();
                         } else if (grantResults[0] != PackageManager.PERMISSION_GRANTED) {
 
-                            toastMessageLong("Camera and Audio permissions are required. Please enable them manually through the Android settings menu.");
+                            showMessageLong("Camera and Audio permissions are required. Please enable them manually through the Android settings menu.");
                         }
                     }
                 }
@@ -2409,24 +2417,28 @@ public class Chat extends Fragment implements
 
                     if (userIsWithinShape == null) {
 
-                        mInput.setHint("Message from within circle...");
+                        mInput.setHint(R.string.message_from_within_circle);
+                        positionRelativeToShapeTextView.setText(R.string.inside_circle);
                         userIsWithinShape = true;
                     } else if (!userIsWithinShape) {
 
-                        toastMessageShort("You are now inside the circle.");
-                        mInput.setHint("Message from within circle...");
+                        showMessageShort("You are now inside the circle.");
+                        mInput.setHint(R.string.message_from_within_circle);
+                        positionRelativeToShapeTextView.setText(R.string.inside_circle);
                         userIsWithinShape = true;
                     }
                 } else {
 
                     if (userIsWithinShape == null) {
 
-                        mInput.setHint("Message from outside circle...");
+                        mInput.setHint(R.string.message_from_outside_circle);
+                        positionRelativeToShapeTextView.setText(R.string.outside_circle);
                         userIsWithinShape = false;
                     } else if (userIsWithinShape) {
 
-                        toastMessageShort("You are now outside the circle.");
-                        mInput.setHint("Message from outside circle...");
+                        showMessageShort("You are now outside the circle.");
+                        mInput.setHint(R.string.message_from_outside_circle);
+                        positionRelativeToShapeTextView.setText(R.string.outside_circle);
                         userIsWithinShape = false;
                     }
                 }
@@ -2563,7 +2575,7 @@ public class Chat extends Fragment implements
             } catch (IOException ex) {
 
                 // Error occurred while creating the File
-                toastMessageLong(ex.getMessage());
+                showMessageLong(ex.getMessage());
             }
             // Continue only if the File was successfully created
             if (photoFile != null) {
@@ -2593,7 +2605,7 @@ public class Chat extends Fragment implements
             } catch (IOException ex) {
 
                 // Error occurred while creating the File
-                toastMessageLong(ex.getMessage());
+                showMessageLong(ex.getMessage());
             }
             // Continue only if the File was successfully created
             if (videoFile != null) {
@@ -2783,7 +2795,7 @@ public class Chat extends Fragment implements
                 });
             } catch (IOException ex) {
 
-                toastMessageLong(ex.getMessage());
+                showMessageLong(ex.getMessage());
             }
         };
 
@@ -2885,7 +2897,7 @@ public class Chat extends Fragment implements
 
                             sendButton.setEnabled(true);
                             Log.e(TAG, "Transcoder error occurred: " + exception.getMessage());
-                            toastMessageLong("Error compressing video: " + exception.getMessage());
+                            showMessageLong("Error compressing video: " + exception.getMessage());
                         }
                     }).transcode();
 
@@ -2959,7 +2971,7 @@ public class Chat extends Fragment implements
                 }
             } catch (IOException ex) {
 
-                toastMessageLong(ex.getMessage());
+                showMessageLong(ex.getMessage());
             }
             output64.close();
 
@@ -2975,7 +2987,7 @@ public class Chat extends Fragment implements
 
         } catch (IOException ex) {
 
-            toastMessageLong(ex.getMessage());
+            showMessageLong(ex.getMessage());
         }
 
         // Update UI thread.
@@ -3125,7 +3137,7 @@ public class Chat extends Fragment implements
                         progressIcon.setProgress(0);
                         progressIcon.setVisibility(View.GONE);
                         progressIconIndeterminate.setVisibility(View.GONE);
-                        toastMessageLong(ex.getMessage());
+                        showMessageLong(ex.getMessage());
                         Log.e(TAG, "firebaseUpload() -> !fileIsImage -> onFailure -> " + ex.getMessage());
                     });
         } else {
@@ -3222,7 +3234,7 @@ public class Chat extends Fragment implements
                         progressIcon.setProgress(0);
                         progressIcon.setVisibility(View.GONE);
                         progressIconIndeterminate.setVisibility(View.GONE);
-                        toastMessageLong(ex.getMessage());
+                        showMessageLong(ex.getMessage());
                         Log.e(TAG, "firebaseUpload() -> else -> onFailure -> " + ex.getMessage());
                     });
         }
@@ -3261,27 +3273,62 @@ public class Chat extends Fragment implements
         }
     }
 
-    private void toastMessageShort(String message) {
+    private void showMessageShort(String message) {
 
-        // Prevents a crash if the user backed out of activity and a toast message occurs from another thread.
-        if (mActivity != null) {
+        if (android.os.Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
 
-            cancelToasts();
-            shortToast = Toast.makeText(mContext, message, Toast.LENGTH_SHORT);
-            shortToast.setGravity(Gravity.CENTER, 0, 0);
-            shortToast.show();
+            snackBar = Snackbar.make(rootView, message, Snackbar.LENGTH_SHORT);
+            snackBar.setAnchorView(sendButton);
+            View snackBarView = snackBar.getView();
+            TextView snackTextView = (TextView) snackBarView.findViewById(com.google.android.material.R.id.snackbar_text);
+            snackTextView.setMaxLines(10);
+            snackBar.show();
+        } else {
+
+            // Prevents a crash if the user backed out of activity and a toast message occurs from another thread.
+            if (mActivity != null) {
+
+                cancelToasts();
+                shortToast = Toast.makeText(mContext, message, Toast.LENGTH_SHORT);
+                shortToast.setGravity(Gravity.CENTER, 0, 0);
+                shortToast.show();
+            }
         }
     }
 
-    private void toastMessageLong(String message) {
+    private void showMessageLong(String message) {
 
-        // Prevents a crash if the user backed out of activity and a toast message occurs from another thread.
-        if (mActivity != null) {
+        if (android.os.Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
 
-            cancelToasts();
-            longToast = Toast.makeText(mContext, message, Toast.LENGTH_LONG);
-            longToast.setGravity(Gravity.CENTER, 0, 0);
-            longToast.show();
+            snackBar = Snackbar.make(rootView, message, Snackbar.LENGTH_LONG);
+            snackBar.setAnchorView(sendButton);
+            View snackBarView = snackBar.getView();
+            TextView snackTextView = (TextView) snackBarView.findViewById(com.google.android.material.R.id.snackbar_text);
+            snackTextView.setMaxLines(10);
+            snackBar.show();
+        } else {
+
+            // Prevents a crash if the user backed out of activity and a toast message occurs from another thread.
+            if (mActivity != null) {
+
+                cancelToasts();
+                longToast = Toast.makeText(mContext, message, Toast.LENGTH_LONG);
+                longToast.setGravity(Gravity.CENTER, 0, 0);
+                longToast.show();
+            }
+        }
+    }
+
+    private void cancelToasts() {
+
+        if (shortToast != null) {
+
+            shortToast.cancel();
+        }
+
+        if (longToast != null) {
+
+            longToast.cancel();
         }
     }
 }

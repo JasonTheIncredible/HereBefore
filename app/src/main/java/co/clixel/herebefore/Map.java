@@ -11,6 +11,7 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -25,6 +26,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.PopupMenu;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -54,6 +56,7 @@ import com.google.android.gms.maps.model.Circle;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.VisibleRegion;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
@@ -94,7 +97,7 @@ public class Map extends FragmentActivity implements
     private final ArrayList<LatLng> circleCentersAL = new ArrayList<>();
     private int newNearLeftLat, newNearLeftLon, newFarLeftLat, newFarLeftLon, newNearRightLat, newNearRightLon, newFarRightLat, newFarRightLon;
     private Toast longToast;
-    private View loadingIcon;
+    private View loadingIcon, rootView;
     private Query queryNearLeft, queryFarLeft, queryNearRight, queryFarRight;
     private Pair<Integer, Integer> newNearLeft, newFarLeft, newNearRight, newFarRight;
     private List<Pair<Integer, Integer>> loadedCoordinates;
@@ -104,6 +107,7 @@ public class Map extends FragmentActivity implements
 
     // Make creating a circle more accurate.
     // If user is too far away from an area before uploading a picture, require taking a new picture.
+    // If user is outside of a circle, show how far outside? - problem: users might be able to identify other users by distance.
     // Show picture upon opening circle or show picture at the top at all times.
     // Long press a shape to see a popup of that picture.
     // Allow users to get "likes". Allow more likes per second with a higher "level" like DS.
@@ -132,7 +136,10 @@ public class Map extends FragmentActivity implements
     // Increase viral potential - make it easier to share?
     // Panoramic view, like gMaps.
 
-    // Toast in Android 11 is being shown at bottom of screen.
+    // After clicking on a DM, Chat's onLocationChanged will always show the user being outside of the circle, as shapeLat taken from DirectMentions will only be a 3 digit number at max.
+    // Store all text as strings.
+    // Strange issue where after unplugging phone and plugging back in, logcat rapidly cycles through all activity lifecycles.
+    // If distance to circle is really far, let user post outside of the circle without needing good accuracy.
     // Don't store user email in messageThreads.
     // Adjust AppIntro.
     // Finish setting up Google ads, then add more ads. Then get rid of testID in Chat. Adjust video and image resolution based on projected revenue.
@@ -178,6 +185,8 @@ public class Map extends FragmentActivity implements
 
         setContentView(R.layout.map);
 
+        rootView = findViewById(R.id.rootViewMap);
+
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.activity_maps);
         if (mapFragment != null) {
@@ -186,7 +195,7 @@ public class Map extends FragmentActivity implements
         } else {
 
             Log.e(TAG, "onCreate() -> mapFragment == null");
-            toastMessageLong("An error occurred while loading the map.");
+            showMessageLong("An error occurred while loading the map.");
         }
 
         mapTypeButton = findViewById(R.id.mapTypeButton);
@@ -210,6 +219,20 @@ public class Map extends FragmentActivity implements
                 == PackageManager.PERMISSION_GRANTED)) {
 
             checkLocationPermissions();
+        } else {
+
+            locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+
+            String provider = LocationManager.NETWORK_PROVIDER;
+            if (locationManager != null) {
+
+                locationManager.requestLocationUpdates(provider, 0, 0, this);
+                startLocationUpdates();
+            } else {
+
+                Log.e(TAG, "onResume() -> locationManager == null");
+                showMessageLong("Error retrieving your location.");
+            }
         }
 
         // Check if the user is logged in. If true, make the settings button visible.
@@ -351,7 +374,7 @@ public class Map extends FragmentActivity implements
             } catch (IOException ex) {
 
                 // Error occurred while creating the File
-                toastMessageLong(ex.getMessage());
+                showMessageLong(ex.getMessage());
             }
             // Continue only if the File was successfully created
             if (photoFile != null) {
@@ -381,7 +404,7 @@ public class Map extends FragmentActivity implements
             } catch (IOException ex) {
 
                 // Error occurred while creating the File
-                toastMessageLong(ex.getMessage());
+                showMessageLong(ex.getMessage());
             }
             // Continue only if the File was successfully created
             if (videoFile != null) {
@@ -558,41 +581,12 @@ public class Map extends FragmentActivity implements
             dmButton.setEnabled(false);
             settingsButton.setEnabled(false);
         }
-
-        locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
-
-        // Start updating location.
-        if (ContextCompat.checkSelfPermission(Map.this,
-                Manifest.permission.ACCESS_FINE_LOCATION)
-                == PackageManager.PERMISSION_GRANTED) {
-
-            // Location seems to work without the following line, but it is set to false in onPause so for symmetry's sake, I'm setting it to true here.
-            if (mMap != null) {
-
-                // Needs to be re-enabled or circleButton won't work.
-                mMap.setMyLocationEnabled(true);
-            }
-
-            String provider = LocationManager.NETWORK_PROVIDER;
-            if (locationManager != null) {
-
-                locationManager.requestLocationUpdates(provider, 0, 0, this);
-                startLocationUpdates();
-            } else {
-
-                Log.e(TAG, "onResume() -> locationManager == null");
-                toastMessageLong("Error retrieving your location.");
-            }
-        } else {
-
-            checkLocationPermissions();
-        }
     }
 
     @Override
-    protected void onPause() {
+    protected void onStop() {
 
-        Log.i(TAG, "onPause()");
+        Log.i(TAG, "onStop()");
 
         // Remove updating location information.
         if (ContextCompat.checkSelfPermission(Map.this,
@@ -614,14 +608,6 @@ public class Map extends FragmentActivity implements
 
             mFusedLocationClient.removeLocationUpdates(mLocationCallback);
         }
-
-        super.onPause();
-    }
-
-    @Override
-    protected void onStop() {
-
-        Log.i(TAG, "onStop()");
 
         if (mapTypeButton != null) {
 
@@ -792,7 +778,7 @@ public class Map extends FragmentActivity implements
 
                                     loadingIcon.setVisibility(View.GONE);
                                     Log.e(TAG, "onStart() -> onCircleClick -> location == null");
-                                    toastMessageLong("An error occurred: your location is null.");
+                                    showMessageLong("An error occurred: your location is null.");
                                 }
                             });
                 } else {
@@ -907,7 +893,7 @@ public class Map extends FragmentActivity implements
                         }
                     } else {
 
-                        toastMessageLong("Location permission is required. Please enable it manually through the Android settings menu.");
+                        showMessageLong("Location permission is required. Please enable it manually through the Android settings menu.");
                     }
                 }
 
@@ -940,7 +926,7 @@ public class Map extends FragmentActivity implements
                             startActivityTakePhoto();
                         } else if (grantResults[0] != PackageManager.PERMISSION_GRANTED) {
 
-                            toastMessageLong("Camera permission is required. Please enable it manually through the Android settings menu.");
+                            showMessageLong("Camera permission is required. Please enable it manually through the Android settings menu.");
                         }
                     }
                 }
@@ -982,7 +968,7 @@ public class Map extends FragmentActivity implements
                             startActivityRecordVideo();
                         } else if (grantResults[0] != PackageManager.PERMISSION_GRANTED) {
 
-                            toastMessageLong("Camera and Audio permissions are required. Please enable them manually through the Android settings menu.");
+                            showMessageLong("Camera and Audio permissions are required. Please enable them manually through the Android settings menu.");
                         }
                     }
                 }
@@ -1204,8 +1190,8 @@ public class Map extends FragmentActivity implements
             Activity.putExtra("newShape", newShape);
             if (!newShape) {
 
-                Activity.putExtra("shapeLat", circleToEnterLatLng.latitude * 10);
-                Activity.putExtra("shapeLon", circleToEnterLatLng.longitude * 10);
+                Activity.putExtra("shapeLat", circleToEnterLatLng.latitude);
+                Activity.putExtra("shapeLon", circleToEnterLatLng.longitude);
             } else {
 
                 Activity.putExtra("circleCentersAL", circleCentersAL);
@@ -1285,7 +1271,7 @@ public class Map extends FragmentActivity implements
                 @Override
                 public void onCancelled(@NonNull DatabaseError error) {
 
-                    toastMessageLong(error.getMessage());
+                    showMessageLong(error.getMessage());
                 }
             });
         } else {
@@ -1327,7 +1313,7 @@ public class Map extends FragmentActivity implements
                     } else {
 
                         Log.e(TAG, "updatePreferences() -> Road Map -> mMap == null");
-                        toastMessageLong("An error occurred while loading the map.");
+                        showMessageLong("An error occurred while loading the map.");
                     }
 
                     break;
@@ -1347,7 +1333,7 @@ public class Map extends FragmentActivity implements
                     } else {
 
                         Log.e(TAG, "updatePreferences() -> Satellite Map -> mMap == null");
-                        toastMessageLong("An error occurred while loading the map.");
+                        showMessageLong("An error occurred while loading the map.");
                     }
 
                     break;
@@ -1367,7 +1353,7 @@ public class Map extends FragmentActivity implements
                     } else {
 
                         Log.e(TAG, "updatePreferences() -> Hybrid Map -> mMap == null");
-                        toastMessageLong("An error occurred while loading the map.");
+                        showMessageLong("An error occurred while loading the map.");
                     }
 
                     break;
@@ -1387,7 +1373,7 @@ public class Map extends FragmentActivity implements
                     } else {
 
                         Log.e(TAG, "updatePreferences() -> Terrain Map -> mMap == null");
-                        toastMessageLong("An error occurred while loading the map.");
+                        showMessageLong("An error occurred while loading the map.");
                     }
 
                     break;
@@ -1408,7 +1394,7 @@ public class Map extends FragmentActivity implements
                     } else {
 
                         Log.e(TAG, "updatePreferences() -> default -> mMap == null");
-                        toastMessageLong("An error occurred while loading the map.");
+                        showMessageLong("An error occurred while loading the map.");
                     }
 
                     break;
@@ -1532,7 +1518,7 @@ public class Map extends FragmentActivity implements
             } else {
 
                 Log.e(TAG, "onMenuItemClick -> Road Map -> mMap == null");
-                toastMessageLong("An error occurred while loading the map.");
+                showMessageLong("An error occurred while loading the map.");
             }
         } else if (id == R.id.satellite) {
 
@@ -1560,7 +1546,7 @@ public class Map extends FragmentActivity implements
             } else {
 
                 Log.e(TAG, "onMenuItemClick -> Satellite Map -> mMap == null");
-                toastMessageLong("An error occurred while loading the map.");
+                showMessageLong("An error occurred while loading the map.");
             }
         } else if (id == R.id.hybrid) {
 
@@ -1588,7 +1574,7 @@ public class Map extends FragmentActivity implements
             } else {
 
                 Log.e(TAG, "onMenuItemClick -> Hybrid Map -> mMap == null");
-                toastMessageLong("An error occurred while loading the map.");
+                showMessageLong("An error occurred while loading the map.");
             }
         } else if (id == R.id.terrain) {
 
@@ -1616,7 +1602,7 @@ public class Map extends FragmentActivity implements
             } else {
 
                 Log.e(TAG, "onMenuItemClick -> Terrain Map -> mMap == null");
-                toastMessageLong("An error occurred while loading the map.");
+                showMessageLong("An error occurred while loading the map.");
             }
         }
 
@@ -1766,7 +1752,7 @@ public class Map extends FragmentActivity implements
 
                     Log.e(TAG, "DatabaseError");
                     loadingIcon.setVisibility(View.GONE);
-                    toastMessageLong(databaseError.getMessage());
+                    showMessageLong(databaseError.getMessage());
                 }
             });
         }
@@ -1800,7 +1786,7 @@ public class Map extends FragmentActivity implements
 
                     Log.e(TAG, "DatabaseError");
                     loadingIcon.setVisibility(View.GONE);
-                    toastMessageLong(databaseError.getMessage());
+                    showMessageLong(databaseError.getMessage());
                 }
             });
         }
@@ -1834,7 +1820,7 @@ public class Map extends FragmentActivity implements
 
                     Log.e(TAG, "DatabaseError");
                     loadingIcon.setVisibility(View.GONE);
-                    toastMessageLong(databaseError.getMessage());
+                    showMessageLong(databaseError.getMessage());
                 }
             });
         }
@@ -1868,7 +1854,7 @@ public class Map extends FragmentActivity implements
 
                     Log.e(TAG, "DatabaseError");
                     loadingIcon.setVisibility(View.GONE);
-                    toastMessageLong(databaseError.getMessage());
+                    showMessageLong(databaseError.getMessage());
                 }
             });
         }
@@ -2040,7 +2026,7 @@ public class Map extends FragmentActivity implements
                 @Override
                 public void onCancelled(@NonNull DatabaseError error) {
 
-                    toastMessageLong(error.getMessage());
+                    showMessageLong(error.getMessage());
                 }
             };
 
@@ -2071,7 +2057,7 @@ public class Map extends FragmentActivity implements
                 @Override
                 public void onCancelled(@NonNull DatabaseError error) {
 
-                    toastMessageLong(error.getMessage());
+                    showMessageLong(error.getMessage());
                 }
             };
 
@@ -2102,7 +2088,7 @@ public class Map extends FragmentActivity implements
                 @Override
                 public void onCancelled(@NonNull DatabaseError error) {
 
-                    toastMessageLong(error.getMessage());
+                    showMessageLong(error.getMessage());
                 }
             };
 
@@ -2133,7 +2119,7 @@ public class Map extends FragmentActivity implements
                 @Override
                 public void onCancelled(@NonNull DatabaseError error) {
 
-                    toastMessageLong(error.getMessage());
+                    showMessageLong(error.getMessage());
                 }
             };
 
@@ -2234,11 +2220,22 @@ public class Map extends FragmentActivity implements
         }
     }
 
-    private void toastMessageLong(String message) {
+    private void showMessageLong(String message) {
 
-        cancelToasts();
-        longToast = Toast.makeText(getBaseContext(), message, Toast.LENGTH_LONG);
-        longToast.setGravity(Gravity.CENTER, 0, 0);
-        longToast.show();
+        if (android.os.Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
+
+            Snackbar snackBar = Snackbar.make(rootView, message, Snackbar.LENGTH_LONG);
+            snackBar.setAnchorView(circleButton);
+            View snackBarView = snackBar.getView();
+            TextView snackTextView = snackBarView.findViewById(com.google.android.material.R.id.snackbar_text);
+            snackTextView.setMaxLines(10);
+            snackBar.show();
+        } else {
+
+            cancelToasts();
+            longToast = Toast.makeText(this, message, Toast.LENGTH_LONG);
+            longToast.setGravity(Gravity.CENTER, 0, 0);
+            longToast.show();
+        }
     }
 }

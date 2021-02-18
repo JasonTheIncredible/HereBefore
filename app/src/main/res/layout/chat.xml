@@ -20,6 +20,13 @@
         ads:adUnitId="ca-app-pub-7112137006158207/1950181503" />
 
     <TextView
+        android:id="@+id/positionRelativeToShapeTextView"
+        android:layout_width="match_parent"
+        android:layout_height="20dp"
+        android:layout_below="@+id/chatBanner"
+        android:gravity="center_horizontal" />
+
+    <TextView
         android:id="@+id/newShapeTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -36,7 +43,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_above="@+id/input"
-        android:layout_below="@+id/chatBanner"
+        android:layout_below="@+id/positionRelativeToShapeTextView"
         android:layout_marginTop="4dp"
         android:layout_marginBottom="4dp"
         android:divider="@android:color/transparent"

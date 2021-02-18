@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.util.Pair;
@@ -31,6 +32,7 @@ import com.bumptech.glide.request.RequestOptions;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -399,7 +401,7 @@ public class DirectMentions extends Fragment {
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                toastMessageLong(databaseError.getMessage());
+                showMessageLong(databaseError.getMessage());
             }
         });
     }
@@ -524,7 +526,7 @@ public class DirectMentions extends Fragment {
                 Log.i(TAG, "addQuery() -> onChildChanged()");
 
                 // Update the serverDate in UUIDDatesPairs, as the original serverDate will be an estimate and a callback from the server will always be made with an accurate time.
-                for (Pair<String, Long> pair: UUIDDatesPairs) {
+                for (Pair<String, Long> pair : UUIDDatesPairs) {
 
                     String user = (String) snapshot.child("userUUID").getValue();
 
@@ -549,7 +551,7 @@ public class DirectMentions extends Fragment {
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
 
-                toastMessageLong(error.getMessage());
+                showMessageLong(error.getMessage());
             }
         };
 
@@ -751,7 +753,7 @@ public class DirectMentions extends Fragment {
                             @Override
                             public void onCancelled(@NonNull DatabaseError error) {
 
-                                toastMessageLong(error.getMessage());
+                                showMessageLong(error.getMessage());
                             }
                         });
                     }
@@ -783,8 +785,8 @@ public class DirectMentions extends Fragment {
                                         cancelToasts();
 
                                         Intent Activity = new Intent(mContext, Navigation.class);
-                                        Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()));
-                                        Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()));
+                                        Activity.putExtra("shapeLat", (double) shapeLatInt);
+                                        Activity.putExtra("shapeLon", (double) shapeLonInt);
                                         Activity.putExtra("newShape", false);
                                         Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
                                         Activity.putExtra("UUIDToHighlight", mUser.get(getAdapterPosition()));
@@ -806,7 +808,7 @@ public class DirectMentions extends Fragment {
                         public void onCancelled(@NonNull DatabaseError error) {
 
                             loadingIcon.setVisibility(View.GONE);
-                            toastMessageLong(error.getMessage());
+                            showMessageLong(error.getMessage());
                         }
                     });
                 });
@@ -1074,11 +1076,25 @@ public class DirectMentions extends Fragment {
         }
     }
 
-    private void toastMessageLong(String message) {
+    private void showMessageLong(String message) {
 
-        cancelToasts();
-        longToast = Toast.makeText(mContext, message, Toast.LENGTH_LONG);
-        longToast.setGravity(Gravity.CENTER, 0, 0);
-        longToast.show();
+        if (android.os.Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
+
+            Snackbar snackBar = Snackbar.make(rootView, message, Snackbar.LENGTH_LONG);
+            View snackBarView = snackBar.getView();
+            TextView snackTextView = snackBarView.findViewById(com.google.android.material.R.id.snackbar_text);
+            snackTextView.setMaxLines(10);
+            snackBar.show();
+        } else {
+
+            // Prevents a crash if the user backed out of activity and a toast message occurs from another thread.
+            if (mActivity != null) {
+
+                cancelToasts();
+                longToast = Toast.makeText(mContext, message, Toast.LENGTH_LONG);
+                longToast.setGravity(Gravity.CENTER, 0, 0);
+                longToast.show();
+            }
+        }
     }
 }

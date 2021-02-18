@@ -40,6 +40,11 @@
     <string name="recyclerView_image_outside_description">Image: A holder for an image added to the chat from outside the shape.</string>
     <string name="recyclerView_video_outside_description">Video: A holder for a video added to the chat from outside the shape.</string>
     <string name="dms_button_description">Direct Mentions button: go to your direct mentions without first entering a shape.</string>
+    <string name="calculating_distance">"Calculating distance to circle…"</string>
+    <string name="message_from_within_circle">"Message from within circle…"</string>
+    <string name="message_from_outside_circle">"Message from outside circle…"</string>
+    <string name="outside_circle">"Outside circle"</string>
+    <string name="inside_circle">"Inside circle"</string>
 
     <string-array name="pref_map_types_entries">
         <item>Road map view</item>

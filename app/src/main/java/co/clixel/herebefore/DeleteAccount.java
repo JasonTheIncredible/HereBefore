@@ -3,7 +3,9 @@ package co.clixel.herebefore;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.Bundle;
+import android.view.Gravity;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
@@ -21,6 +23,7 @@ import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.ads.MobileAds;
 import com.google.android.gms.ads.RequestConfiguration;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.EmailAuthProvider;
 import com.google.firebase.auth.FirebaseAuth;
@@ -31,7 +34,7 @@ public class DeleteAccount extends AppCompatActivity {
 
     private EditText password;
     private Button deleteAccount, goBack;
-    private View loadingIcon;
+    private View loadingIcon, rootView;
     private boolean googleAccount;
     private SharedPreferences sharedPreferences;
     private String googleIdToken;
@@ -48,6 +51,8 @@ public class DeleteAccount extends AppCompatActivity {
         updatePreferences();
 
         setContentView(R.layout.deleteaccount);
+
+        rootView = findViewById(R.id.rootViewDeleteAccount);
 
         AdView bannerAd = findViewById(R.id.chatBanner);
 
@@ -203,12 +208,12 @@ public class DeleteAccount extends AppCompatActivity {
 
                             // Tell the user what happened.
                             loadingIcon.setVisibility(View.GONE);
-                            toastMessageLong("Account Deletion Failed: " + task1.getException().getMessage());
+                            showMessageLong("Account Deletion Failed: " + task1.getException().getMessage());
                         } else if (!task1.isSuccessful() && task1.getException() == null) {
 
                             // Tell the user something happened.
                             loadingIcon.setVisibility(View.GONE);
-                            toastMessageLong("An unknown error occurred. Please try again.");
+                            showMessageLong("An unknown error occurred. Please try again.");
                         }
                     }));
                 }
@@ -243,22 +248,22 @@ public class DeleteAccount extends AppCompatActivity {
 
                             // Tell the user what happened.
                             loadingIcon.setVisibility(View.GONE);
-                            toastMessageLong("Account Deletion Failed: " + task12.getException().getMessage());
+                            showMessageLong("Account Deletion Failed: " + task12.getException().getMessage());
                         } else if (!task12.isSuccessful() && task12.getException() == null) {
 
                             // Tell the user something happened.
                             loadingIcon.setVisibility(View.GONE);
-                            toastMessageLong("An unknown error occurred. Please try again.");
+                            showMessageLong("An unknown error occurred. Please try again.");
                         }
                     }));
                 } else if (password.getText().toString().equals("")) {
 
                     password.requestFocus();
-                    toastMessageShort("Please re-enter password for this account");
+                    showMessageShort("Please re-enter password for this account");
                 } else {
 
                     password.getText().clear();
-                    toastMessageShort("Incorrect password");
+                    showMessageShort("Incorrect password");
                 }
             }
         });
@@ -307,15 +312,39 @@ public class DeleteAccount extends AppCompatActivity {
         }
     }
 
-    private void toastMessageShort(String message) {
+    private void showMessageShort(String message) {
 
-        shortToast = Toast.makeText(this, message, Toast.LENGTH_SHORT);
-        shortToast.show();
+        if (android.os.Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
+
+            Snackbar snackBar = Snackbar.make(rootView, message, Snackbar.LENGTH_SHORT);
+            View snackBarView = snackBar.getView();
+            TextView snackTextView = (TextView) snackBarView.findViewById(com.google.android.material.R.id.snackbar_text);
+            snackTextView.setMaxLines(10);
+            snackBar.show();
+        } else {
+
+            cancelToasts();
+            shortToast = Toast.makeText(this, message, Toast.LENGTH_SHORT);
+            shortToast.setGravity(Gravity.CENTER, 0, 0);
+            shortToast.show();
+        }
     }
 
-    private void toastMessageLong(String message) {
+    private void showMessageLong(String message) {
 
-        longToast = Toast.makeText(this, message, Toast.LENGTH_LONG);
-        longToast.show();
+        if (android.os.Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
+
+            Snackbar snackBar = Snackbar.make(rootView, message, Snackbar.LENGTH_LONG);
+            View snackBarView = snackBar.getView();
+            TextView snackTextView = snackBarView.findViewById(com.google.android.material.R.id.snackbar_text);
+            snackTextView.setMaxLines(10);
+            snackBar.show();
+        } else {
+
+            cancelToasts();
+            longToast = Toast.makeText(this, message, Toast.LENGTH_LONG);
+            longToast.setGravity(Gravity.CENTER, 0, 0);
+            longToast.show();
+        }
     }
 }
