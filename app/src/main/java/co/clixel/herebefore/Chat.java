@@ -317,28 +317,20 @@ public class Chat extends Fragment implements
         super.onStart();
         Log.i(TAG, "onStart()");
 
-        if (!newShape && (shapeLatInt == 0 || shapeLonInt == 0)) {
+        if (!newShape) {
 
-            // Don't manipulate the number if user clicked on a DM, as the number is already in the correct format.
-            if (UUIDToHighlight != null) {
+            // Get a value with 1 decimal point and use it for Firebase.
+            double nearLeftPrecisionLat = Math.pow(10, 1);
+            // Can't create a firebase path with '.', so get rid of decimal.
+            double nearLeftLatTemp = (int) (nearLeftPrecisionLat * shapeLat) / nearLeftPrecisionLat;
+            nearLeftLatTemp *= 10;
+            shapeLatInt = (int) nearLeftLatTemp;
 
-                shapeLatInt = shapeLat.intValue();
-                shapeLonInt = shapeLon.intValue();
-            } else {
-
-                // Get a value with 1 decimal point and use it for Firebase.
-                double nearLeftPrecisionLat = Math.pow(10, 1);
-                // Can't create a firebase path with '.', so get rid of decimal.
-                double nearLeftLatTemp = (int) (nearLeftPrecisionLat * shapeLat) / nearLeftPrecisionLat;
-                nearLeftLatTemp *= 10;
-                shapeLatInt = (int) nearLeftLatTemp;
-
-                double nearLeftPrecisionLon = Math.pow(10, 1);
-                // Can't create a firebase path with '.', so get rid of decimal.
-                double nearLeftLonTemp = (int) (nearLeftPrecisionLon * shapeLon) / nearLeftPrecisionLon;
-                nearLeftLonTemp *= 10;
-                shapeLonInt = (int) nearLeftLonTemp;
-            }
+            double nearLeftPrecisionLon = Math.pow(10, 1);
+            // Can't create a firebase path with '.', so get rid of decimal.
+            double nearLeftLonTemp = (int) (nearLeftPrecisionLon * shapeLon) / nearLeftPrecisionLon;
+            nearLeftLonTemp *= 10;
+            shapeLonInt = (int) nearLeftLonTemp;
         } else if (newShape) {
 
             newShapeTextView.setVisibility(View.VISIBLE);

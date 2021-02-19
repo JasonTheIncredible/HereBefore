@@ -136,10 +136,9 @@ public class Map extends FragmentActivity implements
     // Increase viral potential - make it easier to share?
     // Panoramic view, like gMaps.
 
-    // After clicking on a DM, Chat's onLocationChanged will always show the user being outside of the circle, as shapeLat taken from DirectMentions will only be a 3 digit number at max.
-    // Store all text as strings.
-    // Strange issue where after unplugging phone and plugging back in, logcat rapidly cycles through all activity lifecycles.
     // If distance to circle is really far, let user post outside of the circle without needing good accuracy.
+    // Store all text as strings.
+    // Strange issue where after unplugging phone and plugging back in, logcat rapidly cycles through all activity life cycles.
     // Don't store user email in messageThreads.
     // Adjust AppIntro.
     // Finish setting up Google ads, then add more ads. Then get rid of testID in Chat. Adjust video and image resolution based on projected revenue.
@@ -569,7 +568,7 @@ public class Map extends FragmentActivity implements
         circleTemp = null;
 
         // Enable buttons, unless the user took a photo or video and is entering the next activity.
-        if (imageFile == null && videoFile == null) {
+        if ((getIntent().getExtras() != null && getIntent().getExtras().getString("userUUID") == null) || (getIntent().getExtras() == null && imageFile == null && videoFile == null)) {
 
             circleButton.setEnabled(true);
             dmButton.setEnabled(true);
@@ -699,10 +698,35 @@ public class Map extends FragmentActivity implements
         Bundle extras = intent.getExtras();
         if (extras != null) {
 
+            if (loadingIcon != null) {
+
+                loadingIcon.setVisibility(View.VISIBLE);
+            }
+
+            if (circleButton != null) {
+
+                circleButton.setEnabled(false);
+            }
+
+            if (dmButton != null) {
+
+                dmButton.setEnabled(false);
+            }
+
+            if (settingsButton != null) {
+
+                settingsButton.setEnabled(false);
+            }
+
             // Check location permissions.
             if (ContextCompat.checkSelfPermission(getBaseContext(),
                     Manifest.permission.ACCESS_FINE_LOCATION)
                     == PackageManager.PERMISSION_GRANTED) {
+
+                if (mFusedLocationClient == null) {
+
+                    mFusedLocationClient = getFusedLocationProviderClient(Map.this);
+                }
 
                 mFusedLocationClient.getLastLocation()
                         .addOnSuccessListener(Map.this, location -> {
@@ -1218,7 +1242,7 @@ public class Map extends FragmentActivity implements
         Activity.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
         // If getIntent().getExtras != null, user is entering a circle from a notification and seenByUser needs to be set to true. Else, enter circle like normal.
-        if (getIntent().getExtras() != null) {
+        if (getIntent().getExtras() != null && getIntent().getExtras().getString("userUUID") != null) {
 
             String userUUID = getIntent().getExtras().getString("userUUID");
             Activity.putExtra("UUIDToHighlight", userUUID);
@@ -1256,11 +1280,10 @@ public class Map extends FragmentActivity implements
                                 if (!(Boolean) ds.child("seenByUser").getValue()) {
 
                                     ds.child("seenByUser").getRef().setValue(true);
-
+                                    // Removing the extra prevents issues when user clicks on a mention, backs into Map, then tries to go to a new circle.
+                                    getIntent().removeExtra("userUUID");
                                     loadingIcon.setVisibility(View.GONE);
-
                                     startActivity(finalActivity);
-
                                     return;
                                 }
                             }
