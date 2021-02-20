@@ -576,7 +576,11 @@ public class Chat extends Fragment implements
                                     return;
                                 }
 
-                                if (location.getAccuracy() >= 10) {
+                                float[] newDistance = new float[2];
+                                Location.distanceBetween(shapeLat, shapeLon, location.getLatitude(), location.getLongitude(), newDistance);
+                                if (!newShape && location.getAccuracy() < 50 && newDistance[0] > 50) {
+                                    // User is outside of the circle, so no need to wait for an accurate location.
+                                } else if (location.getAccuracy() >= 10) {
 
                                     showMessageLong("Please wait for better location accuracy." + "\n" + "Moving your phone around should help." + "\n" + "Current: " + location.getAccuracy() + "\n" + "Required: < 10");
                                     sendButton.setEnabled(true);
@@ -703,9 +707,6 @@ public class Chat extends Fragment implements
                                 } else {
 
                                     if (userIsWithinShape == null) {
-
-                                        float[] newDistance = new float[2];
-                                        Location.distanceBetween(shapeLat, shapeLon, location.getLatitude(), location.getLongitude(), newDistance);
 
                                         if (newDistance[0] < 5) {
 

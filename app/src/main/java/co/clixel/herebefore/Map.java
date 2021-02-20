@@ -107,6 +107,7 @@ public class Map extends FragmentActivity implements
 
     // Make creating a circle more accurate.
     // If user is too far away from an area before uploading a picture, require taking a new picture.
+    // Store all text as strings.
     // If user is outside of a circle, show how far outside? - problem: users might be able to identify other users by distance.
     // Show picture upon opening circle or show picture at the top at all times.
     // Long press a shape to see a popup of that picture.
@@ -136,8 +137,6 @@ public class Map extends FragmentActivity implements
     // Increase viral potential - make it easier to share?
     // Panoramic view, like gMaps.
 
-    // If distance to circle is really far, let user post outside of the circle without needing good accuracy.
-    // Store all text as strings.
     // Strange issue where after unplugging phone and plugging back in, logcat rapidly cycles through all activity life cycles.
     // Don't store user email in messageThreads.
     // Adjust AppIntro.
