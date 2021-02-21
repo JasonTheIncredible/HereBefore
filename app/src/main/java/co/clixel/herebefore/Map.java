@@ -137,9 +137,8 @@ public class Map extends FragmentActivity implements
     // Increase viral potential - make it easier to share?
     // Panoramic view, like gMaps.
 
-    // Strange issue where after unplugging phone and plugging back in, logcat rapidly cycles through all activity life cycles.
     // Don't store user email in messageThreads.
-    // Adjust AppIntro.
+    // Adjust AppIntro / Store text as strings.
     // Finish setting up Google ads, then add more ads. Then get rid of testID in Chat. Adjust video and image resolution based on projected revenue.
     // Register social media accounts / switch cloud account's email address to the new one.
     // Deal with leaks.
@@ -429,8 +428,8 @@ public class Map extends FragmentActivity implements
         Runnable runnable = () ->
 
                 alert.setCancelable(false)
-                        .setTitle("Camera Permission Required")
-                        .setMessage("Here Before needs permission to use your camera to take pictures and video.")
+                        .setTitle(R.string.camera_permission_required)
+                        .setMessage(R.string.camera_permission_explanation)
                         .setPositiveButton("OK", (dialogInterface, i) -> {
 
                             if (checkPermissionsPicture) {
@@ -458,8 +457,8 @@ public class Map extends FragmentActivity implements
         Runnable runnable = () ->
 
                 alert.setCancelable(false)
-                        .setTitle("Audio Permission Required")
-                        .setMessage("Here Before needs permission to record audio during video recording.")
+                        .setTitle(R.string.audio_permission_required)
+                        .setMessage(R.string.audio_permission_explanation)
                         .setPositiveButton("OK", (dialogInterface, i) -> {
 
                             if (checkPermissionsPicture) {
@@ -1012,8 +1011,8 @@ public class Map extends FragmentActivity implements
         Runnable runnable = () ->
 
                 alert.setCancelable(false)
-                        .setTitle("Device Location Required")
-                        .setMessage("Here Before needs permission to use your location to find chat areas around you.")
+                        .setTitle(R.string.location_permission_required)
+                        .setMessage(R.string.location_permission_required_explanation)
                         .setPositiveButton("OK", (dialogInterface, i) -> ActivityCompat.requestPermissions(this,
                                 new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
                                 Request_User_Location_Code))
@@ -1059,7 +1058,7 @@ public class Map extends FragmentActivity implements
             mLocationCallback = new LocationCallback() {
 
                 @Override
-                public void onLocationResult(LocationResult locationResult) {
+                public void onLocationResult(@NonNull LocationResult locationResult) {
 
                     if (locationResult != null) {
 
@@ -1158,8 +1157,8 @@ public class Map extends FragmentActivity implements
         Runnable runnable = () ->
 
                 alert.setCancelable(false)
-                        .setTitle("GPS Disabled")
-                        .setMessage("Please enable your location services on the following screen.")
+                        .setTitle(R.string.gps_disabled)
+                        .setMessage(R.string.gps_disabled_manually)
                         .setPositiveButton("OK", (dialog, i) -> startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)))
                         .create()
                         .show();

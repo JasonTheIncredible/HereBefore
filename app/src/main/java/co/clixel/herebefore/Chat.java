@@ -577,9 +577,13 @@ public class Chat extends Fragment implements
                                 }
 
                                 float[] newDistance = new float[2];
-                                Location.distanceBetween(shapeLat, shapeLon, location.getLatitude(), location.getLongitude(), newDistance);
+                                if (!newShape) {
+
+                                    Location.distanceBetween(shapeLat, shapeLon, location.getLatitude(), location.getLongitude(), newDistance);
+                                }
+
                                 if (!newShape && location.getAccuracy() < 50 && newDistance[0] > 50) {
-                                    // User is outside of the circle, so no need to wait for an accurate location.
+                                    // User is far outside of the circle, so no need to wait for an accurate location.
                                 } else if (location.getAccuracy() >= 10) {
 
                                     showMessageLong("Please wait for better location accuracy." + "\n" + "Moving your phone around should help." + "\n" + "Current: " + location.getAccuracy() + "\n" + "Required: < 10");
@@ -2463,8 +2467,8 @@ public class Chat extends Fragment implements
         Runnable runnable = () ->
 
                 alert.setCancelable(false)
-                        .setTitle("GPS Disabled")
-                        .setMessage("Please enable your location services on the following screen.")
+                        .setTitle(R.string.gps_disabled)
+                        .setMessage(R.string.gps_disabled_manually)
                         .setPositiveButton("OK", (dialog, i) -> startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)))
                         .create()
                         .show();
@@ -2483,8 +2487,8 @@ public class Chat extends Fragment implements
         Runnable runnable = () ->
 
                 alert.setCancelable(false)
-                        .setTitle("Device Location Required")
-                        .setMessage("Here Before needs permission to use your location to find chat areas around you.")
+                        .setTitle(R.string.location_permission_required)
+                        .setMessage(R.string.location_permission_required_explanation)
                         .setPositiveButton("OK", (dialogInterface, i) -> ActivityCompat.requestPermissions(mActivity,
                                 new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
                                 Request_User_Location_Code))
@@ -2505,8 +2509,8 @@ public class Chat extends Fragment implements
         Runnable runnable = () ->
 
                 alert.setCancelable(false)
-                        .setTitle("Camera Permission Required")
-                        .setMessage("Here Before needs permission to use your camera to take pictures and video.")
+                        .setTitle(R.string.camera_permission_required)
+                        .setMessage(R.string.camera_permission_explanation)
                         .setPositiveButton("OK", (dialogInterface, i) -> {
 
                             if (checkPermissionsPicture) {
@@ -2534,8 +2538,8 @@ public class Chat extends Fragment implements
         Runnable runnable = () ->
 
                 alert.setCancelable(false)
-                        .setTitle("Audio Permission Required")
-                        .setMessage("Here Before needs permission to record audio during video recording.")
+                        .setTitle(R.string.audio_permission_required)
+                        .setMessage(R.string.audio_permission_explanation)
                         .setPositiveButton("OK", (dialogInterface, i) -> {
 
                             if (checkPermissionsPicture) {

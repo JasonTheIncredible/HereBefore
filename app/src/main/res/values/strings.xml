@@ -45,6 +45,14 @@
     <string name="message_from_outside_circle">"Message from outside circle…"</string>
     <string name="outside_circle">"Outside circle"</string>
     <string name="inside_circle">"Inside circle"</string>
+    <string name="camera_permission_required">"Camera Permission Required"</string>
+    <string name="camera_permission_explanation">"Here Before needs permission to use your camera to take pictures and video."</string>
+    <string name="audio_permission_required">"Audio Permission Required"</string>
+    <string name="audio_permission_explanation">"Here Before needs permission to record audio while recording video."</string>
+    <string name="location_permission_required">"Location permission is required. Please enable it manually through the Android settings menu."</string>
+    <string name="location_permission_required_explanation">"Here Before needs permission to use your location to find chat areas around you."</string>
+    <string name="gps_disabled">"GPS Disabled"</string>
+    <string name="gps_disabled_manually">"Please enable your location services on the following screen."</string>
 
     <string-array name="pref_map_types_entries">
         <item>Road map view</item>
