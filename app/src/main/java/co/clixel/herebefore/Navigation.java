@@ -17,8 +17,7 @@ import androidx.viewpager.widget.ViewPager;
 
 import com.gauravk.bubblenavigation.BubbleNavigationConstraintView;
 import com.gauravk.bubblenavigation.listener.BubbleNavigationChangeListener;
-import com.google.android.gms.auth.api.signin.GoogleSignIn;
-import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -34,7 +33,7 @@ public class Navigation extends AppCompatActivity {
     public BubbleNavigationConstraintView bubbleNavigationConstraintView;
     private ViewPager.OnPageChangeListener pagerListener;
     private int currentItem = -1;
-    private String userEmailFirebase;
+    private String firebaseUid;
     private int dmCounter = 0;
     private Query query;
     private ChildEventListener childEventListener;
@@ -143,21 +142,9 @@ public class Navigation extends AppCompatActivity {
 
         bubbleNavigationConstraintView.setNavigationChangeListener(bubbleNavigationChangeListener);
 
-        // If user has a Google account, get email one way. Else, get email another way.
-        GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(this);
-        String email;
-        if (acct != null) {
+        firebaseUid = FirebaseAuth.getInstance().getUid();
 
-            email = acct.getEmail();
-        } else {
-
-            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-            email = sharedPreferences.getString("userToken", "null");
-        }
-        // Firebase does not allow ".", so replace them with ",".
-        userEmailFirebase = email.replace(".", ",");
-
-        DatabaseReference Dms = FirebaseDatabase.getInstance().getReference().child("Users").child(userEmailFirebase).child("ReceivedDms");
+        DatabaseReference Dms = FirebaseDatabase.getInstance().getReference().child("Users").child(firebaseUid).child("ReceivedDms");
         Dms.addListenerForSingleValueEvent(new ValueEventListener() {
 
             @Override
@@ -227,7 +214,7 @@ public class Navigation extends AppCompatActivity {
             query.removeEventListener(childEventListener);
         }
 
-        query = FirebaseDatabase.getInstance().getReference().child("Users").child(userEmailFirebase).child("ReceivedDms").limitToLast(1);
+        query = FirebaseDatabase.getInstance().getReference().child("Users").child(firebaseUid).child("ReceivedDms").limitToLast(1);
         childEventListener = new ChildEventListener() {
 
             @Override

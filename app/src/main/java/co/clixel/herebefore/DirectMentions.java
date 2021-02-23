@@ -29,10 +29,9 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
-import com.google.android.gms.auth.api.signin.GoogleSignIn;
-import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.material.snackbar.Snackbar;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -54,7 +53,7 @@ import static java.text.DateFormat.getDateTimeInstance;
 public class DirectMentions extends Fragment {
 
     private static final String TAG = "DirectMentions";
-    private String userEmailFirebase;
+    private String firebaseUid;
     private ArrayList<String> mTime, mUser, mImage, mVideo, mText, mShapeUUID;
     private ArrayList<Boolean> mUserIsWithinShape, mSeenByUser;
     private ArrayList<Double> mShapeLat, mShapeLon;
@@ -152,24 +151,12 @@ public class DirectMentions extends Fragment {
         firstLoad = true;
         loadingOlderMessages = false;
 
-        // If user has a Google account, get email one way. Else, get email another way.
-        GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
-        String email;
-        if (acct != null) {
-
-            email = acct.getEmail();
-        } else {
-
-            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-            email = sharedPreferences.getString("userToken", "null");
-        }
-        // Firebase does not allow ".", so replace them with ",".
-        userEmailFirebase = email.replace(".", ",");
+        firebaseUid = FirebaseAuth.getInstance().getUid();
 
         // If the string doesn't equal null, check if the latest user is the same as the one in the recyclerView. If string is null, it's the first time loading.
         if (UUIDDatesPairsSize != null) {
 
-            Query query = FirebaseDatabase.getInstance().getReference().child("Users").child(userEmailFirebase).child("ReceivedDms").limitToLast(1);
+            Query query = FirebaseDatabase.getInstance().getReference().child("Users").child(firebaseUid).child("ReceivedDms").limitToLast(1);
             query.addListenerForSingleValueEvent(new ValueEventListener() {
 
                 @Override
@@ -250,18 +237,18 @@ public class DirectMentions extends Fragment {
         if (UUIDDatesPairsSize != null) {
 
             query = FirebaseDatabase.getInstance().getReference()
-                    .child("Users").child(userEmailFirebase).child("ReceivedDms")
+                    .child("Users").child(firebaseUid).child("ReceivedDms")
                     .orderByChild("date")
                     .startAt(UUIDDatesPairs.get(UUIDDatesPairsSize).second);
         } else if (nodeID == null) {
 
             query = FirebaseDatabase.getInstance().getReference()
-                    .child("Users").child(userEmailFirebase).child("ReceivedDms")
+                    .child("Users").child(firebaseUid).child("ReceivedDms")
                     .limitToLast(20);
         } else {
 
             query = FirebaseDatabase.getInstance().getReference()
-                    .child("Users").child(userEmailFirebase).child("ReceivedDms")
+                    .child("Users").child(firebaseUid).child("ReceivedDms")
                     .orderByChild("date")
                     .endAt(nodeID)
                     .limitToLast(20);
@@ -422,7 +409,7 @@ public class DirectMentions extends Fragment {
         }
 
         // Add new values to arrayLists one at a time. This prevents the need to download the whole dataSnapshot every time this information is needed.
-        query = FirebaseDatabase.getInstance().getReference().child("Users").child(userEmailFirebase).child("ReceivedDms").limitToLast(1);
+        query = FirebaseDatabase.getInstance().getReference().child("Users").child(firebaseUid).child("ReceivedDms").limitToLast(1);
         childEventListener = new ChildEventListener() {
 
             @Override
@@ -726,7 +713,7 @@ public class DirectMentions extends Fragment {
                     // When user clicks on a DM, set "seenByUser" to false so it is not highlighted in the future.
                     if (!mSeenByUser.get(getAdapterPosition())) {
 
-                        DatabaseReference Dms = FirebaseDatabase.getInstance().getReference().child("Users").child(userEmailFirebase).child("ReceivedDms");
+                        DatabaseReference Dms = FirebaseDatabase.getInstance().getReference().child("Users").child(firebaseUid).child("ReceivedDms");
                         Dms.addListenerForSingleValueEvent(new ValueEventListener() {
 
                             @Override

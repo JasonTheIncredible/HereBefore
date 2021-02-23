@@ -5,7 +5,7 @@ import androidx.annotation.Keep;
 @Keep
 class MessageInformation {
 
-    public String userUUID, message, imageUrl, videoUrl, email;
+    public String userUUID, message, imageUrl, videoUrl, firebaseUid;
     public Object date;
     public Boolean userIsWithinShape;
 
@@ -17,8 +17,8 @@ class MessageInformation {
         this.date = date;
     }
 
-    public void setEmail(String email) {
-        this.email = email;
+    public void setFirebaseUid(String firebaseUid) {
+        this.firebaseUid = firebaseUid;
     }
 
     public void setImageUrl(String imageUrl) {

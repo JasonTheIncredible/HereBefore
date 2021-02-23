@@ -2,13 +2,11 @@ package co.clixel.herebefore;
 
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
-import androidx.preference.PreferenceManager;
 
 import android.util.Log;
 import android.util.Patterns;
@@ -49,7 +47,6 @@ public class SignIn extends AppCompatActivity {
     private Boolean newShape;
     private GoogleSignInClient mGoogleSignInClient;
     private FirebaseAuth mAuth;
-    private GoogleSignInAccount googleAccount;
     private View loadingIcon, rootView;
     private Toast shortToast, longToast;
     private ArrayList<String> circleUUIDsAL = new ArrayList<>();
@@ -173,25 +170,15 @@ public class SignIn extends AppCompatActivity {
 
                 if (task.isSuccessful()) {
 
-                    // Get Firebase FCM token and save it to preferences and Firebase.
-                    SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(SignIn.this);
-
                     FirebaseMessaging.getInstance().getToken().addOnCompleteListener(task1 -> {
 
                         if (task1.isSuccessful()) {
 
                             String token = task1.getResult();
 
-                            SharedPreferences.Editor editor = sharedPreferences.edit()
-                                    .putString("userToken", email)
-                                    .putString("passToken", pass)
-                                    .putString("FIREBASE_TOKEN", String.valueOf(token));
-                            editor.apply();
+                            String firebaseUid = FirebaseAuth.getInstance().getUid();
 
-                            // Firebase does not allow ".", so replace them with ",".
-                            String userEmailFirebase = email.replace(".", ",");
-
-                            FirebaseDatabase.getInstance().getReference().child("Users").child(userEmailFirebase).child("Token").setValue(token);
+                            FirebaseDatabase.getInstance().getReference().child("Users").child(firebaseUid).child("Token").setValue(token);
 
                             // Go to Chat.java with the extras.
                             Intent Activity = new Intent(SignIn.this, Navigation.class);
@@ -348,7 +335,7 @@ public class SignIn extends AppCompatActivity {
             try {
 
                 // Google sign in was successful, authenticate with Firebase
-                googleAccount = task.getResult(ApiException.class);
+                GoogleSignInAccount googleAccount = task.getResult(ApiException.class);
                 if (googleAccount != null) {
 
                     firebaseAuthWithGoogle(googleAccount);
@@ -378,24 +365,15 @@ public class SignIn extends AppCompatActivity {
 
                     if (task.isSuccessful()) {
 
-                        // Save token to sharedPreferences.
-                        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(SignIn.this);
-
                         FirebaseMessaging.getInstance().getToken().addOnCompleteListener(task1 -> {
 
                             if (task1.isSuccessful()) {
 
                                 String token = task1.getResult();
 
-                                SharedPreferences.Editor editor = sharedPreferences.edit()
-                                        .putString("googleIdToken", googleAccount.getIdToken())
-                                        .putString("FIREBASE_TOKEN", String.valueOf(token));
-                                editor.apply();
+                                String firebaseUid = FirebaseAuth.getInstance().getUid();
 
-                                // Firebase does not allow ".", so replace them with ",".
-                                String userEmailFirebase = googleAccount.getEmail().replace(".", ",");
-
-                                FirebaseDatabase.getInstance().getReference().child("Users").child(userEmailFirebase).child("Token").setValue(token);
+                                FirebaseDatabase.getInstance().getReference().child("Users").child(firebaseUid).child("Token").setValue(token);
 
                                 // Go to Chat.java with the extras.
                                 Intent Activity = new Intent(SignIn.this, Navigation.class);

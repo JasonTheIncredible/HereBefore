@@ -38,7 +38,6 @@ import androidx.fragment.app.FragmentActivity;
 import androidx.preference.PreferenceManager;
 
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
-import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
@@ -137,7 +136,8 @@ public class Map extends FragmentActivity implements
     // Increase viral potential - make it easier to share?
     // Panoramic view, like gMaps.
 
-    // Don't store user email in messageThreads.
+    // Notification is being sent to the same phone even if a different user is signed in.
+    // Create function to delete Users node when deleting messageThreads.
     // Adjust AppIntro / Store text as strings.
     // Finish setting up Google ads, then add more ads. Then get rid of testID in Chat. Adjust video and image resolution based on projected revenue.
     // Register social media accounts / switch cloud account's email address to the new one.
@@ -146,6 +146,8 @@ public class Map extends FragmentActivity implements
     // Check warning messages.
     // Move this list to a doc for privacy.
     // Make sure aboutLibraries includes all libraries, and make sure all licenses are fair use (NOT GPL).
+    // Request new tokens, and don't upload them to Github.
+    // Log out all users.
     // Switch existing values in Firebase (including storage).
 
     // Release checklist:
@@ -1245,22 +1247,10 @@ public class Map extends FragmentActivity implements
             String userUUID = getIntent().getExtras().getString("userUUID");
             Activity.putExtra("UUIDToHighlight", userUUID);
 
-            // If user has a Google account, get email one way. Else, get email another way.
-            GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(this);
-            String email;
-            if (acct != null) {
-
-                email = acct.getEmail();
-            } else {
-
-                SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-                email = sharedPreferences.getString("userToken", "null");
-            }
-            // Firebase does not allow ".", so replace them with ",".
-            String userEmailFirebase = email.replace(".", ",");
+            String firebaseUid = FirebaseAuth.getInstance().getUid();
 
             // Set "seenByUser" to true so it is not highlighted in the future.
-            DatabaseReference Dms = FirebaseDatabase.getInstance().getReference().child("Users").child(userEmailFirebase).child("ReceivedDms");
+            DatabaseReference Dms = FirebaseDatabase.getInstance().getReference().child("Users").child(firebaseUid).child("ReceivedDms");
             Intent finalActivity = Activity;
             Dms.addListenerForSingleValueEvent(new ValueEventListener() {
 

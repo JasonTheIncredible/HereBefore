@@ -57,8 +57,6 @@ import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.ads.MobileAds;
 import com.google.android.gms.ads.RequestConfiguration;
-import com.google.android.gms.auth.api.signin.GoogleSignIn;
-import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
@@ -82,6 +80,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.material.snackbar.Snackbar;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -739,16 +738,8 @@ public class Chat extends Fragment implements
                                         MessageInformation messageInformation = new MessageInformation();
                                         Object date = ServerValue.TIMESTAMP;
                                         messageInformation.setDate(date);
-                                        // If user has a Google account, get email one way. Else, get email another way.
-                                        GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
-                                        String email;
-                                        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-                                        if (acct != null) {
-                                            email = acct.getEmail();
-                                        } else {
-                                            email = sharedPreferences.getString("userToken", "null");
-                                        }
-                                        messageInformation.setEmail(email);
+                                        String firebaseUid = FirebaseAuth.getInstance().getUid();
+                                        messageInformation.setFirebaseUid(firebaseUid);
                                         String input = mInput.getText().toString().trim();
                                         messageInformation.setMessage(input);
                                         messageInformation.setUserIsWithinShape(userIsWithinShape);
@@ -3080,16 +3071,8 @@ public class Chat extends Fragment implements
                         MessageInformation messageInformation = new MessageInformation();
                         Object date = ServerValue.TIMESTAMP;
                         messageInformation.setDate(date);
-                        // If user has a Google account, get email one way. Else, get email another way.
-                        GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
-                        String email;
-                        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-                        if (acct != null) {
-                            email = acct.getEmail();
-                        } else {
-                            email = sharedPreferences.getString("userToken", "null");
-                        }
-                        messageInformation.setEmail(email);
+                        String firebaseUid = FirebaseAuth.getInstance().getUid();
+                        messageInformation.setFirebaseUid(firebaseUid);
                         if (input.length() != 0) {
 
                             messageInformation.setMessage(input);
@@ -3177,16 +3160,8 @@ public class Chat extends Fragment implements
                         MessageInformation messageInformation = new MessageInformation();
                         Object date = ServerValue.TIMESTAMP;
                         messageInformation.setDate(date);
-                        // If user has a Google account, get email one way. Else, get email another way.
-                        GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(mContext);
-                        String email;
-                        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-                        if (acct != null) {
-                            email = acct.getEmail();
-                        } else {
-                            email = sharedPreferences.getString("userToken", "null");
-                        }
-                        messageInformation.setEmail(email);
+                        String firebaseUid = FirebaseAuth.getInstance().getUid();
+                        messageInformation.setFirebaseUid(firebaseUid);
                         messageInformation.setImageUrl(uri.toString());
                         if (input.length() != 0) {
 
