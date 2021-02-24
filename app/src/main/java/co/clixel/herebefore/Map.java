@@ -115,7 +115,7 @@ public class Map extends FragmentActivity implements
     // After clicking on a DM and going to that Chat, allow user to find that same shape on the map.
     // After clicking on a UUID, keep it expanded after updating recyclerView.
     // Create a "New messages" toast if user is scrolled up (or maybe just if user is scrolled up and restarts?)
-    // Only be able to see things you've visited - Kenny.
+    // Only be able to see things you've visited - Kenny. Or allow the user to choose whether someone needs to be near the circle to see the circle.
     // Create widget for faster picture / creating point.
     // Develop an Apple version.
     // Add ability to add both picture and video to firebase at the same time.
@@ -136,7 +136,9 @@ public class Map extends FragmentActivity implements
     // Increase viral potential - make it easier to share?
     // Panoramic view, like gMaps.
 
-    // Notification is being sent to the same phone even if a different user is signed in.
+    // Check Google account password before deleting account.
+    // Prevent creating new "User" nodes if user deleted account.
+    // Pressing back while being asked for permission causes the "enable it manually" popup.
     // Create function to delete Users node when deleting messageThreads.
     // Adjust AppIntro / Store text as strings.
     // Finish setting up Google ads, then add more ads. Then get rid of testID in Chat. Adjust video and image resolution based on projected revenue.

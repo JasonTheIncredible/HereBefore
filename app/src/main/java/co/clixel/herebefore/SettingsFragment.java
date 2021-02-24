@@ -14,6 +14,8 @@ import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.PreferenceManager;
 
 import com.firebase.ui.auth.AuthUI;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.FirebaseDatabase;
 import com.mikepenz.aboutlibraries.LibsBuilder;
 
 /**
@@ -118,7 +120,11 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
                     AuthUI.getInstance().signOut(getActivity());
                     PreferenceManager.getDefaultSharedPreferences(getActivity()).edit().clear().apply();
 
-                    Toast signedOutToast = Toast.makeText(getActivity(), "Signed out", Toast.LENGTH_SHORT);
+                    // Remove the token so user will not get notifications while they are not logged into their account.
+                    String firebaseUid = FirebaseAuth.getInstance().getUid();
+                    FirebaseDatabase.getInstance().getReference().child("Users").child(firebaseUid).child("Token").removeValue();
+
+                    Toast signedOutToast = Toast.makeText(getActivity(), "Signed Out", Toast.LENGTH_SHORT);
                     signedOutToast.setGravity(Gravity.CENTER, 0, 250);
                     signedOutToast.show();
 
