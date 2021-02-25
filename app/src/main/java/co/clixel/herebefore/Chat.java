@@ -330,7 +330,7 @@ public class Chat extends Fragment implements
             double nearLeftLonTemp = (int) (nearLeftPrecisionLon * shapeLon) / nearLeftPrecisionLon;
             nearLeftLonTemp *= 10;
             shapeLonInt = (int) nearLeftLonTemp;
-        } else if (newShape) {
+        } else {
 
             newShapeTextView.setVisibility(View.VISIBLE);
         }
@@ -2241,7 +2241,7 @@ public class Chat extends Fragment implements
                         }
                     } else {
 
-                        showMessageLong("Location permission is required. Please enable it manually through the Android settings menu.");
+                        showMessageLong("Location permission is required. You may need to enable it manually through the Android settings menu.");
                     }
                 }
 
@@ -2274,7 +2274,7 @@ public class Chat extends Fragment implements
                             startActivityTakePhoto();
                         } else if (grantResults[0] != PackageManager.PERMISSION_GRANTED) {
 
-                            showMessageLong("Camera permission is required. Please enable it manually through the Android settings menu.");
+                            showMessageLong("Camera permission is required. You may need to enable it manually through the Android settings menu.");
                         }
                     }
                 }
@@ -2316,7 +2316,7 @@ public class Chat extends Fragment implements
                             startActivityRecordVideo();
                         } else if (grantResults[0] != PackageManager.PERMISSION_GRANTED) {
 
-                            showMessageLong("Camera and Audio permissions are required. Please enable them manually through the Android settings menu.");
+                            showMessageLong("Camera and Audio permissions are required. You may need to enable them manually through the Android settings menu.");
                         }
                     }
                 }
@@ -2331,7 +2331,7 @@ public class Chat extends Fragment implements
         Log.i(TAG, "startLocationUpdates()");
 
         // Create the location request to start receiving updates
-        LocationRequest locationRequest = new LocationRequest();
+        LocationRequest locationRequest = LocationRequest.create();
         locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
         /* 1000 = 1 sec */
@@ -2360,12 +2360,9 @@ public class Chat extends Fragment implements
             mLocationCallback = new LocationCallback() {
 
                 @Override
-                public void onLocationResult(LocationResult locationResult) {
+                public void onLocationResult(@NonNull LocationResult locationResult) {
 
-                    if (locationResult != null) {
-
-                        onLocationChanged(locationResult.getLastLocation());
-                    }
+                    onLocationChanged(locationResult.getLastLocation());
                 }
             };
 
@@ -3252,7 +3249,7 @@ public class Chat extends Fragment implements
             snackBar = Snackbar.make(rootView, message, Snackbar.LENGTH_SHORT);
             snackBar.setAnchorView(sendButton);
             View snackBarView = snackBar.getView();
-            TextView snackTextView = (TextView) snackBarView.findViewById(com.google.android.material.R.id.snackbar_text);
+            TextView snackTextView = snackBarView.findViewById(com.google.android.material.R.id.snackbar_text);
             snackTextView.setMaxLines(10);
             snackBar.show();
         } else {
@@ -3275,7 +3272,7 @@ public class Chat extends Fragment implements
             snackBar = Snackbar.make(rootView, message, Snackbar.LENGTH_LONG);
             snackBar.setAnchorView(sendButton);
             View snackBarView = snackBar.getView();
-            TextView snackTextView = (TextView) snackBarView.findViewById(com.google.android.material.R.id.snackbar_text);
+            TextView snackTextView = snackBarView.findViewById(com.google.android.material.R.id.snackbar_text);
             snackTextView.setMaxLines(10);
             snackBar.show();
         } else {

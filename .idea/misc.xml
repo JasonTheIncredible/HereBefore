@@ -27,6 +27,7 @@
       <entry_point TYPE="field" FQNAME="co.clixel.herebefore.DmInformation userIsWithinShape" />
       <entry_point TYPE="field" FQNAME="co.clixel.herebefore.DmInformation userUUID" />
       <entry_point TYPE="field" FQNAME="co.clixel.herebefore.DmInformation videoUrl" />
+      <entry_point TYPE="field" FQNAME="co.clixel.herebefore.MessageInformation firebaseUid" />
     </entry_points>
     <pattern value="co.clixel.herebefore.CircleInformation" />
     <pattern value="co.clixel.herebefore.ReportPostInformation" />

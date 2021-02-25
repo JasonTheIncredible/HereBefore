@@ -189,7 +189,7 @@ public class ResetPassword extends AppCompatActivity {
 
             Snackbar snackBar = Snackbar.make(rootView, message, Snackbar.LENGTH_SHORT);
             View snackBarView = snackBar.getView();
-            TextView snackTextView = (TextView) snackBarView.findViewById(com.google.android.material.R.id.snackbar_text);
+            TextView snackTextView = snackBarView.findViewById(com.google.android.material.R.id.snackbar_text);
             snackTextView.setMaxLines(10);
             snackBar.show();
         } else {

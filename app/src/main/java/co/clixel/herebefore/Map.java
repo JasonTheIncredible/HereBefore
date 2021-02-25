@@ -118,6 +118,7 @@ public class Map extends FragmentActivity implements
     // Only be able to see things you've visited - Kenny. Or allow the user to choose whether someone needs to be near the circle to see the circle.
     // Create widget for faster picture / creating point.
     // Develop an Apple version.
+    // Check Google account password before deleting account, or create an "Are you sure?" dialog.
     // Add ability to add both picture and video to firebase at the same time.
     // Add ability to filter recyclerView by type of content (recorded at the scene...).
     // Allow private posts or sharing with specific people.
@@ -129,24 +130,22 @@ public class Map extends FragmentActivity implements
     // Create a "general chat" where everyone can chat anonymously, maybe with more specific location rooms too? Delete general chat after x amount of time or # of items.
     //// Add ability to add images and video to general chat and Chat from gallery. Distinguish them from media added from location. Github 8/29.
     // Leave messages in locations that users get notified of when they enter the area by adding geo-fencing.
-    // Increase speed of checking whether user is inside a circle when clicking the circleButton, as it currently cycles through all circles. Also, allow user to choose which circle they enter?
+    // Increase speed of checking whether user is inside a circle, as it currently cycles through all circles. Also, allow user to choose which circle they enter?
     // Truncate mention in editText to look like userUUID in Chat.
     // Add a function for deleting / decreasing position of DMs after deleting / updating messageThreads - problem: need to store the name of the person being DM'ed, but that's a lot of useless information and possibly increases security risk.
     // Load user-specific shared preferences - looks like it might require saving info to database; is this worth it?
     // Increase viral potential - make it easier to share?
     // Panoramic view, like gMaps.
 
-    // Check Google account password before deleting account.
-    // Prevent creating new "User" nodes if user deleted account.
-    // Pressing back while being asked for permission causes the "enable it manually" popup.
-    // Create function to delete Users node when deleting messageThreads.
+    // Prevent creating new "User" nodes if user deleted account. How to best edit a message to show that a user no longer exists?
     // Adjust AppIntro / Store text as strings.
     // Finish setting up Google ads, then add more ads. Then get rid of testID in Chat. Adjust video and image resolution based on projected revenue.
     // Register social media accounts / switch cloud account's email address to the new one.
     // Deal with leaks.
     // Analyze app size.
-    // Check warning messages.
+    // Check warning messages / Make sure npm is up to date.
     // Move this list to a doc for privacy.
+    // Create database backups.
     // Make sure aboutLibraries includes all libraries, and make sure all licenses are fair use (NOT GPL).
     // Request new tokens, and don't upload them to Github.
     // Log out all users.
@@ -919,7 +918,7 @@ public class Map extends FragmentActivity implements
                         }
                     } else {
 
-                        showMessageLong("Location permission is required. Please enable it manually through the Android settings menu.");
+                        showMessageLong("Location permission is required. You may need to enable it manually through the Android settings menu.");
                     }
                 }
 
@@ -952,7 +951,7 @@ public class Map extends FragmentActivity implements
                             startActivityTakePhoto();
                         } else if (grantResults[0] != PackageManager.PERMISSION_GRANTED) {
 
-                            showMessageLong("Camera permission is required. Please enable it manually through the Android settings menu.");
+                            showMessageLong("Camera permission is required. You may need to enable it manually through the Android settings menu.");
                         }
                     }
                 }
@@ -994,7 +993,7 @@ public class Map extends FragmentActivity implements
                             startActivityRecordVideo();
                         } else if (grantResults[0] != PackageManager.PERMISSION_GRANTED) {
 
-                            showMessageLong("Camera and Audio permissions are required. Please enable them manually through the Android settings menu.");
+                            showMessageLong("Camera and Audio permissions are required. You may need to enable them manually through the Android settings menu.");
                         }
                     }
                 }
@@ -1031,7 +1030,7 @@ public class Map extends FragmentActivity implements
         Log.i(TAG, "startLocationUpdates()");
 
         // Create the location request to start receiving updates
-        LocationRequest locationRequest = new LocationRequest();
+        LocationRequest locationRequest = LocationRequest.create();
         locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
         /* 1000 = 1 sec */
@@ -1064,10 +1063,7 @@ public class Map extends FragmentActivity implements
                 @Override
                 public void onLocationResult(@NonNull LocationResult locationResult) {
 
-                    if (locationResult != null) {
-
-                        onLocationChanged(locationResult.getLastLocation());
-                    }
+                    onLocationChanged(locationResult.getLastLocation());
                 }
             };
 
