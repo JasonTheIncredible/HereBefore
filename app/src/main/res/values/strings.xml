@@ -44,6 +44,7 @@
     <string name="message_from_within_circle">"Message from within circle…"</string>
     <string name="message_from_outside_circle">"Message from outside circle…"</string>
     <string name="outside_circle">"Outside circle"</string>
+    <string name="distance_outside_circle">%d"m outside circle"</string>
     <string name="inside_circle">"Inside circle"</string>
     <string name="camera_permission_required">"Camera Permission Required"</string>
     <string name="camera_permission_explanation">"Here Before needs permission to use your camera to take pictures and video."</string>

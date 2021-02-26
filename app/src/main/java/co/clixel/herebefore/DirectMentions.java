@@ -191,6 +191,8 @@ public class DirectMentions extends Fragment {
 
                 @Override
                 public void onCancelled(@NonNull DatabaseError error) {
+
+                    showMessageLong(error.getMessage());
                 }
             });
         } else {
@@ -386,9 +388,9 @@ public class DirectMentions extends Fragment {
             }
 
             @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
+            public void onCancelled(@NonNull DatabaseError error) {
 
-                showMessageLong(databaseError.getMessage());
+                showMessageLong(error.getMessage());
             }
         });
     }

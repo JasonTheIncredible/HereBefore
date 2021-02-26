@@ -135,7 +135,7 @@ public class Chat extends Fragment implements
         SuggestionsVisibilityManager {
 
     private static final String TAG = "Chat";
-    private static final int Request_User_Location_Code = 42, Request_ID_Take_Photo = 69, Request_ID_Record_Video = 420, Min_Update_Time = 5000, Max_Update_Time = 5000;
+    private static final int Request_User_Location_Code = 42, Request_ID_Take_Photo = 69, Request_ID_Record_Video = 420, Update_Interval = 0, Fastest_Interval = 0;
     private MentionsEditText mInput;
     private ArrayList<String> mTime, mUser, mImage, mVideo, mSuggestions;
     private ArrayList<SpannableString> mText;
@@ -415,6 +415,11 @@ public class Chat extends Fragment implements
 
                 @Override
                 public void onCancelled(@NonNull DatabaseError error) {
+
+                    Log.e(TAG, "DatabaseError");
+                    sendButton.setEnabled(true);
+                    progressIconIndeterminate.setVisibility(View.GONE);
+                    showMessageLong(error.getMessage());
                 }
             });
         } else if (!newShape) {
@@ -566,15 +571,6 @@ public class Chat extends Fragment implements
                                     newShapeTextView.setVisibility(View.GONE);
                                 }
 
-                                // Preventing multiple clicks, using threshold of 10 seconds.
-                                if (SystemClock.elapsedRealtime() - lastClickTime < 10000) {
-
-                                    showMessageLong("Please wait " + (int) (10 - ((SystemClock.elapsedRealtime() - lastClickTime) / 1000)) + "s before sending another message.");
-                                    sendButton.setEnabled(true);
-                                    progressIconIndeterminate.setVisibility(View.GONE);
-                                    return;
-                                }
-
                                 float[] newDistance = new float[2];
                                 if (!newShape) {
 
@@ -636,11 +632,12 @@ public class Chat extends Fragment implements
                                             }
 
                                             @Override
-                                            public void onCancelled(@NonNull DatabaseError databaseError) {
+                                            public void onCancelled(@NonNull DatabaseError error) {
 
                                                 Log.e(TAG, "DatabaseError");
+                                                sendButton.setEnabled(true);
                                                 progressIconIndeterminate.setVisibility(View.GONE);
-                                                showMessageLong(databaseError.getMessage());
+                                                showMessageLong(error.getMessage());
                                             }
                                         });
                                     } else {
@@ -692,6 +689,11 @@ public class Chat extends Fragment implements
 
                                                                 @Override
                                                                 public void onCancelled(@NonNull DatabaseError error) {
+
+                                                                    Log.e(TAG, "DatabaseError");
+                                                                    sendButton.setEnabled(true);
+                                                                    progressIconIndeterminate.setVisibility(View.GONE);
+                                                                    showMessageLong(error.getMessage());
                                                                 }
                                                             });
                                                         } else {
@@ -703,27 +705,41 @@ public class Chat extends Fragment implements
                                             }
 
                                             @Override
-                                            public void onCancelled(@NonNull DatabaseError databaseError) {
+                                            public void onCancelled(@NonNull DatabaseError error) {
+
+                                                Log.e(TAG, "DatabaseError");
+                                                sendButton.setEnabled(true);
+                                                progressIconIndeterminate.setVisibility(View.GONE);
+                                                showMessageLong(error.getMessage());
                                             }
                                         });
                                     }
                                 } else {
 
-                                    if (userIsWithinShape == null) {
+                                    // Warn the user that their location just changed between the time they clicked the send button and now.
+                                    if ((userIsWithinShape == null || !userIsWithinShape) && newDistance[0] < 5) {
 
-                                        if (newDistance[0] < 5) {
+                                        showMessageShort("You are now inside the circle. Click send again.");
+                                        mInput.setHint(R.string.message_from_within_circle);
+                                        positionRelativeToShapeTextView.setText(R.string.inside_circle);
+                                        userIsWithinShape = true;
+                                        sendButton.setEnabled(true);
+                                        progressIconIndeterminate.setVisibility(View.GONE);
+                                        return;
+                                    } else if ((userIsWithinShape == null || userIsWithinShape) && newDistance[0] >= 5) {
 
-                                            showMessageShort("You are now inside the circle.");
-                                            mInput.setHint(R.string.message_from_within_circle);
-                                            positionRelativeToShapeTextView.setText(R.string.inside_circle);
-                                            userIsWithinShape = true;
-                                        } else {
+                                        showMessageShort("You are now outside the circle. Click send again.");
+                                        mInput.setHint(R.string.message_from_outside_circle);
+                                        int distanceOutsideCircle = (int) newDistance[0] - 5;
+                                        if (distanceOutsideCircle == 0) {
 
-                                            showMessageShort("You are now outside the circle.");
-                                            mInput.setHint(R.string.message_from_outside_circle);
-                                            positionRelativeToShapeTextView.setText(R.string.outside_circle);
-                                            userIsWithinShape = false;
+                                            distanceOutsideCircle = 1;
                                         }
+                                        positionRelativeToShapeTextView.setText(getString(R.string.distance_outside_circle, distanceOutsideCircle));
+                                        userIsWithinShape = false;
+                                        sendButton.setEnabled(true);
+                                        progressIconIndeterminate.setVisibility(View.GONE);
+                                        return;
                                     }
 
                                     // Send recyclerviewlayout to Firebase.
@@ -1286,7 +1302,7 @@ public class Chat extends Fragment implements
             String provider = LocationManager.NETWORK_PROVIDER;
             if (locationManager != null) {
 
-                locationManager.requestLocationUpdates(provider, Min_Update_Time, 0, this);
+                locationManager.requestLocationUpdates(provider, Fastest_Interval, 0, this);
                 startLocationUpdates();
             } else {
 
@@ -2118,10 +2134,10 @@ public class Chat extends Fragment implements
                 }
 
                 @Override
-                public void onCancelled(@NonNull DatabaseError databaseError) {
+                public void onCancelled(@NonNull DatabaseError error) {
 
                     progressIconIndeterminate.setVisibility(View.GONE);
-                    showMessageLong(databaseError.getMessage());
+                    showMessageLong(error.getMessage());
                 }
             });
         }
@@ -2335,10 +2351,10 @@ public class Chat extends Fragment implements
         locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
         /* 1000 = 1 sec */
-        locationRequest.setInterval(Max_Update_Time);
+        locationRequest.setInterval(Update_Interval);
 
         /* 1000 = 1 sec */
-        locationRequest.setFastestInterval(Min_Update_Time);
+        locationRequest.setFastestInterval(Fastest_Interval);
 
         // Create LocationSettingsRequest object using location request
         LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder();
@@ -2417,15 +2433,21 @@ public class Chat extends Fragment implements
                     if (userIsWithinShape == null) {
 
                         mInput.setHint(R.string.message_from_outside_circle);
-                        positionRelativeToShapeTextView.setText(R.string.outside_circle);
                         userIsWithinShape = false;
                     } else if (userIsWithinShape) {
 
                         showMessageShort("You are now outside the circle.");
                         mInput.setHint(R.string.message_from_outside_circle);
-                        positionRelativeToShapeTextView.setText(R.string.outside_circle);
                         userIsWithinShape = false;
                     }
+
+                    // Update the user's location for reference.
+                    int distanceOutsideCircle = (int) newDistance[0] - 5;
+                    if (distanceOutsideCircle == 0) {
+
+                        distanceOutsideCircle = 1;
+                    }
+                    positionRelativeToShapeTextView.setText(getString(R.string.distance_outside_circle, distanceOutsideCircle));
                 }
             }
         }

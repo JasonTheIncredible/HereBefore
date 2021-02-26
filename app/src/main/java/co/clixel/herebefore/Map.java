@@ -82,7 +82,7 @@ public class Map extends FragmentActivity implements
         PopupMenu.OnMenuItemClickListener {
 
     private static final String TAG = "Map";
-    private static final int Request_User_Location_Code = 42, Request_ID_Take_Photo = 69, Request_ID_Record_Video = 420;
+    private static final int Request_User_Location_Code = 42, Request_ID_Take_Photo = 69, Request_ID_Record_Video = 420, Update_Interval = 0, Fastest_Interval = 0;
     private GoogleMap mMap;
     private Circle circleTemp;
     private ChildEventListener childEventListenerNearLeft, childEventListenerFarLeft, childEventListenerNearRight, childEventListenerFarRight;
@@ -118,6 +118,7 @@ public class Map extends FragmentActivity implements
     // Only be able to see things you've visited - Kenny. Or allow the user to choose whether someone needs to be near the circle to see the circle.
     // Create widget for faster picture / creating point.
     // Develop an Apple version.
+    // After seeing analytics, possibly begin adding full shapeLat and shapeLon to messageThreads, as getting lat / lon from shape in createReceivedDmAfterCreatingMessage takes a lot of time / memory.
     // Check Google account password before deleting account, or create an "Are you sure?" dialog.
     // Add ability to add both picture and video to firebase at the same time.
     // Add ability to filter recyclerView by type of content (recorded at the scene...).
@@ -125,6 +126,7 @@ public class Map extends FragmentActivity implements
     // Let users allow specific other users to see their name.
     // Send the shape creator notifications about all comments from a shape?
     // Create "my locations" or "my photos" and see friends' locations / follow friends?
+    // Adjust UUID on a message if a user deletes their account without search every single message in the database. Also delete the @ if that UUID is mentioned?
     // Track where user is while taking the original video or picture and make the shape that big?
     // Add some version of the random button, or allow users to click on a circle in a far away area while zoomed out on map.
     // Create a "general chat" where everyone can chat anonymously, maybe with more specific location rooms too? Delete general chat after x amount of time or # of items.
@@ -137,19 +139,18 @@ public class Map extends FragmentActivity implements
     // Increase viral potential - make it easier to share?
     // Panoramic view, like gMaps.
 
-    // Prevent creating new "User" nodes if user deleted account. How to best edit a message to show that a user no longer exists?
     // Adjust AppIntro / Store text as strings.
     // Finish setting up Google ads, then add more ads. Then get rid of testID in Chat. Adjust video and image resolution based on projected revenue.
-    // Register social media accounts / switch cloud account's email address to the new one.
     // Deal with leaks.
     // Analyze app size.
     // Check warning messages / Make sure npm is up to date.
-    // Move this list to a doc for privacy.
     // Create database backups.
     // Make sure aboutLibraries includes all libraries, and make sure all licenses are fair use (NOT GPL).
     // Request new tokens, and don't upload them to Github.
+    // Register social media accounts / Switch cloud account's email address to the new one.
     // Log out all users.
     // Switch existing values in Firebase (including storage).
+    // Move this list to a doc for privacy.
 
     // Release checklist:
     // Deal with deprecated methods.
@@ -226,7 +227,7 @@ public class Map extends FragmentActivity implements
             String provider = LocationManager.NETWORK_PROVIDER;
             if (locationManager != null) {
 
-                locationManager.requestLocationUpdates(provider, 0, 0, this);
+                locationManager.requestLocationUpdates(provider, Fastest_Interval, 0, this);
                 startLocationUpdates();
             } else {
 
@@ -1034,12 +1035,10 @@ public class Map extends FragmentActivity implements
         locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
         /* 1000 = 1 sec */
-        long UPDATE_INTERVAL = 0;
-        locationRequest.setInterval(UPDATE_INTERVAL);
+        locationRequest.setInterval(Update_Interval);
 
         /* 1000 = 1 sec */
-        long FASTEST_INTERVAL = 0;
-        locationRequest.setFastestInterval(FASTEST_INTERVAL);
+        locationRequest.setFastestInterval(Fastest_Interval);
 
         // Create LocationSettingsRequest object using location request
         LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder();
@@ -1757,11 +1756,11 @@ public class Map extends FragmentActivity implements
                 }
 
                 @Override
-                public void onCancelled(@NonNull DatabaseError databaseError) {
+                public void onCancelled(@NonNull DatabaseError error) {
 
                     Log.e(TAG, "DatabaseError");
                     loadingIcon.setVisibility(View.GONE);
-                    showMessageLong(databaseError.getMessage());
+                    showMessageLong(error.getMessage());
                 }
             });
         }
@@ -1791,11 +1790,11 @@ public class Map extends FragmentActivity implements
                 }
 
                 @Override
-                public void onCancelled(@NonNull DatabaseError databaseError) {
+                public void onCancelled(@NonNull DatabaseError error) {
 
                     Log.e(TAG, "DatabaseError");
                     loadingIcon.setVisibility(View.GONE);
-                    showMessageLong(databaseError.getMessage());
+                    showMessageLong(error.getMessage());
                 }
             });
         }
@@ -1825,11 +1824,11 @@ public class Map extends FragmentActivity implements
                 }
 
                 @Override
-                public void onCancelled(@NonNull DatabaseError databaseError) {
+                public void onCancelled(@NonNull DatabaseError error) {
 
                     Log.e(TAG, "DatabaseError");
                     loadingIcon.setVisibility(View.GONE);
-                    showMessageLong(databaseError.getMessage());
+                    showMessageLong(error.getMessage());
                 }
             });
         }
@@ -1859,11 +1858,11 @@ public class Map extends FragmentActivity implements
                 }
 
                 @Override
-                public void onCancelled(@NonNull DatabaseError databaseError) {
+                public void onCancelled(@NonNull DatabaseError error) {
 
                     Log.e(TAG, "DatabaseError");
                     loadingIcon.setVisibility(View.GONE);
-                    showMessageLong(databaseError.getMessage());
+                    showMessageLong(error.getMessage());
                 }
             });
         }
@@ -1928,6 +1927,8 @@ public class Map extends FragmentActivity implements
 
                                         @Override
                                         public void onCancelled(@NonNull DatabaseError error) {
+
+                                            showMessageLong(error.getMessage());
                                         }
                                     });
                                 } else {
@@ -1942,7 +1943,9 @@ public class Map extends FragmentActivity implements
                     }
 
                     @Override
-                    public void onCancelled(@NonNull DatabaseError databaseError) {
+                    public void onCancelled(@NonNull DatabaseError error) {
+
+                        showMessageLong(error.getMessage());
                     }
                 });
             }
