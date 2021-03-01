@@ -88,7 +88,7 @@ dependencies {
 
     implementation 'com.gauravk.bubblenavigation:bubblenavigation:1.0.7'
 
-    implementation 'com.github.AppIntro:AppIntro:6.0.0'
+    implementation 'com.github.AppIntro:AppIntro:6.1.0'
 
     implementation 'me.zhanghai.android.materialprogressbar:library:1.6.1'
 

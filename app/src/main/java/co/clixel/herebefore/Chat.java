@@ -34,7 +34,6 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Parcel;
-import android.os.SystemClock;
 import android.provider.MediaStore;
 import android.provider.Settings;
 import android.text.SpannableString;
@@ -175,7 +174,6 @@ public class Chat extends Fragment implements
     private LocationCallback mLocationCallback;
     private TextView newShapeTextView, positionRelativeToShapeTextView;
     private List<Pair<String, Long>> UUIDDatesPairs;
-    private Long lastClickTime = 0L;
     private Snackbar snackBar;
     private final WordTokenizerConfig tokenizerConfig = new WordTokenizerConfig
             .Builder()
@@ -586,8 +584,6 @@ public class Chat extends Fragment implements
                                     progressIconIndeterminate.setVisibility(View.GONE);
                                     return;
                                 }
-
-                                lastClickTime = SystemClock.elapsedRealtime();
 
                                 // Cancel any of the previous 2 toasts.
                                 cancelToasts();

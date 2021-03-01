@@ -284,15 +284,15 @@ public class DirectMentions extends Fragment {
 
                 for (DataSnapshot ds : snapshot.getChildren()) {
 
-                    String user = (String) ds.child("userUUID").getValue();
+                    Long serverDate = (Long) ds.child("date").getValue();
 
                     // Prevents duplicates during getFirebaseDMs.
-                    if (mUser.contains(user)) {
+                    if (mTime.contains(serverDate)) {
 
                         continue;
                     }
 
-                    Long serverDate = (Long) ds.child("date").getValue();
+                    String user = (String) ds.child("userUUID").getValue();
 
                     UUIDDatesPairs.add(i, new Pair<>(user, serverDate));
 
@@ -901,7 +901,7 @@ public class DirectMentions extends Fragment {
 
                 holder.messageTimeInside.setText(mMessageTime.get(position));
 
-                holder.messageUserInside.setText(mMessageUser.get(position));
+                holder.messageUserInside.setText(getString(R.string.atUsername, mMessageUser.get(position)));
 
                 // Set messageImage, messageImageVideo, or messageText to gone if an image or text doesn't exist, for spacing consistency.
                 if (mMessageImage.get(position) == null) {
@@ -963,7 +963,7 @@ public class DirectMentions extends Fragment {
                 // User sent the message from outside the shape. Setup the right side.
                 holder.messageTimeOutside.setText(mMessageTime.get(position));
 
-                holder.messageUserOutside.setText(mMessageUser.get(position));
+                holder.messageUserOutside.setText(getString(R.string.atUsername, mMessageUser.get(position)));
 
                 // Set messageImage, messageImageVideo, or messageText to gone if an image or text doesn't exist, for spacing consistency.
                 if (mMessageImage.get(position) == null) {

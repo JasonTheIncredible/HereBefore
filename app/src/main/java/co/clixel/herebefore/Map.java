@@ -105,6 +105,7 @@ public class Map extends FragmentActivity implements
     private LocationCallback mLocationCallback;
 
     // Make creating a circle more accurate.
+    // Create a "Go to random circle" button to give people something to do when there's not many circles.
     // If user is too far away from an area before uploading a picture, require taking a new picture.
     // Store all text as strings.
     // If user is outside of a circle, show how far outside? - problem: users might be able to identify other users by distance.
@@ -128,7 +129,6 @@ public class Map extends FragmentActivity implements
     // Create "my locations" or "my photos" and see friends' locations / follow friends?
     // Adjust UUID on a message if a user deletes their account without search every single message in the database. Also delete the @ if that UUID is mentioned?
     // Track where user is while taking the original video or picture and make the shape that big?
-    // Add some version of the random button, or allow users to click on a circle in a far away area while zoomed out on map.
     // Create a "general chat" where everyone can chat anonymously, maybe with more specific location rooms too? Delete general chat after x amount of time or # of items.
     //// Add ability to add images and video to general chat and Chat from gallery. Distinguish them from media added from location. Github 8/29.
     // Leave messages in locations that users get notified of when they enter the area by adding geo-fencing.
@@ -139,7 +139,6 @@ public class Map extends FragmentActivity implements
     // Increase viral potential - make it easier to share?
     // Panoramic view, like gMaps.
 
-    // Adjust AppIntro / Store text as strings.
     // Finish setting up Google ads, then add more ads. Then get rid of testID in Chat. Adjust video and image resolution based on projected revenue.
     // Deal with leaks.
     // Analyze app size.

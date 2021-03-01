@@ -26,79 +26,65 @@ public class MyAppIntro extends AppIntro {
 
         addSlide(AppIntroFragment.newInstance(
                 "Welcome!",
-                "Thanks for downloading Here Before!",
+                "Thanks for downloading Here Before!" + "\n" + "\n" + "Here Before enables users to leave location-based messages / pictures / videos in the world for others to find.",
                 R.drawable.ic_logo_foreground,
-                0xFF663399
+                0xFF000582
         ));
 
         addSlide(AppIntroFragment.newInstance(
-                "Overview",
-                "Here Before enables users to create permanent location-based chat rooms and anonymously leave messages / pictures / videos in the world for others to find.",
-                R.drawable.ic_logo_foreground,
-                0xFF5C3394
+                "Entering a Circle",
+                "To create a new circle at your current location, tap the large circle button to take a picture or hold the large circle button to take a video. To enter an existing circle, double tap a circle on the map.",
+                R.drawable.myappintro_entering_circle,
+                0xFF000582
         ));
 
         addSlide(AppIntroFragment.newInstance(
-                "Creating Chats",
-                "Use the seekbar at the bottom of the map to create a circular Chat, or use the menu to the left of the seekbar to create a polygonal, circular, or 'point' (small and focused around your location) Chat - choosing this option will immediately create and enter that shape's chat room.",
-                R.drawable.myappintro_creating_chats,
-                0xFF52338F
+                "Leaving a Message",
+                "New circles require a picture or video to be included in the first message. Any picture you take will be saved to your device's gallery. As circles are location-based, every message requires loading your location relative to the circle.",
+                R.drawable.myappintro_leaving_a_message,
+                0xFF000582
         ));
 
         addSlide(AppIntroFragment.newInstance(
-                "Customizing and Entering Chat",
-                "Drag the markers connected to a Chat to customize its size, shape, and location. Tap on a Chat to enter the corresponding chat room.",
-                R.drawable.myappintro_customizing_and_entering,
-                0xFF47338A
+                "Inside vs Outside a Circle",
+                "Messages left by users inside a circle will be centered to the left of the screen, while messages left by users outside the circle will be centered to the right. The text at the top of the screen shows your current location relative to the circle.",
+                R.drawable.myappintro_inside_vs_outside_a_circle,
+                0xFF000582
         ));
 
         addSlide(AppIntroFragment.newInstance(
-                "Chat, Direct Messages, and Settings",
-                "After entering a Chat, you will see a bar at the bottom with three options. The first one is the chat room. The second shows any Direct Messages (DMs) you have received. The third is the Settings menu.",
+                "Sending a Direct Mention",
+                "Messages left by others will include '@xxxxx...'. Type '@' followed by 'xxxxx' and select the corresponding option from the pop-up menu to leave a message which sends a notification to the respective user. If you need to see more letters when creating a mention, you can tap the '@xxxxx...' to expand it.",
+                R.drawable.myappintro_sending_a_dm,
+                0xFF000582
+        ));
+
+        addSlide(AppIntroFragment.newInstance(
+                "Chat, Direct Mentions, and Settings",
+                "You will see a bar at the bottom of your screen with three options. The first shows the circle's chat, the second shows any direct mentions (DMs) you have received, and the third shows the settings menu.",
                 R.drawable.myappintro_chat_dms_settings,
-                0xFF3D3385
+                0xFF000582
         ));
 
         addSlide(AppIntroFragment.newInstance(
-                "Messaging Inside vs Outside the Chat",
-                "If you entered a Chat while your location was inside the shape on the map, your message will appear on the left side of the chat room. If your location was outside the shape, your message will appear on the right side.",
-                R.drawable.myappintro_inside_vs_outside,
-                0xFF333380
+                "Your DMs",
+                "Any DMs you receive can by found by tapping on the middle section of the bottom bar. Any unread DMs will be highlighted. You can tap on a DM to go to the circle where the DM was originally posted. DMs posted inside a circle will be centered to the left and DMs posted outside a circle will be centered to the right.",
+                R.drawable.myappintro_your_dms,
+                0xFF000582
+        ));
+
+        addSlide(AppIntroFragment.newInstance(
+                "Map DMs, Settings and Appearance",
+                "Once signed in, you can access the DMs and Settings menu without entering a circle by tapping on the corresponding buttons near the top right of the map. You can change the appearance of the map by tapping on the green button at the top left.",
+                R.drawable.myappintro_map_dms_settings_appearance,
+                0xFF000582
         ));
 
         addSlide(AppIntroFragment.newInstance(
                 "Report Inappropriate Content",
-                "To anonymously report inappropriate content, long press anywhere on the message until the 'Report Post' popup appears. Click the popup and Here Before will be notified.",
+                "To anonymously report inappropriate content, long press anywhere on a message until the 'Report Post' pop-up appears. Tap the pop-up and Here Before will be notified. Thanks for the help!",
                 R.drawable.myappintro_report_content,
-                0xFF29337A
-        ));
-
-        addSlide(AppIntroFragment.newInstance(
-                "Sending a Direct Message",
-                "Messages left by other users will include 'xxxxx...'. Type '@' followed by 'xxxxx' and select the corresponding option from the popup menu to message that user directly.",
-                R.drawable.myappintro_sending_dm,
-                0xFF1F3375
-        ));
-
-        addSlide(AppIntroFragment.newInstance(
-                "Your Direct Messages",
-                "Any DMs you receive can by found by clicking on the middle section of the bottom bar. Any new and unread DMs will be highlighted. You can click on a specific DM to immediately go to the Chat where that DM was originally posted.",
-                R.drawable.myappintro_your_dms,
-                0xFF143370
-        ));
-
-        addSlide(AppIntroFragment.newInstance(
-                "DMs and Settings from Map",
-                "You can access the DMs and Settings menu without entering a Chat by clicking on the corresponding buttons near the top right of the map. If you have any unread DMs, a number will appear over the DMs button.",
-                R.drawable.myappintro_dms_settings_map,
-                0xFF0A336B
-        ));
-
-        addSlide(AppIntroFragment.newInstance(
-                "Map Extras",
-                "The button near the bottom right of the map screen will take you to a random Chat somewhere in the world. The green button near the top left will change the appearance of the map. The button below the green button will change which Chats the map will display.",
-                R.drawable.myappintro_map_extras,
-                0xFF003366
+                0xFF000582
         ));
     }
 
