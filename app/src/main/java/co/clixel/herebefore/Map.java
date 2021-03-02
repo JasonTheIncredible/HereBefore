@@ -107,6 +107,7 @@ public class Map extends FragmentActivity implements
     // Make creating a circle more accurate.
     // Create a "Go to random circle" button to give people something to do when there's not many circles.
     // If user is too far away from an area before uploading a picture, require taking a new picture.
+    // createReceivedDmAfterCreatingMessage takes a long time.
     // Store all text as strings.
     // If user is outside of a circle, show how far outside? - problem: users might be able to identify other users by distance.
     // Show picture upon opening circle or show picture at the top at all times.
@@ -139,13 +140,17 @@ public class Map extends FragmentActivity implements
     // Increase viral potential - make it easier to share?
     // Panoramic view, like gMaps.
 
-    // Finish setting up Google ads, then add more ads. Then get rid of testID in Chat. Adjust video and image resolution based on projected revenue.
+    // Add interstitial ads.
+    // Finish setting up Google ads, then add more ads.
+    // Adjust video and image resolution based on projected revenue.
+    // Multiple problems when switching between light and dark mode.
+    // In DirectMentions, switch mTime.contains(serverDate) to something more reliable.
     // Deal with leaks.
     // Analyze app size.
     // Check warning messages / Make sure npm is up to date.
     // Create database backups.
     // Make sure aboutLibraries includes all libraries, and make sure all licenses are fair use (NOT GPL).
-    // Request new tokens, and don't upload them to Github.
+    // Request new tokens, request real adID, get rid of testDevice in Chat and DirectMentions, and don't upload new token to Github.
     // Register social media accounts / Switch cloud account's email address to the new one.
     // Log out all users.
     // Switch existing values in Firebase (including storage).

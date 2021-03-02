@@ -7,8 +7,10 @@ import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.Pair;
+import android.view.Display;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -29,6 +31,9 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdSize;
+import com.google.android.gms.ads.AdView;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
@@ -73,6 +78,7 @@ public class DirectMentions extends Fragment {
     private TextView noDmsTextView;
     private Query query;
     private List<Pair<String, Long>> UUIDDatesPairs;
+    private AdView bannerAdView;
 
     @Override
     public void onAttach(@NonNull Context context) {
@@ -90,7 +96,14 @@ public class DirectMentions extends Fragment {
                              Bundle savedInstanceState) {
 
         Log.i(TAG, "onCreateView()");
+
         rootView = inflater.inflate(R.layout.directmentions, container, false);
+
+        FrameLayout bannerAdFrameLayout = rootView.findViewById(R.id.dmsBannerAdFrameLayout);
+        bannerAdView = new AdView(mContext);
+        bannerAdView.setAdUnitId("ca-app-pub-3940256099942544/6300978111");
+        bannerAdFrameLayout.addView(bannerAdView);
+        loadBanner();
 
         dmsRecyclerView = rootView.findViewById(R.id.mentionsList);
         loadingIcon = rootView.findViewById(R.id.loadingIcon);
@@ -139,6 +152,41 @@ public class DirectMentions extends Fragment {
         }
 
         return rootView;
+    }
+
+    private void loadBanner() {
+
+        Log.i(TAG, "loadBanner()");
+
+        AdRequest adRequest =
+                new AdRequest.Builder().addTestDevice(AdRequest.DEVICE_ID_EMULATOR)
+                        .build();
+
+        AdSize adSize = getAdSize();
+
+        // Step 4 - Set the adaptive ad size on the ad view.
+        bannerAdView.setAdSize(adSize);
+
+        // Step 5 - Start loading the ad in the background.
+        bannerAdView.loadAd(adRequest);
+    }
+
+    private AdSize getAdSize() {
+
+        Log.i(TAG, "getAdSize()");
+
+        // Step 2 - Determine the screen width (less decorations) to use for the ad width.
+        Display display = mActivity.getWindowManager().getDefaultDisplay();
+        DisplayMetrics outMetrics = new DisplayMetrics();
+        display.getMetrics(outMetrics);
+
+        float widthPixels = outMetrics.widthPixels;
+        float density = outMetrics.density;
+
+        int adWidth = (int) (widthPixels / density);
+
+        // Step 3 - Get adaptive ad size and return for setting on the ad view.
+        return AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(mContext, adWidth);
     }
 
     @Override
@@ -628,6 +676,13 @@ public class DirectMentions extends Fragment {
     public void onDestroyView() {
 
         Log.i(TAG, "onDestroyView()");
+
+        if (bannerAdView != null) {
+
+            bannerAdView.removeAllViews();
+            bannerAdView.destroy();
+            bannerAdView = null;
+        }
 
         if (dmsRecyclerView != null) {
 

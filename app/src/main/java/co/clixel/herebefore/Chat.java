@@ -42,8 +42,10 @@ import android.text.method.LinkMovementMethod;
 import android.text.style.ClickableSpan;
 import android.util.Base64;
 import android.util.Base64OutputStream;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.Pair;
+import android.view.Display;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -53,9 +55,8 @@ import android.view.View;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
 import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdSize;
 import com.google.android.gms.ads.AdView;
-import com.google.android.gms.ads.MobileAds;
-import com.google.android.gms.ads.RequestConfiguration;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
@@ -117,6 +118,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -164,7 +166,6 @@ public class Chat extends Fragment implements
     public View rootView;
     private Context mContext;
     private Activity mActivity;
-    private AdView bannerAd;
     private Query mQuery;
     private Drawable imageDrawable, videoDrawable;
     private int shapeLatInt, shapeLonInt;
@@ -175,6 +176,7 @@ public class Chat extends Fragment implements
     private TextView newShapeTextView, positionRelativeToShapeTextView;
     private List<Pair<String, Long>> UUIDDatesPairs;
     private Snackbar snackBar;
+    private AdView bannerAdView;
     private final WordTokenizerConfig tokenizerConfig = new WordTokenizerConfig
             .Builder()
             .setWordBreakChars(", ")
@@ -229,18 +231,11 @@ public class Chat extends Fragment implements
 
         rootView = inflater.inflate(R.layout.chat, container, false);
 
-        bannerAd = rootView.findViewById(R.id.chatBanner);
-
-        // Search I/Ads: in Logcat to find ID and/or W/Ads for other info.
-        // List<String> testDeviceIds = Collections.singletonList("814BF63877CBD71E91F9D7241907F4FF");
-        RequestConfiguration requestConfiguration
-                = new RequestConfiguration.Builder()
-                //.setTestDeviceIds(testDeviceIds)
-                .build();
-        MobileAds.setRequestConfiguration(requestConfiguration);
-
-        AdRequest adRequest = new AdRequest.Builder().build();
-        bannerAd.loadAd(adRequest);
+        FrameLayout bannerAdFrameLayout = rootView.findViewById(R.id.chatBannerAdFrameLayout);
+        bannerAdView = new AdView(mContext);
+        bannerAdView.setAdUnitId("ca-app-pub-3940256099942544/6300978111");
+        bannerAdFrameLayout.addView(bannerAdView);
+        loadBanner();
 
         mediaButton = rootView.findViewById(R.id.mediaButton);
         imageView = rootView.findViewById(R.id.imageView);
@@ -306,6 +301,41 @@ public class Chat extends Fragment implements
         }
 
         return rootView;
+    }
+
+    private void loadBanner() {
+
+        Log.i(TAG, "loadBanner()");
+
+        AdRequest adRequest =
+                new AdRequest.Builder().addTestDevice(AdRequest.DEVICE_ID_EMULATOR)
+                        .build();
+
+        AdSize adSize = getAdSize();
+
+        // Step 4 - Set the adaptive ad size on the ad view.
+        bannerAdView.setAdSize(adSize);
+
+        // Step 5 - Start loading the ad in the background.
+        bannerAdView.loadAd(adRequest);
+    }
+
+    private AdSize getAdSize() {
+
+        Log.i(TAG, "getAdSize()");
+
+        // Step 2 - Determine the screen width (less decorations) to use for the ad width.
+        Display display = mActivity.getWindowManager().getDefaultDisplay();
+        DisplayMetrics outMetrics = new DisplayMetrics();
+        display.getMetrics(outMetrics);
+
+        float widthPixels = outMetrics.widthPixels;
+        float density = outMetrics.density;
+
+        int adWidth = (int) (widthPixels / density);
+
+        // Step 3 - Get adaptive ad size and return for setting on the ad view.
+        return AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(mContext, adWidth);
     }
 
     @Override
@@ -1413,9 +1443,11 @@ public class Chat extends Fragment implements
 
         Log.i(TAG, "onDestroyView()");
 
-        if (bannerAd != null) {
+        if (bannerAdView != null) {
 
-            bannerAd = null;
+            bannerAdView.removeAllViews();
+            bannerAdView.destroy();
+            bannerAdView = null;
         }
 
         if (mediaButton != null) {
@@ -2378,7 +2410,7 @@ public class Chat extends Fragment implements
                 }
             };
 
-            getFusedLocationProviderClient(mContext).requestLocationUpdates(locationRequest, mLocationCallback, Looper.myLooper());
+            getFusedLocationProviderClient(mContext).requestLocationUpdates(locationRequest, mLocationCallback, Objects.requireNonNull(Looper.myLooper()));
         } else {
 
             checkLocationPermissions();
@@ -2759,7 +2791,7 @@ public class Chat extends Fragment implements
                         .setMaxHeight(10000)
                         .setQuality(100)
                         .setCompressFormat(Bitmap.CompressFormat.PNG)
-                        .setDestinationDirectoryPath(mContext.getExternalFilesDir(Environment.DIRECTORY_PICTURES).getAbsolutePath())
+                        .setDestinationDirectoryPath(Objects.requireNonNull(mContext.getExternalFilesDir(Environment.DIRECTORY_PICTURES)).getAbsolutePath())
                         .compressToBitmap(image);
 
                 MediaStore.Images.Media.insertImage(mContext.getContentResolver(), imageBitmapFull, "HereBefore_" + System.currentTimeMillis() + "_PNG", null);

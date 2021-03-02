@@ -10,20 +10,19 @@
     android:paddingTop="4dp"
     android:paddingBottom="4dp">
 
-    <com.google.android.gms.ads.AdView xmlns:ads="http://schemas.android.com/apk/res-auto"
-        android:id="@+id/chatBanner"
+    <FrameLayout
+        android:id="@+id/chatBannerAdFrameLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentStart="true"
-        android:layout_alignParentTop="true"
-        ads:adSize="BANNER"
-        ads:adUnitId="ca-app-pub-7112137006158207/1950181503" />
+        android:layout_alignParentTop="true" />
 
     <TextView
         android:id="@+id/positionRelativeToShapeTextView"
         android:layout_width="match_parent"
         android:layout_height="20dp"
-        android:layout_below="@+id/chatBanner"
+        android:layout_below="@+id/chatBannerAdFrameLayout"
+        android:layout_marginTop="5dp"
         android:gravity="center_horizontal" />
 
     <TextView
