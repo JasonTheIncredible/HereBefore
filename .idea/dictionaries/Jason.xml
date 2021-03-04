@@ -2,21 +2,17 @@
   <dictionary name="Jason">
     <words>
       <w>chatviews</w>
-      <w>circlesize</w>
       <w>clixel</w>
       <w>crashlytics</w>
       <w>createchat</w>
       <w>createcircle</w>
+      <w>crowdsource</w>
       <w>firebase</w>
       <w>herebefore</w>
-      <w>largercircle</w>
-      <w>largercircles</w>
       <w>maptype</w>
       <w>mlocation</w>
       <w>recyclerviewlayout</w>
       <w>roadmap</w>
-      <w>seekbar</w>
-      <w>smallercircle</w>
       <w>uuids</w>
       <w>zelory</w>
     </words>

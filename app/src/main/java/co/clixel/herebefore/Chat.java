@@ -147,7 +147,7 @@ public class Chat extends Fragment implements
     private Integer index, top, UUIDDatesPairsSize;
     private ChildEventListener childEventListener;
     private FloatingActionButton sendButton, mediaButton;
-    private boolean firstLoad, loadingOlderMessages = false, clickedOnMention = false, fromDms = false, noMoreMessages = false, showProgressIndeterminate = true, reachedEndOfRecyclerView = true, messageSent = false, fileIsImage, checkPermissionsPicture, newShape, uploadNeeded = false;
+    private boolean theme, firstLoad, continueWithODC = true, loadingOlderMessages = false, clickedOnMention = false, fromDms = false, noMoreMessages = false, showProgressIndeterminate = true, reachedEndOfRecyclerView = true, messageSent = false, fileIsImage, checkPermissionsPicture, newShape, uploadNeeded = false;
     private Boolean userIsWithinShape;
     private View.OnLayoutChangeListener onLayoutChangeListener;
     private String shapeUUID, reportedUser, UUIDToHighlight, imageFile, videoFile, lastKnownKey;
@@ -192,6 +192,10 @@ public class Chat extends Fragment implements
 
         mContext = context;
         mActivity = getActivity();
+
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+        // theme == true is light mode.
+        theme = sharedPreferences.getBoolean(SettingsFragment.KEY_THEME_SWITCH, false);
 
         // Get info from Map.java
         if (mActivity != null) {
@@ -363,7 +367,7 @@ public class Chat extends Fragment implements
             newShapeTextView.setVisibility(View.VISIBLE);
         }
 
-        // Set to true to scroll to the bottom of chatRecyclerView. Also prevents duplicate items in addQuery.
+        // Set to true to scroll to the bottom of chatRecyclerView. Also prevents duplicates in addQuery.
         firstLoad = true;
 
         // Clear text and prevent keyboard from opening.
@@ -407,6 +411,15 @@ public class Chat extends Fragment implements
 
                 @Override
                 public void onDataChange(@NonNull DataSnapshot snapshot) {
+
+                    // This is to prevent a bug where ODC for this ListenerForSingleValueEvent gets called twice. I have no idea what's causing it, so it should be addressed in the future.
+                    if (continueWithODC) {
+
+                        continueWithODC = false;
+                    } else {
+
+                        return;
+                    }
 
                     // Edge case where user reloading into a chat that no longer exists.
                     if (snapshot.getChildrenCount() == 0 && !newShape) {
@@ -550,12 +563,12 @@ public class Chat extends Fragment implements
             Log.i(TAG, "onStart() -> sendButton -> onClick");
 
             // Close keyboard.
-            if (mActivity.getCurrentFocus() != null) {
+            if (view != null) {
 
                 InputMethodManager imm = (InputMethodManager) mActivity.getSystemService(Context.INPUT_METHOD_SERVICE);
                 if (imm != null) {
 
-                    imm.hideSoftInputFromWindow(mActivity.getCurrentFocus().getWindowToken(), 0);
+                    imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
                 } else {
 
                     Log.e(TAG, "onStart() -> sendButton -> imm == null");
@@ -669,7 +682,6 @@ public class Chat extends Fragment implements
                                     } else {
 
                                         Query query = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child("Points").limitToLast(1);
-
                                         query.addListenerForSingleValueEvent(new ValueEventListener() {
 
                                             @Override
@@ -1559,6 +1571,7 @@ public class Chat extends Fragment implements
         loadingOlderMessages = false;
         // Need to make UUIDDatesPairsSize null so user can load older messages after restarting the app.
         UUIDDatesPairsSize = null;
+        continueWithODC = true;
 
         // After the initial load, make the progressIconIndeterminate invisible.
         if (!newShape && progressIconIndeterminate != null && !showProgressIndeterminate) {
@@ -1573,8 +1586,6 @@ public class Chat extends Fragment implements
         private final ArrayList<String> mMessageTime, mMessageUser, mMessageImage, mMessageImageVideo;
         private final ArrayList<SpannableString> mMessageText;
         private final ArrayList<Boolean> mUserIsWithinShape;
-        // theme == true is light mode.
-        private boolean theme;
 
         class ViewHolder extends RecyclerView.ViewHolder {
 
@@ -1708,8 +1719,6 @@ public class Chat extends Fragment implements
 
             View view = LayoutInflater.from(mContext).inflate(R.layout.chatadapterlayout, parent, false);
 
-            loadPreferences();
-
             return new ViewHolder(view);
         }
 
@@ -1730,6 +1739,7 @@ public class Chat extends Fragment implements
 
                 holder.messageTimeInside.setText(mMessageTime.get(position));
 
+                Log.i(TAG, "111111111111111111111111 " + mMessageUser.get(position));
                 holder.messageUserInside.setText(getString(R.string.atUsername, mMessageUser.get(position)));
 
                 // Set messageImage, messageImageVideo, or messageText to gone if an image or text doesn't exist, for spacing consistency.
@@ -1905,13 +1915,6 @@ public class Chat extends Fragment implements
 
             return position;
         }
-
-        protected void loadPreferences() {
-
-            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-
-            theme = sharedPreferences.getBoolean(SettingsFragment.KEY_THEME_SWITCH, false);
-        }
     }
 
     // Brings up suggestions when a users inputs "@".
@@ -1993,7 +1996,6 @@ public class Chat extends Fragment implements
 
         private final Context mContext;
         private final List<String> mSuggestions;
-        private boolean theme;
 
         class ViewHolder extends RecyclerView.ViewHolder {
 
@@ -2082,8 +2084,6 @@ public class Chat extends Fragment implements
                 mInput.append(" ");
             });
 
-            loadPreferences();
-
             // Change the color of every other row for visual purposes.
             if (!theme) {
 
@@ -2111,13 +2111,6 @@ public class Chat extends Fragment implements
 
             // If the size is greater than 3, just return 3 results.
             return Math.min(mSuggestions.size(), 3);
-        }
-
-        protected void loadPreferences() {
-
-            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-
-            theme = sharedPreferences.getBoolean(SettingsFragment.KEY_THEME_SWITCH, false);
         }
     }
 
@@ -3136,6 +3129,7 @@ public class Chat extends Fragment implements
                             deleteDirectory(video);
                         }
 
+                        videoFile = null;
                         sendButton.setEnabled(true);
                         progressIcon.setVisibility(View.GONE);
                         progressIconIndeterminate.setVisibility(View.VISIBLE);
@@ -3225,6 +3219,7 @@ public class Chat extends Fragment implements
                             deleteDirectory(image);
                         }
 
+                        imageFile = null;
                         sendButton.setEnabled(true);
                         progressIcon.setVisibility(View.GONE);
                         progressIconIndeterminate.setVisibility(View.VISIBLE);
@@ -3296,12 +3291,15 @@ public class Chat extends Fragment implements
 
         if (android.os.Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
 
-            snackBar = Snackbar.make(rootView, message, Snackbar.LENGTH_SHORT);
-            snackBar.setAnchorView(sendButton);
-            View snackBarView = snackBar.getView();
-            TextView snackTextView = snackBarView.findViewById(com.google.android.material.R.id.snackbar_text);
-            snackTextView.setMaxLines(10);
-            snackBar.show();
+            if (rootView != null) {
+
+                snackBar = Snackbar.make(rootView, message, Snackbar.LENGTH_SHORT);
+                snackBar.setAnchorView(sendButton);
+                View snackBarView = snackBar.getView();
+                TextView snackTextView = snackBarView.findViewById(com.google.android.material.R.id.snackbar_text);
+                snackTextView.setMaxLines(10);
+                snackBar.show();
+            }
         } else {
 
             // Prevents a crash if the user backed out of activity and a toast message occurs from another thread.
@@ -3319,12 +3317,15 @@ public class Chat extends Fragment implements
 
         if (android.os.Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
 
-            snackBar = Snackbar.make(rootView, message, Snackbar.LENGTH_LONG);
-            snackBar.setAnchorView(sendButton);
-            View snackBarView = snackBar.getView();
-            TextView snackTextView = snackBarView.findViewById(com.google.android.material.R.id.snackbar_text);
-            snackTextView.setMaxLines(10);
-            snackBar.show();
+            if (rootView != null) {
+
+                snackBar = Snackbar.make(rootView, message, Snackbar.LENGTH_LONG);
+                snackBar.setAnchorView(sendButton);
+                View snackBarView = snackBar.getView();
+                TextView snackTextView = snackBarView.findViewById(com.google.android.material.R.id.snackbar_text);
+                snackTextView.setMaxLines(10);
+                snackBar.show();
+            }
         } else {
 
             // Prevents a crash if the user backed out of activity and a toast message occurs from another thread.

@@ -2,18 +2,21 @@ package co.clixel.herebefore;
 
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.Gravity;
+import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AppCompatDelegate;
 import androidx.fragment.app.Fragment;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.PreferenceManager;
 
 import com.firebase.ui.auth.AuthUI;
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.FirebaseDatabase;
 import com.mikepenz.aboutlibraries.LibsBuilder;
@@ -25,12 +28,11 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
         PreferenceManager.OnPreferenceTreeClickListener {
 
     private DialogInterface.OnClickListener dialogClickListener;
-    public static boolean themeToggled = false;
-    public static final String KEY_NOTIFICATIONS_SWITCH = "notifications";
-    public static final String KEY_THEME_SWITCH = "toggleTheme";
-    public static final String KEY_MAP_TYPE = "mapTypePreference";
-    public static final String KEY_SIGN_OUT = "signOut";
-    public static final String KEY_SHOW_INTRO = "showIntro";
+    protected static final String KEY_NOTIFICATIONS_SWITCH = "notifications";
+    protected static final String KEY_THEME_SWITCH = "toggleTheme";
+    protected static final String KEY_MAP_TYPE = "mapTypePreference";
+    protected static final String KEY_SIGN_OUT = "signOut";
+    protected static final String KEY_SHOW_INTRO = "showIntro";
     // "FIREBASE_TOKEN" to find Firebase token for messaging.
 
     @Override
@@ -39,10 +41,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
         if (getActivity() != null) {
 
             // Check if the account is a Google account. If not, hide "Reset Password".
-            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
-            String googleIdToken = sharedPreferences.getString("googleIdToken", "");
-            boolean googleAccount = !googleIdToken.equals("");
-            if (!googleAccount) {
+            if (GoogleSignIn.getLastSignedInAccount(requireContext()) == null) {
 
                 setPreferencesFromResource(R.xml.preferences_herebefore, rootKey);
             } else {
@@ -63,27 +62,19 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
 
                 case "toggleTheme": {
 
-                    if (getContext() != null) {
+                    if (android.os.Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
 
-                        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getContext());
+                        Snackbar snackBar = Snackbar.make(requireView(), "Theme will change on activity reload.", Snackbar.LENGTH_LONG);
+                        View snackBarView = snackBar.getView();
+                        TextView snackTextView = snackBarView.findViewById(com.google.android.material.R.id.snackbar_text);
+                        snackTextView.setMaxLines(10);
+                        snackBar.show();
+                    } else {
 
-                        boolean theme = sharedPreferences.getBoolean(KEY_THEME_SWITCH, false);
-
-                        if (theme) {
-
-                            // Set to light mode.
-                            AppCompatDelegate.setDefaultNightMode(
-                                    AppCompatDelegate.MODE_NIGHT_NO);
-                        } else {
-
-                            // Set to dark mode.
-                            AppCompatDelegate.setDefaultNightMode(
-                                    AppCompatDelegate.MODE_NIGHT_YES);
-                        }
+                        Toast longToast = Toast.makeText(getContext(), "Theme will change on activity reload.", Toast.LENGTH_LONG);
+                        longToast.setGravity(Gravity.CENTER, 0, 0);
+                        longToast.show();
                     }
-
-                    // Used in Navigation.
-                    themeToggled = true;
 
                     break;
                 }

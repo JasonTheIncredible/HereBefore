@@ -28,23 +28,19 @@ import com.google.firebase.database.ValueEventListener;
 
 public class Navigation extends AppCompatActivity {
 
-    static public boolean noChat = false, fromDms = false;
     private ViewPager viewPager;
-    public BubbleNavigationConstraintView bubbleNavigationConstraintView;
+    protected BubbleNavigationConstraintView bubbleNavigationConstraintView;
     private ViewPager.OnPageChangeListener pagerListener;
-    private int currentItem = -1;
+    private int currentItem = -1, dmCounter = 0;
     private String firebaseUid;
-    private int dmCounter = 0;
     private Query query;
     private ChildEventListener childEventListener;
-    private boolean firstLoad, dmExists = false;
+    private boolean firstLoad, noChat = false, fromDms = false, needToLoadCorrectTab = true, dmExists = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
-
-        firstLoad = true;
 
         // Update to the user's preferences.
         updatePreferences();
@@ -69,7 +65,6 @@ public class Navigation extends AppCompatActivity {
     protected void updatePreferences() {
 
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-
         boolean theme = sharedPreferences.getBoolean(SettingsFragment.KEY_THEME_SWITCH, false);
 
         if (theme) {
@@ -90,14 +85,19 @@ public class Navigation extends AppCompatActivity {
 
     @Override
     protected void onRestart() {
+
         super.onRestart();
 
         dmCounter = 0;
-        firstLoad = true;
     }
 
     @Override
     protected void onStart() {
+
+        super.onStart();
+
+        // Prevents duplicates in addQuery.
+        firstLoad = true;
 
         ScreenSlidePagerAdapter pagerAdapter = new ScreenSlidePagerAdapter(getSupportFragmentManager());
 
@@ -164,7 +164,7 @@ public class Navigation extends AppCompatActivity {
                 // Set the DM tab's badge value.
                 if (dmCounter == 0) {
                     // Do nothing.
-                } else if (!Navigation.fromDms && !Navigation.noChat) {
+                } else if (!fromDms && !noChat) {
 
                     bubbleNavigationConstraintView.setBadgeValue(1, String.valueOf(dmCounter));
                 } else {
@@ -187,22 +187,23 @@ public class Navigation extends AppCompatActivity {
             bubbleNavigationConstraintView.setCurrentActiveItem(currentItem);
         }
 
-        // The following is used if the user "reloads" the activity after clicking the toggle theme button in Settings.
-        if (!fromDms && !noChat && SettingsFragment.themeToggled) {
+        // Load the correct tab.
+        if (needToLoadCorrectTab) {
 
-            viewPager.setCurrentItem(2, false);
-            bubbleNavigationConstraintView.setCurrentActiveItem(2);
-            currentItem = 2;
-            SettingsFragment.themeToggled = false;
-        } else if ((!fromDms && noChat) || (noChat && SettingsFragment.themeToggled)) {
+            if (fromDms || !noChat) {
 
-            viewPager.setCurrentItem(1, false);
-            bubbleNavigationConstraintView.setCurrentActiveItem(1);
-            currentItem = 1;
-            SettingsFragment.themeToggled = false;
+                viewPager.setCurrentItem(0, false);
+                bubbleNavigationConstraintView.setCurrentActiveItem(0);
+                currentItem = 0;
+            } else {
+
+                viewPager.setCurrentItem(1, false);
+                bubbleNavigationConstraintView.setCurrentActiveItem(1);
+                currentItem = 1;
+            }
+
+            needToLoadCorrectTab = false;
         }
-
-        super.onStart();
     }
 
     // Change to .limitToLast(1) to cut down on data usage. Otherwise, EVERY child at this node will be downloaded every time the child is updated.
@@ -230,7 +231,7 @@ public class Navigation extends AppCompatActivity {
                 dmCounter++;
 
                 // Set the DM tab's badge value.
-                if (!Navigation.fromDms && !Navigation.noChat) {
+                if (!fromDms && !noChat) {
 
                     bubbleNavigationConstraintView.setBadgeValue(1, String.valueOf(dmCounter));
                 } else {
@@ -287,7 +288,7 @@ public class Navigation extends AppCompatActivity {
      * A simple pager adapter that represents 5 ScreenSlidePageFragment objects, in
      * sequence.
      */
-    public static class ScreenSlidePagerAdapter extends FragmentPagerAdapter {
+    public class ScreenSlidePagerAdapter extends FragmentPagerAdapter {
 
         ScreenSlidePagerAdapter(FragmentManager fm) {
 

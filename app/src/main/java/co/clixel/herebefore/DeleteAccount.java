@@ -75,7 +75,6 @@ public class DeleteAccount extends AppCompatActivity {
         loadingIcon = findViewById(R.id.loadingIcon);
 
         // Add a textView at the top with the user's private email address if they don't have a Google account.
-
         // Check if the account is a Google account.
         if (GoogleSignIn.getLastSignedInAccount(this) == null) {
 

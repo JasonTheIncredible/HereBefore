@@ -104,10 +104,10 @@ public class Map extends FragmentActivity implements
     private FusedLocationProviderClient mFusedLocationClient;
     private LocationCallback mLocationCallback;
 
-    // Make creating a circle more accurate.
     // Create a "Go to random circle" button to give people something to do when there's not many circles.
     // If user is too far away from an area before uploading a picture, require taking a new picture.
-    // createReceivedDmAfterCreatingMessage takes a long time.
+    // Fix issue where Chat and DirectMention's onStart ListenerForSingleValueEvent is getting called twice (search for: This is to prevent a bug where).
+    // createReceivedDmAfterCreatingMessage takes a long time, especially the first time after not creating a DM for a while. Also, it rarely doesn't work at all.
     // Store all text as strings.
     // If user is outside of a circle, show how far outside? - problem: users might be able to identify other users by distance.
     // Show picture upon opening circle or show picture at the top at all times.
@@ -140,11 +140,15 @@ public class Map extends FragmentActivity implements
     // Increase viral potential - make it easier to share?
     // Panoramic view, like gMaps.
 
+    // getFirebaseMessages() -> fillRecyclerView() cycling after clicking on a DM after theme changed.
+    // Is DirectMention's onChildChanged necessary, as date appears to be different from MessageThreads? Should this be fixed?
+    // Set SettingsFragment snackBar anchor as the navigation bar.
+    // Prevent banner ad pop-in, as it affects where a user clicks. Also, Ad loading affects recyclerView position.
     // Add interstitial ads.
     // Finish setting up Google ads, then add more ads.
-    // Adjust video and image resolution based on projected revenue.
-    // Multiple problems when switching between light and dark mode.
+    // Adjust video and image resolution based on projected revenue - is permanence unsustainable? Crowdsource storage?
     // In DirectMentions, switch mTime.contains(serverDate) to something more reliable.
+    // Make creating a circle more accurate.
     // Deal with leaks.
     // Analyze app size.
     // Check warning messages / Make sure npm is up to date.
@@ -574,7 +578,7 @@ public class Map extends FragmentActivity implements
         circleTemp = null;
 
         // Enable buttons, unless the user took a photo or video and is entering the next activity.
-        if ((getIntent().getExtras() != null && getIntent().getExtras().getString("userUUID") == null) || (getIntent().getExtras() == null && imageFile == null && videoFile == null)) {
+        if ((getIntent().getExtras() != null && getIntent().getExtras().getString("senderUserUUID") == null) || (getIntent().getExtras() == null && imageFile == null && videoFile == null)) {
 
             circleButton.setEnabled(true);
             dmButton.setEnabled(true);
@@ -1243,10 +1247,10 @@ public class Map extends FragmentActivity implements
         Activity.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
         // If getIntent().getExtras != null, user is entering a circle from a notification and seenByUser needs to be set to true. Else, enter circle like normal.
-        if (getIntent().getExtras() != null && getIntent().getExtras().getString("userUUID") != null) {
+        if (getIntent().getExtras() != null && getIntent().getExtras().getString("senderUserUUID") != null) {
 
-            String userUUID = getIntent().getExtras().getString("userUUID");
-            Activity.putExtra("UUIDToHighlight", userUUID);
+            String senderUserUUID = getIntent().getExtras().getString("senderUserUUID");
+            Activity.putExtra("UUIDToHighlight", senderUserUUID);
 
             String firebaseUid = FirebaseAuth.getInstance().getUid();
 
@@ -1260,17 +1264,17 @@ public class Map extends FragmentActivity implements
 
                     for (DataSnapshot ds : snapshot.getChildren()) {
 
-                        String mUserUUID = (String) ds.child("userUUID").getValue();
+                        String mSenderUserUUID = (String) ds.child("senderUserUUID").getValue();
 
-                        if (mUserUUID != null) {
+                        if (mSenderUserUUID != null) {
 
-                            if (mUserUUID.equals(userUUID)) {
+                            if (mSenderUserUUID.equals(senderUserUUID)) {
 
                                 if (!(Boolean) ds.child("seenByUser").getValue()) {
 
                                     ds.child("seenByUser").getRef().setValue(true);
                                     // Removing the extra prevents issues when user clicks on a mention, backs into Map, then tries to go to a new circle.
-                                    getIntent().removeExtra("userUUID");
+                                    getIntent().removeExtra("senderUserUUID");
                                     loadingIcon.setVisibility(View.GONE);
                                     startActivity(finalActivity);
                                     return;

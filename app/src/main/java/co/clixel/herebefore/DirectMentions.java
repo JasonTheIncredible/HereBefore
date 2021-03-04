@@ -59,7 +59,8 @@ public class DirectMentions extends Fragment {
 
     private static final String TAG = "DirectMentions";
     private String firebaseUid;
-    private ArrayList<String> mTime, mUser, mImage, mVideo, mText, mShapeUUID;
+    private ArrayList<Long> mTime;
+    private ArrayList<String> mUser, mImage, mVideo, mText, mShapeUUID;
     private ArrayList<Boolean> mUserIsWithinShape, mSeenByUser;
     private ArrayList<Double> mShapeLat, mShapeLon;
     private ArrayList<String> circleUUIDsAL = new ArrayList<>();
@@ -68,7 +69,7 @@ public class DirectMentions extends Fragment {
     private static int index = -1, top = -1;
     private ChildEventListener childEventListener;
     private LinearLayoutManager dmsRecyclerViewLinearLayoutManager;
-    private boolean firstLoad, loadingOlderMessages, noMoreMessages = false, reachedEndOfRecyclerView = true;
+    private boolean theme, firstLoad, continueWithODC = true, loadingOlderMessages, noMoreMessages = false, reachedEndOfRecyclerView = true;
     private View loadingIcon;
     private Toast longToast;
     private Integer UUIDDatesPairsSize;
@@ -88,6 +89,10 @@ public class DirectMentions extends Fragment {
 
         mContext = context;
         mActivity = getActivity();
+
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+        // theme == true is light mode.
+        theme = sharedPreferences.getBoolean(SettingsFragment.KEY_THEME_SWITCH, false);
     }
 
     @NonNull
@@ -141,7 +146,7 @@ public class DirectMentions extends Fragment {
                 Log.e(TAG, "onCreateView() -> extras == null");
             }
 
-            // Make the loadingIcon visible upon the first load, as it can sometimes take a while to show anything. It should be made invisible in initDirectMentionsAdapter().
+            // Make the loadingIcon visible upon the first load, as it can sometimes take a while to show anything. It should be made invisible in initDirectMentionsAdapter.
             if (loadingIcon != null) {
 
                 loadingIcon.setVisibility(View.VISIBLE);
@@ -195,7 +200,7 @@ public class DirectMentions extends Fragment {
         super.onStart();
         Log.i(TAG, "onStart()");
 
-        // Set to true to scroll to the bottom of chatRecyclerView. Also prevents duplicate items in addQuery.
+        // Set to true to scroll to the bottom of chatRecyclerView. Also prevents duplicates in addQuery.
         firstLoad = true;
         loadingOlderMessages = false;
 
@@ -210,6 +215,15 @@ public class DirectMentions extends Fragment {
                 @Override
                 public void onDataChange(@NonNull DataSnapshot snapshot) {
 
+                    // This is to prevent a bug where ODC for this ListenerForSingleValueEvent gets called twice. I have no idea what's causing it, so it should be addressed in the future.
+                    if (continueWithODC) {
+
+                        continueWithODC = false;
+                    } else {
+
+                        return;
+                    }
+
                     // User reloaded app but user has no DMs.
                     if (snapshot.getChildrenCount() == 0) {
 
@@ -223,7 +237,8 @@ public class DirectMentions extends Fragment {
 
                         Long date = (Long) ds.child("date").getValue();
                         // If the saved date and the latest date match, then there's no need to re-download everything from Firebase.
-                        if (date != null && UUIDDatesPairs != null && !date.equals(UUIDDatesPairs.get(UUIDDatesPairs.size() - 1).second)) {
+                        // UUIDDatesPairs.size() will be 0 if the user had no DMs, put app into background, then returned to a new DM.
+                        if (date != null && UUIDDatesPairs != null && ((UUIDDatesPairs.size() == 0) || (!date.equals(UUIDDatesPairs.get(UUIDDatesPairs.size() - 1).second)))) {
 
                             Log.i(TAG, "onStart() -> new DMs since app restarted");
 
@@ -284,7 +299,7 @@ public class DirectMentions extends Fragment {
         Log.i(TAG, "getFirebaseDms()");
 
         Query query;
-        if (UUIDDatesPairsSize != null) {
+        if (UUIDDatesPairsSize != null && UUIDDatesPairsSize != -1) {
 
             query = FirebaseDatabase.getInstance().getReference()
                     .child("Users").child(firebaseUid).child("ReceivedDms")
@@ -332,17 +347,18 @@ public class DirectMentions extends Fragment {
 
                 for (DataSnapshot ds : snapshot.getChildren()) {
 
+                    String senderUserUUID = (String) ds.child("senderUserUUID").getValue();
                     Long serverDate = (Long) ds.child("date").getValue();
 
+                    Pair<String, Long> pair = new Pair<>(senderUserUUID, serverDate);
+
                     // Prevents duplicates during getFirebaseDMs.
-                    if (mTime.contains(serverDate)) {
+                    if (UUIDDatesPairs.contains(pair)) {
 
                         continue;
                     }
 
-                    String user = (String) ds.child("userUUID").getValue();
-
-                    UUIDDatesPairs.add(i, new Pair<>(user, serverDate));
+                    UUIDDatesPairs.add(i, pair);
 
                     String imageUrl = (String) ds.child("imageUrl").getValue();
                     String videoUrl = (String) ds.child("videoUrl").getValue();
@@ -381,19 +397,8 @@ public class DirectMentions extends Fragment {
                     Double lat = (Double) ds.child("lat").getValue();
                     Double lon = (Double) ds.child("lon").getValue();
                     Boolean seenByUser = (Boolean) ds.child("seenByUser").getValue();
-                    DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
-                    // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                    // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                    if (serverDate != null) {
-
-                        Date netDate = (new Date(serverDate));
-                        String messageTime = dateFormat.format(netDate);
-                        mTime.add(i, messageTime);
-                    } else {
-
-                        Log.e(TAG, "fillRecyclerView() -> serverDate == null");
-                    }
-                    mUser.add(i, user);
+                    mTime.add(i, serverDate);
+                    mUser.add(i, senderUserUUID);
                     mImage.add(i, imageUrl);
                     mVideo.add(i, videoUrl);
 
@@ -474,7 +479,7 @@ public class DirectMentions extends Fragment {
                     return;
                 }
 
-                // Read RecyclerView scroll position (for use in initChatAdapter to prevent scrolling after recyclerView gets updated by another user).
+                // Read RecyclerView scroll position (for use in initDirectMentionsAdapter to prevent scrolling after recyclerView gets updated by another user).
                 if (dmsRecyclerViewLinearLayoutManager != null && dmsRecyclerView != null) {
 
                     index = dmsRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
@@ -482,10 +487,10 @@ public class DirectMentions extends Fragment {
                     top = (v == null) ? 0 : (v.getTop() - dmsRecyclerView.getPaddingTop());
                 }
 
-                String user = (String) snapshot.child("userUUID").getValue();
+                String senderUserUUID = (String) snapshot.child("senderUserUUID").getValue();
                 Long serverDate = (Long) snapshot.child("date").getValue();
 
-                UUIDDatesPairs.add(new Pair<>(user, serverDate));
+                UUIDDatesPairs.add(new Pair<>(senderUserUUID, serverDate));
 
                 String imageUrl = (String) snapshot.child("imageUrl").getValue();
                 String videoUrl = (String) snapshot.child("videoUrl").getValue();
@@ -524,19 +529,8 @@ public class DirectMentions extends Fragment {
                 Double lat = (Double) snapshot.child("lat").getValue();
                 Double lon = (Double) snapshot.child("lon").getValue();
                 Boolean seenByUser = (Boolean) snapshot.child("seenByUser").getValue();
-                DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
-                // Getting ServerValue.TIMESTAMP from Firebase will create two calls: one with an estimate and one with the actual value.
-                // This will cause onDataChange to fire twice; optimizations could be made in the future.
-                if (serverDate != null) {
-
-                    Date netDate = (new Date(serverDate));
-                    String messageTime = dateFormat.format(netDate);
-                    mTime.add(messageTime);
-                } else {
-
-                    Log.e(TAG, "fillRecyclerView() -> serverDate == null");
-                }
-                mUser.add(user);
+                mTime.add(serverDate);
+                mUser.add(senderUserUUID);
                 mImage.add(imageUrl);
                 mVideo.add(videoUrl);
 
@@ -562,16 +556,25 @@ public class DirectMentions extends Fragment {
 
                 Log.i(TAG, "addQuery() -> onChildChanged()");
 
+                Long serverDate = (Long) snapshot.child("date").getValue();
+
                 // Update the serverDate in UUIDDatesPairs, as the original serverDate will be an estimate and a callback from the server will always be made with an accurate time.
                 for (Pair<String, Long> pair : UUIDDatesPairs) {
 
-                    String user = (String) snapshot.child("userUUID").getValue();
+                    String senderUserUUID = (String) snapshot.child("senderUserUUID").getValue();
+                    if (pair.first.equals(senderUserUUID)) {
 
-                    if (pair.first.equals(user)) {
+                        UUIDDatesPairs.set(UUIDDatesPairs.indexOf(pair), new Pair<>(senderUserUUID, serverDate));
+                        break;
+                    }
+                }
 
-                        Long serverDate = (Long) snapshot.child("date").getValue();
+                for (int i = 0; i < mUser.size(); i++) {
 
-                        UUIDDatesPairs.set(UUIDDatesPairs.indexOf(pair), new Pair<>(user, serverDate));
+                    String senderUserUUID = (String) snapshot.child("senderUserUUID").getValue();
+                    if (senderUserUUID != null && senderUserUUID.equals(mUser.get(i))) {
+
+                        mTime.set(i, serverDate);
                         return;
                     }
                 }
@@ -625,6 +628,7 @@ public class DirectMentions extends Fragment {
         loadingOlderMessages = false;
         // Need to make UUIDDatesPairsSize null so user can load older messages after restarting the app.
         UUIDDatesPairsSize = null;
+        continueWithODC = true;
 
         // After the initial load, make the loadingIcon invisible.
         if (loadingIcon != null) {
@@ -646,7 +650,7 @@ public class DirectMentions extends Fragment {
 
         Log.i(TAG, "onStop()");
 
-        // Read RecyclerView scroll position (for use in initChatAdapter if user reload the activity).
+        // Read RecyclerView scroll position (for use in initDirectMentionsAdapter if user reload the activity).
         if (dmsRecyclerViewLinearLayoutManager != null && dmsRecyclerView != null) {
 
             index = dmsRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
@@ -733,11 +737,10 @@ public class DirectMentions extends Fragment {
     public class DirectMentionsAdapter extends RecyclerView.Adapter<DirectMentionsAdapter.ViewHolder> {
 
         private final Context mContext;
-        private final ArrayList<String> mMessageTime, mMessageUser, mMessageImage, mMessageImageVideo, mMessageText, mShapeUUID;
+        private final ArrayList<Long> mMessageTime;
+        private final ArrayList<String> mMessageUser, mMessageImage, mMessageImageVideo, mMessageText, mShapeUUID;
         private final ArrayList<Boolean> mUserIsWithinShape, mSeenByUser;
         private final ArrayList<Double> mShapeLat, mShapeLon;
-        // theme == true is light mode.
-        private boolean theme;
 
         class ViewHolder extends RecyclerView.ViewHolder {
 
@@ -778,11 +781,10 @@ public class DirectMentions extends Fragment {
 
                                 for (DataSnapshot ds : snapshot.getChildren()) {
 
-                                    String userUUID = (String) ds.child("userUUID").getValue();
+                                    Long date = (Long) ds.child("date").getValue();
+                                    if (date != null) {
 
-                                    if (userUUID != null) {
-
-                                        if (userUUID.equals(mMessageUser.get(getAdapterPosition()))) {
+                                        if (date.equals(mTime.get(getAdapterPosition()))) {
 
                                             if (!(Boolean) ds.child("seenByUser").getValue()) {
 
@@ -913,7 +915,7 @@ public class DirectMentions extends Fragment {
             }
         }
 
-        DirectMentionsAdapter(Context context, ArrayList<String> mMessageTime, ArrayList<String> mMessageUser, ArrayList<String> mMessageImage, ArrayList<String> mMessageImageVideo, ArrayList<String> mMessageText, ArrayList<String> mShapeUUID, ArrayList<Boolean> mUserIsWithinShape, ArrayList<Double> mShapeLat, ArrayList<Double> mShapeLon, ArrayList<Boolean> mSeenByUser) {
+        DirectMentionsAdapter(Context context, ArrayList<Long> mMessageTime, ArrayList<String> mMessageUser, ArrayList<String> mMessageImage, ArrayList<String> mMessageImageVideo, ArrayList<String> mMessageText, ArrayList<String> mShapeUUID, ArrayList<Boolean> mUserIsWithinShape, ArrayList<Double> mShapeLat, ArrayList<Double> mShapeLon, ArrayList<Boolean> mSeenByUser) {
 
             this.mContext = context;
             this.mMessageTime = mMessageTime;
@@ -934,13 +936,16 @@ public class DirectMentions extends Fragment {
 
             View view = LayoutInflater.from(mContext).inflate(R.layout.directmentionsadapterlayout, parent, false);
 
-            loadPreferences();
-
             return new ViewHolder(view);
         }
 
         @Override
         public void onBindViewHolder(@NonNull ViewHolder holder, final int position) {
+
+            // Need to keep mMessageTime and mTime as Longs for precision when comparing in onClick.
+            DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
+            Date netDate = (new Date(mMessageTime.get(position)));
+            String messageTime = dateFormat.format(netDate);
 
             // Set the left side if the user sent the message from inside the shape.
             if (mUserIsWithinShape.get(position)) {
@@ -954,7 +959,8 @@ public class DirectMentions extends Fragment {
                 holder.messageTimeInside.setVisibility(View.VISIBLE);
                 holder.messageUserInside.setVisibility(View.VISIBLE);
 
-                holder.messageTimeInside.setText(mMessageTime.get(position));
+                // Need to keep mMessageTime and mTime in Long format for precision when comparing after onClick.
+                holder.messageTimeInside.setText(messageTime);
 
                 holder.messageUserInside.setText(getString(R.string.atUsername, mMessageUser.get(position)));
 
@@ -1016,7 +1022,7 @@ public class DirectMentions extends Fragment {
                 holder.messageUserOutside.setVisibility(View.VISIBLE);
 
                 // User sent the message from outside the shape. Setup the right side.
-                holder.messageTimeOutside.setText(mMessageTime.get(position));
+                holder.messageTimeOutside.setText(messageTime);
 
                 holder.messageUserOutside.setText(getString(R.string.atUsername, mMessageUser.get(position)));
 
@@ -1113,24 +1119,20 @@ public class DirectMentions extends Fragment {
 
             return position;
         }
-
-        protected void loadPreferences() {
-
-            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-
-            theme = sharedPreferences.getBoolean(SettingsFragment.KEY_THEME_SWITCH, false);
-        }
     }
 
     private void showMessageLong(String message) {
 
         if (android.os.Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
 
-            Snackbar snackBar = Snackbar.make(rootView, message, Snackbar.LENGTH_LONG);
-            View snackBarView = snackBar.getView();
-            TextView snackTextView = snackBarView.findViewById(com.google.android.material.R.id.snackbar_text);
-            snackTextView.setMaxLines(10);
-            snackBar.show();
+            if (rootView != null) {
+
+                Snackbar snackBar = Snackbar.make(rootView, message, Snackbar.LENGTH_LONG);
+                View snackBarView = snackBar.getView();
+                TextView snackTextView = snackBarView.findViewById(com.google.android.material.R.id.snackbar_text);
+                snackTextView.setMaxLines(10);
+                snackBar.show();
+            }
         } else {
 
             // Prevents a crash if the user backed out of activity and a toast message occurs from another thread.
