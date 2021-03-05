@@ -121,7 +121,8 @@ public class DeleteAccount extends AppCompatActivity {
 
     protected void updatePreferences() {
 
-        boolean theme = sharedPreferences.getBoolean(SettingsFragment.KEY_THEME_SWITCH, false);
+        // theme == true is light mode.
+        boolean theme = sharedPreferences.getBoolean(getString(R.string.prefTheme), false);
 
         if (theme) {
 
@@ -196,7 +197,7 @@ public class DeleteAccount extends AppCompatActivity {
 
                             if (task.isSuccessful()) {
 
-                                PreferenceManager.getDefaultSharedPreferences(DeleteAccount.this).edit().clear().apply();
+                                sharedPreferences.edit().clear().apply();
 
                                 FirebaseDatabase.getInstance().getReference().child("Users").child(firebaseUid).removeValue(
 

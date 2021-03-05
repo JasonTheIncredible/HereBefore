@@ -1,7 +1,7 @@
 package co.clixel.herebefore;
 
-import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.Gravity;
@@ -13,6 +13,7 @@ import androidx.fragment.app.Fragment;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.PreferenceManager;
+import androidx.preference.SwitchPreferenceCompat;
 
 import com.firebase.ui.auth.AuthUI;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
@@ -26,28 +27,64 @@ import com.mikepenz.aboutlibraries.LibsBuilder;
  */
 public class SettingsFragment extends PreferenceFragmentCompat implements
         PreferenceManager.OnPreferenceTreeClickListener {
-
-    private DialogInterface.OnClickListener dialogClickListener;
-    protected static final String KEY_NOTIFICATIONS_SWITCH = "notifications";
-    protected static final String KEY_THEME_SWITCH = "toggleTheme";
-    protected static final String KEY_MAP_TYPE = "mapTypePreference";
-    protected static final String KEY_SIGN_OUT = "signOut";
-    protected static final String KEY_SHOW_INTRO = "showIntro";
+    
+    private SwitchPreferenceCompat toggleTheme, toggleNotifications;
     // "FIREBASE_TOKEN" to find Firebase token for messaging.
 
     @Override
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
 
-        if (getActivity() != null) {
+        // Check if the account is a Google account. If not, hide "Reset Password".
+        if (GoogleSignIn.getLastSignedInAccount(requireContext()) == null) {
 
-            // Check if the account is a Google account. If not, hide "Reset Password".
-            if (GoogleSignIn.getLastSignedInAccount(requireContext()) == null) {
+            setPreferencesFromResource(R.xml.preferences_herebefore, rootKey);
+        } else {
 
-                setPreferencesFromResource(R.xml.preferences_herebefore, rootKey);
-            } else {
+            setPreferencesFromResource(R.xml.preferences_google, rootKey);
+        }
 
-                setPreferencesFromResource(R.xml.preferences_google, rootKey);
-            }
+        toggleNotifications = (SwitchPreferenceCompat) findPreference("toggleNotifications");
+        toggleTheme = (SwitchPreferenceCompat) findPreference("toggleTheme");
+
+        if (toggleNotifications != null) {
+
+            toggleNotifications.setOnPreferenceClickListener((Preference pref) -> {
+
+                SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getContext());
+                SharedPreferences.Editor editor = sharedPref.edit();
+                editor.putBoolean(getString(R.string.prefNotifications), toggleNotifications.isChecked());
+                editor.apply();
+
+                return true;
+            });
+        }
+
+        if (toggleTheme != null) {
+
+            toggleTheme.setOnPreferenceClickListener((Preference pref) -> {
+
+                SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getContext());
+                SharedPreferences.Editor editor = sharedPref.edit();
+                editor.putBoolean(getString(R.string.prefTheme), toggleTheme.isChecked());
+                editor.apply();
+
+                if (android.os.Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
+
+                    Snackbar snackBar = Snackbar.make(requireView(), "Theme will change on activity reload.", Snackbar.LENGTH_LONG);
+                    snackBar.setAnchorView(getActivity().findViewById(R.id.bottom_navigation_constraint));
+                    View snackBarView = snackBar.getView();
+                    TextView snackTextView = snackBarView.findViewById(com.google.android.material.R.id.snackbar_text);
+                    snackTextView.setMaxLines(10);
+                    snackBar.show();
+                } else {
+
+                    Toast longToast = Toast.makeText(getContext(), "Theme will change on activity reload.", Toast.LENGTH_LONG);
+                    longToast.setGravity(Gravity.CENTER, 0, 0);
+                    longToast.show();
+                }
+
+                return true;
+            });
         }
     }
 
@@ -59,25 +96,6 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
         if (getActivity() != null) {
 
             switch (key) {
-
-                case "toggleTheme": {
-
-                    if (android.os.Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
-
-                        Snackbar snackBar = Snackbar.make(requireView(), "Theme will change on activity reload.", Snackbar.LENGTH_LONG);
-                        View snackBarView = snackBar.getView();
-                        TextView snackTextView = snackBarView.findViewById(com.google.android.material.R.id.snackbar_text);
-                        snackTextView.setMaxLines(10);
-                        snackBar.show();
-                    } else {
-
-                        Toast longToast = Toast.makeText(getContext(), "Theme will change on activity reload.", Toast.LENGTH_LONG);
-                        longToast.setGravity(Gravity.CENTER, 0, 0);
-                        longToast.show();
-                    }
-
-                    break;
-                }
 
                 case "introduction": {
 
@@ -155,13 +173,18 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
     }
 
     @Override
-    public void onStop() {
+    public void onDestroy() {
 
-        if (dialogClickListener != null) {
+        if (toggleNotifications != null) {
 
-            dialogClickListener = null;
+            toggleNotifications.setOnPreferenceClickListener(null);
         }
 
-        super.onStop();
+        if (toggleTheme != null) {
+
+            toggleTheme.setOnPreferenceClickListener(null);
+        }
+
+        super.onDestroy();
     }
 }

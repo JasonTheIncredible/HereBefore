@@ -29,7 +29,7 @@ import com.google.firebase.database.ValueEventListener;
 public class Navigation extends AppCompatActivity {
 
     private ViewPager viewPager;
-    protected BubbleNavigationConstraintView bubbleNavigationConstraintView;
+    private BubbleNavigationConstraintView bubbleNavigationConstraintView;
     private ViewPager.OnPageChangeListener pagerListener;
     private int currentItem = -1, dmCounter = 0;
     private String firebaseUid;
@@ -65,7 +65,8 @@ public class Navigation extends AppCompatActivity {
     protected void updatePreferences() {
 
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-        boolean theme = sharedPreferences.getBoolean(SettingsFragment.KEY_THEME_SWITCH, false);
+        // theme == true is light mode.
+        boolean theme = sharedPreferences.getBoolean(getString(R.string.prefTheme), false);
 
         if (theme) {
 
@@ -80,7 +81,7 @@ public class Navigation extends AppCompatActivity {
         }
 
         // This will allow the settings button to appear in Map.java.
-        sharedPreferences.edit().putBoolean(SettingsFragment.KEY_SIGN_OUT, true).apply();
+        sharedPreferences.edit().putBoolean(getString(R.string.prefSignOut), true).apply();
     }
 
     @Override

@@ -90,9 +90,8 @@ public class DirectMentions extends Fragment {
         mContext = context;
         mActivity = getActivity();
 
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
         // theme == true is light mode.
-        theme = sharedPreferences.getBoolean(SettingsFragment.KEY_THEME_SWITCH, false);
+        theme = PreferenceManager.getDefaultSharedPreferences(mContext).getBoolean(getString(R.string.prefTheme), false);
     }
 
     @NonNull
@@ -553,31 +552,6 @@ public class DirectMentions extends Fragment {
 
             @Override
             public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-
-                Log.i(TAG, "addQuery() -> onChildChanged()");
-
-                Long serverDate = (Long) snapshot.child("date").getValue();
-
-                // Update the serverDate in UUIDDatesPairs, as the original serverDate will be an estimate and a callback from the server will always be made with an accurate time.
-                for (Pair<String, Long> pair : UUIDDatesPairs) {
-
-                    String senderUserUUID = (String) snapshot.child("senderUserUUID").getValue();
-                    if (pair.first.equals(senderUserUUID)) {
-
-                        UUIDDatesPairs.set(UUIDDatesPairs.indexOf(pair), new Pair<>(senderUserUUID, serverDate));
-                        break;
-                    }
-                }
-
-                for (int i = 0; i < mUser.size(); i++) {
-
-                    String senderUserUUID = (String) snapshot.child("senderUserUUID").getValue();
-                    if (senderUserUUID != null && senderUserUUID.equals(mUser.get(i))) {
-
-                        mTime.set(i, serverDate);
-                        return;
-                    }
-                }
             }
 
             @Override

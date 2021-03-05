@@ -65,9 +65,8 @@ public class ResetPassword extends AppCompatActivity {
 
     protected void updatePreferences() {
 
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-
-        boolean theme = sharedPreferences.getBoolean(SettingsFragment.KEY_THEME_SWITCH, false);
+        // theme == true is light mode.
+        boolean theme = PreferenceManager.getDefaultSharedPreferences(this).getBoolean(getString(R.string.prefTheme), false);
 
         if (theme) {
 

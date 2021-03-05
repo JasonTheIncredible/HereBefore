@@ -140,10 +140,11 @@ public class Map extends FragmentActivity implements
     // Increase viral potential - make it easier to share?
     // Panoramic view, like gMaps.
 
+    // When theme was switched and then user enters Chat from Map, app crashes (because image is null?).
+    // Make mapTypePreference work.
+    // Make preferences MODE_PRIVATE?
     // getFirebaseMessages() -> fillRecyclerView() cycling after clicking on a DM after theme changed.
-    // Is DirectMention's onChildChanged necessary, as date appears to be different from MessageThreads? Should this be fixed?
-    // Set SettingsFragment snackBar anchor as the navigation bar.
-    // Prevent banner ad pop-in, as it affects where a user clicks. Also, Ad loading affects recyclerView position.
+    // Prevent banner ad pop-in, as it affects where a user clicks. Also, ad loading affects recyclerView position.
     // Add interstitial ads.
     // Finish setting up Google ads, then add more ads.
     // Adjust video and image resolution based on projected revenue - is permanence unsustainable? Crowdsource storage?
@@ -181,9 +182,7 @@ public class Map extends FragmentActivity implements
         onNewIntent(getIntent());
 
         // Show the intro if the user has not yet seen it.
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-
-        boolean showIntro = sharedPreferences.getBoolean(SettingsFragment.KEY_SHOW_INTRO, true);
+        boolean showIntro = PreferenceManager.getDefaultSharedPreferences(this).getBoolean(getString(R.string.prefShowIntro), true);
 
         if (showIntro) {
 
@@ -245,7 +244,7 @@ public class Map extends FragmentActivity implements
         }
 
         // Check if the user is logged in. If true, make the settings button visible.
-        boolean loggedIn = PreferenceManager.getDefaultSharedPreferences(this).getBoolean(SettingsFragment.KEY_SIGN_OUT, false);
+        boolean loggedIn = PreferenceManager.getDefaultSharedPreferences(this).getBoolean(getString(R.string.prefSignOut), false);
 
         if (loggedIn) {
 
@@ -1306,9 +1305,7 @@ public class Map extends FragmentActivity implements
 
         Log.i(TAG, "updatePreferences()");
 
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-
-        String preferredMapType = sharedPreferences.getString(SettingsFragment.KEY_MAP_TYPE, getResources().getString(R.string.hybrid_view));
+        String preferredMapType = PreferenceManager.getDefaultSharedPreferences(this).getString(getString(R.string.prefMapType), getResources().getString(R.string.hybrid_view));
 
         if (preferredMapType != null) {
 

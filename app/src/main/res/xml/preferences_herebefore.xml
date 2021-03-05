@@ -3,14 +3,16 @@
 
     <SwitchPreferenceCompat
         app:defaultValue="true"
-        app:key="notifications"
-        app:summary="Off &lt;-&gt; On"
+        app:key="toggleNotifications"
+        app:summaryOff="Off"
+        app:summaryOn="On"
         app:title="Enable notifications" />
 
     <SwitchPreferenceCompat
         app:defaultValue="false"
         app:key="toggleTheme"
-        app:summary="Dark mode &lt;-&gt; Light mode"
+        app:summaryOff="Dark mode"
+        app:summaryOn="Light mode"
         app:title="Toggle between dark and light mode" />
 
     <Preference

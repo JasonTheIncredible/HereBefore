@@ -64,9 +64,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
         Log.d(TAG, "onMessageReceived: New incoming message.");
 
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
-
-        boolean notifications = sharedPreferences.getBoolean(SettingsFragment.KEY_NOTIFICATIONS_SWITCH, true);
+        boolean notifications = PreferenceManager.getDefaultSharedPreferences(getBaseContext()).getBoolean(getString(R.string.prefNotifications), true);
 
         // If user turned off notifications, return.
         if (!notifications) {

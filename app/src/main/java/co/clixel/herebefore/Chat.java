@@ -193,9 +193,8 @@ public class Chat extends Fragment implements
         mContext = context;
         mActivity = getActivity();
 
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
         // theme == true is light mode.
-        theme = sharedPreferences.getBoolean(SettingsFragment.KEY_THEME_SWITCH, false);
+        theme = PreferenceManager.getDefaultSharedPreferences(mContext).getBoolean(getString(R.string.prefTheme), false);
 
         // Get info from Map.java
         if (mActivity != null) {
@@ -1739,7 +1738,6 @@ public class Chat extends Fragment implements
 
                 holder.messageTimeInside.setText(mMessageTime.get(position));
 
-                Log.i(TAG, "111111111111111111111111 " + mMessageUser.get(position));
                 holder.messageUserInside.setText(getString(R.string.atUsername, mMessageUser.get(position)));
 
                 // Set messageImage, messageImageVideo, or messageText to gone if an image or text doesn't exist, for spacing consistency.

@@ -94,7 +94,7 @@ public class MyAppIntro extends AppIntro {
         super.onSkipPressed(currentFragment);
         Log.i(TAG, "onSkipPressed()");
 
-        sharedPreferences.edit().putBoolean(SettingsFragment.KEY_SHOW_INTRO, false).apply();
+        sharedPreferences.edit().putBoolean(getString(R.string.prefShowIntro), false).apply();
 
         Intent Activity = new Intent(this, Map.class);
         startActivity(Activity);
@@ -107,7 +107,7 @@ public class MyAppIntro extends AppIntro {
         super.onDonePressed(currentFragment);
         Log.i(TAG, "onDonePressed()");
 
-        sharedPreferences.edit().putBoolean(SettingsFragment.KEY_SHOW_INTRO, false).apply();
+        sharedPreferences.edit().putBoolean(getString(R.string.prefShowIntro), false).apply();
 
         Intent Activity = new Intent(this, Map.class);
         startActivity(Activity);

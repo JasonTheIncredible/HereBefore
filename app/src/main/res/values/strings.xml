@@ -54,6 +54,11 @@
     <string name="location_permission_required_explanation">"Here Before needs permission to use your location to find chat areas around you."</string>
     <string name="gps_disabled">"GPS Disabled"</string>
     <string name="gps_disabled_manually">"Please enable your location services on the following screen."</string>
+    <string name="prefNotifications">prefNotifications</string>
+    <string name="prefTheme">prefTheme</string>
+    <string name="prefShowIntro">prefShowIntro</string>
+    <string name="prefMapType">prefMapType</string>
+    <string name="prefSignOut">prefSignOut</string>
 
     <string-array name="pref_map_types_entries">
         <item>Road map view</item>
