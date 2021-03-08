@@ -62,7 +62,7 @@ dependencies {
     //androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
 
     implementation 'com.google.firebase:firebase-core:18.0.2'
-    implementation 'com.google.firebase:firebase-auth:20.0.2'
+    implementation 'com.google.firebase:firebase-auth:20.0.3'
     implementation 'com.firebaseui:firebase-ui:7.1.1'
     implementation 'com.firebaseui:firebase-ui-auth:7.1.1'
     implementation 'com.google.firebase:firebase-messaging:21.0.1'
@@ -77,14 +77,13 @@ dependencies {
     implementation 'com.github.chrisbanes:PhotoView:2.3.0'
 
     // zelory.compressor following can't be upgraded to 3.0.0 because 3.x only works with kt.
-    //noinspection GradleDependency
     implementation 'id.zelory:compressor:2.1.0'
 
     implementation 'com.otaliastudios:transcoder:0.9.1'
 
-    implementation 'com.mikepenz:aboutlibraries:8.6.7'
+    implementation 'com.mikepenz:aboutlibraries:8.8.3'
 
-    implementation 'com.linkedin.android.spyglass:spyglass:2.2.0'
+    implementation 'com.linkedin.android.spyglass:spyglass:3.0.1'
 
     implementation 'com.gauravk.bubblenavigation:bubblenavigation:1.0.7'
 

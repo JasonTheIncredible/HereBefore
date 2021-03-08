@@ -6,7 +6,6 @@ import android.app.AlertDialog;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Color;
@@ -2762,19 +2761,25 @@ public class Chat extends Fragment implements
 
         HandlerThread imageCompressAndAddToGalleryHandlerThread = new HandlerThread("imageCompressAndAddToGalleryHandlerThread");
         imageCompressAndAddToGalleryHandlerThread.start();
-        Handler mHandler = new Handler(imageCompressAndAddToGalleryHandlerThread.getLooper());
+        Handler handler = new Handler(imageCompressAndAddToGalleryHandlerThread.getLooper());
         Runnable runnable = () -> {
 
             // Save a non-compressed image to the gallery.
             try {
 
                 // If fileName is not null, file was created in Map and needs to be found here.
-                if (imageFile != null) {
+                if (imageFile != null && mContext != null) {
 
                     image = new File(imageFile);
                     imageURI = FileProvider.getUriForFile(mContext,
                             "com.example.android.fileprovider",
                             image);
+                }
+
+                // If user changes theme then re-enters Chat with a picture, this runnable will cause the app to crash because mContext is null. While (mContext != null) does not work to prevent the crash, so these constant mContext checks will be a patch until a more elegant solution is created.
+                if (mContext == null) {
+
+                    return;
                 }
 
                 Bitmap imageBitmapFull = new Compressor(mContext)
@@ -2785,7 +2790,17 @@ public class Chat extends Fragment implements
                         .setDestinationDirectoryPath(Objects.requireNonNull(mContext.getExternalFilesDir(Environment.DIRECTORY_PICTURES)).getAbsolutePath())
                         .compressToBitmap(image);
 
+                if (mContext == null) {
+
+                    return;
+                }
+
                 MediaStore.Images.Media.insertImage(mContext.getContentResolver(), imageBitmapFull, "HereBefore_" + System.currentTimeMillis() + "_PNG", null);
+
+                if (mContext == null) {
+
+                    return;
+                }
 
                 // Create a compressed image.
                 Bitmap mImageBitmap = new Compressor(mContext)
@@ -2808,6 +2823,11 @@ public class Chat extends Fragment implements
                 // Update UI thread.
                 new Handler(Looper.getMainLooper()).post(() -> {
 
+                    if (mContext == null) {
+
+                        return;
+                    }
+
                     Glide.with(mContext)
                             .load(byteArray)
                             .apply(new RequestOptions().override(480, 5000).placeholder(R.drawable.ic_recyclerview_image_placeholder))
@@ -2825,7 +2845,7 @@ public class Chat extends Fragment implements
             }
         };
 
-        mHandler.post(runnable);
+        handler.post(runnable);
     }
 
     // Save a non-compressed version to the gallery and add a compressed version to the imageView.
@@ -2845,7 +2865,7 @@ public class Chat extends Fragment implements
         Runnable runnable = () -> {
 
             // If fileName is not null, file was created in Map and needs to be found here.
-            if (videoFile != null) {
+            if (videoFile != null && mContext != null) {
 
                 video = new File(videoFile);
                 videoURI = FileProvider.getUriForFile(mContext,

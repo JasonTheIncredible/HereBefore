@@ -4,7 +4,6 @@ import android.Manifest;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.location.Location;
@@ -103,71 +102,6 @@ public class Map extends FragmentActivity implements
     private LocationManager locationManager;
     private FusedLocationProviderClient mFusedLocationClient;
     private LocationCallback mLocationCallback;
-
-    // Create a "Go to random circle" button to give people something to do when there's not many circles.
-    // If user is too far away from an area before uploading a picture, require taking a new picture.
-    // Fix issue where Chat and DirectMention's onStart ListenerForSingleValueEvent is getting called twice (search for: This is to prevent a bug where).
-    // createReceivedDmAfterCreatingMessage takes a long time, especially the first time after not creating a DM for a while. Also, it rarely doesn't work at all.
-    // Store all text as strings.
-    // If user is outside of a circle, show how far outside? - problem: users might be able to identify other users by distance.
-    // Show picture upon opening circle or show picture at the top at all times.
-    // Long press a shape to see a popup of that picture.
-    // Allow users to get "likes". Allow more likes per second with a higher "level" like DS.
-    // If user is outside of circle, show how far outside - requires checking location every time before posting new message.
-    // After clicking on a DM and going to that Chat, allow user to find that same shape on the map.
-    // After clicking on a UUID, keep it expanded after updating recyclerView.
-    // Create a "New messages" toast if user is scrolled up (or maybe just if user is scrolled up and restarts?)
-    // Only be able to see things you've visited - Kenny. Or allow the user to choose whether someone needs to be near the circle to see the circle.
-    // Create widget for faster picture / creating point.
-    // Develop an Apple version.
-    // After seeing analytics, possibly begin adding full shapeLat and shapeLon to messageThreads, as getting lat / lon from shape in createReceivedDmAfterCreatingMessage takes a lot of time / memory.
-    // Check Google account password before deleting account, or create an "Are you sure?" dialog.
-    // Add ability to add both picture and video to firebase at the same time.
-    // Add ability to filter recyclerView by type of content (recorded at the scene...).
-    // Allow private posts or sharing with specific people.
-    // Let users allow specific other users to see their name.
-    // Send the shape creator notifications about all comments from a shape?
-    // Create "my locations" or "my photos" and see friends' locations / follow friends?
-    // Adjust UUID on a message if a user deletes their account without search every single message in the database. Also delete the @ if that UUID is mentioned?
-    // Track where user is while taking the original video or picture and make the shape that big?
-    // Create a "general chat" where everyone can chat anonymously, maybe with more specific location rooms too? Delete general chat after x amount of time or # of items.
-    //// Add ability to add images and video to general chat and Chat from gallery. Distinguish them from media added from location. Github 8/29.
-    // Leave messages in locations that users get notified of when they enter the area by adding geo-fencing.
-    // Increase speed of checking whether user is inside a circle, as it currently cycles through all circles. Also, allow user to choose which circle they enter?
-    // Truncate mention in editText to look like userUUID in Chat.
-    // Add a function for deleting / decreasing position of DMs after deleting / updating messageThreads - problem: need to store the name of the person being DM'ed, but that's a lot of useless information and possibly increases security risk.
-    // Load user-specific shared preferences - looks like it might require saving info to database; is this worth it?
-    // Increase viral potential - make it easier to share?
-    // Panoramic view, like gMaps.
-
-    // When theme was switched and then user enters Chat from Map, app crashes (because image is null?).
-    // Make mapTypePreference work.
-    // Make preferences MODE_PRIVATE?
-    // getFirebaseMessages() -> fillRecyclerView() cycling after clicking on a DM after theme changed.
-    // Prevent banner ad pop-in, as it affects where a user clicks. Also, ad loading affects recyclerView position.
-    // Add interstitial ads.
-    // Finish setting up Google ads, then add more ads.
-    // Adjust video and image resolution based on projected revenue - is permanence unsustainable? Crowdsource storage?
-    // In DirectMentions, switch mTime.contains(serverDate) to something more reliable.
-    // Make creating a circle more accurate.
-    // Deal with leaks.
-    // Analyze app size.
-    // Check warning messages / Make sure npm is up to date.
-    // Create database backups.
-    // Make sure aboutLibraries includes all libraries, and make sure all licenses are fair use (NOT GPL).
-    // Request new tokens, request real adID, get rid of testDevice in Chat and DirectMentions, and don't upload new token to Github.
-    // Register social media accounts / Switch cloud account's email address to the new one.
-    // Log out all users.
-    // Switch existing values in Firebase (including storage).
-    // Move this list to a doc for privacy.
-
-    // Release checklist:
-    // Deal with deprecated methods.
-    // Test on multiple devices.
-    // Unit testing.
-
-    // Remember the AC: Origins inspiration. Also, airdrop - create items in the world. Also, gMaps drag and drop. Also, DS virtual items in the world.
-    // Form LLC?
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
