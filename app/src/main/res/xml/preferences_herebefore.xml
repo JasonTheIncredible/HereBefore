@@ -21,7 +21,7 @@
         app:title="Introduction" />
 
     <ListPreference
-        app:defaultValue="@string/hybrid_view"
+        app:defaultValue="@string/use_hybrid_view"
         app:entries="@array/pref_map_types_entries"
         app:entryValues="@array/pref_map_types_entries"
         app:key="mapTypePreference"

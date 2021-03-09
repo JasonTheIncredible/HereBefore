@@ -10,6 +10,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.fragment.app.Fragment;
+import androidx.preference.ListPreference;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.PreferenceManager;
@@ -29,6 +30,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
         PreferenceManager.OnPreferenceTreeClickListener {
     
     private SwitchPreferenceCompat toggleTheme, toggleNotifications;
+    private Preference mapTypePreference;
     // "FIREBASE_TOKEN" to find Firebase token for messaging.
 
     @Override
@@ -43,14 +45,80 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
             setPreferencesFromResource(R.xml.preferences_google, rootKey);
         }
 
-        toggleNotifications = (SwitchPreferenceCompat) findPreference("toggleNotifications");
-        toggleTheme = (SwitchPreferenceCompat) findPreference("toggleTheme");
+        mapTypePreference = findPreference("mapTypePreference");
+        toggleNotifications = findPreference("toggleNotifications");
+        toggleTheme = findPreference("toggleTheme");
+
+        if (mapTypePreference != null) {
+
+            // Sets the default value according to the user's current preference.
+            ListPreference mapTypeListPreference = findPreference("mapTypePreference");
+            if (mapTypeListPreference != null) {
+
+                String preferredMapType = PreferenceManager.getDefaultSharedPreferences(requireContext()).getString(getString(R.string.prefMapType), getResources().getString(R.string.use_hybrid_view));
+                if (preferredMapType != null) {
+
+                    if (preferredMapType.equals(getString(R.string.use_road_map_view))) {
+
+                        mapTypeListPreference.setValueIndex(0);
+                    } else if (preferredMapType.equals(getString(R.string.use_satellite_view))) {
+
+                        mapTypeListPreference.setValueIndex(1);
+                    } else if (preferredMapType.equals(getString(R.string.use_hybrid_view))) {
+
+                        mapTypeListPreference.setValueIndex(2);
+                    } else if (preferredMapType.equals(getString(R.string.use_terrain_view))) {
+
+                        mapTypeListPreference.setValueIndex(3);
+                    }
+                } else {
+
+                    // Make "Hybrid view" the default.
+                    mapTypeListPreference.setValueIndex(2);
+                }
+            }
+
+            mapTypePreference.setOnPreferenceChangeListener((preference, newValue) -> {
+
+                SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(requireContext());
+                SharedPreferences.Editor editor = sharedPref.edit();
+
+                switch (newValue.toString()) {
+
+                    case "Road map view":
+
+                        editor.putString(getString(R.string.prefMapType), getString(R.string.use_road_map_view));
+                        editor.apply();
+                        break;
+
+                    case "Satellite view":
+
+                        editor.putString(getString(R.string.prefMapType), getString(R.string.use_satellite_view));
+                        editor.apply();
+                        break;
+
+                    case "Hybrid view":
+
+                        editor.putString(getString(R.string.prefMapType), getString(R.string.use_hybrid_view));
+                        editor.apply();
+                        break;
+
+                    case "Terrain view":
+
+                        editor.putString(getString(R.string.prefMapType), getString(R.string.use_terrain_view));
+                        editor.apply();
+                        break;
+                }
+
+                return true;
+            });
+        }
 
         if (toggleNotifications != null) {
 
             toggleNotifications.setOnPreferenceClickListener((Preference pref) -> {
 
-                SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getContext());
+                SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(requireContext());
                 SharedPreferences.Editor editor = sharedPref.edit();
                 editor.putBoolean(getString(R.string.prefNotifications), toggleNotifications.isChecked());
                 editor.apply();
@@ -63,7 +131,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
 
             toggleTheme.setOnPreferenceClickListener((Preference pref) -> {
 
-                SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getContext());
+                SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(requireContext());
                 SharedPreferences.Editor editor = sharedPref.edit();
                 editor.putBoolean(getString(R.string.prefTheme), toggleTheme.isChecked());
                 editor.apply();
@@ -71,7 +139,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
                 if (android.os.Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
 
                     Snackbar snackBar = Snackbar.make(requireView(), "Theme will change on activity reload.", Snackbar.LENGTH_LONG);
-                    snackBar.setAnchorView(getActivity().findViewById(R.id.bottom_navigation_constraint));
+                    snackBar.setAnchorView(requireActivity().findViewById(R.id.bottom_navigation_constraint));
                     View snackBarView = snackBar.getView();
                     TextView snackTextView = snackBarView.findViewById(com.google.android.material.R.id.snackbar_text);
                     snackTextView.setMaxLines(10);
@@ -174,6 +242,11 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
 
     @Override
     public void onDestroy() {
+
+        if (mapTypePreference != null) {
+
+            mapTypePreference.setOnPreferenceChangeListener(null);
+        }
 
         if (toggleNotifications != null) {
 

@@ -4,6 +4,7 @@ import android.Manifest;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.location.Location;
@@ -708,15 +709,12 @@ public class Map extends FragmentActivity implements
 
         Log.i(TAG, "onMapReadyAndRestart()");
 
-        if (!restarted) {
-
-            updatePreferences();
-        }
-
         if (restarted) {
 
             cameraIdle();
         }
+
+        updatePreferences();
 
         // Go to Chat.java when clicking on a circle.
         mMap.setOnCircleClickListener(circle -> {
@@ -1239,13 +1237,13 @@ public class Map extends FragmentActivity implements
 
         Log.i(TAG, "updatePreferences()");
 
-        String preferredMapType = PreferenceManager.getDefaultSharedPreferences(this).getString(getString(R.string.prefMapType), getResources().getString(R.string.hybrid_view));
+        String preferredMapType = PreferenceManager.getDefaultSharedPreferences(this).getString(getString(R.string.prefMapType), getResources().getString(R.string.use_hybrid_view));
 
         if (preferredMapType != null) {
 
             switch (preferredMapType) {
 
-                case "Road map view":
+                case "Use road map view":
 
                     Log.i(TAG, "updatePreferences() -> Road map view");
 
@@ -1265,7 +1263,7 @@ public class Map extends FragmentActivity implements
 
                     break;
 
-                case "Satellite view":
+                case "Use satellite view":
 
                     Log.i(TAG, "updatePreferences() -> Satellite view");
 
@@ -1285,7 +1283,7 @@ public class Map extends FragmentActivity implements
 
                     break;
 
-                case "Hybrid view":
+                case "Use hybrid view":
 
                     Log.i(TAG, "updatePreferences() -> Hybrid view");
 
@@ -1305,7 +1303,7 @@ public class Map extends FragmentActivity implements
 
                     break;
 
-                case "Terrain view":
+                case "Use terrain view":
 
                     Log.i(TAG, "updatePreferences() -> Terrain view");
 
@@ -1346,6 +1344,11 @@ public class Map extends FragmentActivity implements
 
                     break;
             }
+        } else {
+
+            mMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
+
+            adjustMapColors();
         }
     }
 
@@ -1462,6 +1465,11 @@ public class Map extends FragmentActivity implements
                         adjustMapColors();
                     }
                 }
+
+                SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
+                SharedPreferences.Editor editor = sharedPref.edit();
+                editor.putString(getString(R.string.prefMapType), getString(R.string.use_road_map_view));
+                editor.apply();
             } else {
 
                 Log.e(TAG, "onMenuItemClick -> Road Map -> mMap == null");
@@ -1490,6 +1498,11 @@ public class Map extends FragmentActivity implements
                         adjustMapColors();
                     }
                 }
+
+                SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
+                SharedPreferences.Editor editor = sharedPref.edit();
+                editor.putString(getString(R.string.prefMapType), getString(R.string.use_satellite_view));
+                editor.apply();
             } else {
 
                 Log.e(TAG, "onMenuItemClick -> Satellite Map -> mMap == null");
@@ -1518,6 +1531,11 @@ public class Map extends FragmentActivity implements
                         adjustMapColors();
                     }
                 }
+
+                SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
+                SharedPreferences.Editor editor = sharedPref.edit();
+                editor.putString(getString(R.string.prefMapType), getString(R.string.use_hybrid_view));
+                editor.apply();
             } else {
 
                 Log.e(TAG, "onMenuItemClick -> Hybrid Map -> mMap == null");
@@ -1546,6 +1564,11 @@ public class Map extends FragmentActivity implements
                         adjustMapColors();
                     }
                 }
+
+                SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
+                SharedPreferences.Editor editor = sharedPref.edit();
+                editor.putString(getString(R.string.prefMapType), getString(R.string.use_terrain_view));
+                editor.apply();
             } else {
 
                 Log.e(TAG, "onMenuItemClick -> Terrain Map -> mMap == null");
