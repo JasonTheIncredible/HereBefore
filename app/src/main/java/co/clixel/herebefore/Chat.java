@@ -973,7 +973,7 @@ public class Chat extends Fragment implements
                     showMessageLong("Shape was deleted. Please return to map.");
                 }
 
-                if (UUIDDatesPairsSize == null && snapshot.getChildrenCount() < 20) {
+                if ((UUIDDatesPairsSize == null || UUIDDatesPairsSize == -1) && snapshot.getChildrenCount() < 20) {
 
                     noMoreMessages = true;
 

@@ -329,7 +329,7 @@ public class DirectMentions extends Fragment {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
 
-                if (UUIDDatesPairsSize == null && snapshot.getChildrenCount() < 20) {
+                if ((UUIDDatesPairsSize == null || UUIDDatesPairsSize == -1) && snapshot.getChildrenCount() < 20) {
 
                     noMoreMessages = true;
                 }
