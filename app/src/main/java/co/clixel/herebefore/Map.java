@@ -1706,7 +1706,6 @@ public class Map extends FragmentActivity implements
             }
 
             DatabaseReference firebasePoints = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + newNearLeftLat + ", " + newNearLeftLon + ")").child("Points");
-
             firebasePoints.addListenerForSingleValueEvent(new ValueEventListener() {
 
                 @Override
@@ -1740,7 +1739,6 @@ public class Map extends FragmentActivity implements
             }
 
             DatabaseReference firebasePoints = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + newFarLeftLat + ", " + newFarLeftLon + ")").child("Points");
-
             firebasePoints.addListenerForSingleValueEvent(new ValueEventListener() {
 
                 @Override
@@ -1774,7 +1772,6 @@ public class Map extends FragmentActivity implements
             }
 
             DatabaseReference firebasePoints = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + newNearRightLat + ", " + newNearRightLon + ")").child("Points");
-
             firebasePoints.addListenerForSingleValueEvent(new ValueEventListener() {
 
                 @Override
@@ -1808,7 +1805,6 @@ public class Map extends FragmentActivity implements
             }
 
             DatabaseReference firebasePoints = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + newFarRightLat + ", " + newFarRightLon + ")").child("Points");
-
             firebasePoints.addListenerForSingleValueEvent(new ValueEventListener() {
 
                 @Override
@@ -1837,7 +1833,6 @@ public class Map extends FragmentActivity implements
             for (Pair<Integer, Integer> coordinates : removedDuplicatesCoordinatesNotJustLoadedTo) {
 
                 Query query = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + coordinates.first + ", " + coordinates.second + ")").child("Points").limitToLast(1);
-
                 query.addListenerForSingleValueEvent(new ValueEventListener() {
 
                     @Override

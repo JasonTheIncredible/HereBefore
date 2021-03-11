@@ -40,7 +40,6 @@
         android:layout_height="match_parent"
         android:layout_above="@+id/input"
         android:layout_below="@+id/positionRelativeToShapeTextView"
-        android:layout_marginTop="4dp"
         android:layout_marginBottom="4dp"
         android:divider="@android:color/transparent"
         android:scrollbars="vertical" />
