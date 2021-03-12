@@ -1188,30 +1188,25 @@ public class Map extends FragmentActivity implements
             // Set "seenByUser" to true so it is not highlighted in the future.
             DatabaseReference Dms = FirebaseDatabase.getInstance().getReference().child("Users").child(firebaseUid).child("ReceivedDms");
             Intent finalActivity = Activity;
-            Dms.addListenerForSingleValueEvent(new ValueEventListener() {
+            Query DmsQuery = Dms.orderByChild("senderUserUUID").equalTo(senderUserUUID);
+            DmsQuery.addListenerForSingleValueEvent(new ValueEventListener() {
 
                 @Override
                 public void onDataChange(@NonNull DataSnapshot snapshot) {
 
                     for (DataSnapshot ds : snapshot.getChildren()) {
 
-                        String mSenderUserUUID = (String) ds.child("senderUserUUID").getValue();
+                        if (!(Boolean) ds.child("seenByUser").getValue()) {
 
-                        if (mSenderUserUUID != null) {
-
-                            if (mSenderUserUUID.equals(senderUserUUID)) {
-
-                                if (!(Boolean) ds.child("seenByUser").getValue()) {
-
-                                    ds.child("seenByUser").getRef().setValue(true);
-                                    // Removing the extra prevents issues when user clicks on a mention, backs into Map, then tries to go to a new circle.
-                                    getIntent().removeExtra("senderUserUUID");
-                                    loadingIcon.setVisibility(View.GONE);
-                                    startActivity(finalActivity);
-                                    return;
-                                }
-                            }
+                            ds.child("seenByUser").getRef().setValue(true);
                         }
+
+                        // .removeExtra prevents issues when user clicks on a mention, backs into Map, then tries to go to a new circle.
+                        getIntent().removeExtra("senderUserUUID");
+                        loadingIcon.setVisibility(View.GONE);
+                        startActivity(finalActivity);
+                        // "return" is not strictly necessary (as there should only be one child), but it keeps the data usage and processing to a minimum in the event of strange behavior.
+                        return;
                     }
                 }
 

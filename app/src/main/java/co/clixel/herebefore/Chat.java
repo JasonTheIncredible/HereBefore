@@ -659,7 +659,6 @@ public class Chat extends Fragment implements
                                     if (circleUUIDsAL == null || circleCentersAL == null) {
 
                                         DatabaseReference firebasePoints = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child("Points");
-
                                         firebasePoints.addListenerForSingleValueEvent(new ValueEventListener() {
 
                                             @Override
@@ -2119,36 +2118,27 @@ public class Chat extends Fragment implements
             progressIconIndeterminate.setVisibility(View.VISIBLE);
 
             DatabaseReference firebaseMessages = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child(shapeUUID);
-            firebaseMessages.addListenerForSingleValueEvent(new ValueEventListener() {
+            Query firebaseMessagesQuery = firebaseMessages.orderByChild("userUUID").equalTo(reportedUser);
+            firebaseMessagesQuery.addListenerForSingleValueEvent(new ValueEventListener() {
 
                 @Override
                 public void onDataChange(@NonNull DataSnapshot snapshot) {
 
                     for (DataSnapshot ds : snapshot.getChildren()) {
 
-                        String userUUID = (String) ds.child("userUUID").getValue();
-                        if (userUUID != null) {
-
-                            if (userUUID.equals(reportedUser)) {
-
-                                String pushID = ds.getKey();
-                                ReportPostInformation reportPostInformation = new ReportPostInformation();
-                                reportPostInformation.setLat(shapeLatInt);
-                                reportPostInformation.setLon(shapeLonInt);
-                                reportPostInformation.setPushID(pushID);
-                                reportPostInformation.setShapeUUID(shapeUUID);
-                                DatabaseReference newReportedPost = FirebaseDatabase.getInstance().getReference().child("ReportedPost").push();
-                                newReportedPost.setValue(reportPostInformation);
-                                progressIconIndeterminate.setVisibility(View.GONE);
-                                showMessageShort("Post reported. Thank you!");
-                                return;
-                            }
-                        }
+                        String pushID = ds.getKey();
+                        ReportPostInformation reportPostInformation = new ReportPostInformation();
+                        reportPostInformation.setLat(shapeLatInt);
+                        reportPostInformation.setLon(shapeLonInt);
+                        reportPostInformation.setPushID(pushID);
+                        reportPostInformation.setShapeUUID(shapeUUID);
+                        DatabaseReference newReportedPost = FirebaseDatabase.getInstance().getReference().child("ReportedPost").push();
+                        newReportedPost.setValue(reportPostInformation);
+                        progressIconIndeterminate.setVisibility(View.GONE);
+                        showMessageShort("Post reported. Thank you!");
+                        // "return" is not strictly necessary (as there should only be one child), but it keeps the data usage and processing to a minimum in the event of strange behavior.
+                        return;
                     }
-
-                    // Edge case: user tries to report a post that has already been manually deleted.
-                    progressIconIndeterminate.setVisibility(View.GONE);
-                    showMessageShort("Post already deleted. Thank you!");
                 }
 
                 @Override

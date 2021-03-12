@@ -747,25 +747,21 @@ public class DirectMentions extends Fragment {
                     if (!mSeenByUser.get(getAdapterPosition())) {
 
                         DatabaseReference Dms = FirebaseDatabase.getInstance().getReference().child("Users").child(firebaseUid).child("ReceivedDms");
-                        Dms.addListenerForSingleValueEvent(new ValueEventListener() {
+                        Query DmsQuery = Dms.orderByChild("date").equalTo(mTime.get(getAdapterPosition()));
+                        DmsQuery.addListenerForSingleValueEvent(new ValueEventListener() {
 
                             @Override
                             public void onDataChange(@NonNull DataSnapshot snapshot) {
 
                                 for (DataSnapshot ds : snapshot.getChildren()) {
 
-                                    Long date = (Long) ds.child("date").getValue();
-                                    if (date != null) {
+                                    if (!(Boolean) ds.child("seenByUser").getValue()) {
 
-                                        if (date.equals(mTime.get(getAdapterPosition()))) {
-
-                                            if (!(Boolean) ds.child("seenByUser").getValue()) {
-
-                                                ds.child("seenByUser").getRef().setValue(true);
-                                                return;
-                                            }
-                                        }
+                                        ds.child("seenByUser").getRef().setValue(true);
                                     }
+
+                                    // "return" is not strictly necessary (as there should only be one child), but it keeps the data usage and processing to a minimum in the event of strange behavior.
+                                    return;
                                 }
                             }
 
@@ -791,38 +787,27 @@ public class DirectMentions extends Fragment {
                     int shapeLonInt = (int) nearLeftLonTemp;
 
                     DatabaseReference shape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child("Points");
-                    shape.addListenerForSingleValueEvent(new ValueEventListener() {
+                    Query shapeQuery = shape.orderByChild("shapeUUID").equalTo(mShapeUUID.get(getAdapterPosition()));
+                    shapeQuery.addListenerForSingleValueEvent(new ValueEventListener() {
 
                         @Override
                         public void onDataChange(@NonNull DataSnapshot snapshot) {
 
-                            for (DataSnapshot ds : snapshot.getChildren()) {
+                            cancelToasts();
 
-                                String shapeUUID = (String) ds.child("shapeUUID").getValue();
-                                if (shapeUUID != null) {
+                            Intent Activity = new Intent(mContext, Navigation.class);
+                            Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()));
+                            Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()));
+                            Activity.putExtra("newShape", false);
+                            Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
+                            Activity.putExtra("UUIDToHighlight", mUser.get(getAdapterPosition()));
+                            Activity.putExtra("circleUUIDsAL", circleUUIDsAL);
+                            Activity.putExtra("circleCentersAL", circleCentersAL);
 
-                                    if (shapeUUID.equals(mShapeUUID.get(getAdapterPosition()))) {
+                            loadingIcon.setVisibility(View.GONE);
 
-                                        cancelToasts();
-
-                                        Intent Activity = new Intent(mContext, Navigation.class);
-                                        Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()));
-                                        Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()));
-                                        Activity.putExtra("newShape", false);
-                                        Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
-                                        Activity.putExtra("UUIDToHighlight", mUser.get(getAdapterPosition()));
-                                        Activity.putExtra("circleUUIDsAL", circleUUIDsAL);
-                                        Activity.putExtra("circleCentersAL", circleCentersAL);
-
-                                        loadingIcon.setVisibility(View.GONE);
-
-                                        mContext.startActivity(Activity);
-
-                                        mActivity.finish();
-                                        return;
-                                    }
-                                }
-                            }
+                            mContext.startActivity(Activity);
+                            mActivity.finish();
                         }
 
                         @Override
