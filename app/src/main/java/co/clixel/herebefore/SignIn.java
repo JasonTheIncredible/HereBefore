@@ -348,9 +348,8 @@ public class SignIn extends AppCompatActivity {
                 }
             } catch (ApiException e) {
 
-                // Google sign in failed, update UI appropriately
+                // This will be called if user backed out of Google sign-in, so don't show an error message.
                 Log.w(TAG, "Google sign-in failed: " + e);
-                showMessageLong("Google sign-in failed: " + e);
             }
         }
     }

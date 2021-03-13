@@ -225,8 +225,16 @@ public class DirectMentions extends Fragment {
                     // User reloaded app but user has no DMs.
                     if (snapshot.getChildrenCount() == 0) {
 
-                        loadingIcon.setVisibility(View.GONE);
-                        noDmsTextView.setVisibility(View.VISIBLE);
+                        if (loadingIcon != null) {
+
+                            loadingIcon.setVisibility(View.GONE);
+                        }
+
+                        if (noDmsTextView != null) {
+
+                            noDmsTextView.setVisibility(View.VISIBLE);
+                        }
+
                         addQuery();
                         return;
                     }
