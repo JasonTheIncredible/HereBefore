@@ -19,11 +19,12 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 
+import java.util.concurrent.ThreadLocalRandom;
+
 public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
     private static final String TAG = "MyFirebaseMessagingService";
     private static final String DEFAULT_NOTIFICATION_CHANNEL_ID = "DEFAULT_NOTIFICATION_CHANNEL_ID";
-    private static final int PENDING_INTENT_REQ_CODE = 69;
 
     @Override
     public void onNewToken(@NonNull final String token) {
@@ -77,27 +78,27 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         String message = remoteMessage.getData().get("body");
         String notificationId = remoteMessage.getData().get("notification_id");
         String shapeUUID = remoteMessage.getData().get("shapeUUID");
-        String userUUID = remoteMessage.getData().get("userUUID");
+        String senderUserUUID = remoteMessage.getData().get("senderUserUUID");
         Double lat = Double.parseDouble(remoteMessage.getData().get("lat"));
         Double lon = Double.parseDouble(remoteMessage.getData().get("lon"));
-        sendMessageNotification(title, message, notificationId, shapeUUID, userUUID, lat, lon);
+        sendMessageNotification(title, message, notificationId, shapeUUID, senderUserUUID, lat, lon);
     }
 
     /**
      * Build a push notification for a chat message
      */
-    private void sendMessageNotification(String title, String message, String notificationId, String shapeUUID, String userUUID, Double lat, Double lon) {
+    private void sendMessageNotification(String title, String message, String notificationId, String shapeUUID, String senderUserUUID, Double lat, Double lon) {
 
         Log.d(TAG, "sendDmNotification: building a DM notification");
 
         Intent intent = new Intent(getBaseContext(), Map.class);
         intent.putExtra("notification_id", notificationId);
         intent.putExtra("shapeUUID", shapeUUID);
-        intent.putExtra("userUUID", userUUID);
+        intent.putExtra("senderUserUUID", senderUserUUID);
         intent.putExtra("lat", lat);
         intent.putExtra("lon", lon);
 
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, PENDING_INTENT_REQ_CODE,
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, ThreadLocalRandom.current().nextInt(3, 100000),
                 intent, PendingIntent.FLAG_UPDATE_CURRENT);
 
         // Instantiate a Builder object.
