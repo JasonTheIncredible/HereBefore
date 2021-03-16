@@ -83,7 +83,17 @@ public class DeleteAccount extends AppCompatActivity {
             RelativeLayout relativeLayout = findViewById(R.id.deleteAccountLayout);
             TextView textView = new TextView(this);
             FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+            if (user == null) {
+
+                return;
+            }
+
             String userEmail = user.getEmail();
+            if (userEmail == null) {
+
+                return;
+            }
+
             String firstPartOfEmail = userEmail.substring(0, userEmail.indexOf("@"));
             String secondPartOfEmail = userEmail.substring(userEmail.indexOf("@"));
             // Cut the first part of the email in half and add asterisks for the second part.
@@ -155,21 +165,23 @@ public class DeleteAccount extends AppCompatActivity {
                 credential = GoogleAuthProvider.getCredential(googleIdToken, null);
             } else {
 
-                if (FirebaseAuth.getInstance().getCurrentUser() != null) {
-
-                    String userEmail = FirebaseAuth.getInstance().getCurrentUser().getEmail();
-                    String userPassword = mPassword.getText().toString().trim();
-                    if (userPassword.equals("")) {
-
-                        mPassword.requestFocus();
-                        showMessageLong("Please re-enter password for this account");
-                        return;
-                    }
-                    credential = EmailAuthProvider.getCredential(userEmail, userPassword);
-                } else {
+                if (FirebaseAuth.getInstance().getCurrentUser() == null) {
 
                     return;
                 }
+                String userEmail = FirebaseAuth.getInstance().getCurrentUser().getEmail();
+                if (userEmail == null) {
+
+                    return;
+                }
+                String userPassword = mPassword.getText().toString().trim();
+                if (userPassword.equals("")) {
+
+                    mPassword.requestFocus();
+                    showMessageLong("Please re-enter password for this account");
+                    return;
+                }
+                credential = EmailAuthProvider.getCredential(userEmail, userPassword);
             }
 
             final FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
@@ -191,6 +203,10 @@ public class DeleteAccount extends AppCompatActivity {
 
                 // Need to get Uid before account deletion.
                 String firebaseUid = FirebaseAuth.getInstance().getUid();
+                if (firebaseUid == null) {
+
+                    return;
+                }
 
                 user.reauthenticate(credential)
                         .addOnCompleteListener(task -> {

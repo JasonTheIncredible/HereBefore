@@ -28,7 +28,7 @@ import com.mikepenz.aboutlibraries.LibsBuilder;
  */
 public class SettingsFragment extends PreferenceFragmentCompat implements
         PreferenceManager.OnPreferenceTreeClickListener {
-    
+
     private SwitchPreferenceCompat toggleTheme, toggleNotifications;
     private Preference mapTypePreference;
     // "FIREBASE_TOKEN" to find Firebase token for messaging.
@@ -199,6 +199,11 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
 
                     // Remove the token so user will not get notifications while they are not logged into their account.
                     String firebaseUid = FirebaseAuth.getInstance().getUid();
+                    if (firebaseUid == null) {
+
+                        break;
+                    }
+
                     FirebaseDatabase.getInstance().getReference().child("Users").child(firebaseUid).child("Token").removeValue();
 
                     Toast signedOutToast = Toast.makeText(getActivity(), "Signed Out", Toast.LENGTH_SHORT);

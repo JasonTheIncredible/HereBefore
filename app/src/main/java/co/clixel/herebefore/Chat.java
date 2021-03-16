@@ -518,32 +518,35 @@ public class Chat extends Fragment implements
         }
 
         // Hide the imageView or videoImageView if user presses the delete button.
-        mInput.setOnKeyListener((v, keyCode, event) -> {
+        if (mInput != null) {
 
-            if (keyCode == KeyEvent.KEYCODE_DEL && (imageView.getVisibility() == View.VISIBLE || videoImageView.getVisibility() == View.VISIBLE) &&
-                    (mInput.getText().toString().trim().length() == 0 || mInput.getSelectionStart() == 0)) {
+            mInput.setOnKeyListener((v, keyCode, event) -> {
 
-                imageView.setVisibility(View.GONE);
-                imageView.setImageDrawable(null);
-                videoImageView.setVisibility(View.GONE);
-                videoImageView.setImageDrawable(null);
+                if (keyCode == KeyEvent.KEYCODE_DEL && (imageView.getVisibility() == View.VISIBLE || videoImageView.getVisibility() == View.VISIBLE) &&
+                        (mInput.getText().toString().trim().length() == 0 || mInput.getSelectionStart() == 0)) {
 
-                if (image != null) {
+                    imageView.setVisibility(View.GONE);
+                    imageView.setImageDrawable(null);
+                    videoImageView.setVisibility(View.GONE);
+                    videoImageView.setImageDrawable(null);
 
-                    deleteDirectory(image);
-                } else if (video != null) {
+                    if (image != null) {
 
-                    deleteDirectory(video);
+                        deleteDirectory(image);
+                    } else if (video != null) {
+
+                        deleteDirectory(video);
+                    }
                 }
-            }
 
-            // Keep "return false" or the enter key will not go to the next line.
-            return false;
-        });
+                // Keep "return false" or the enter key will not go to the next line.
+                return false;
+            });
 
-        mInput.setTokenizer(new WordTokenizer(tokenizerConfig));
-        mInput.setQueryTokenReceiver(this);
-        mInput.setSuggestionsVisibilityManager(this);
+            mInput.setTokenizer(new WordTokenizer(tokenizerConfig));
+            mInput.setQueryTokenReceiver(this);
+            mInput.setSuggestionsVisibilityManager(this);
+        }
 
         mediaButton.setOnClickListener(view -> {
 
@@ -559,6 +562,11 @@ public class Chat extends Fragment implements
         sendButton.setOnClickListener(view -> {
 
             Log.i(TAG, "onStart() -> sendButton -> onClick");
+
+            if (mInput == null) {
+
+                return;
+            }
 
             // Close keyboard.
             if (view != null) {
@@ -577,7 +585,7 @@ public class Chat extends Fragment implements
                 }
             }
 
-            if (mInput.getText().toString().trim().isEmpty() && imageView.getVisibility() == View.GONE && videoImageView.getVisibility() == View.GONE) {
+            if (mInput != null && mInput.getText().toString().trim().isEmpty() && imageView.getVisibility() == View.GONE && videoImageView.getVisibility() == View.GONE) {
 
                 return;
             }
@@ -1261,57 +1269,60 @@ public class Chat extends Fragment implements
             // Clear the list to prevent unnecessary memory buildup.
             possibleMentions.clear();
 
-            for (int i = 0; i < fullLengthMention.size(); i++) {
+            if (spannableMessageText != null) {
 
-                int finalI = i;
-                ClickableSpan clickableSpan = new ClickableSpan() {
+                for (int i = 0; i < fullLengthMention.size(); i++) {
 
-                    @Override
-                    public void onClick(@NonNull View widget) {
+                    int finalI = i;
+                    ClickableSpan clickableSpan = new ClickableSpan() {
 
-                        clickedOnMention = true;
+                        @Override
+                        public void onClick(@NonNull View widget) {
 
-                        // Show a couple messages above the position, as this seems to be better visually.
-                        if (mUser.contains(fullLengthMention.get(finalI))) {
+                            clickedOnMention = true;
 
-                            UUIDToHighlight = fullLengthMention.get(finalI);
+                            // Show a couple messages above the position, as this seems to be better visually.
+                            if (mUser.contains(fullLengthMention.get(finalI))) {
 
-                            int scrollPosition = mUser.indexOf(UUIDToHighlight) - 5;
-                            if (scrollPosition < 0) {
+                                UUIDToHighlight = fullLengthMention.get(finalI);
 
-                                scrollPosition = 0;
-                            }
+                                int scrollPosition = mUser.indexOf(UUIDToHighlight) - 5;
+                                if (scrollPosition < 0) {
 
-                            int finalScrollPosition = scrollPosition;
-
-                            if (chatRecyclerView != null) {
-
-                                if (chatRecyclerView.getAdapter() != null) {
-
-                                    // No need to paginate.
-                                    chatRecyclerView.postDelayed(() -> chatRecyclerView.smoothScrollToPosition(
-
-                                            finalScrollPosition), 100);
-
-                                    if (previouslyHighlightedPosition != null) {
-
-                                        chatRecyclerView.getAdapter().notifyItemChanged(previouslyHighlightedPosition);
-                                    }
-
-                                    chatRecyclerView.getAdapter().notifyItemChanged(mUser.indexOf(fullLengthMention.get(finalI)));
+                                    scrollPosition = 0;
                                 }
+
+                                int finalScrollPosition = scrollPosition;
+
+                                if (chatRecyclerView != null) {
+
+                                    if (chatRecyclerView.getAdapter() != null) {
+
+                                        // No need to paginate.
+                                        chatRecyclerView.postDelayed(() -> chatRecyclerView.smoothScrollToPosition(
+
+                                                finalScrollPosition), 100);
+
+                                        if (previouslyHighlightedPosition != null) {
+
+                                            chatRecyclerView.getAdapter().notifyItemChanged(previouslyHighlightedPosition);
+                                        }
+
+                                        chatRecyclerView.getAdapter().notifyItemChanged(mUser.indexOf(fullLengthMention.get(finalI)));
+                                    }
+                                }
+                            } else {
+
+                                // Pagination needed.
+                                UUIDToHighlight = fullLengthMention.get(finalI);
+                                loadingOlderMessages = true;
+                                getFirebaseMessages(mUser.get(0));
                             }
-                        } else {
-
-                            // Pagination needed.
-                            UUIDToHighlight = fullLengthMention.get(finalI);
-                            loadingOlderMessages = true;
-                            getFirebaseMessages(mUser.get(0));
                         }
-                    }
-                };
+                    };
 
-                spannableMessageText.setSpan(clickableSpan, indexOfMention.get(i) - 1, indexOfMention.get(i) + 13, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    spannableMessageText.setSpan(clickableSpan, indexOfMention.get(i) - 1, indexOfMention.get(i) + 13, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                }
             }
         } else {
 
