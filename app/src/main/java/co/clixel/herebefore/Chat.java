@@ -864,16 +864,21 @@ public class Chat extends Fragment implements
 
             if (ds.child("circleOptions").exists()) {
 
-                LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
+                Double lat = (Double) ds.child("circleOptions/center/latitude/").getValue();
+                Double lon = (Double) ds.child("circleOptions/center/longitude/").getValue();
+                if (lat != null && lon != null) {
 
-                // Prevents duplicates.
-                if (circleCentersAL.contains(center)) {
+                    LatLng center = new LatLng(lat, lon);
 
-                    continue;
+                    // Prevents duplicates.
+                    if (circleCentersAL.contains(center)) {
+
+                        continue;
+                    }
+
+                    circleCentersAL.add(center);
+                    circleUUIDsAL.add((String) ds.child("shapeUUID").getValue());
                 }
-
-                circleCentersAL.add(center);
-                circleUUIDsAL.add((String) ds.child("shapeUUID").getValue());
             }
         }
 
@@ -1303,12 +1308,15 @@ public class Chat extends Fragment implements
 
                                                 finalScrollPosition), 100);
 
-                                        if (previouslyHighlightedPosition != null) {
+                                        if (chatRecyclerView.getAdapter() != null) {
 
-                                            chatRecyclerView.getAdapter().notifyItemChanged(previouslyHighlightedPosition);
+                                            if (previouslyHighlightedPosition != null) {
+
+                                                chatRecyclerView.getAdapter().notifyItemChanged(previouslyHighlightedPosition);
+                                            }
+
+                                            chatRecyclerView.getAdapter().notifyItemChanged(mUser.indexOf(fullLengthMention.get(finalI)));
                                         }
-
-                                        chatRecyclerView.getAdapter().notifyItemChanged(mUser.indexOf(fullLengthMention.get(finalI)));
                                     }
                                 }
                             } else {
@@ -2887,6 +2895,11 @@ public class Chat extends Fragment implements
                 e.printStackTrace();
             }
 
+            if (videoTemp == null) {
+
+                return;
+            }
+
             String filePath = videoTemp.getAbsolutePath();
 
             DefaultVideoStrategy mTranscodeVideoStrategy = new DefaultVideoStrategy.Builder()
@@ -3028,10 +3041,12 @@ public class Chat extends Fragment implements
             retriever.setDataSource(absolutePath);
             // Get one "frame"/bitmap - * NOTE - no time was set, so the first available frame will be used
             mBitmap = retriever.getFrameAtTime(1);
+            if (mBitmap == null) {
+                return;
+            }
             // Get the bitmap width and height
             mBitmapWidth = mBitmap.getWidth();
             mBitmapHeight = mBitmap.getHeight();
-
         } catch (IOException ex) {
 
             showMessageLong(ex.getMessage());

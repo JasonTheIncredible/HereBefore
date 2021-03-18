@@ -47,10 +47,12 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             email = sharedPreferences.getString("userToken", "null");
         }
 
-        // Firebase does not allow ".", so replace them with ",".
-        String userEmailFirebase = email.replace(".", ",");
+        if (email != null) {
 
-        FirebaseDatabase.getInstance().getReference().child("Users").child(userEmailFirebase).child("Token").setValue("token", token);
+            // Firebase does not allow ".", so replace them with ",".
+            String userEmailFirebase = email.replace(".", ",");
+            FirebaseDatabase.getInstance().getReference().child("Users").child(userEmailFirebase).child("Token").setValue("token", token);
+        }
     }
 
     /**
@@ -79,9 +81,13 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         String notificationId = remoteMessage.getData().get("notification_id");
         String shapeUUID = remoteMessage.getData().get("shapeUUID");
         String senderUserUUID = remoteMessage.getData().get("senderUserUUID");
-        Double lat = Double.parseDouble(remoteMessage.getData().get("lat"));
-        Double lon = Double.parseDouble(remoteMessage.getData().get("lon"));
-        sendMessageNotification(title, message, notificationId, shapeUUID, senderUserUUID, lat, lon);
+        String latString = remoteMessage.getData().get("lat");
+        String lonString = remoteMessage.getData().get("lon");
+        if (latString != null && lonString != null) {
+            Double lat = Double.parseDouble(latString);
+            Double lon = Double.parseDouble(lonString);
+            sendMessageNotification(title, message, notificationId, shapeUUID, senderUserUUID, lat, lon);
+        }
     }
 
     /**

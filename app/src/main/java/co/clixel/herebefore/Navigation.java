@@ -156,7 +156,8 @@ public class Navigation extends AppCompatActivity {
                     // Used in addQuery to allow the child to be called the first time if no child exists and prevent double posts if a child exists.
                     dmExists = true;
 
-                    if (!(Boolean) ds.child("seenByUser").getValue()) {
+                    Boolean seenByUser = (Boolean) ds.child("seenByUser").getValue();
+                    if (seenByUser != null && !seenByUser) {
 
                         dmCounter++;
                     }
@@ -307,8 +308,6 @@ public class Navigation extends AppCompatActivity {
                         return new DirectMentions();
                     case 1:
                         return new SettingsFragment();
-                    default:
-                        return null;
                 }
             } else {
 
@@ -319,10 +318,10 @@ public class Navigation extends AppCompatActivity {
                         return new DirectMentions();
                     case 2:
                         return new SettingsFragment();
-                    default:
-                        return null;
                 }
             }
+
+            return new SettingsFragment();
         }
 
         @Override

@@ -370,30 +370,33 @@ public class DirectMentions extends Fragment {
                     String videoUrl = (String) ds.child("videoUrl").getValue();
                     String messageText = (String) ds.child("message").getValue();
 
-                    ArrayList<String> possibleMentions = new ArrayList<>();
-                    // Pattern matches UUID for mentions.
-                    Pattern pattern = Pattern.compile("\\b[0-9a-f]{8}\\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\\b[0-9a-f]{12}\\b");
-                    Matcher matcher = pattern.matcher(messageText);
-                    while (matcher.find()) {
-
-                        // Add the strings that match the UUID pattern to an arrayList. This ensures they are in order from the beginning of the sentence to the end.
-                        possibleMentions.add(matcher.group());
-                    }
-
-                    // Truncate mentions from Firebase.
                     String replacedMessageText = null;
-                    if (!possibleMentions.isEmpty()) {
+                    if (messageText != null) {
 
-                        for (String possibleMention : possibleMentions) {
+                        ArrayList<String> possibleMentions = new ArrayList<>();
+                        // Pattern matches UUID for mentions.
+                        Pattern pattern = Pattern.compile("\\b[0-9a-f]{8}\\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\\b[0-9a-f]{12}\\b");
+                        Matcher matcher = pattern.matcher(messageText);
+                        while (matcher.find()) {
 
-                            // The "else" loop will go first - it will create replacedMessageText with truncated mentions and then replacedMessageText will continue to truncate mentions within itself.
-                            String replacement = possibleMention.substring(0, 10) + "...";
-                            if (replacedMessageText != null) {
+                            // Add the strings that match the UUID pattern to an arrayList. This ensures they are in order from the beginning of the sentence to the end.
+                            possibleMentions.add(matcher.group());
+                        }
 
-                                replacedMessageText = replacedMessageText.replace(possibleMention, replacement);
-                            } else {
+                        // Truncate mentions from Firebase.
+                        if (!possibleMentions.isEmpty()) {
 
-                                replacedMessageText = messageText.replace(possibleMention, replacement);
+                            for (String possibleMention : possibleMentions) {
+
+                                // The "else" loop will go first - it will create replacedMessageText with truncated mentions and then replacedMessageText will continue to truncate mentions within itself.
+                                String replacement = possibleMention.substring(0, 10) + "...";
+                                if (replacedMessageText != null) {
+
+                                    replacedMessageText = replacedMessageText.replace(possibleMention, replacement);
+                                } else {
+
+                                    replacedMessageText = messageText.replace(possibleMention, replacement);
+                                }
                             }
                         }
                     }
@@ -502,30 +505,33 @@ public class DirectMentions extends Fragment {
                 String videoUrl = (String) snapshot.child("videoUrl").getValue();
                 String messageText = (String) snapshot.child("message").getValue();
 
-                ArrayList<String> possibleMentions = new ArrayList<>();
-                // Pattern matches UUID for mentions.
-                Pattern pattern = Pattern.compile("\\b[0-9a-f]{8}\\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\\b[0-9a-f]{12}\\b");
-                Matcher matcher = pattern.matcher(messageText);
-                while (matcher.find()) {
-
-                    // Add the strings that match the UUID pattern to an arrayList. This ensures they are in order from the beginning of the sentence to the end.
-                    possibleMentions.add(matcher.group());
-                }
-
-                // Truncate mentions from Firebase.
                 String replacedMessageText = null;
-                if (!possibleMentions.isEmpty()) {
+                if (messageText != null) {
 
-                    for (String possibleMention : possibleMentions) {
+                    ArrayList<String> possibleMentions = new ArrayList<>();
+                    // Pattern matches UUID for mentions.
+                    Pattern pattern = Pattern.compile("\\b[0-9a-f]{8}\\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\\b[0-9a-f]{12}\\b");
+                    Matcher matcher = pattern.matcher(messageText);
+                    while (matcher.find()) {
 
-                        // The "else" loop will go first - it will create replacedMessageText with truncated mentions and then replacedMessageText will continue to truncate mentions within itself.
-                        String replacement = possibleMention.substring(0, 10) + "...";
-                        if (replacedMessageText != null) {
+                        // Add the strings that match the UUID pattern to an arrayList. This ensures they are in order from the beginning of the sentence to the end.
+                        possibleMentions.add(matcher.group());
+                    }
 
-                            replacedMessageText = replacedMessageText.replace(possibleMention, replacement);
-                        } else {
+                    // Truncate mentions from Firebase.
+                    if (!possibleMentions.isEmpty()) {
 
-                            replacedMessageText = messageText.replace(possibleMention, replacement);
+                        for (String possibleMention : possibleMentions) {
+
+                            // The "else" loop will go first - it will create replacedMessageText with truncated mentions and then replacedMessageText will continue to truncate mentions within itself.
+                            String replacement = possibleMention.substring(0, 10) + "...";
+                            if (replacedMessageText != null) {
+
+                                replacedMessageText = replacedMessageText.replace(possibleMention, replacement);
+                            } else {
+
+                                replacedMessageText = messageText.replace(possibleMention, replacement);
+                            }
                         }
                     }
                 }
@@ -763,7 +769,8 @@ public class DirectMentions extends Fragment {
 
                                 for (DataSnapshot ds : snapshot.getChildren()) {
 
-                                    if (!(Boolean) ds.child("seenByUser").getValue()) {
+                                    Boolean seenByUser = (Boolean) ds.child("seenByUser").getValue();
+                                    if (seenByUser != null && !seenByUser) {
 
                                         ds.child("seenByUser").getRef().setValue(true);
                                     }

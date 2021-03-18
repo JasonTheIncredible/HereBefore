@@ -194,6 +194,11 @@ public class SignUp extends AppCompatActivity {
                             String token = task1.getResult();
 
                             String firebaseUid = FirebaseAuth.getInstance().getUid();
+                            if (firebaseUid == null) {
+
+                                showMessageLong("An error occurred. Please try again later.");
+                                return;
+                            }
 
                             FirebaseDatabase.getInstance().getReference().child("Users").child(firebaseUid).child("Token").setValue(token);
 
@@ -334,6 +339,11 @@ public class SignUp extends AppCompatActivity {
                                 String token = task1.getResult();
 
                                 String firebaseUid = FirebaseAuth.getInstance().getUid();
+                                if (firebaseUid == null) {
+
+                                    showMessageLong("An error occurred. Please try again later.");
+                                    return;
+                                }
 
                                 FirebaseDatabase.getInstance().getReference().child("Users").child(firebaseUid).child("Token").setValue(token);
 

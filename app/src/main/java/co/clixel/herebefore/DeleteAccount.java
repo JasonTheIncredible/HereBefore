@@ -32,6 +32,8 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
 import com.google.firebase.database.FirebaseDatabase;
 
+import java.util.Objects;
+
 public class DeleteAccount extends AppCompatActivity {
 
     private EditText mPassword;
@@ -123,7 +125,7 @@ public class DeleteAccount extends AppCompatActivity {
             relativeLayout.addView(textView);
         } else {
 
-            googleIdToken = GoogleSignIn.getLastSignedInAccount(this).getIdToken();
+            googleIdToken = Objects.requireNonNull(GoogleSignIn.getLastSignedInAccount(this)).getIdToken();
             googleAccount = true;
             mPassword.setVisibility(View.GONE);
         }
@@ -161,6 +163,12 @@ public class DeleteAccount extends AppCompatActivity {
 
             // Check if the account is a Google account.
             if (googleAccount) {
+
+                if (googleIdToken == null) {
+
+                    showMessageLong("An error occurred. Please try again later.");
+                    return;
+                }
 
                 credential = GoogleAuthProvider.getCredential(googleIdToken, null);
             } else {

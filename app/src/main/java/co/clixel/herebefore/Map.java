@@ -71,6 +71,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
@@ -688,12 +689,15 @@ public class Map extends FragmentActivity implements
                                     return;
                                 }
 
-                                // If the code got to this point, the user clicked on a notification while the app was closed.
-                                double latDouble = Double.parseDouble(extras.getString("lat"));
-                                double lonDouble = Double.parseDouble(extras.getString("lon"));
-                                if (circleUUID != null) {
+                                if (extras.getString("lat") != null && extras.getString("lon") != null) {
 
-                                    goToNextActivity(new LatLng(latDouble, lonDouble), circleUUID, false, "chat");
+                                    // If the code got to this point, the user clicked on a notification while the app was closed.
+                                    double latDouble = Double.parseDouble(Objects.requireNonNull(extras.getString("lat")));
+                                    double lonDouble = Double.parseDouble(Objects.requireNonNull(extras.getString("lon")));
+                                    if (circleUUID != null) {
+
+                                        goToNextActivity(new LatLng(latDouble, lonDouble), circleUUID, false, "chat");
+                                    }
                                 }
                             }
                         });
@@ -718,6 +722,13 @@ public class Map extends FragmentActivity implements
 
         // Go to Chat.java when clicking on a circle.
         mMap.setOnCircleClickListener(circle -> {
+
+            // If the circle doesn't have a tag for some reason, just return, as the tag is required to go to the next activity.
+            if (circle.getTag() == null) {
+
+                showMessageLong("An error occurred. Please try again later.");
+                return;
+            }
 
             // If the user clicks on a circle that's already highlighted, enter that circle.
             if (circle.getFillColor() != 0) {
@@ -1005,7 +1016,7 @@ public class Map extends FragmentActivity implements
                 }
             };
 
-            getFusedLocationProviderClient(this).requestLocationUpdates(locationRequest, mLocationCallback, Looper.myLooper());
+            getFusedLocationProviderClient(this).requestLocationUpdates(locationRequest, mLocationCallback, Objects.requireNonNull(Looper.myLooper()));
         } else {
 
             checkLocationPermissions();
@@ -1174,57 +1185,66 @@ public class Map extends FragmentActivity implements
             }
         }
 
-        // Prevent previous activities from being in the back stack.
-        Activity.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        if (Activity != null) {
 
-        // If getIntent().getExtras != null, user is entering a circle from a notification and seenByUser needs to be set to true. Else, enter circle like normal.
-        if (getIntent().getExtras() != null && getIntent().getExtras().getString("senderUserUUID") != null) {
+            // Prevent previous activities from being in the back stack.
+            Activity.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
-            String senderUserUUID = getIntent().getExtras().getString("senderUserUUID");
-            Activity.putExtra("UUIDToHighlight", senderUserUUID);
+            // If getIntent().getExtras != null, user is entering a circle from a notification and seenByUser needs to be set to true. Else, enter circle like normal.
+            if (getIntent().getExtras() != null && getIntent().getExtras().getString("senderUserUUID") != null) {
 
-            String firebaseUid = FirebaseAuth.getInstance().getUid();
+                String senderUserUUID = getIntent().getExtras().getString("senderUserUUID");
+                Activity.putExtra("UUIDToHighlight", senderUserUUID);
 
-            // Set "seenByUser" to true so it is not highlighted in the future.
-            DatabaseReference Dms = FirebaseDatabase.getInstance().getReference().child("Users").child(firebaseUid).child("ReceivedDms");
-            Intent finalActivity = Activity;
-            Query DmsQuery = Dms.orderByChild("senderUserUUID").equalTo(senderUserUUID);
-            DmsQuery.addListenerForSingleValueEvent(new ValueEventListener() {
+                String firebaseUid = FirebaseAuth.getInstance().getUid();
 
-                @Override
-                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (firebaseUid == null) {
 
-                    for (DataSnapshot ds : snapshot.getChildren()) {
+                    return;
+                }
 
-                        if (!(Boolean) ds.child("seenByUser").getValue()) {
+                // Set "seenByUser" to true so it is not highlighted in the future.
+                DatabaseReference Dms = FirebaseDatabase.getInstance().getReference().child("Users").child(firebaseUid).child("ReceivedDms");
+                Intent finalActivity = Activity;
+                Query DmsQuery = Dms.orderByChild("senderUserUUID").equalTo(senderUserUUID);
+                DmsQuery.addListenerForSingleValueEvent(new ValueEventListener() {
 
-                            ds.child("seenByUser").getRef().setValue(true);
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+
+                        for (DataSnapshot ds : snapshot.getChildren()) {
+
+                            Boolean seenByUser = (Boolean) ds.child("seenByUser").getValue();
+                            if (seenByUser != null && !seenByUser) {
+
+                                ds.child("seenByUser").getRef().setValue(true);
+                            }
+
+                            // .removeExtra prevents issues when user clicks on a mention, backs into Map, then tries to go to a new circle.
+                            getIntent().removeExtra("senderUserUUID");
+                            loadingIcon.setVisibility(View.GONE);
+                            startActivity(finalActivity);
+                            // "return" is not strictly necessary (as there should only be one child), but it keeps the data usage and processing to a minimum in the event of strange behavior.
+                            return;
                         }
-
-                        // .removeExtra prevents issues when user clicks on a mention, backs into Map, then tries to go to a new circle.
-                        getIntent().removeExtra("senderUserUUID");
-                        loadingIcon.setVisibility(View.GONE);
-                        startActivity(finalActivity);
-                        // "return" is not strictly necessary (as there should only be one child), but it keeps the data usage and processing to a minimum in the event of strange behavior.
-                        return;
                     }
-                }
 
-                @Override
-                public void onCancelled(@NonNull DatabaseError error) {
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {
 
-                    showMessageLong(error.getMessage());
-                }
-            });
-        } else {
+                        showMessageLong(error.getMessage());
+                    }
+                });
+            } else {
 
-            circleButton.setEnabled(true);
-            dmButton.setEnabled(true);
-            settingsButton.setEnabled(true);
+                circleButton.setEnabled(true);
+                dmButton.setEnabled(true);
+                settingsButton.setEnabled(true);
 
-            loadingIcon.setVisibility(View.GONE);
+                loadingIcon.setVisibility(View.GONE);
 
-            startActivity(Activity);
+                startActivity(Activity);
+            }
         }
     }
 
@@ -1913,48 +1933,53 @@ public class Map extends FragmentActivity implements
 
             if (ds.child("circleOptions").exists()) {
 
-                LatLng center = new LatLng((double) ds.child("circleOptions/center/latitude/").getValue(), (double) ds.child("circleOptions/center/longitude/").getValue());
+                Double lat = (Double) ds.child("circleOptions/center/latitude/").getValue();
+                Double lon = (Double) ds.child("circleOptions/center/longitude/").getValue();
+                if (lat != null && lon != null) {
 
-                // Prevents duplicates.
-                if (circleCentersAL.contains(center)) {
+                    LatLng center = new LatLng(lat, lon);
 
-                    continue;
+                    // Prevents duplicates.
+                    if (circleCentersAL.contains(center)) {
+
+                        continue;
+                    }
+
+                    circleCentersAL.add(center);
+                    circleUUIDsAL.add((String) ds.child("shapeUUID").getValue());
+                    lastKnownKey = ds.getKey();
+
+                    // Load different colored circles depending on the map type.
+                    Circle circle;
+                    if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
+
+                        // Yellow circle.
+                        circle = mMap.addCircle(
+                                new CircleOptions()
+                                        .center(center)
+                                        .clickable(true)
+                                        .radius(1.0)
+                                        .strokeColor(Color.YELLOW)
+                                        .strokeWidth(3f)
+                        );
+                    } else {
+
+                        // Purple circle.
+                        circle = mMap.addCircle(
+                                new CircleOptions()
+                                        .center(center)
+                                        .clickable(true)
+                                        .radius(1.0)
+                                        .strokeColor(Color.rgb(255, 0, 255))
+                                        .strokeWidth(3f)
+                        );
+                    }
+
+                    // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady to identify the chatCircle.
+                    String shapeUUID = (String) ds.child("shapeUUID").getValue();
+
+                    circle.setTag(shapeUUID);
                 }
-
-                circleCentersAL.add(center);
-                circleUUIDsAL.add((String) ds.child("shapeUUID").getValue());
-                lastKnownKey = ds.getKey();
-
-                // Load different colored circles depending on the map type.
-                Circle circle;
-                if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
-
-                    // Yellow circle.
-                    circle = mMap.addCircle(
-                            new CircleOptions()
-                                    .center(center)
-                                    .clickable(true)
-                                    .radius(1.0)
-                                    .strokeColor(Color.YELLOW)
-                                    .strokeWidth(3f)
-                    );
-                } else {
-
-                    // Purple circle.
-                    circle = mMap.addCircle(
-                            new CircleOptions()
-                                    .center(center)
-                                    .clickable(true)
-                                    .radius(1.0)
-                                    .strokeColor(Color.rgb(255, 0, 255))
-                                    .strokeWidth(3f)
-                    );
-                }
-
-                // Set the Tag using the UUID in Firebase. Value is sent to Chat.java in onMapReady to identify the chatCircle.
-                String shapeUUID = (String) ds.child("shapeUUID").getValue();
-
-                circle.setTag(shapeUUID);
             }
         }
 
@@ -2115,39 +2140,44 @@ public class Map extends FragmentActivity implements
                 return;
             }
 
-            LatLng center = new LatLng((double) snapshot.child("circleOptions/center/latitude/").getValue(), (double) snapshot.child("circleOptions/center/longitude/").getValue());
+            Double lat = (Double) snapshot.child("circleOptions/center/latitude/").getValue();
+            Double lon = (Double) snapshot.child("circleOptions/center/longitude/").getValue();
+            if (lat != null && lon != null) {
 
-            circleCentersAL.add(center);
-            circleUUIDsAL.add((String) snapshot.child("shapeUUID").getValue());
-            lastKnownKey = snapshot.getKey();
+                LatLng center = new LatLng(lat, lon);
 
-            // Load different colored circles depending on the map type.
-            Circle circle;
-            if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
+                circleCentersAL.add(center);
+                circleUUIDsAL.add((String) snapshot.child("shapeUUID").getValue());
+                lastKnownKey = snapshot.getKey();
 
-                // Yellow circle.
-                circle = mMap.addCircle(
-                        new CircleOptions()
-                                .center(center)
-                                .clickable(true)
-                                .radius(1.0)
-                                .strokeColor(Color.YELLOW)
-                                .strokeWidth(3f)
-                );
-            } else {
+                // Load different colored circles depending on the map type.
+                Circle circle;
+                if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
 
-                // Purple circle.
-                circle = mMap.addCircle(
-                        new CircleOptions()
-                                .center(center)
-                                .clickable(true)
-                                .radius(1.0)
-                                .strokeColor(Color.rgb(255, 0, 255))
-                                .strokeWidth(3f)
-                );
+                    // Yellow circle.
+                    circle = mMap.addCircle(
+                            new CircleOptions()
+                                    .center(center)
+                                    .clickable(true)
+                                    .radius(1.0)
+                                    .strokeColor(Color.YELLOW)
+                                    .strokeWidth(3f)
+                    );
+                } else {
+
+                    // Purple circle.
+                    circle = mMap.addCircle(
+                            new CircleOptions()
+                                    .center(center)
+                                    .clickable(true)
+                                    .radius(1.0)
+                                    .strokeColor(Color.rgb(255, 0, 255))
+                                    .strokeWidth(3f)
+                    );
+                }
+
+                circle.setTag(shapeUUID);
             }
-
-            circle.setTag(shapeUUID);
         }
     }
 
