@@ -723,13 +723,6 @@ public class Map extends FragmentActivity implements
         // Go to Chat.java when clicking on a circle.
         mMap.setOnCircleClickListener(circle -> {
 
-            // If the circle doesn't have a tag for some reason, just return, as the tag is required to go to the next activity.
-            if (circle.getTag() == null) {
-
-                showMessageLong("An error occurred. Please try again later.");
-                return;
-            }
-
             // If the user clicks on a circle that's already highlighted, enter that circle.
             if (circle.getFillColor() != 0) {
 
@@ -795,6 +788,12 @@ public class Map extends FragmentActivity implements
                                 .strokeWidth(3f)
                                 .zIndex(2)
                 );
+            }
+
+            if (circle.getTag() == null) {
+
+                showMessageLong("An error occurred. Please try again later.");
+                return;
             }
 
             // Can't set circleTempUUID here, as user might highlight a circle, then click on a notification and accidentally enter the highlighted circle from the notification.
