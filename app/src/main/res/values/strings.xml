@@ -58,6 +58,7 @@
     <string name="prefShowIntro">prefShowIntro</string>
     <string name="prefMapType">prefMapType</string>
     <string name="prefSignOut">prefSignOut</string>
+    <string name="navigation_splash_screen">A blank screen shown before the ad loads.</string>
 
     <string-array name="pref_map_types_entries">
         <item>Road map view</item>

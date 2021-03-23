@@ -1,6 +1,6 @@
 <resources>
 
-    <!-- Base application themes can be found in res/themes.... -->
+    <!-- Base application themes can be found in res/values/themes.... -->
 
     <style name="AppTheme.NoActionBar">
         <item name="windowActionBar">false</item>
