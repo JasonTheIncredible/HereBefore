@@ -100,9 +100,7 @@ import com.linkedin.android.spyglass.tokenization.interfaces.QueryTokenReceiver;
 import com.linkedin.android.spyglass.ui.MentionsEditText;
 import com.otaliastudios.transcoder.Transcoder;
 import com.otaliastudios.transcoder.TranscoderListener;
-import com.otaliastudios.transcoder.strategy.DefaultVideoStrategy;
-import com.otaliastudios.transcoder.strategy.size.AspectRatioResizer;
-import com.otaliastudios.transcoder.strategy.size.FractionResizer;
+import com.otaliastudios.transcoder.strategy.DefaultVideoStrategies;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -402,7 +400,7 @@ public class Chat extends Fragment implements
         }
 
         // If the value isn't null, check if the latest date is the same as the one in the recyclerView. If the value is null, it's the first time loading.
-        if (UUIDDatesPairsSize != null) {
+        if (UUIDDatesPairsSize != null && UUIDDatesPairsSize != -1) {
 
             Query query = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child(shapeUUID).limitToLast(1);
             query.addListenerForSingleValueEvent(new ValueEventListener() {
@@ -464,6 +462,10 @@ public class Chat extends Fragment implements
         } else if (!newShape) {
 
             getFirebaseMessages(null);
+        } else if (UUIDDatesPairsSize != null && UUIDDatesPairsSize == -1) {
+
+            // Case where user clicks on image / video multiple times before sending it.
+            progressIconIndeterminate.setVisibility(View.GONE);
         }
 
         // Check RecyclerView scroll state (to allow the layout to move up when keyboard appears).
@@ -2649,7 +2651,7 @@ public class Chat extends Fragment implements
                         videoFile);
                 videoIntent.putExtra(MediaStore.EXTRA_OUTPUT, videoURI);
                 // Limit the amount of time a video can be recorded (in seconds).
-                videoIntent.putExtra(MediaStore.EXTRA_DURATION_LIMIT, 30);
+                videoIntent.putExtra(MediaStore.EXTRA_DURATION_LIMIT, 10);
                 startActivityForResult(videoIntent, 4);
             }
         }
@@ -2902,15 +2904,9 @@ public class Chat extends Fragment implements
 
             String filePath = videoTemp.getAbsolutePath();
 
-            DefaultVideoStrategy mTranscodeVideoStrategy = new DefaultVideoStrategy.Builder()
-                    .addResizer(new AspectRatioResizer(16F / 9F))
-                    .addResizer(new FractionResizer(1F / 8F))
-                    .frameRate(24)
-                    .build();
-
             Transcoder.into(filePath)
                     .addDataSource(video.getAbsolutePath())
-                    .setVideoTrackStrategy(mTranscodeVideoStrategy)
+                    .setVideoTrackStrategy(DefaultVideoStrategies.for720x1280())
                     .setListener(new TranscoderListener() {
 
                         public void onTranscodeProgress(double progress) {

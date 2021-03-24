@@ -358,7 +358,7 @@ public class Map extends FragmentActivity implements
                         videoFile);
                 videoIntent.putExtra(MediaStore.EXTRA_OUTPUT, videoURI);
                 // Limit the amount of time a video can be recorded (in seconds).
-                videoIntent.putExtra(MediaStore.EXTRA_DURATION_LIMIT, 30);
+                videoIntent.putExtra(MediaStore.EXTRA_DURATION_LIMIT, 10);
                 startActivityForResult(videoIntent, 4);
             }
         }

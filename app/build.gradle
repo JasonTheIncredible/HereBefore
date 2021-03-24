@@ -76,9 +76,10 @@ dependencies {
 
     implementation 'com.github.chrisbanes:PhotoView:2.3.0'
 
-    // zelory.compressor following can't be upgraded to 3.0.0 because 3.x only works with kt.
+    // zelory.compressor can't be upgraded to 3.0.0 because 3.x only works with kt.
     implementation 'id.zelory:compressor:2.1.0'
 
+    // otaliastudios:transcoder can't be upgraded to 0.10.0 because it always returns Transcoder.SUCCESS_NOT_NEEDED.
     implementation 'com.otaliastudios:transcoder:0.9.1'
 
     implementation 'com.mikepenz:aboutlibraries:8.8.4'

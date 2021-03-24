@@ -35,6 +35,8 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 
+import java.util.Objects;
+
 public class Navigation extends AppCompatActivity {
 
     private ViewPager viewPager;
@@ -71,7 +73,7 @@ public class Navigation extends AppCompatActivity {
 
                 setContentView(R.layout.navigation);
                 // Hide the top bar while the ad loads. Show the top bar after the ad goes away.
-                getSupportActionBar().hide();
+                Objects.requireNonNull(getSupportActionBar()).hide();
 
                 splashScreen = findViewById(R.id.splashScreen);
                 progressIconIndeterminate = findViewById(R.id.progressIconIndeterminate);
@@ -98,7 +100,7 @@ public class Navigation extends AppCompatActivity {
                                 progressIconIndeterminate.setZ(0);
                                 splashScreen.setVisibility(View.GONE);
                                 progressIconIndeterminate.setVisibility(View.GONE);
-                                getSupportActionBar().show();
+                                Objects.requireNonNull(getSupportActionBar()).show();
                             }
 
                             @Override
@@ -108,7 +110,7 @@ public class Navigation extends AppCompatActivity {
                                 progressIconIndeterminate.setZ(0);
                                 splashScreen.setVisibility(View.GONE);
                                 progressIconIndeterminate.setVisibility(View.GONE);
-                                getSupportActionBar().show();
+                                Objects.requireNonNull(getSupportActionBar()).show();
                             }
 
                             @Override
@@ -131,7 +133,7 @@ public class Navigation extends AppCompatActivity {
                         progressIconIndeterminate.setZ(0);
                         splashScreen.setVisibility(View.GONE);
                         progressIconIndeterminate.setVisibility(View.GONE);
-                        getSupportActionBar().show();
+                        Objects.requireNonNull(getSupportActionBar()).show();
                     }
                 });
             }

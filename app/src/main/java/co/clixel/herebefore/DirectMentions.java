@@ -205,7 +205,7 @@ public class DirectMentions extends Fragment {
         firebaseUid = FirebaseAuth.getInstance().getUid();
 
         // If the string doesn't equal null, check if the latest user is the same as the one in the recyclerView. If string is null, it's the first time loading.
-        if (UUIDDatesPairsSize != null) {
+        if (UUIDDatesPairsSize != null && UUIDDatesPairsSize != -1) {
 
             Query query = FirebaseDatabase.getInstance().getReference().child("Users").child(firebaseUid).child("ReceivedDms").limitToLast(1);
             query.addListenerForSingleValueEvent(new ValueEventListener() {
