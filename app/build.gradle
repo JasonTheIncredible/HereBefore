@@ -51,8 +51,8 @@ dependencies {
     implementation 'com.google.android.gms:play-services-auth:19.0.0'
     implementation 'com.google.android.gms:play-services-ads-lite:19.8.0'
     implementation 'com.google.android.material:material:1.3.0'
-    implementation 'com.google.android.exoplayer:exoplayer:2.12.3'
-    implementation 'com.google.maps.android:android-maps-utils:2.2.0'
+    implementation 'com.google.android.exoplayer:exoplayer:2.13.2'
+    implementation 'com.google.maps.android:android-maps-utils:2.2.2'
     implementation 'androidx.preference:preference:1.1.1'
     implementation 'androidx.recyclerview:recyclerview:1.1.0'
     implementation 'com.android.support:multidex:1.0.3'
@@ -72,14 +72,15 @@ dependencies {
     implementation 'com.google.firebase:firebase-database:19.7.0'
     implementation 'com.google.firebase:firebase-storage:19.2.1'
 
-    implementation 'com.squareup.picasso:picasso:2.71828'
+    // Don't upgrade, as 2.8 is a newer version than 2.71828.
+    implementation 'com.squareup.picasso:picasso:2.8'
 
     implementation 'com.github.chrisbanes:PhotoView:2.3.0'
 
-    // zelory.compressor can't be upgraded to 3.0.0 because 3.x only works with kt.
+    // Can't be upgraded to 3.0.0 because 3.x only works with kt.
     implementation 'id.zelory:compressor:2.1.0'
 
-    // otaliastudios:transcoder can't be upgraded to 0.10.0 because it always returns Transcoder.SUCCESS_NOT_NEEDED.
+    // Can't be upgraded to 0.10.0 because it always returns Transcoder.SUCCESS_NOT_NEEDED.
     implementation 'com.otaliastudios:transcoder:0.9.1'
 
     implementation 'com.mikepenz:aboutlibraries:8.8.4'
