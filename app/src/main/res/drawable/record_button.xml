@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_pressed="false">
+        <layer-list>
+
+            <!-- Larger outer circle -->
+            <item>
+                <shape android:shape="oval">
+                    <solid android:color="#FFFFFF" />
+                    <size android:width="30dp" android:height="30dp" />
+                </shape>
+            </item>
+
+            <!-- Smaller inner circle -->
+            <!-- It does not appear on the preview but it appears in the app -->
+            <item>
+                <shape android:shape="oval">
+                    <stroke android:width="45dp" android:color="@android:color/transparent" />
+                    <solid android:color="#CC0000" />
+                </shape>
+            </item>
+
+        </layer-list>
+    </item>
+
+    <item android:state_pressed="true">
+        <layer-list>
+
+            <!-- Larger outer circle -->
+            <item>
+                <shape android:shape="oval">
+                    <solid android:color="#777777" />
+                    <size android:width="30dp" android:height="30dp" />
+                </shape>
+            </item>
+
+            <!-- Smaller inner circle -->
+            <!-- It does not appear on the preview but it appears in the app -->
+            <item>
+                <shape android:shape="oval">
+                    <stroke android:width="45dp" android:color="@android:color/transparent" />
+                    <solid android:color="#880000" />
+                </shape>
+            </item>
+
+        </layer-list>
+    </item>
+</selector>

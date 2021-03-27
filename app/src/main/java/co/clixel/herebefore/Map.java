@@ -89,8 +89,8 @@ public class Map extends FragmentActivity implements
     private ChildEventListener childEventListenerNearLeft, childEventListenerFarLeft, childEventListenerNearRight, childEventListenerFarRight;
     private String circleTempUUID, circleTempUUIDTemp, lastKnownKey;
     protected static String imageFile, videoFile;
-    private Button circleButton, mapTypeButton, settingsButton;
-    private ImageButton dmButton;
+    private Button recordButton, mapTypeButton;
+    private ImageButton settingsButton, dmsButton;
     private PopupMenu popupMapType;
     private boolean firstLoadCamera = true, cameraMoved = false, waitingForBetterLocationAccuracy = false, badAccuracy = false, restarted = false, mapCleared = false, checkPermissionsPicture;
     private final ArrayList<String> circleUUIDsAL = new ArrayList<>();
@@ -144,8 +144,8 @@ public class Map extends FragmentActivity implements
 
         mapTypeButton = findViewById(R.id.mapTypeButton);
         settingsButton = findViewById(R.id.settingsButton);
-        dmButton = findViewById(R.id.dmButton);
-        circleButton = findViewById(R.id.circleButton);
+        dmsButton = findViewById(R.id.dmsButton);
+        recordButton = findViewById(R.id.recordButton);
         loadingIcon = findViewById(R.id.loadingIcon);
 
         loadedCoordinates = new ArrayList<>();
@@ -185,11 +185,11 @@ public class Map extends FragmentActivity implements
         if (loggedIn) {
 
             settingsButton.setVisibility(View.VISIBLE);
-            dmButton.setVisibility(View.VISIBLE);
+            dmsButton.setVisibility(View.VISIBLE);
         } else {
 
             settingsButton.setVisibility(View.GONE);
-            dmButton.setVisibility(View.GONE);
+            dmsButton.setVisibility(View.GONE);
         }
 
         // Shows a menu to change the map type.
@@ -212,7 +212,7 @@ public class Map extends FragmentActivity implements
         });
 
         // Go to DMs.
-        dmButton.setOnClickListener(v -> {
+        dmsButton.setOnClickListener(v -> {
 
             Log.i(TAG, "onStart() -> dmButton -> onClick");
 
@@ -220,9 +220,9 @@ public class Map extends FragmentActivity implements
         });
 
         // Take a photo. Create chat if one doesn't exist.
-        circleButton.setOnClickListener(view -> {
+        recordButton.setOnClickListener(view -> {
 
-            Log.i(TAG, "onStart() -> circleButton -> onClick");
+            Log.i(TAG, "onStart() -> recordButton -> onClick");
 
             if (checkPermissionsPicture()) {
 
@@ -233,9 +233,9 @@ public class Map extends FragmentActivity implements
         });
 
         // Record a video. Create chat if one doesn't exist.
-        circleButton.setOnLongClickListener(view -> {
+        recordButton.setOnLongClickListener(view -> {
 
-            Log.i(TAG, "onStart() -> circleButton -> onLongClick");
+            Log.i(TAG, "onStart() -> recordButton -> onLongClick");
 
             if (checkPermissionsVideo()) {
 
@@ -489,7 +489,7 @@ public class Map extends FragmentActivity implements
         restarted = true;
 
         // Clear map before adding new Firebase circles in onStart() to prevent overlap.
-        // Set shape to null so changing chatSizeSeekBar in onStart() will create a circle and circleButton will reset itself.
+        // Set shape to null so changing chatSizeSeekBar in onStart() will create a circle and recordButton will reset itself.
         if (mMap != null) {
 
             // Cut down on code by using one method for the shared code from onMapReady and onRestart.
@@ -515,14 +515,14 @@ public class Map extends FragmentActivity implements
         // Enable buttons, unless the user took a photo or video and is entering the next activity.
         if ((getIntent().getExtras() != null && getIntent().getExtras().getString("senderUserUUID") == null) || (getIntent().getExtras() == null && imageFile == null && videoFile == null)) {
 
-            circleButton.setEnabled(true);
-            dmButton.setEnabled(true);
+            recordButton.setEnabled(true);
+            dmsButton.setEnabled(true);
             settingsButton.setEnabled(true);
         } else {
 
             loadingIcon.setVisibility(View.VISIBLE);
-            circleButton.setEnabled(false);
-            dmButton.setEnabled(false);
+            recordButton.setEnabled(false);
+            dmsButton.setEnabled(false);
             settingsButton.setEnabled(false);
         }
     }
@@ -563,9 +563,9 @@ public class Map extends FragmentActivity implements
             settingsButton.setOnClickListener(null);
         }
 
-        if (dmButton != null) {
+        if (dmsButton != null) {
 
-            dmButton.setOnClickListener(null);
+            dmsButton.setOnClickListener(null);
         }
 
         if (queryNearLeft != null) {
@@ -592,10 +592,10 @@ public class Map extends FragmentActivity implements
             queryFarRight = null;
         }
 
-        if (circleButton != null) {
+        if (recordButton != null) {
 
-            circleButton.setOnClickListener(null);
-            circleButton.setOnLongClickListener(null);
+            recordButton.setOnClickListener(null);
+            recordButton.setOnLongClickListener(null);
         }
 
         if (mMap != null) {
@@ -648,14 +648,14 @@ public class Map extends FragmentActivity implements
                 loadingIcon.setVisibility(View.VISIBLE);
             }
 
-            if (circleButton != null) {
+            if (recordButton != null) {
 
-                circleButton.setEnabled(false);
+                recordButton.setEnabled(false);
             }
 
-            if (dmButton != null) {
+            if (dmsButton != null) {
 
-                dmButton.setEnabled(false);
+                dmsButton.setEnabled(false);
             }
 
             if (settingsButton != null) {
@@ -1236,8 +1236,8 @@ public class Map extends FragmentActivity implements
                 });
             } else {
 
-                circleButton.setEnabled(true);
-                dmButton.setEnabled(true);
+                recordButton.setEnabled(true);
+                dmsButton.setEnabled(true);
                 settingsButton.setEnabled(true);
 
                 loadingIcon.setVisibility(View.GONE);
@@ -1604,12 +1604,6 @@ public class Map extends FragmentActivity implements
         // Change button color depending on map type.
         if (mMap.getMapType() != 1 && mMap.getMapType() != 3) {
 
-            circleButton.setBackgroundResource(R.drawable.circle_button);
-
-            settingsButton.setBackgroundResource(R.drawable.ic_more_vertical_yellow_24dp);
-
-            dmButton.setBackgroundResource(R.drawable.dm_button);
-
             for (int i = 0; i < circleCentersAL.size(); i++) {
 
                 Circle circle = mMap.addCircle(
@@ -1624,12 +1618,6 @@ public class Map extends FragmentActivity implements
                 circle.setTag(circleUUIDsAL.get(i));
             }
         } else {
-
-            circleButton.setBackgroundResource(R.drawable.circle_button_purple);
-
-            settingsButton.setBackgroundResource(R.drawable.ic_more_vertical_purple_24dp);
-
-            dmButton.setBackgroundResource(R.drawable.dm_button_purple);
 
             for (int i = 0; i < circleCentersAL.size(); i++) {
 
@@ -2218,7 +2206,7 @@ public class Map extends FragmentActivity implements
         if (android.os.Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
 
             Snackbar snackBar = Snackbar.make(rootView, message, Snackbar.LENGTH_LONG);
-            snackBar.setAnchorView(circleButton);
+            snackBar.setAnchorView(recordButton);
             View snackBarView = snackBar.getView();
             TextView snackTextView = snackBarView.findViewById(com.google.android.material.R.id.snackbar_text);
             snackTextView.setMaxLines(10);
