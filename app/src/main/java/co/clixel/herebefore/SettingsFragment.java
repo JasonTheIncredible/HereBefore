@@ -9,6 +9,7 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.preference.ListPreference;
 import androidx.preference.Preference;
@@ -17,6 +18,12 @@ import androidx.preference.PreferenceManager;
 import androidx.preference.SwitchPreferenceCompat;
 
 import com.firebase.ui.auth.AuthUI;
+import com.google.android.gms.ads.AdError;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.FullScreenContentCallback;
+import com.google.android.gms.ads.LoadAdError;
+import com.google.android.gms.ads.rewarded.RewardedAd;
+import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
@@ -31,6 +38,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
 
     private SwitchPreferenceCompat toggleTheme, toggleNotifications;
     private Preference mapTypePreference;
+    private RewardedAd mRewardAd;
     // "FIREBASE_TOKEN" to find Firebase token for messaging.
 
     @Override
@@ -194,8 +202,8 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
 
                 case "signOut": {
 
-                    AuthUI.getInstance().signOut(getActivity());
-                    PreferenceManager.getDefaultSharedPreferences(getActivity()).edit().clear().apply();
+                    AuthUI.getInstance().signOut(requireActivity());
+                    PreferenceManager.getDefaultSharedPreferences(requireActivity()).edit().clear().apply();
 
                     // Remove the token so user will not get notifications while they are not logged into their account.
                     String firebaseUid = FirebaseAuth.getInstance().getUid();
@@ -212,7 +220,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
 
                     Intent Activity = new Intent(getActivity(), Map.class);
 
-                    getActivity().finishAffinity();
+                    requireActivity().finishAffinity();
 
                     startActivity(Activity);
 
@@ -228,6 +236,63 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
                     break;
                 }
 
+                case "rewardAd": {
+
+                    AdRequest adRequest = new AdRequest.Builder().build();
+
+                    RewardedAd.load(requireContext(), "ca-app-pub-3940256099942544/5224354917", adRequest, new RewardedAdLoadCallback() {
+
+                        @Override
+                        public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
+
+                            // Make sure to set your reference to null so you don't show it a second time.
+                            mRewardAd = null;
+                        }
+
+                        @Override
+                        public void onAdLoaded(@NonNull RewardedAd rewardedAd) {
+
+                            // The mRewardAd reference will be null until an ad is loaded.
+                            mRewardAd = rewardedAd;
+
+                            mRewardAd.setFullScreenContentCallback(new FullScreenContentCallback() {
+
+                                @Override
+                                public void onAdShowedFullScreenContent() {
+
+                                    // Make sure to set your reference to null so you don't show it a second time.
+                                    mRewardAd = null;
+                                }
+
+                                @Override
+                                public void onAdFailedToShowFullScreenContent(AdError adError) {
+
+                                    // Make sure to set your reference to null so you don't show it a second time.
+                                    mRewardAd = null;
+                                }
+
+                                @Override
+                                public void onAdDismissedFullScreenContent() {
+
+                                    // Make sure to set your reference to null so you don't show it a second time.
+                                    mRewardAd = null;
+                                }
+                            });
+
+                            if (mRewardAd != null) {
+
+                                mRewardAd.show(requireActivity(), rewardItem -> {
+
+                                    int rewardAmount = rewardItem.getAmount();
+                                    String rewardType = rewardItem.getType();
+                                });
+                            }
+                        }
+                    });
+
+                    break;
+                }
+
                 case "about": {
 
                     new LibsBuilder()
@@ -235,7 +300,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
                             .withAboutIconShown(true)
                             .withLicenseShown(true)
                             .withVersionShown(true)
-                            .start(getActivity());
+                            .start(requireActivity());
 
                     break;
                 }

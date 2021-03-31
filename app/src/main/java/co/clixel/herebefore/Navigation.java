@@ -87,8 +87,7 @@ public class Navigation extends AppCompatActivity {
                     @Override
                     public void onAdLoaded(@NonNull InterstitialAd interstitialAd) {
 
-                        // The mInterstitialAd reference will be null until
-                        // an ad is loaded.
+                        // The mInterstitialAd reference will be null until an ad is loaded.
                         mInterstitialAd = interstitialAd;
 
                         mInterstitialAd.setFullScreenContentCallback(new FullScreenContentCallback() {
@@ -101,6 +100,8 @@ public class Navigation extends AppCompatActivity {
                                 splashScreen.setVisibility(View.GONE);
                                 progressIconIndeterminate.setVisibility(View.GONE);
                                 Objects.requireNonNull(getSupportActionBar()).show();
+                                // Make sure to set your reference to null so you don't show it a second time.
+                                mInterstitialAd = null;
                             }
 
                             @Override
@@ -111,6 +112,8 @@ public class Navigation extends AppCompatActivity {
                                 splashScreen.setVisibility(View.GONE);
                                 progressIconIndeterminate.setVisibility(View.GONE);
                                 Objects.requireNonNull(getSupportActionBar()).show();
+                                // Make sure to set your reference to null so you don't show it a second time.
+                                mInterstitialAd = null;
                             }
 
                             @Override

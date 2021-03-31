@@ -475,7 +475,7 @@ public class Chat extends Fragment implements
         } else if (!newShape) {
 
             getFirebaseMessages(null);
-        } else if (UUIDDatesPairsSize != null && UUIDDatesPairsSize == -1) {
+        } else if (UUIDDatesPairsSize != null) {
 
             // Case where user clicks on image / video multiple times before sending it.
             progressIconIndeterminate.setVisibility(View.GONE);

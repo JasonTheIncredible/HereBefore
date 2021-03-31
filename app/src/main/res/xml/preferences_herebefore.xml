@@ -47,6 +47,11 @@
         app:title="Delete Account" />
 
     <Preference
+        app:key="rewardAd"
+        app:summary="Watch a reward ad"
+        app:title="Reward Ad" />
+
+    <Preference
         app:key="about"
         app:summary="More information about this application"
         app:title="About" />
