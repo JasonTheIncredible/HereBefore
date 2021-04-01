@@ -162,7 +162,7 @@ public class Chat extends Fragment implements
     private ProgressBar progressIcon, progressIconIndeterminate;
     private Toast shortToast, longToast;
     private static final String BUCKET = "text-suggestions";
-    public View rootView;
+    private View rootView;
     private Context mContext;
     private Activity mActivity;
     private Query mQuery;

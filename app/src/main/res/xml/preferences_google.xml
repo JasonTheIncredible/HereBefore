@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
 
     <SwitchPreferenceCompat
         app:defaultValue="true"
@@ -41,6 +42,11 @@
         app:key="deleteAccount"
         app:summary="Permanently delete this account"
         app:title="Delete Account" />
+
+    <Preference
+        android:widgetLayout="@layout/progressiconindeterminatelayout"
+        app:isPreferenceVisible="false"
+        app:key="progressIconIndeterminateLayout" />
 
     <Preference
         app:key="rewardAd"

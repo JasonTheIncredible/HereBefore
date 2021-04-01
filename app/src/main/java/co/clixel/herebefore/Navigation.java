@@ -72,7 +72,7 @@ public class Navigation extends AppCompatActivity {
             } else {
 
                 setContentView(R.layout.navigation);
-                // Hide the top bar while the ad loads. Show the top bar after the ad goes away.
+                // Hide the top bar while the ad loads. Remember to show the top bar after the ad goes away.
                 Objects.requireNonNull(getSupportActionBar()).hide();
 
                 splashScreen = findViewById(R.id.splashScreen);
@@ -371,7 +371,7 @@ public class Navigation extends AppCompatActivity {
      * A simple pager adapter that represents 5 ScreenSlidePageFragment objects, in
      * sequence.
      */
-    public class ScreenSlidePagerAdapter extends FragmentPagerAdapter {
+    protected class ScreenSlidePagerAdapter extends FragmentPagerAdapter {
 
         ScreenSlidePagerAdapter(FragmentManager fm) {
 

@@ -613,14 +613,6 @@ public class Map extends FragmentActivity implements
         super.onStop();
     }
 
-    private void cancelToasts() {
-
-        if (longToast != null) {
-
-            longToast.cancel();
-        }
-    }
-
     @Override
     public void onMapReady(GoogleMap googleMap) {
 
@@ -2217,6 +2209,14 @@ public class Map extends FragmentActivity implements
             longToast = Toast.makeText(this, message, Toast.LENGTH_LONG);
             longToast.setGravity(Gravity.CENTER, 0, 0);
             longToast.show();
+        }
+    }
+
+    private void cancelToasts() {
+
+        if (longToast != null) {
+
+            longToast.cancel();
         }
     }
 }

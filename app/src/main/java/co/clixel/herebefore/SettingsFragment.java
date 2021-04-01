@@ -37,8 +37,9 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
         PreferenceManager.OnPreferenceTreeClickListener {
 
     private SwitchPreferenceCompat toggleTheme, toggleNotifications;
-    private Preference mapTypePreference;
+    private Preference mapTypePreference, progressIconIndeterminate, rewardAd;
     private RewardedAd mRewardAd;
+    private Toast longToast;
     // "FIREBASE_TOKEN" to find Firebase token for messaging.
 
     @Override
@@ -56,6 +57,8 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
         mapTypePreference = findPreference("mapTypePreference");
         toggleNotifications = findPreference("toggleNotifications");
         toggleTheme = findPreference("toggleTheme");
+        progressIconIndeterminate = findPreference("progressIconIndeterminateLayout");
+        rewardAd = findPreference("rewardAd");
 
         if (mapTypePreference != null) {
 
@@ -238,12 +241,19 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
 
                 case "rewardAd": {
 
+                    // Show loading icon and get rid of rewardAd.
+                    progressIconIndeterminate.setVisible(true);
+                    rewardAd.setVisible(false);
+
                     AdRequest adRequest = new AdRequest.Builder().build();
 
                     RewardedAd.load(requireContext(), "ca-app-pub-3940256099942544/5224354917", adRequest, new RewardedAdLoadCallback() {
 
                         @Override
                         public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
+
+                            progressIconIndeterminate.setVisible(false);
+                            rewardAd.setVisible(true);
 
                             // Make sure to set your reference to null so you don't show it a second time.
                             mRewardAd = null;
@@ -260,6 +270,11 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
                                 @Override
                                 public void onAdShowedFullScreenContent() {
 
+                                    // For interstitial ads in Navigation, the visible logic shouldn't appear in onAdShowedFullScreenContent because the user can see it.
+                                    // However, since the visible logic takes a while to occur in preferences, it can happen here so the user doesn't see it occur after the ad is dismissed.
+                                    progressIconIndeterminate.setVisible(false);
+                                    rewardAd.setVisible(true);
+
                                     // Make sure to set your reference to null so you don't show it a second time.
                                     mRewardAd = null;
                                 }
@@ -267,12 +282,20 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
                                 @Override
                                 public void onAdFailedToShowFullScreenContent(AdError adError) {
 
+                                    showMessageLong("An error occurred: " + adError);
+
+                                    progressIconIndeterminate.setVisible(false);
+                                    rewardAd.setVisible(true);
+
                                     // Make sure to set your reference to null so you don't show it a second time.
                                     mRewardAd = null;
                                 }
 
                                 @Override
                                 public void onAdDismissedFullScreenContent() {
+
+                                    progressIconIndeterminate.setVisible(false);
+                                    rewardAd.setVisible(true);
 
                                     // Make sure to set your reference to null so you don't show it a second time.
                                     mRewardAd = null;
@@ -329,5 +352,31 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
         }
 
         super.onDestroy();
+    }
+
+    private void showMessageLong(String message) {
+
+        if (android.os.Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
+
+            Snackbar snackBar = Snackbar.make(requireView(), message, Snackbar.LENGTH_LONG);
+            View snackBarView = snackBar.getView();
+            TextView snackTextView = snackBarView.findViewById(com.google.android.material.R.id.snackbar_text);
+            snackTextView.setMaxLines(10);
+            snackBar.show();
+        } else {
+
+            cancelToasts();
+            longToast = Toast.makeText(requireContext(), message, Toast.LENGTH_LONG);
+            longToast.setGravity(Gravity.CENTER, 0, 0);
+            longToast.show();
+        }
+    }
+
+    private void cancelToasts() {
+
+        if (longToast != null) {
+
+            longToast.cancel();
+        }
     }
 }
