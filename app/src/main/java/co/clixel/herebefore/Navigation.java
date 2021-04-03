@@ -72,75 +72,83 @@ public class Navigation extends AppCompatActivity {
             } else {
 
                 setContentView(R.layout.navigation);
-                // Hide the top bar while the ad loads. Remember to show the top bar after the ad goes away.
-                Objects.requireNonNull(getSupportActionBar()).hide();
 
-                splashScreen = findViewById(R.id.splashScreen);
-                progressIconIndeterminate = findViewById(R.id.progressIconIndeterminate);
-                splashScreen.setZ(1000);
-                progressIconIndeterminate.setZ(1000);
+                showInterstitialAd();
+            }
+        }
+    }
 
-                AdRequest adRequest = new AdRequest.Builder().build();
+    protected void showInterstitialAd() {
 
-                InterstitialAd.load(this, "ca-app-pub-3940256099942544/1033173712", adRequest, new InterstitialAdLoadCallback() {
+        // Hide the top bar while the ad loads. Remember to show the top bar after the ad goes away.
+        Objects.requireNonNull(getSupportActionBar()).hide();
 
-                    @Override
-                    public void onAdLoaded(@NonNull InterstitialAd interstitialAd) {
+        splashScreen = findViewById(R.id.splashScreen);
+        progressIconIndeterminate = findViewById(R.id.progressIconIndeterminate);
+        splashScreen.setVisibility(View.VISIBLE);
+        progressIconIndeterminate.setVisibility(View.VISIBLE);
+        splashScreen.setZ(1000);
+        progressIconIndeterminate.setZ(1000);
 
-                        // The mInterstitialAd reference will be null until an ad is loaded.
-                        mInterstitialAd = interstitialAd;
+        AdRequest adRequest = new AdRequest.Builder().build();
 
-                        mInterstitialAd.setFullScreenContentCallback(new FullScreenContentCallback() {
+        InterstitialAd.load(this, "ca-app-pub-3940256099942544/1033173712", adRequest, new InterstitialAdLoadCallback() {
 
-                            @Override
-                            public void onAdDismissedFullScreenContent() {
+            @Override
+            public void onAdLoaded(@NonNull InterstitialAd interstitialAd) {
 
-                                splashScreen.setZ(0);
-                                progressIconIndeterminate.setZ(0);
-                                splashScreen.setVisibility(View.GONE);
-                                progressIconIndeterminate.setVisibility(View.GONE);
-                                Objects.requireNonNull(getSupportActionBar()).show();
-                                // Make sure to set your reference to null so you don't show it a second time.
-                                mInterstitialAd = null;
-                            }
+                // The mInterstitialAd reference will be null until an ad is loaded.
+                mInterstitialAd = interstitialAd;
 
-                            @Override
-                            public void onAdFailedToShowFullScreenContent(AdError adError) {
-
-                                splashScreen.setZ(0);
-                                progressIconIndeterminate.setZ(0);
-                                splashScreen.setVisibility(View.GONE);
-                                progressIconIndeterminate.setVisibility(View.GONE);
-                                Objects.requireNonNull(getSupportActionBar()).show();
-                                // Make sure to set your reference to null so you don't show it a second time.
-                                mInterstitialAd = null;
-                            }
-
-                            @Override
-                            public void onAdShowedFullScreenContent() {
-
-                                // Make sure to set your reference to null so you don't show it a second time.
-                                mInterstitialAd = null;
-                            }
-                        });
-
-                        mInterstitialAd.show(Navigation.this);
-                    }
+                mInterstitialAd.setFullScreenContentCallback(new FullScreenContentCallback() {
 
                     @Override
-                    public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
+                    public void onAdDismissedFullScreenContent() {
 
-                        // Make sure to set your reference to null so you don't show it a second time.
-                        mInterstitialAd = null;
                         splashScreen.setZ(0);
                         progressIconIndeterminate.setZ(0);
                         splashScreen.setVisibility(View.GONE);
                         progressIconIndeterminate.setVisibility(View.GONE);
                         Objects.requireNonNull(getSupportActionBar()).show();
+                        // Make sure to set your reference to null so you don't show it a second time.
+                        mInterstitialAd = null;
+                    }
+
+                    @Override
+                    public void onAdFailedToShowFullScreenContent(AdError adError) {
+
+                        splashScreen.setZ(0);
+                        progressIconIndeterminate.setZ(0);
+                        splashScreen.setVisibility(View.GONE);
+                        progressIconIndeterminate.setVisibility(View.GONE);
+                        Objects.requireNonNull(getSupportActionBar()).show();
+                        // Make sure to set your reference to null so you don't show it a second time.
+                        mInterstitialAd = null;
+                    }
+
+                    @Override
+                    public void onAdShowedFullScreenContent() {
+
+                        // Make sure to set your reference to null so you don't show it a second time.
+                        mInterstitialAd = null;
                     }
                 });
+
+                mInterstitialAd.show(Navigation.this);
             }
-        }
+
+            @Override
+            public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
+
+                // Make sure to set your reference to null so you don't show it a second time.
+                mInterstitialAd = null;
+                splashScreen.setZ(0);
+                progressIconIndeterminate.setZ(0);
+                splashScreen.setVisibility(View.GONE);
+                progressIconIndeterminate.setVisibility(View.GONE);
+                Objects.requireNonNull(getSupportActionBar()).show();
+            }
+        });
     }
 
     protected void updatePreferences() {

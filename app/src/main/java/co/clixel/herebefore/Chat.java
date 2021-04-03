@@ -167,7 +167,7 @@ public class Chat extends Fragment implements
     private Activity mActivity;
     private Query mQuery;
     private Drawable imageDrawable, videoDrawable;
-    private int shapeLatInt, shapeLonInt;
+    private int shapeLatInt, shapeLonInt, showInterstitialAdCounter = 0;
     private Integer previouslyHighlightedPosition;
     private LocationManager locationManager;
     private FusedLocationProviderClient mFusedLocationClient;
@@ -3106,6 +3106,15 @@ public class Chat extends Fragment implements
     private void firebaseUpload() {
 
         Log.i(TAG, "firebaseUpload()");
+
+        showInterstitialAdCounter++;
+
+        // If user is uploading multiple media to Firebase, show an ad to pay for the bandwidth.
+        if (showInterstitialAdCounter == 2) {
+
+            showInterstitialAdCounter = 0;
+            ((Navigation) requireActivity()).showInterstitialAd();
+        }
 
         progressIcon.setProgress(0);
 
