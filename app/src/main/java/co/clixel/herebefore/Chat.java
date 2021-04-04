@@ -135,7 +135,7 @@ public class Chat extends Fragment implements
         SuggestionsVisibilityManager {
 
     private static final String TAG = "Chat";
-    private static final int Request_User_Location_Code = 42, Request_ID_Take_Photo = 69, Request_ID_Record_Video = 420, Update_Interval = 0, Fastest_Interval = 0;
+    private static final int Request_User_Location_Code = 42, Request_ID_Take_Photo = 69, Request_ID_Record_Video = 420, Media_Code = 27, Update_Interval = 0, Fastest_Interval = 0;
     private MentionsEditText mInput;
     private ArrayList<String> mTime, mUser, mImage, mVideo, mSuggestions;
     private ArrayList<SpannableString> mText;
@@ -146,7 +146,8 @@ public class Chat extends Fragment implements
     private Integer index, top, UUIDDatesPairsSize;
     private ChildEventListener childEventListener;
     private FloatingActionButton sendButton, mediaButton;
-    private boolean theme, firstLoad, continueWithODC = true, loadingOlderMessages = false, clickedOnMention = false, fromDms = false, noMoreMessages = false, showProgressIndeterminate = true, reachedEndOfRecyclerView = true, messageSent = false, fileIsImage, checkPermissionsPicture, newShape, uploadNeeded = false;
+    private boolean theme, firstLoad, continueWithODC = true, loadingOlderMessages = false, clickedOnMention = false, fromDms = false, noMoreMessages = false, showProgressIndeterminate = true, reachedEndOfRecyclerView = true, messageSent = false, fileIsImage,
+            checkPermissionsPicture, newShape, uploadNeeded = false;
     private Boolean userIsWithinShape;
     private View.OnLayoutChangeListener onLayoutChangeListener;
     private String shapeUUID, reportedUser, UUIDToHighlight, imageFile, videoFile, lastKnownKey;
@@ -167,7 +168,7 @@ public class Chat extends Fragment implements
     private Activity mActivity;
     private Query mQuery;
     private Drawable imageDrawable, videoDrawable;
-    private int shapeLatInt, shapeLonInt, showInterstitialAdCounter = 0;
+    private int shapeLatInt, shapeLonInt, showInterstitialAdCounter = 0, fromMediaCounter = 0;
     private Integer previouslyHighlightedPosition;
     private LocationManager locationManager;
     private FusedLocationProviderClient mFusedLocationClient;
@@ -858,7 +859,7 @@ public class Chat extends Fragment implements
 
             Intent Activity = new Intent(mContext, PhotoView.class);
             Activity.putExtra("imgUrl", imageURI.toString());
-            Chat.this.startActivity(Activity);
+            startActivity(Activity);
         });
 
         videoImageView.setOnClickListener(v -> {
@@ -869,7 +870,7 @@ public class Chat extends Fragment implements
 
             Intent Activity = new Intent(mContext, VideoView.class);
             Activity.putExtra("videoUrl", videoURI.toString());
-            Chat.this.startActivity(Activity);
+            startActivity(Activity);
         });
     }
 
@@ -1677,7 +1678,7 @@ public class Chat extends Fragment implements
 
                         Intent Activity = new Intent(mContext, PhotoView.class);
                         Activity.putExtra("imgUrl", mMessageImage.get(getAdapterPosition()));
-                        mContext.startActivity(Activity);
+                        startActivityForResult(Activity, Media_Code);
                     });
                 }
 
@@ -1687,7 +1688,7 @@ public class Chat extends Fragment implements
 
                         Intent Activity = new Intent(mContext, PhotoView.class);
                         Activity.putExtra("imgUrl", mMessageImage.get(getAdapterPosition()));
-                        mContext.startActivity(Activity);
+                        startActivityForResult(Activity, Media_Code);
                     });
                 }
 
@@ -1697,7 +1698,7 @@ public class Chat extends Fragment implements
 
                         Intent Activity = new Intent(mContext, VideoView.class);
                         Activity.putExtra("videoUrl", mMessageImageVideo.get(getAdapterPosition()));
-                        mContext.startActivity(Activity);
+                        startActivityForResult(Activity, Media_Code);
                     });
                 }
 
@@ -1707,7 +1708,7 @@ public class Chat extends Fragment implements
 
                         Intent Activity = new Intent(mContext, VideoView.class);
                         Activity.putExtra("videoUrl", mMessageImageVideo.get(getAdapterPosition()));
-                        mContext.startActivity(Activity);
+                        startActivityForResult(Activity, Media_Code);
                     });
                 }
 
@@ -2709,6 +2710,21 @@ public class Chat extends Fragment implements
 
         if (resultCode != RESULT_OK) {
 
+            // If user is clicking on multiple images, show an ad to pay for the bandwidth.
+            // Backing out of PhotoView and VideoView causes resultCode != RESULT_OK, so this code must be stored here.
+            // The "return" needs to stay to prevent the rest of the code from executing if the user backs out of taking a picture / video.
+            if (requestCode == Media_Code) {
+
+                Log.i(TAG, "onActivityResult() -> Returned from viewing media");
+
+                fromMediaCounter++;
+                if (fromMediaCounter == 3) {
+
+                    fromMediaCounter = 0;
+                    ((Navigation) requireActivity()).showInterstitialAd();
+                }
+            }
+
             return;
         }
 
@@ -3110,7 +3126,7 @@ public class Chat extends Fragment implements
         showInterstitialAdCounter++;
 
         // If user is uploading multiple media to Firebase, show an ad to pay for the bandwidth.
-        if (showInterstitialAdCounter == 2) {
+        if (showInterstitialAdCounter == 3) {
 
             showInterstitialAdCounter = 0;
             ((Navigation) requireActivity()).showInterstitialAd();
