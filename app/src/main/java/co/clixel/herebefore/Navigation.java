@@ -76,6 +76,9 @@ public class Navigation extends AppCompatActivity {
                 showInterstitialAd();
             }
         }
+
+        viewPager = findViewById(R.id.view_pager);
+        bubbleNavigationConstraintView = findViewById(R.id.bottom_navigation_constraint);
     }
 
     protected void showInterstitialAd() {
@@ -191,10 +194,8 @@ public class Navigation extends AppCompatActivity {
 
         ScreenSlidePagerAdapter pagerAdapter = new ScreenSlidePagerAdapter(getSupportFragmentManager());
 
-        bubbleNavigationConstraintView = findViewById(R.id.bottom_navigation_constraint);
-
-        viewPager = findViewById(R.id.view_pager);
         viewPager.setAdapter(pagerAdapter);
+
         pagerListener = new ViewPager.OnPageChangeListener() {
 
             @Override
@@ -220,7 +221,6 @@ public class Navigation extends AppCompatActivity {
         };
 
         viewPager.addOnPageChangeListener(pagerListener);
-
         viewPager.setOffscreenPageLimit(2);
 
         BubbleNavigationChangeListener bubbleNavigationChangeListener = (view, position) -> {

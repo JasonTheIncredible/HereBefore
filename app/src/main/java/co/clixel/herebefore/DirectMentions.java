@@ -65,7 +65,7 @@ public class DirectMentions extends Fragment {
     private ArrayList<String> circleUUIDsAL = new ArrayList<>();
     private ArrayList<LatLng> circleCentersAL = new ArrayList<>();
     private RecyclerView dmsRecyclerView;
-    private static int index = -1, top = -1;
+    private Integer index, top;
     private ChildEventListener childEventListener;
     private LinearLayoutManager dmsRecyclerViewLinearLayoutManager;
     private boolean theme, firstLoad, continueWithODC = true, loadingOlderMessages, noMoreMessages = false, reachedEndOfRecyclerView = true;
@@ -605,7 +605,7 @@ public class DirectMentions extends Fragment {
 
             // Scroll to bottom of recyclerviewlayout after first initialization and after sending a recyclerviewlayout.
             dmsRecyclerView.scrollToPosition(mTime.size() - 1);
-        } else {
+        } else if (index != null && top != null) {
 
             // Set RecyclerView scroll position to prevent position change when Firebase gets updated and after screen orientation change.
             dmsRecyclerViewLinearLayoutManager.scrollToPositionWithOffset(index, top);
@@ -633,9 +633,9 @@ public class DirectMentions extends Fragment {
     }
 
     @Override
-    public void onStop() {
+    public void onPause() {
 
-        Log.i(TAG, "onStop()");
+        Log.i(TAG, "onPause()");
 
         // Read RecyclerView scroll position (for use in initDirectMentionsAdapter if user reload the activity).
         if (dmsRecyclerViewLinearLayoutManager != null && dmsRecyclerView != null) {
@@ -644,6 +644,14 @@ public class DirectMentions extends Fragment {
             View v = dmsRecyclerView.getChildAt(0);
             top = (v == null) ? 0 : (v.getTop() - dmsRecyclerView.getPaddingTop());
         }
+
+        super.onPause();
+    }
+
+    @Override
+    public void onStop() {
+
+        Log.i(TAG, "onStop()");
 
         UUIDDatesPairsSize = UUIDDatesPairs.size() - 1;
 
@@ -757,7 +765,7 @@ public class DirectMentions extends Fragment {
 
                     loadingIcon.setVisibility(View.VISIBLE);
 
-                    // When user clicks on a DM, set "seenByUser" to false so it is not highlighted in the future.
+                    // When user clicks on a DM, set "seenByUser" to true so it is not highlighted in the future.
                     if (!mSeenByUser.get(getAdapterPosition())) {
 
                         DatabaseReference Dms = FirebaseDatabase.getInstance().getReference().child("Users").child(firebaseUid).child("ReceivedDms");
@@ -775,6 +783,51 @@ public class DirectMentions extends Fragment {
                                         ds.child("seenByUser").getRef().setValue(true);
                                     }
 
+                                    // Get a value with 1 decimal point and use it for Firebase.
+                                    double nearLeftPrecisionLat = Math.pow(10, 1);
+                                    // Can't create a firebase path with '.', so get rid of decimal.
+                                    double nearLeftLatTemp = (int) (nearLeftPrecisionLat * mShapeLat.get(getAdapterPosition())) / nearLeftPrecisionLat;
+                                    nearLeftLatTemp *= 10;
+                                    int shapeLatInt = (int) nearLeftLatTemp;
+
+                                    double nearLeftPrecisionLon = Math.pow(10, 1);
+                                    // Can't create a firebase path with '.', so get rid of decimal.
+                                    double nearLeftLonTemp = (int) (nearLeftPrecisionLon * mShapeLon.get(getAdapterPosition())) / nearLeftPrecisionLon;
+                                    nearLeftLonTemp *= 10;
+                                    int shapeLonInt = (int) nearLeftLonTemp;
+
+                                    DatabaseReference shape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child("Points");
+                                    Query shapeQuery = shape.orderByChild("shapeUUID").equalTo(mShapeUUID.get(getAdapterPosition()));
+                                    shapeQuery.addListenerForSingleValueEvent(new ValueEventListener() {
+
+                                        @Override
+                                        public void onDataChange(@NonNull DataSnapshot snapshot) {
+
+                                            cancelToasts();
+
+                                            Intent Activity = new Intent(mContext, Navigation.class);
+                                            Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()));
+                                            Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()));
+                                            Activity.putExtra("newShape", false);
+                                            Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
+                                            Activity.putExtra("UUIDToHighlight", mUser.get(getAdapterPosition()));
+                                            Activity.putExtra("circleUUIDsAL", circleUUIDsAL);
+                                            Activity.putExtra("circleCentersAL", circleCentersAL);
+
+                                            loadingIcon.setVisibility(View.GONE);
+
+                                            mContext.startActivity(Activity);
+                                            mActivity.finish();
+                                        }
+
+                                        @Override
+                                        public void onCancelled(@NonNull DatabaseError error) {
+
+                                            loadingIcon.setVisibility(View.GONE);
+                                            showMessageLong(error.getMessage());
+                                        }
+                                    });
+
                                     // "return" is not strictly necessary (as there should only be one child), but it keeps the data usage and processing to a minimum in the event of strange behavior.
                                     return;
                                 }
@@ -787,51 +840,6 @@ public class DirectMentions extends Fragment {
                             }
                         });
                     }
-
-                    // Get a value with 1 decimal point and use it for Firebase.
-                    double nearLeftPrecisionLat = Math.pow(10, 1);
-                    // Can't create a firebase path with '.', so get rid of decimal.
-                    double nearLeftLatTemp = (int) (nearLeftPrecisionLat * mShapeLat.get(getAdapterPosition())) / nearLeftPrecisionLat;
-                    nearLeftLatTemp *= 10;
-                    int shapeLatInt = (int) nearLeftLatTemp;
-
-                    double nearLeftPrecisionLon = Math.pow(10, 1);
-                    // Can't create a firebase path with '.', so get rid of decimal.
-                    double nearLeftLonTemp = (int) (nearLeftPrecisionLon * mShapeLon.get(getAdapterPosition())) / nearLeftPrecisionLon;
-                    nearLeftLonTemp *= 10;
-                    int shapeLonInt = (int) nearLeftLonTemp;
-
-                    DatabaseReference shape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child("Points");
-                    Query shapeQuery = shape.orderByChild("shapeUUID").equalTo(mShapeUUID.get(getAdapterPosition()));
-                    shapeQuery.addListenerForSingleValueEvent(new ValueEventListener() {
-
-                        @Override
-                        public void onDataChange(@NonNull DataSnapshot snapshot) {
-
-                            cancelToasts();
-
-                            Intent Activity = new Intent(mContext, Navigation.class);
-                            Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()));
-                            Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()));
-                            Activity.putExtra("newShape", false);
-                            Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
-                            Activity.putExtra("UUIDToHighlight", mUser.get(getAdapterPosition()));
-                            Activity.putExtra("circleUUIDsAL", circleUUIDsAL);
-                            Activity.putExtra("circleCentersAL", circleCentersAL);
-
-                            loadingIcon.setVisibility(View.GONE);
-
-                            mContext.startActivity(Activity);
-                            mActivity.finish();
-                        }
-
-                        @Override
-                        public void onCancelled(@NonNull DatabaseError error) {
-
-                            loadingIcon.setVisibility(View.GONE);
-                            showMessageLong(error.getMessage());
-                        }
-                    });
                 });
 
                 if (messageImageInside != null) {

@@ -1400,14 +1400,6 @@ public class Chat extends Fragment implements
             mFusedLocationClient.removeLocationUpdates(mLocationCallback);
         }
 
-        super.onPause();
-    }
-
-    @Override
-    public void onStop() {
-
-        Log.i(TAG, "onStop()");
-
         // Read RecyclerView scroll position (for use in initChatAdapter if user reload the activity).
         if (chatRecyclerViewLinearLayoutManager != null && chatRecyclerView != null) {
 
@@ -1415,6 +1407,14 @@ public class Chat extends Fragment implements
             View v = chatRecyclerView.getChildAt(0);
             top = (v == null) ? 0 : (v.getTop() - chatRecyclerView.getPaddingTop());
         }
+
+        super.onPause();
+    }
+
+    @Override
+    public void onStop() {
+
+        Log.i(TAG, "onStop()");
 
         UUIDDatesPairsSize = UUIDDatesPairs.size() - 1;
 
