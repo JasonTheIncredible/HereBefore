@@ -41,10 +41,8 @@ import android.text.method.LinkMovementMethod;
 import android.text.style.ClickableSpan;
 import android.util.Base64;
 import android.util.Base64OutputStream;
-import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.Pair;
-import android.view.Display;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -53,9 +51,6 @@ import android.view.View;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
-import com.google.android.gms.ads.AdRequest;
-import com.google.android.gms.ads.AdSize;
-import com.google.android.gms.ads.AdView;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
@@ -146,7 +141,7 @@ public class Chat extends Fragment implements
     private Integer index, top, UUIDDatesPairsSize;
     private ChildEventListener childEventListener;
     private FloatingActionButton sendButton, mediaButton;
-    private boolean theme, firstLoad, continueWithODC = true, loadingOlderMessages = false, clickedOnMention = false, fromDms = false, noMoreMessages = false, showProgressIndeterminate = true, reachedEndOfRecyclerView = true, messageSent = false, fileIsImage,
+    private boolean theme, onStartJustCalled, continueWithODC = true, loadingOlderMessages = false, clickedOnMention = false, fromDms = false, noMoreMessages = false, showProgressIndeterminate = true, reachedEndOfRecyclerView = true, messageSent = false, fileIsImage,
             checkPermissionsPicture, newShape, uploadNeeded = false;
     private Boolean userIsWithinShape;
     private View.OnLayoutChangeListener onLayoutChangeListener;
@@ -176,7 +171,6 @@ public class Chat extends Fragment implements
     private TextView newShapeTextView, positionRelativeToShapeTextView;
     private List<Pair<String, Long>> UUIDDatesPairs;
     private Snackbar snackBar;
-    private AdView bannerAdView;
     private final WordTokenizerConfig tokenizerConfig = new WordTokenizerConfig
             .Builder()
             .setWordBreakChars(", ")
@@ -233,12 +227,6 @@ public class Chat extends Fragment implements
         Log.i(TAG, "onCreateView()");
 
         rootView = inflater.inflate(R.layout.chat, container, false);
-
-        FrameLayout bannerAdFrameLayout = rootView.findViewById(R.id.chatBannerAdFrameLayout);
-        bannerAdView = new AdView(mContext);
-        bannerAdView.setAdUnitId("ca-app-pub-3940256099942544/6300978111");
-        bannerAdFrameLayout.addView(bannerAdView);
-        loadBanner();
 
         mediaButton = rootView.findViewById(R.id.mediaButton);
         imageView = rootView.findViewById(R.id.imageView);
@@ -317,41 +305,6 @@ public class Chat extends Fragment implements
         return rootView;
     }
 
-    private void loadBanner() {
-
-        Log.i(TAG, "loadBanner()");
-
-        AdRequest adRequest =
-                new AdRequest.Builder().addTestDevice(AdRequest.DEVICE_ID_EMULATOR)
-                        .build();
-
-        AdSize adSize = getAdSize();
-
-        // Step 4 - Set the adaptive ad size on the ad view.
-        bannerAdView.setAdSize(adSize);
-
-        // Step 5 - Start loading the ad in the background.
-        bannerAdView.loadAd(adRequest);
-    }
-
-    private AdSize getAdSize() {
-
-        Log.i(TAG, "getAdSize()");
-
-        // Step 2 - Determine the screen width (less decorations) to use for the ad width.
-        Display display = mActivity.getWindowManager().getDefaultDisplay();
-        DisplayMetrics outMetrics = new DisplayMetrics();
-        display.getMetrics(outMetrics);
-
-        float widthPixels = outMetrics.widthPixels;
-        float density = outMetrics.density;
-
-        int adWidth = (int) (widthPixels / density);
-
-        // Step 3 - Get adaptive ad size and return for setting on the ad view.
-        return AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(mContext, adWidth);
-    }
-
     @Override
     public void onStart() {
 
@@ -378,7 +331,7 @@ public class Chat extends Fragment implements
         }
 
         // Set to true to scroll to the bottom of chatRecyclerView. Also prevents duplicates in addQuery.
-        firstLoad = true;
+        onStartJustCalled = true;
 
         // Clear text and prevent keyboard from opening.
         if (mInput != null) {
@@ -516,21 +469,26 @@ public class Chat extends Fragment implements
             });
 
             // If RecyclerView is scrolled to the bottom, move the layout up when the keyboard appears.
-            chatRecyclerView.addOnLayoutChangeListener(onLayoutChangeListener = (v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
+            if (onLayoutChangeListener == null) {
 
-                if (reachedEndOfRecyclerView) {
+                onLayoutChangeListener = (v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
 
-                    if (bottom < oldBottom) {
+                    if (reachedEndOfRecyclerView) {
 
-                        if (chatRecyclerView.getAdapter() != null && chatRecyclerView.getAdapter().getItemCount() > 0) {
+                        if (bottom < oldBottom) {
 
-                            chatRecyclerView.postDelayed(() -> chatRecyclerView.smoothScrollToPosition(
+                            if (chatRecyclerView.getAdapter() != null && chatRecyclerView.getAdapter().getItemCount() > 0) {
 
-                                    chatRecyclerView.getAdapter().getItemCount() - 1), 100);
+                                chatRecyclerView.postDelayed(() -> chatRecyclerView.smoothScrollToPosition(
+
+                                        chatRecyclerView.getAdapter().getItemCount() - 1), 100);
+                            }
                         }
                     }
-                }
-            });
+                };
+            }
+
+            chatRecyclerView.addOnLayoutChangeListener(onLayoutChangeListener);
         }
 
         // Hide the imageView or videoImageView if user presses the delete button.
@@ -1069,7 +1027,7 @@ public class Chat extends Fragment implements
                     i++;
 
                     // Prevent duplicates.
-                    if (i == snapshot.getChildrenCount() - 1 && !firstLoad) {
+                    if (i == snapshot.getChildrenCount() - 1 && !onStartJustCalled) {
 
                         break;
                     }
@@ -1130,114 +1088,125 @@ public class Chat extends Fragment implements
         // This prevents duplicates when loading into Settings fragment then switched back into Chat (as onStop is never called but onStart is called).
         if (mQuery != null) {
 
-            mQuery.removeEventListener(childEventListener);
+            if (childEventListener != null) {
+
+                mQuery.removeEventListener(childEventListener);
+            }
         }
 
         // If this is the first time calling this eventListener and it's a new shape, initialize the adapter (but don't return, as the childEventListener should still be added), as onChildAdded won't be called the first time.
-        if (firstLoad && newShape) {
+        if (onStartJustCalled && newShape) {
 
             initChatAdapter();
         }
 
-        mQuery = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child(shapeUUID).limitToLast(1);
-        childEventListener = new ChildEventListener() {
+        // Add new values to arrayLists one at a time. This prevents the need to download the whole dataSnapshot every time this information is needed.
+        if (mQuery == null) {
 
-            @Override
-            public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+            mQuery = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child(shapeUUID).limitToLast(1);
+        }
 
-                Log.i(TAG, "addQuery() -> onChildAdded()");
+        if (childEventListener == null) {
 
-                // Read RecyclerView scroll position (for use in initChatAdapter to prevent scrolling after Chat gets updated by another user).
-                if (!firstLoad && chatRecyclerViewLinearLayoutManager != null && chatRecyclerView != null) {
+            childEventListener = new ChildEventListener() {
 
-                    index = chatRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
-                    View v = chatRecyclerView.getChildAt(0);
-                    top = (v == null) ? 0 : (v.getTop() - chatRecyclerView.getPaddingTop());
-                }
+                @Override
+                public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
 
-                // If this is the first time calling this eventListener, prevent double posts (as onStart() already added the last item).
-                if (firstLoad) {
+                    Log.i(TAG, "addQuery() -> onChildAdded()");
 
-                    initChatAdapter();
-                    return;
-                }
+                    // Read RecyclerView scroll position (for use in initChatAdapter to prevent scrolling after Chat gets updated by another user).
+                    if (!onStartJustCalled && chatRecyclerViewLinearLayoutManager != null && chatRecyclerView != null) {
 
-                String user = (String) snapshot.child("userUUID").getValue();
-                Long serverDate = (Long) snapshot.child("date").getValue();
+                        index = chatRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
+                        View v = chatRecyclerView.getChildAt(0);
+                        top = (v == null) ? 0 : (v.getTop() - chatRecyclerView.getPaddingTop());
+                    }
 
-                UUIDDatesPairs.add(new Pair<>(user, serverDate));
+                    // If this is the first time calling this eventListener, prevent double posts (as onStart() already added the last item).
+                    if (onStartJustCalled) {
 
-                // Prevents duplicates when user adds a message to a new shape then switches between light / dark mode.
-                if (mUser.contains(user)) {
-
-                    return;
-                }
-                // Used when a user mentions another user with "@".
-                mSuggestions.add(user);
-                String imageUrl = (String) snapshot.child("imageUrl").getValue();
-                String videoUrl = (String) snapshot.child("videoUrl").getValue();
-                String messageText = (String) snapshot.child("message").getValue();
-
-                SpannableString spannableMessageText = null;
-                if (messageText != null) {
-
-                    spannableMessageText = createSpannableMessage(messageText);
-                }
-
-                Boolean userIsWithinShape = (Boolean) snapshot.child("userIsWithinShape").getValue();
-                DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
-                if (serverDate != null) {
-
-                    Date netDate = (new Date(serverDate));
-                    String messageTime = dateFormat.format(netDate);
-                    mTime.add(messageTime);
-                } else {
-
-                    Log.e(TAG, "onStart() -> serverDate == null");
-                }
-                mUser.add(user);
-                mImage.add(imageUrl);
-                mVideo.add(videoUrl);
-                mText.add(spannableMessageText);
-                mUserIsWithinShape.add(userIsWithinShape);
-
-                initChatAdapter();
-            }
-
-            @Override
-            public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-
-                Log.i(TAG, "addQuery() -> onChildChanged()");
-
-                // Update the serverDate in UUIDDatesPairs, as the original serverDate will be an estimate and a callback from the server will always be made with an accurate time.
-                for (Pair<String, Long> pair : UUIDDatesPairs) {
-
-                    String user = (String) snapshot.child("userUUID").getValue();
-
-                    if (pair.first.equals(user)) {
-
-                        Long serverDate = (Long) snapshot.child("date").getValue();
-
-                        UUIDDatesPairs.set(UUIDDatesPairs.indexOf(pair), new Pair<>(user, serverDate));
+                        initChatAdapter();
                         return;
                     }
+
+                    String user = (String) snapshot.child("userUUID").getValue();
+                    Long serverDate = (Long) snapshot.child("date").getValue();
+
+                    UUIDDatesPairs.add(new Pair<>(user, serverDate));
+
+                    // Prevents duplicates when user adds a message to a new shape then switches between light / dark mode.
+                    if (mUser.contains(user)) {
+
+                        return;
+                    }
+                    // Used when a user mentions another user with "@".
+                    mSuggestions.add(user);
+                    String imageUrl = (String) snapshot.child("imageUrl").getValue();
+                    String videoUrl = (String) snapshot.child("videoUrl").getValue();
+                    String messageText = (String) snapshot.child("message").getValue();
+
+                    SpannableString spannableMessageText = null;
+                    if (messageText != null) {
+
+                        spannableMessageText = createSpannableMessage(messageText);
+                    }
+
+                    Boolean userIsWithinShape = (Boolean) snapshot.child("userIsWithinShape").getValue();
+                    DateFormat dateFormat = getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
+                    if (serverDate != null) {
+
+                        Date netDate = (new Date(serverDate));
+                        String messageTime = dateFormat.format(netDate);
+                        mTime.add(messageTime);
+                    } else {
+
+                        Log.e(TAG, "onStart() -> serverDate == null");
+                    }
+                    mUser.add(user);
+                    mImage.add(imageUrl);
+                    mVideo.add(videoUrl);
+                    mText.add(spannableMessageText);
+                    mUserIsWithinShape.add(userIsWithinShape);
+
+                    initChatAdapter();
                 }
-            }
 
-            @Override
-            public void onChildRemoved(@NonNull DataSnapshot snapshot) {
-            }
+                @Override
+                public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
 
-            @Override
-            public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-            }
+                    Log.i(TAG, "addQuery() -> onChildChanged()");
 
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
+                    // Update the serverDate in UUIDDatesPairs, as the original serverDate will be an estimate and a callback from the server will always be made with an accurate time.
+                    for (Pair<String, Long> pair : UUIDDatesPairs) {
 
-                showMessageLong(error.getMessage());
-            }
-        };
+                        String user = (String) snapshot.child("userUUID").getValue();
+
+                        if (pair.first.equals(user)) {
+
+                            Long serverDate = (Long) snapshot.child("date").getValue();
+
+                            UUIDDatesPairs.set(UUIDDatesPairs.indexOf(pair), new Pair<>(user, serverDate));
+                            return;
+                        }
+                    }
+                }
+
+                @Override
+                public void onChildRemoved(@NonNull DataSnapshot snapshot) {
+                }
+
+                @Override
+                public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
+
+                    showMessageLong(error.getMessage());
+                }
+            };
+        }
 
         mQuery.addChildEventListener(childEventListener);
 
@@ -1425,7 +1394,10 @@ public class Chat extends Fragment implements
 
         if (mQuery != null) {
 
-            mQuery.removeEventListener(childEventListener);
+            if (childEventListener != null) {
+
+                mQuery.removeEventListener(childEventListener);
+            }
         }
 
         if (chatRecyclerView != null) {
@@ -1486,13 +1458,6 @@ public class Chat extends Fragment implements
     public void onDestroyView() {
 
         Log.i(TAG, "onDestroyView()");
-
-        if (bannerAdView != null) {
-
-            bannerAdView.removeAllViews();
-            bannerAdView.destroy();
-            bannerAdView = null;
-        }
 
         if (mediaButton != null) {
 
@@ -1589,7 +1554,7 @@ public class Chat extends Fragment implements
                 // Set RecyclerView scroll position to prevent position change when Firebase gets updated and after screen orientation change.
                 chatRecyclerViewLinearLayoutManager.scrollToPositionWithOffset(index, top);
             }
-        } else if (firstLoad && UUIDDatesPairsSize == null || messageSent || reachedEndOfRecyclerView) {
+        } else if (onStartJustCalled && UUIDDatesPairsSize == null || messageSent || reachedEndOfRecyclerView) {
 
             // Scroll to bottom of recyclerviewlayout after first initialization and after sending a recyclerviewlayout.
             chatRecyclerView.scrollToPosition(mUser.size() - 1);
@@ -1599,7 +1564,7 @@ public class Chat extends Fragment implements
             chatRecyclerViewLinearLayoutManager.scrollToPositionWithOffset(index, top);
         }
 
-        firstLoad = false;
+        onStartJustCalled = false;
         loadingOlderMessages = false;
         // Need to make UUIDDatesPairsSize null so user can load older messages after restarting the app.
         UUIDDatesPairsSize = null;

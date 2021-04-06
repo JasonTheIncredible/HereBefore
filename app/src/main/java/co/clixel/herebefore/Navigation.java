@@ -3,8 +3,11 @@ package co.clixel.herebefore;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.DisplayMetrics;
+import android.view.Display;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 
@@ -22,6 +25,8 @@ import com.gauravk.bubblenavigation.BubbleNavigationConstraintView;
 import com.gauravk.bubblenavigation.listener.BubbleNavigationChangeListener;
 import com.google.android.gms.ads.AdError;
 import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdSize;
+import com.google.android.gms.ads.AdView;
 import com.google.android.gms.ads.FullScreenContentCallback;
 import com.google.android.gms.ads.LoadAdError;
 import com.google.android.gms.ads.interstitial.InterstitialAd;
@@ -44,12 +49,13 @@ public class Navigation extends AppCompatActivity {
     private ViewPager.OnPageChangeListener pagerListener;
     private int currentItem = -1, dmCounter = 0;
     private String firebaseUid;
-    private Query query;
+    private Query mQuery;
     private ChildEventListener childEventListener;
-    private boolean firstLoad, noChat = false, fromDms = false, needToLoadCorrectTab = true, dmExists = false;
+    private boolean onStartJustCalled, noChat = false, fromDms = false, needToLoadCorrectTab = true, dmExists = false;
     private InterstitialAd mInterstitialAd;
     private ImageView splashScreen;
     private ProgressBar progressIconIndeterminate;
+    private AdView bannerAdView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,8 +83,36 @@ public class Navigation extends AppCompatActivity {
             }
         }
 
+        FrameLayout bannerAdFrameLayout = findViewById(R.id.bannerAdFrameLayout);
+        bannerAdView = new AdView(this);
+        bannerAdView.setAdUnitId("ca-app-pub-3940256099942544/6300978111");
+        bannerAdFrameLayout.addView(bannerAdView);
+        loadBanner();
+
         viewPager = findViewById(R.id.view_pager);
         bubbleNavigationConstraintView = findViewById(R.id.bottom_navigation_constraint);
+    }
+
+    protected void updatePreferences() {
+
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        // theme == true is light mode.
+        boolean theme = sharedPreferences.getBoolean(getString(R.string.prefTheme), false);
+
+        if (theme) {
+
+            // Set to light mode.
+            AppCompatDelegate.setDefaultNightMode(
+                    AppCompatDelegate.MODE_NIGHT_NO);
+        } else {
+
+            // Set to dark mode.
+            AppCompatDelegate.setDefaultNightMode(
+                    AppCompatDelegate.MODE_NIGHT_YES);
+        }
+
+        // This will allow the settings button to appear in Map.java.
+        sharedPreferences.edit().putBoolean(getString(R.string.prefSignOut), true).apply();
     }
 
     protected void showInterstitialAd() {
@@ -154,26 +188,35 @@ public class Navigation extends AppCompatActivity {
         });
     }
 
-    protected void updatePreferences() {
+    private void loadBanner() {
 
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-        // theme == true is light mode.
-        boolean theme = sharedPreferences.getBoolean(getString(R.string.prefTheme), false);
+        AdRequest adRequest =
+                new AdRequest.Builder().addTestDevice(AdRequest.DEVICE_ID_EMULATOR)
+                        .build();
 
-        if (theme) {
+        AdSize adSize = getAdSize();
 
-            // Set to light mode.
-            AppCompatDelegate.setDefaultNightMode(
-                    AppCompatDelegate.MODE_NIGHT_NO);
-        } else {
+        // Step 4 - Set the adaptive ad size on the ad view.
+        bannerAdView.setAdSize(adSize);
 
-            // Set to dark mode.
-            AppCompatDelegate.setDefaultNightMode(
-                    AppCompatDelegate.MODE_NIGHT_YES);
-        }
+        // Step 5 - Start loading the ad in the background.
+        bannerAdView.loadAd(adRequest);
+    }
 
-        // This will allow the settings button to appear in Map.java.
-        sharedPreferences.edit().putBoolean(getString(R.string.prefSignOut), true).apply();
+    private AdSize getAdSize() {
+
+        // Step 2 - Determine the screen width (less decorations) to use for the ad width.
+        Display display = this.getWindowManager().getDefaultDisplay();
+        DisplayMetrics outMetrics = new DisplayMetrics();
+        display.getMetrics(outMetrics);
+
+        float widthPixels = outMetrics.widthPixels;
+        float density = outMetrics.density;
+
+        int adWidth = (int) (widthPixels / density);
+
+        // Step 3 - Get adaptive ad size and return for setting on the ad view.
+        return AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(this, adWidth);
     }
 
     @Override
@@ -190,35 +233,38 @@ public class Navigation extends AppCompatActivity {
         super.onStart();
 
         // Prevents duplicates in addQuery.
-        firstLoad = true;
+        onStartJustCalled = true;
 
         ScreenSlidePagerAdapter pagerAdapter = new ScreenSlidePagerAdapter(getSupportFragmentManager());
 
         viewPager.setAdapter(pagerAdapter);
 
-        pagerListener = new ViewPager.OnPageChangeListener() {
+        if (pagerListener == null) {
 
-            @Override
-            public void onPageScrolled(int i, float v, int i1) {
-            }
+            pagerListener = new ViewPager.OnPageChangeListener() {
 
-            @Override
-            public void onPageSelected(int i) {
-
-                // Close the keyboard when switching fragments.
-                InputMethodManager imm = (InputMethodManager) getApplication().getSystemService(Context.INPUT_METHOD_SERVICE);
-                if (imm != null) {
-
-                    imm.hideSoftInputFromWindow(getWindow().getDecorView().getWindowToken(), 0);
+                @Override
+                public void onPageScrolled(int i, float v, int i1) {
                 }
 
-                bubbleNavigationConstraintView.setCurrentActiveItem(i);
-            }
+                @Override
+                public void onPageSelected(int i) {
 
-            @Override
-            public void onPageScrollStateChanged(int i) {
-            }
-        };
+                    // Close the keyboard when switching fragments.
+                    InputMethodManager imm = (InputMethodManager) getApplication().getSystemService(Context.INPUT_METHOD_SERVICE);
+                    if (imm != null) {
+
+                        imm.hideSoftInputFromWindow(getWindow().getDecorView().getWindowToken(), 0);
+                    }
+
+                    bubbleNavigationConstraintView.setCurrentActiveItem(i);
+                }
+
+                @Override
+                public void onPageScrollStateChanged(int i) {
+                }
+            };
+        }
 
         viewPager.addOnPageChangeListener(pagerListener);
         viewPager.setOffscreenPageLimit(2);
@@ -301,54 +347,64 @@ public class Navigation extends AppCompatActivity {
     private void addQuery() {
 
         // This prevents duplicates when loading into Settings fragment then switched back into Chat (as onStop is never called but onStart is called).
-        if (query != null) {
+        if (mQuery != null) {
 
-            query.removeEventListener(childEventListener);
+            if (childEventListener != null) {
+
+                mQuery.removeEventListener(childEventListener);
+            }
         }
 
-        query = FirebaseDatabase.getInstance().getReference().child("Users").child(firebaseUid).child("ReceivedDms").limitToLast(1);
-        childEventListener = new ChildEventListener() {
+        if (mQuery == null) {
 
-            @Override
-            public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+            mQuery = FirebaseDatabase.getInstance().getReference().child("Users").child(firebaseUid).child("ReceivedDms").limitToLast(1);
+        }
 
-                // If this is the first time calling this eventListener, prevent double posts (as onStart() already added the last item).
-                if (firstLoad && dmExists) {
+        if (childEventListener == null) {
 
-                    firstLoad = false;
-                    return;
+            childEventListener = new ChildEventListener() {
+
+                @Override
+                public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+
+                    // If this is the first time calling this eventListener, prevent double posts (as onStart() already added the last item).
+                    if (onStartJustCalled && dmExists) {
+
+                        onStartJustCalled = false;
+                        return;
+                    }
+
+                    dmCounter++;
+
+                    // Set the DM tab's badge value.
+                    if (!fromDms && !noChat) {
+
+                        bubbleNavigationConstraintView.setBadgeValue(1, String.valueOf(dmCounter));
+                    } else {
+
+                        bubbleNavigationConstraintView.setBadgeValue(0, String.valueOf(dmCounter));
+                    }
                 }
 
-                dmCounter++;
-
-                // Set the DM tab's badge value.
-                if (!fromDms && !noChat) {
-
-                    bubbleNavigationConstraintView.setBadgeValue(1, String.valueOf(dmCounter));
-                } else {
-
-                    bubbleNavigationConstraintView.setBadgeValue(0, String.valueOf(dmCounter));
+                @Override
+                public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
                 }
-            }
 
-            @Override
-            public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-            }
+                @Override
+                public void onChildRemoved(@NonNull DataSnapshot snapshot) {
+                }
 
-            @Override
-            public void onChildRemoved(@NonNull DataSnapshot snapshot) {
-            }
+                @Override
+                public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+                }
 
-            @Override
-            public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-            }
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
+                }
+            };
+        }
 
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-            }
-        };
-
-        query.addChildEventListener(childEventListener);
+        mQuery.addChildEventListener(childEventListener);
     }
 
     @Override
@@ -367,12 +423,28 @@ public class Navigation extends AppCompatActivity {
             bubbleNavigationConstraintView.setNavigationChangeListener(null);
         }
 
-        if (query != null) {
+        if (mQuery != null) {
 
-            query.removeEventListener(childEventListener);
+            if (childEventListener != null) {
+
+                mQuery.removeEventListener(childEventListener);
+            }
         }
 
         super.onStop();
+    }
+
+    @Override
+    public void onDestroy() {
+
+        if (bannerAdView != null) {
+
+            bannerAdView.removeAllViews();
+            bannerAdView.destroy();
+            bannerAdView = null;
+        }
+
+        super.onDestroy();
     }
 
     /**

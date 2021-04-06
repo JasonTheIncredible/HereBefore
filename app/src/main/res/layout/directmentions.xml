@@ -6,13 +6,6 @@
     android:focusableInTouchMode="true"
     android:orientation="vertical">
 
-    <FrameLayout
-        android:id="@+id/dmsBannerAdFrameLayout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentTop="true" />
-
     <TextView
         android:id="@+id/noDmsTextView"
         android:layout_width="wrap_content"
@@ -27,7 +20,6 @@
         android:id="@+id/mentionsList"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@+id/dmsBannerAdFrameLayout"
         android:scrollbars="vertical" />
 
     <RelativeLayout

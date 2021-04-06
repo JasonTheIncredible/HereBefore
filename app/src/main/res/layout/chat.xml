@@ -8,18 +8,10 @@
     android:focusableInTouchMode="true"
     android:orientation="vertical">
 
-    <FrameLayout
-        android:id="@+id/chatBannerAdFrameLayout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentTop="true" />
-
     <TextView
         android:id="@+id/positionRelativeToShapeTextView"
         android:layout_width="match_parent"
         android:layout_height="20dp"
-        android:layout_below="@+id/chatBannerAdFrameLayout"
         android:gravity="center_horizontal" />
 
     <TextView

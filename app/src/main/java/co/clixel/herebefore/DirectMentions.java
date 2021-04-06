@@ -6,10 +6,8 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
-import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.Pair;
-import android.view.Display;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -30,9 +28,6 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
-import com.google.android.gms.ads.AdRequest;
-import com.google.android.gms.ads.AdSize;
-import com.google.android.gms.ads.AdView;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
@@ -68,7 +63,7 @@ public class DirectMentions extends Fragment {
     private Integer index, top;
     private ChildEventListener childEventListener;
     private LinearLayoutManager dmsRecyclerViewLinearLayoutManager;
-    private boolean theme, firstLoad, continueWithODC = true, loadingOlderMessages, noMoreMessages = false, reachedEndOfRecyclerView = true;
+    private boolean theme, onStartJustCalled, continueWithODC = true, loadingOlderMessages, noMoreMessages = false, reachedEndOfRecyclerView = true;
     private View loadingIcon;
     private Toast longToast;
     private Integer UUIDDatesPairsSize;
@@ -76,9 +71,8 @@ public class DirectMentions extends Fragment {
     private Activity mActivity;
     private View rootView;
     private TextView noDmsTextView;
-    private Query query;
+    private Query mQuery;
     private List<Pair<String, Long>> UUIDDatesPairs;
-    private AdView bannerAdView;
 
     @Override
     public void onAttach(@NonNull Context context) {
@@ -101,12 +95,6 @@ public class DirectMentions extends Fragment {
         Log.i(TAG, "onCreateView()");
 
         rootView = inflater.inflate(R.layout.directmentions, container, false);
-
-        FrameLayout bannerAdFrameLayout = rootView.findViewById(R.id.dmsBannerAdFrameLayout);
-        bannerAdView = new AdView(mContext);
-        bannerAdView.setAdUnitId("ca-app-pub-3940256099942544/6300978111");
-        bannerAdFrameLayout.addView(bannerAdView);
-        loadBanner();
 
         dmsRecyclerView = rootView.findViewById(R.id.mentionsList);
         loadingIcon = rootView.findViewById(R.id.loadingIcon);
@@ -157,41 +145,6 @@ public class DirectMentions extends Fragment {
         return rootView;
     }
 
-    private void loadBanner() {
-
-        Log.i(TAG, "loadBanner()");
-
-        AdRequest adRequest =
-                new AdRequest.Builder().addTestDevice(AdRequest.DEVICE_ID_EMULATOR)
-                        .build();
-
-        AdSize adSize = getAdSize();
-
-        // Step 4 - Set the adaptive ad size on the ad view.
-        bannerAdView.setAdSize(adSize);
-
-        // Step 5 - Start loading the ad in the background.
-        bannerAdView.loadAd(adRequest);
-    }
-
-    private AdSize getAdSize() {
-
-        Log.i(TAG, "getAdSize()");
-
-        // Step 2 - Determine the screen width (less decorations) to use for the ad width.
-        Display display = mActivity.getWindowManager().getDefaultDisplay();
-        DisplayMetrics outMetrics = new DisplayMetrics();
-        display.getMetrics(outMetrics);
-
-        float widthPixels = outMetrics.widthPixels;
-        float density = outMetrics.density;
-
-        int adWidth = (int) (widthPixels / density);
-
-        // Step 3 - Get adaptive ad size and return for setting on the ad view.
-        return AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(mContext, adWidth);
-    }
-
     @Override
     public void onStart() {
 
@@ -199,7 +152,7 @@ public class DirectMentions extends Fragment {
         Log.i(TAG, "onStart()");
 
         // Set to true to scroll to the bottom of chatRecyclerView. Also prevents duplicates in addQuery.
-        firstLoad = true;
+        onStartJustCalled = true;
         loadingOlderMessages = false;
 
         firebaseUid = FirebaseAuth.getInstance().getUid();
@@ -427,7 +380,7 @@ public class DirectMentions extends Fragment {
                     i++;
 
                     // Prevent duplicates.
-                    if (i == snapshot.getChildrenCount() - 1 && !firstLoad) {
+                    if (i == snapshot.getChildrenCount() - 1 && !onStartJustCalled) {
 
                         break;
                     }
@@ -461,128 +414,138 @@ public class DirectMentions extends Fragment {
     private void addQuery() {
 
         // This prevents duplicates when loading into Settings fragment then switched back into Chat (as onStop is never called but onStart is called).
-        if (query != null) {
+        if (mQuery != null) {
 
-            query.removeEventListener(childEventListener);
+            if (childEventListener != null) {
+
+                mQuery.removeEventListener(childEventListener);
+            }
         }
 
         // If this is the first time calling this eventListener and it's a new shape, initialize the adapter (but don't return, as the childEventListener should still be added), as onChildAdded won't be called the first time.
-        if (firstLoad && mUser.size() == 0) {
+        if (onStartJustCalled && mUser.size() == 0) {
 
             initDirectMentionsAdapter();
         }
 
         // Add new values to arrayLists one at a time. This prevents the need to download the whole dataSnapshot every time this information is needed.
-        query = FirebaseDatabase.getInstance().getReference().child("Users").child(firebaseUid).child("ReceivedDms").limitToLast(1);
-        childEventListener = new ChildEventListener() {
+        if (mQuery == null) {
 
-            @Override
-            public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+            mQuery = FirebaseDatabase.getInstance().getReference().child("Users").child(firebaseUid).child("ReceivedDms").limitToLast(1);
+        }
 
-                Log.i(TAG, "addQuery() -> onChildAdded()");
+        if (childEventListener == null) {
 
-                // If this is the first time calling this eventListener, prevent double posts (as onStart() already added the last item).
-                if (firstLoad) {
+            childEventListener = new ChildEventListener() {
 
-                    initDirectMentionsAdapter();
-                    return;
-                }
+                @Override
+                public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
 
-                // Read RecyclerView scroll position (for use in initDirectMentionsAdapter to prevent scrolling after recyclerView gets updated by another user).
-                if (dmsRecyclerViewLinearLayoutManager != null && dmsRecyclerView != null) {
+                    Log.i(TAG, "addQuery() -> onChildAdded()");
 
-                    index = dmsRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
-                    View v = dmsRecyclerView.getChildAt(0);
-                    top = (v == null) ? 0 : (v.getTop() - dmsRecyclerView.getPaddingTop());
-                }
+                    // If this is the first time calling this eventListener, prevent double posts (as onStart() already added the last item).
+                    if (onStartJustCalled) {
 
-                String senderUserUUID = (String) snapshot.child("senderUserUUID").getValue();
-                Long serverDate = (Long) snapshot.child("date").getValue();
-
-                UUIDDatesPairs.add(new Pair<>(senderUserUUID, serverDate));
-
-                String imageUrl = (String) snapshot.child("imageUrl").getValue();
-                String videoUrl = (String) snapshot.child("videoUrl").getValue();
-                String messageText = (String) snapshot.child("message").getValue();
-
-                String replacedMessageText = null;
-                if (messageText != null) {
-
-                    ArrayList<String> possibleMentions = new ArrayList<>();
-                    // Pattern matches UUID for mentions.
-                    Pattern pattern = Pattern.compile("\\b[0-9a-f]{8}\\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\\b[0-9a-f]{12}\\b");
-                    Matcher matcher = pattern.matcher(messageText);
-                    while (matcher.find()) {
-
-                        // Add the strings that match the UUID pattern to an arrayList. This ensures they are in order from the beginning of the sentence to the end.
-                        possibleMentions.add(matcher.group());
+                        initDirectMentionsAdapter();
+                        return;
                     }
 
-                    // Truncate mentions from Firebase.
-                    if (!possibleMentions.isEmpty()) {
+                    // Read RecyclerView scroll position (for use in initDirectMentionsAdapter to prevent scrolling after recyclerView gets updated by another user).
+                    if (dmsRecyclerViewLinearLayoutManager != null && dmsRecyclerView != null) {
 
-                        for (String possibleMention : possibleMentions) {
+                        index = dmsRecyclerViewLinearLayoutManager.findFirstVisibleItemPosition();
+                        View v = dmsRecyclerView.getChildAt(0);
+                        top = (v == null) ? 0 : (v.getTop() - dmsRecyclerView.getPaddingTop());
+                    }
 
-                            // The "else" loop will go first - it will create replacedMessageText with truncated mentions and then replacedMessageText will continue to truncate mentions within itself.
-                            String replacement = possibleMention.substring(0, 10) + "...";
-                            if (replacedMessageText != null) {
+                    String senderUserUUID = (String) snapshot.child("senderUserUUID").getValue();
+                    Long serverDate = (Long) snapshot.child("date").getValue();
 
-                                replacedMessageText = replacedMessageText.replace(possibleMention, replacement);
-                            } else {
+                    UUIDDatesPairs.add(new Pair<>(senderUserUUID, serverDate));
 
-                                replacedMessageText = messageText.replace(possibleMention, replacement);
+                    String imageUrl = (String) snapshot.child("imageUrl").getValue();
+                    String videoUrl = (String) snapshot.child("videoUrl").getValue();
+                    String messageText = (String) snapshot.child("message").getValue();
+
+                    String replacedMessageText = null;
+                    if (messageText != null) {
+
+                        ArrayList<String> possibleMentions = new ArrayList<>();
+                        // Pattern matches UUID for mentions.
+                        Pattern pattern = Pattern.compile("\\b[0-9a-f]{8}\\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\\b[0-9a-f]{12}\\b");
+                        Matcher matcher = pattern.matcher(messageText);
+                        while (matcher.find()) {
+
+                            // Add the strings that match the UUID pattern to an arrayList. This ensures they are in order from the beginning of the sentence to the end.
+                            possibleMentions.add(matcher.group());
+                        }
+
+                        // Truncate mentions from Firebase.
+                        if (!possibleMentions.isEmpty()) {
+
+                            for (String possibleMention : possibleMentions) {
+
+                                // The "else" loop will go first - it will create replacedMessageText with truncated mentions and then replacedMessageText will continue to truncate mentions within itself.
+                                String replacement = possibleMention.substring(0, 10) + "...";
+                                if (replacedMessageText != null) {
+
+                                    replacedMessageText = replacedMessageText.replace(possibleMention, replacement);
+                                } else {
+
+                                    replacedMessageText = messageText.replace(possibleMention, replacement);
+                                }
                             }
                         }
                     }
+
+                    String shapeUUID = (String) snapshot.child("shapeUUID").getValue();
+                    Boolean userIsWithinShape = (Boolean) snapshot.child("userIsWithinShape").getValue();
+                    Double lat = (Double) snapshot.child("lat").getValue();
+                    Double lon = (Double) snapshot.child("lon").getValue();
+                    Boolean seenByUser = (Boolean) snapshot.child("seenByUser").getValue();
+                    mTime.add(serverDate);
+                    mUser.add(senderUserUUID);
+                    mImage.add(imageUrl);
+                    mVideo.add(videoUrl);
+
+                    if (replacedMessageText != null) {
+
+                        mText.add(replacedMessageText);
+                    } else {
+
+                        mText.add(messageText);
+                    }
+
+                    mShapeUUID.add(shapeUUID);
+                    mUserIsWithinShape.add(userIsWithinShape);
+                    mShapeLat.add(lat);
+                    mShapeLon.add(lon);
+                    mSeenByUser.add(seenByUser);
+
+                    initDirectMentionsAdapter();
                 }
 
-                String shapeUUID = (String) snapshot.child("shapeUUID").getValue();
-                Boolean userIsWithinShape = (Boolean) snapshot.child("userIsWithinShape").getValue();
-                Double lat = (Double) snapshot.child("lat").getValue();
-                Double lon = (Double) snapshot.child("lon").getValue();
-                Boolean seenByUser = (Boolean) snapshot.child("seenByUser").getValue();
-                mTime.add(serverDate);
-                mUser.add(senderUserUUID);
-                mImage.add(imageUrl);
-                mVideo.add(videoUrl);
-
-                if (replacedMessageText != null) {
-
-                    mText.add(replacedMessageText);
-                } else {
-
-                    mText.add(messageText);
+                @Override
+                public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
                 }
 
-                mShapeUUID.add(shapeUUID);
-                mUserIsWithinShape.add(userIsWithinShape);
-                mShapeLat.add(lat);
-                mShapeLon.add(lon);
-                mSeenByUser.add(seenByUser);
+                @Override
+                public void onChildRemoved(@NonNull DataSnapshot snapshot) {
+                }
 
-                initDirectMentionsAdapter();
-            }
+                @Override
+                public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+                }
 
-            @Override
-            public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-            }
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
 
-            @Override
-            public void onChildRemoved(@NonNull DataSnapshot snapshot) {
-            }
+                    showMessageLong(error.getMessage());
+                }
+            };
+        }
 
-            @Override
-            public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-
-                showMessageLong(error.getMessage());
-            }
-        };
-
-        query.addChildEventListener(childEventListener);
+        mQuery.addChildEventListener(childEventListener);
     }
 
     private void initDirectMentionsAdapter() {
@@ -601,7 +564,7 @@ public class DirectMentions extends Fragment {
         dmsRecyclerView.setHasFixedSize(true);
         dmsRecyclerView.setLayoutManager(dmsRecyclerViewLinearLayoutManager);
 
-        if (firstLoad && UUIDDatesPairsSize == null || reachedEndOfRecyclerView) {
+        if (onStartJustCalled && UUIDDatesPairsSize == null || reachedEndOfRecyclerView) {
 
             // Scroll to bottom of recyclerviewlayout after first initialization and after sending a recyclerviewlayout.
             dmsRecyclerView.scrollToPosition(mTime.size() - 1);
@@ -611,7 +574,7 @@ public class DirectMentions extends Fragment {
             dmsRecyclerViewLinearLayoutManager.scrollToPositionWithOffset(index, top);
         }
 
-        firstLoad = false;
+        onStartJustCalled = false;
         loadingOlderMessages = false;
         // Need to make UUIDDatesPairsSize null so user can load older messages after restarting the app.
         UUIDDatesPairsSize = null;
@@ -655,9 +618,12 @@ public class DirectMentions extends Fragment {
 
         UUIDDatesPairsSize = UUIDDatesPairs.size() - 1;
 
-        if (query != null) {
+        if (mQuery != null) {
 
-            query.removeEventListener(childEventListener);
+            if (childEventListener != null) {
+
+                mQuery.removeEventListener(childEventListener);
+            }
         }
 
         if (dmsRecyclerView != null) {
@@ -675,13 +641,6 @@ public class DirectMentions extends Fragment {
     public void onDestroyView() {
 
         Log.i(TAG, "onDestroyView()");
-
-        if (bannerAdView != null) {
-
-            bannerAdView.removeAllViews();
-            bannerAdView.destroy();
-            bannerAdView = null;
-        }
 
         if (dmsRecyclerView != null) {
 
