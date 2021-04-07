@@ -62,9 +62,6 @@ public class Navigation extends AppCompatActivity {
 
         super.onCreate(savedInstanceState);
 
-        // Update to the user's preferences.
-        updatePreferences();
-
         Bundle extras = getIntent().getExtras();
         if (extras != null) {
 
@@ -72,12 +69,26 @@ public class Navigation extends AppCompatActivity {
             noChat = extras.getBoolean("noChat");
             fromDms = extras.getBoolean("fromDms");
 
+            // The order is a bit awkward, but in order to change the interstitial ad splash screen color depending on the theme,
+            // setContentView needs to be called, then findViewById, then updatePreferences.
             if (noChat) {
 
                 setContentView(R.layout.navigationnochat);
+
+                splashScreen = findViewById(R.id.splashScreen);
+                progressIconIndeterminate = findViewById(R.id.progressIconIndeterminate);
+
+                // Update to the user's preferences.
+                updatePreferences();
             } else {
 
                 setContentView(R.layout.navigation);
+
+                splashScreen = findViewById(R.id.splashScreen);
+                progressIconIndeterminate = findViewById(R.id.progressIconIndeterminate);
+
+                // Update to the user's preferences.
+                updatePreferences();
 
                 showInterstitialAd();
             }
@@ -104,6 +115,8 @@ public class Navigation extends AppCompatActivity {
             // Set to light mode.
             AppCompatDelegate.setDefaultNightMode(
                     AppCompatDelegate.MODE_NIGHT_NO);
+
+            splashScreen.setImageResource(R.color.gray);
         } else {
 
             // Set to dark mode.
@@ -120,8 +133,6 @@ public class Navigation extends AppCompatActivity {
         // Hide the top bar while the ad loads. Remember to show the top bar after the ad goes away.
         Objects.requireNonNull(getSupportActionBar()).hide();
 
-        splashScreen = findViewById(R.id.splashScreen);
-        progressIconIndeterminate = findViewById(R.id.progressIconIndeterminate);
         splashScreen.setVisibility(View.VISIBLE);
         progressIconIndeterminate.setVisibility(View.VISIBLE);
         splashScreen.setZ(1000);
