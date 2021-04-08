@@ -95,9 +95,9 @@ import com.linkedin.android.spyglass.tokenization.interfaces.QueryTokenReceiver;
 import com.linkedin.android.spyglass.ui.MentionsEditText;
 import com.otaliastudios.transcoder.Transcoder;
 import com.otaliastudios.transcoder.TranscoderListener;
+import com.otaliastudios.transcoder.resize.AspectRatioResizer;
+import com.otaliastudios.transcoder.resize.FractionResizer;
 import com.otaliastudios.transcoder.strategy.DefaultVideoStrategy;
-import com.otaliastudios.transcoder.strategy.size.AspectRatioResizer;
-import com.otaliastudios.transcoder.strategy.size.FractionResizer;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -142,7 +142,7 @@ public class Chat extends Fragment implements
     private ChildEventListener childEventListener;
     private FloatingActionButton sendButton, mediaButton;
     private boolean theme, onStartJustCalled, continueWithODC = true, loadingOlderMessages = false, clickedOnMention = false, fromDms = false, noMoreMessages = false, showProgressIndeterminate = true, reachedEndOfRecyclerView = true, messageSent = false, fileIsImage,
-            checkPermissionsPicture, newShape, uploadNeeded = false;
+            checkPermissionsPicture, newShape, uploadNeeded = false, imageCompressionProcessComplete = false, videoCompressionProcessComplete = false;
     private Boolean userIsWithinShape;
     private View.OnLayoutChangeListener onLayoutChangeListener;
     private String shapeUUID, reportedUser, UUIDToHighlight, imageFile, videoFile, lastKnownKey;
@@ -243,21 +243,30 @@ public class Chat extends Fragment implements
         chatRecyclerViewLinearLayoutManager = new LinearLayoutManager(mActivity);
         mentionsRecyclerViewLinearLayoutManager = new LinearLayoutManager(mActivity);
 
-        // If user takes a picture / video, the activity's lifecycle restarts. Re-set icon visibility.
-        if (image != null) {
 
-            progressIconIndeterminate.setVisibility(View.VISIBLE);
+        // If user takes a picture while in Chat, the fragment's lifecycle restarts, so make progressIcon visible. Else, user restarted the app while the shape was still new (and once again, restarted the lifecycle) so set the newShapeTextView to visible.
+        if (image != null && !imageCompressionProcessComplete) {
+
+            newShapeTextView.setVisibility(View.GONE);
+        } else if (image != null && newShape && imageCompressionProcessComplete) {
+
+            newShapeTextView.setVisibility(View.VISIBLE);
         }
 
-        if (video != null) {
+        // If user takes a video while in Chat, the fragment's lifecycle restarts, so make progressIcon visible. Else, user restarted the app while the shape was still new (and once again, restarted the lifecycle) so set the newShapeTextView to visible.
+        if (video != null && !videoCompressionProcessComplete) {
 
             progressIcon.setVisibility(View.VISIBLE);
+            newShapeTextView.setVisibility(View.GONE);
+        } else if (video != null && newShape && videoCompressionProcessComplete) {
+
+            newShapeTextView.setVisibility(View.VISIBLE);
         }
 
         // Show progressIndeterminate after restart until initRecyclerView.
         showProgressIndeterminate = true;
 
-        // If file was created in Map, do work on them here.
+        // If file was created in Map, process it here.
         if (imageFile != null) {
 
             imageCompressAndAddToGalleryAsync();
@@ -325,9 +334,6 @@ public class Chat extends Fragment implements
             double nearLeftLonTemp = (int) (nearLeftPrecisionLon * shapeLon) / nearLeftPrecisionLon;
             nearLeftLonTemp *= 10;
             shapeLonInt = (int) nearLeftLonTemp;
-        } else {
-
-            newShapeTextView.setVisibility(View.VISIBLE);
         }
 
         // Set to true to scroll to the bottom of chatRecyclerView. Also prevents duplicates in addQuery.
@@ -429,7 +435,7 @@ public class Chat extends Fragment implements
         } else if (!newShape) {
 
             getFirebaseMessages(null);
-        } else if (UUIDDatesPairsSize != null) {
+        } else if (UUIDDatesPairsSize != null && imageCompressionProcessComplete) {
 
             // Case where user clicks on image / video multiple times before sending it.
             progressIconIndeterminate.setVisibility(View.GONE);
@@ -1217,7 +1223,8 @@ public class Chat extends Fragment implements
             uploadNeeded = false;
         } else {
 
-            showProgressIndeterminate = false;
+            // If image != null && !imageCompressionProcessComplete, showProgressIndeterminate = true. Else, false.
+            showProgressIndeterminate = image != null && !imageCompressionProcessComplete;
         }
     }
 
@@ -2759,6 +2766,7 @@ public class Chat extends Fragment implements
 
         Log.i(TAG, "imageCompressAndAddToGalleryAsync()");
 
+        imageCompressionProcessComplete = false;
         progressIconIndeterminate.setVisibility(View.VISIBLE);
 
         // Disable the sendButton while content is being compressed.
@@ -2838,8 +2846,13 @@ public class Chat extends Fragment implements
                             .apply(new RequestOptions().override(480, 5000).placeholder(R.drawable.ic_recyclerview_image_placeholder))
                             .into(imageView);
 
-                    imageView.setVisibility(View.VISIBLE);
+                    imageCompressionProcessComplete = true;
                     progressIconIndeterminate.setVisibility(View.GONE);
+                    if (newShape) {
+
+                        newShapeTextView.setVisibility(View.VISIBLE);
+                    }
+                    imageView.setVisibility(View.VISIBLE);
                     sendButton.setEnabled(true);
                     // Allow initChatAdapter to get rid of the progressIconIndeterminate with this boolean.
                     showProgressIndeterminate = false;
@@ -2858,6 +2871,7 @@ public class Chat extends Fragment implements
 
         Log.i(TAG, "videoCompressAndAddToGalleryAsync()");
 
+        videoCompressionProcessComplete = false;
         progressIcon.setProgress(0);
         progressIcon.setVisibility(View.VISIBLE);
 
@@ -2918,6 +2932,8 @@ public class Chat extends Fragment implements
 
                         public void onTranscodeCompleted(int successCode) {
 
+                            videoCompressionProcessComplete = true;
+
                             if (successCode == Transcoder.SUCCESS_TRANSCODED) {
 
                                 Log.i(TAG, "Transcoder.SUCCESS_TRANSCODED");
@@ -2932,26 +2948,37 @@ public class Chat extends Fragment implements
                             videoFile = null;
                             // Make the value in Map null so it does not have a value when backing into Map and entering a circle.
                             Map.videoFile = null;
+
+                            progressIcon.setProgress(0);
                         }
 
                         public void onTranscodeCanceled() {
 
+                            videoCompressionProcessComplete = true;
+
                             // Prevent re-compression on restart.
                             videoFile = null;
                             // Make the value in Map null so it does not have a value when backing into Map and entering a circle.
                             Map.videoFile = null;
 
                             sendButton.setEnabled(true);
+
+                            progressIcon.setProgress(0);
                         }
 
                         public void onTranscodeFailed(@NonNull Throwable exception) {
 
+                            videoCompressionProcessComplete = true;
+
                             // Prevent re-compression on restart.
                             videoFile = null;
                             // Make the value in Map null so it does not have a value when backing into Map and entering a circle.
                             Map.videoFile = null;
 
                             sendButton.setEnabled(true);
+
+                            progressIcon.setProgress(0);
+
                             Log.e(TAG, "Transcoder error occurred: " + exception.getMessage());
                             showMessageLong("Error compressing video: " + exception.getMessage());
                         }
@@ -3080,6 +3107,10 @@ public class Chat extends Fragment implements
 
                 sendButton.setEnabled(true);
                 progressIcon.setVisibility(View.GONE);
+                if (newShape) {
+
+                    newShapeTextView.setVisibility(View.VISIBLE);
+                }
             }
         });
     }
