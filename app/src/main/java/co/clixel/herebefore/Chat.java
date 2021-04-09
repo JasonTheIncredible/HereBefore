@@ -247,8 +247,9 @@ public class Chat extends Fragment implements
         // If user takes a picture while in Chat, the fragment's lifecycle restarts, so make progressIcon visible. Else, user restarted the app while the shape was still new (and once again, restarted the lifecycle) so set the newShapeTextView to visible.
         if (image != null && !imageCompressionProcessComplete) {
 
+            showProgressIndeterminate = true;
             newShapeTextView.setVisibility(View.GONE);
-        } else if (image != null && newShape && imageCompressionProcessComplete) {
+        } else if (image != null && newShape) {
 
             newShapeTextView.setVisibility(View.VISIBLE);
         }
@@ -258,13 +259,17 @@ public class Chat extends Fragment implements
 
             progressIcon.setVisibility(View.VISIBLE);
             newShapeTextView.setVisibility(View.GONE);
-        } else if (video != null && newShape && videoCompressionProcessComplete) {
+        } else if (video != null && newShape) {
 
+            progressIconIndeterminate.setVisibility(View.GONE);
             newShapeTextView.setVisibility(View.VISIBLE);
         }
 
         // Show progressIndeterminate after restart until initRecyclerView.
-        showProgressIndeterminate = true;
+        if (!newShape) {
+
+            showProgressIndeterminate = true;
+        }
 
         // If file was created in Map, process it here.
         if (imageFile != null) {
@@ -2833,6 +2838,27 @@ public class Chat extends Fragment implements
                 // Make the value in Map null so it does not have a value when backing into Map and entering a circle.
                 Map.imageFile = null;
 
+                // Prevent further processing if file (in KB) is too big.
+                if (((float) byteArray.length / 1024) > 1000) {
+
+                    new Handler(Looper.getMainLooper()).post(() -> {
+
+                        showMessageLong("Error during image compression. Uncompressed image saved to gallery.");
+
+                        imageCompressionProcessComplete = true;
+                        progressIconIndeterminate.setVisibility(View.GONE);
+                        if (newShape) {
+
+                            newShapeTextView.setVisibility(View.VISIBLE);
+                        }
+                        sendButton.setEnabled(true);
+                        // Allow initChatAdapter to get rid of the progressIconIndeterminate with this boolean.
+                        showProgressIndeterminate = false;
+                    });
+
+                    return;
+                }
+
                 // Update UI thread.
                 new Handler(Looper.getMainLooper()).post(() -> {
 
@@ -2914,7 +2940,7 @@ public class Chat extends Fragment implements
 
             DefaultVideoStrategy mTranscodeVideoStrategy = new DefaultVideoStrategy.Builder()
                     .addResizer(new AspectRatioResizer(16F / 9F))
-                    .addResizer(new FractionResizer(1F / 8F))
+                    .addResizer(new FractionResizer(1F / 4F))
                     .frameRate(24)
                     .build();
 
@@ -2934,6 +2960,13 @@ public class Chat extends Fragment implements
 
                             videoCompressionProcessComplete = true;
 
+                            // Prevent re-compression on restart.
+                            videoFile = null;
+                            // Make the value in Map null so it does not have a value when backing into Map and entering a circle.
+                            Map.videoFile = null;
+
+                            progressIcon.setProgress(0);
+
                             if (successCode == Transcoder.SUCCESS_TRANSCODED) {
 
                                 Log.i(TAG, "Transcoder.SUCCESS_TRANSCODED");
@@ -2943,13 +2976,6 @@ public class Chat extends Fragment implements
                                 Log.i(TAG, "Transcoder.SUCCESS_NOT_NEEDED");
                                 onTranscodeFinished(video.getAbsolutePath());
                             }
-
-                            // Prevent re-compression on restart.
-                            videoFile = null;
-                            // Make the value in Map null so it does not have a value when backing into Map and entering a circle.
-                            Map.videoFile = null;
-
-                            progressIcon.setProgress(0);
                         }
 
                         public void onTranscodeCanceled() {
@@ -3035,6 +3061,28 @@ public class Chat extends Fragment implements
 
         // Turn the compressed video into a bitmap.
         File videoFile = new File(absolutePath);
+
+        // Prevent further processing if file size (in MB) is too big.
+        if (((float) videoFile.length() / (float) (1024 * 1024)) > 10) {
+
+            new Handler(Looper.getMainLooper()).post(() -> {
+
+                // Prevents a crash if the user backed out of activity while video was compressing.
+                if (mActivity != null) {
+
+                    showMessageLong("Error during video compression. Uncompressed video saved to gallery.");
+
+                    sendButton.setEnabled(true);
+                    progressIcon.setVisibility(View.GONE);
+                    if (newShape) {
+
+                        newShapeTextView.setVisibility(View.VISIBLE);
+                    }
+                }
+            });
+
+            return;
+        }
 
         try {
 
