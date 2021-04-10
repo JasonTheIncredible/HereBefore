@@ -163,7 +163,7 @@ public class Chat extends Fragment implements
     private Activity mActivity;
     private Query mQuery;
     private Drawable imageDrawable, videoDrawable;
-    private int shapeLatInt, shapeLonInt, showInterstitialAdCounter = 0, fromMediaCounter = 0;
+    private int shapeLatInt, shapeLonInt, showInterstitialAdCounterMedia = 0, showInterstitialAdCounterText = 0, fromMediaCounter = 0;
     private Integer previouslyHighlightedPosition;
     private LocationManager locationManager;
     private FusedLocationProviderClient mFusedLocationClient;
@@ -775,6 +775,14 @@ public class Chat extends Fragment implements
 
                                         firebaseUpload();
                                     } else {
+
+                                        showInterstitialAdCounterText++;
+                                        if (showInterstitialAdCounterText == 10) {
+
+                                            showInterstitialAdCounterText = 0;
+                                            showInterstitialAdCounterMedia = 0;
+                                            ((Navigation) requireActivity()).showInterstitialAd();
+                                        }
 
                                         // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter).
                                         messageSent = true;
@@ -3167,12 +3175,13 @@ public class Chat extends Fragment implements
 
         Log.i(TAG, "firebaseUpload()");
 
-        showInterstitialAdCounter++;
+        showInterstitialAdCounterMedia++;
 
         // If user is uploading multiple media to Firebase, show an ad to pay for the bandwidth.
-        if (showInterstitialAdCounter == 3) {
+        if (showInterstitialAdCounterMedia == 3) {
 
-            showInterstitialAdCounter = 0;
+            showInterstitialAdCounterMedia = 0;
+            showInterstitialAdCounterText = 0;
             ((Navigation) requireActivity()).showInterstitialAd();
         }
 
