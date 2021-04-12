@@ -180,6 +180,8 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
 
                     Intent Activity = new Intent(getActivity(), MyAppIntro.class);
 
+                    Activity.putExtra("fromSettings", true);
+
                     startActivity(Activity);
 
                     break;

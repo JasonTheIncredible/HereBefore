@@ -24,7 +24,6 @@ import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.SignInButton;
 import com.google.android.gms.common.api.ApiException;
-import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.AuthCredential;
@@ -33,8 +32,6 @@ import com.google.firebase.auth.GoogleAuthProvider;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.messaging.FirebaseMessaging;
 
-import java.util.ArrayList;
-
 public class SignIn extends AppCompatActivity {
 
     private static final String TAG = "SignIn";
@@ -42,15 +39,11 @@ public class SignIn extends AppCompatActivity {
     private EditText mEmail, mPassword;
     private Button signInButton, resetPasswordButton, goToCreateAccountButton;
     private SignInButton googleSignInButton;
-    private String shapeUUID, email, pass, imageFile, videoFile, lastKnownKey;
-    private Double shapeLat, shapeLon;
-    private Boolean newShape;
+    private String email, pass;
     private GoogleSignInClient mGoogleSignInClient;
     private FirebaseAuth mAuth;
     private View loadingIcon, rootView;
     private Toast shortToast, longToast;
-    private ArrayList<String> circleUUIDsAL = new ArrayList<>();
-    private ArrayList<LatLng> circleCentersAL = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -88,29 +81,6 @@ public class SignIn extends AppCompatActivity {
         // Set to dark mode.
         AppCompatDelegate.setDefaultNightMode(
                 AppCompatDelegate.MODE_NIGHT_YES);
-
-        // Get info from Map.java
-        Bundle extras = getIntent().getExtras();
-        if (extras != null) {
-
-            newShape = extras.getBoolean("newShape");
-            if (!newShape) {
-                shapeLat = extras.getDouble("shapeLat");
-                shapeLon = extras.getDouble("shapeLon");
-            } else {
-                imageFile = extras.getString("imageFile");
-                videoFile = extras.getString("videoFile");
-                //noinspection unchecked
-                circleUUIDsAL = (ArrayList<String>) extras.getSerializable("circleUUIDsAL");
-                //noinspection unchecked
-                circleCentersAL = (ArrayList<LatLng>) extras.getSerializable("circleCentersAL");
-                lastKnownKey = extras.getString("lastKnownKey");
-            }
-            shapeUUID = extras.getString("shapeUUID");
-        } else {
-
-            Log.e(TAG, "onStart() -> extras == null");
-        }
     }
 
     @Override
@@ -185,20 +155,7 @@ public class SignIn extends AppCompatActivity {
 
                             FirebaseDatabase.getInstance().getReference().child("Users").child(firebaseUid).child("Token").setValue(token);
 
-                            // Go to Chat.java with the extras.
-                            Intent Activity = new Intent(SignIn.this, Navigation.class);
-                            Activity.putExtra("newShape", newShape);
-                            if (!newShape) {
-                                Activity.putExtra("shapeLat", shapeLat);
-                                Activity.putExtra("shapeLon", shapeLon);
-                            } else {
-                                Activity.putExtra("imageFile", imageFile);
-                                Activity.putExtra("videoFile", videoFile);
-                                Activity.putExtra("circleUUIDsAL", circleUUIDsAL);
-                                Activity.putExtra("circleCentersAL", circleCentersAL);
-                                Activity.putExtra("lastKnownKey", lastKnownKey);
-                            }
-                            Activity.putExtra("shapeUUID", shapeUUID);
+                            Intent Activity = new Intent(SignIn.this, Map.class);
                             loadingIcon.setVisibility(View.GONE);
                             startActivity(Activity);
                             finish();
@@ -252,18 +209,6 @@ public class SignIn extends AppCompatActivity {
         goToCreateAccountButton.setOnClickListener(view -> {
 
             Intent Activity = new Intent(SignIn.this, SignUp.class);
-            Activity.putExtra("newShape", newShape);
-            if (!newShape) {
-                Activity.putExtra("shapeLat", shapeLat);
-                Activity.putExtra("shapeLon", shapeLon);
-            } else {
-                Activity.putExtra("imageFile", imageFile);
-                Activity.putExtra("videoFile", videoFile);
-                Activity.putExtra("circleUUIDsAL", circleUUIDsAL);
-                Activity.putExtra("circleCentersAL", circleCentersAL);
-                Activity.putExtra("lastKnownKey", lastKnownKey);
-            }
-            Activity.putExtra("shapeUUID", shapeUUID);
             loadingIcon.setVisibility(View.GONE);
             startActivity(Activity);
             finish();
@@ -384,20 +329,7 @@ public class SignIn extends AppCompatActivity {
 
                                 FirebaseDatabase.getInstance().getReference().child("Users").child(firebaseUid).child("Token").setValue(token);
 
-                                // Go to Chat.java with the extras.
-                                Intent Activity = new Intent(SignIn.this, Navigation.class);
-                                Activity.putExtra("newShape", newShape);
-                                if (!newShape) {
-                                    Activity.putExtra("shapeLat", shapeLat);
-                                    Activity.putExtra("shapeLon", shapeLon);
-                                } else {
-                                    Activity.putExtra("imageFile", imageFile);
-                                    Activity.putExtra("videoFile", videoFile);
-                                    Activity.putExtra("circleUUIDsAL", circleUUIDsAL);
-                                    Activity.putExtra("circleCentersAL", circleCentersAL);
-                                    Activity.putExtra("lastKnownKey", lastKnownKey);
-                                }
-                                Activity.putExtra("shapeUUID", shapeUUID);
+                                Intent Activity = new Intent(SignIn.this, Map.class);
                                 loadingIcon.setVisibility(View.GONE);
                                 startActivity(Activity);
                                 finish();

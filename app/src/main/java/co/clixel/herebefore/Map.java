@@ -111,21 +111,20 @@ public class Map extends FragmentActivity implements
         super.onCreate(savedInstanceState);
         Log.i(TAG, "onCreate()");
 
+        // If user is not signed in, go to MyAppIntro.
+        if (FirebaseAuth.getInstance().getCurrentUser() == null || GoogleSignIn.getLastSignedInAccount(Map.this) == null) {
+
+            // User NOT signed in.
+            Intent Activity = new Intent(Map.this, MyAppIntro.class);
+            startActivity(Activity);
+            finish();
+        }
+
         // Clear the cache.
         deleteDirectory(this.getCacheDir());
 
         // This will be called if user opens app using a notification.
         onNewIntent(getIntent());
-
-        // Show the intro if the user has not yet seen it.
-        boolean showIntro = PreferenceManager.getDefaultSharedPreferences(this).getBoolean(getString(R.string.prefShowIntro), true);
-
-        if (showIntro) {
-
-            Intent Activity = new Intent(this, MyAppIntro.class);
-            startActivity(Activity);
-            finish();
-        }
 
         setContentView(R.layout.map);
 
@@ -177,19 +176,6 @@ public class Map extends FragmentActivity implements
                 Log.e(TAG, "onResume() -> locationManager == null");
                 showMessageLong("Error retrieving your location.");
             }
-        }
-
-        // Check if the user is logged in. If true, make the settings button visible.
-        boolean loggedIn = PreferenceManager.getDefaultSharedPreferences(this).getBoolean(getString(R.string.prefSignOut), false);
-
-        if (loggedIn) {
-
-            settingsButton.setVisibility(View.VISIBLE);
-            dmsButton.setVisibility(View.VISIBLE);
-        } else {
-
-            settingsButton.setVisibility(View.GONE);
-            dmsButton.setVisibility(View.GONE);
         }
 
         // Shows a menu to change the map type.
@@ -1133,20 +1119,9 @@ public class Map extends FragmentActivity implements
 
         cancelToasts();
 
-        Intent Activity = null;
+        Intent Activity = new Intent(Map.this, Navigation.class);
 
-        // Check if the user is already signed in.
         if (activity.equals("chat")) {
-
-            if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(Map.this) != null) {
-
-                // User signed in.
-                Activity = new Intent(Map.this, Navigation.class);
-            } else {
-
-                // User NOT signed in.
-                Activity = new Intent(Map.this, SignIn.class);
-            }
 
             // Pass this boolean value to Chat.java.
             Activity.putExtra("newShape", newShape);
@@ -1167,7 +1142,6 @@ public class Map extends FragmentActivity implements
             Activity.putExtra("lastKnownKey", lastKnownKey);
         } else if (activity.equals("settings") || activity.equals("dms")) {
 
-            Activity = new Intent(Map.this, Navigation.class);
             Activity.putExtra("noChat", true);
 
             if (activity.equals("dms")) {
@@ -1176,66 +1150,62 @@ public class Map extends FragmentActivity implements
             }
         }
 
-        if (Activity != null) {
+        // Prevent previous activities from being in the back stack.
+        Activity.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
-            // Prevent previous activities from being in the back stack.
-            Activity.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        // If getIntent().getExtras != null, user is entering a circle from a notification and seenByUser needs to be set to true. Else, enter circle like normal.
+        if (getIntent().getExtras() != null && getIntent().getExtras().getString("senderUserUUID") != null) {
 
-            // If getIntent().getExtras != null, user is entering a circle from a notification and seenByUser needs to be set to true. Else, enter circle like normal.
-            if (getIntent().getExtras() != null && getIntent().getExtras().getString("senderUserUUID") != null) {
+            String senderUserUUID = getIntent().getExtras().getString("senderUserUUID");
+            Activity.putExtra("UUIDToHighlight", senderUserUUID);
 
-                String senderUserUUID = getIntent().getExtras().getString("senderUserUUID");
-                Activity.putExtra("UUIDToHighlight", senderUserUUID);
+            String firebaseUid = FirebaseAuth.getInstance().getUid();
 
-                String firebaseUid = FirebaseAuth.getInstance().getUid();
+            if (firebaseUid == null) {
 
-                if (firebaseUid == null) {
+                return;
+            }
 
-                    return;
+            // Set "seenByUser" to true so it is not highlighted in the future.
+            DatabaseReference Dms = FirebaseDatabase.getInstance().getReference().child("Users").child(firebaseUid).child("ReceivedDms");
+            Query DmsQuery = Dms.orderByChild("senderUserUUID").equalTo(senderUserUUID);
+            DmsQuery.addListenerForSingleValueEvent(new ValueEventListener() {
+
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+
+                    for (DataSnapshot ds : snapshot.getChildren()) {
+
+                        Boolean seenByUser = (Boolean) ds.child("seenByUser").getValue();
+                        if (seenByUser != null && !seenByUser) {
+
+                            ds.child("seenByUser").getRef().setValue(true);
+                        }
+
+                        // .removeExtra prevents issues when user clicks on a mention, backs into Map, then tries to go to a new circle.
+                        getIntent().removeExtra("senderUserUUID");
+                        loadingIcon.setVisibility(View.GONE);
+                        startActivity(Activity);
+                        // "return" is not strictly necessary (as there should only be one child), but it keeps the data usage and processing to a minimum in the event of strange behavior.
+                        return;
+                    }
                 }
 
-                // Set "seenByUser" to true so it is not highlighted in the future.
-                DatabaseReference Dms = FirebaseDatabase.getInstance().getReference().child("Users").child(firebaseUid).child("ReceivedDms");
-                Intent finalActivity = Activity;
-                Query DmsQuery = Dms.orderByChild("senderUserUUID").equalTo(senderUserUUID);
-                DmsQuery.addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
 
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                    showMessageLong(error.getMessage());
+                }
+            });
+        } else {
 
-                        for (DataSnapshot ds : snapshot.getChildren()) {
+            recordButton.setEnabled(true);
+            dmsButton.setEnabled(true);
+            settingsButton.setEnabled(true);
 
-                            Boolean seenByUser = (Boolean) ds.child("seenByUser").getValue();
-                            if (seenByUser != null && !seenByUser) {
+            loadingIcon.setVisibility(View.GONE);
 
-                                ds.child("seenByUser").getRef().setValue(true);
-                            }
-
-                            // .removeExtra prevents issues when user clicks on a mention, backs into Map, then tries to go to a new circle.
-                            getIntent().removeExtra("senderUserUUID");
-                            loadingIcon.setVisibility(View.GONE);
-                            startActivity(finalActivity);
-                            // "return" is not strictly necessary (as there should only be one child), but it keeps the data usage and processing to a minimum in the event of strange behavior.
-                            return;
-                        }
-                    }
-
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError error) {
-
-                        showMessageLong(error.getMessage());
-                    }
-                });
-            } else {
-
-                recordButton.setEnabled(true);
-                dmsButton.setEnabled(true);
-                settingsButton.setEnabled(true);
-
-                loadingIcon.setVisibility(View.GONE);
-
-                startActivity(Activity);
-            }
+            startActivity(Activity);
         }
     }
 

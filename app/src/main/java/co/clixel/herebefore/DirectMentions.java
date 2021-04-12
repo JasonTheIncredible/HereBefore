@@ -725,10 +725,10 @@ public class DirectMentions extends Fragment {
                     loadingIcon.setVisibility(View.VISIBLE);
 
                     // When user clicks on a DM, set "seenByUser" to true so it is not highlighted in the future.
-                    if (!mSeenByUser.get(getAdapterPosition())) {
+                    if (!mSeenByUser.get(getBindingAdapterPosition())) {
 
                         DatabaseReference Dms = FirebaseDatabase.getInstance().getReference().child("Users").child(firebaseUid).child("ReceivedDms");
-                        Query DmsQuery = Dms.orderByChild("date").equalTo(mTime.get(getAdapterPosition()));
+                        Query DmsQuery = Dms.orderByChild("date").equalTo(mTime.get(getBindingAdapterPosition()));
                         DmsQuery.addListenerForSingleValueEvent(new ValueEventListener() {
 
                             @Override
@@ -745,18 +745,18 @@ public class DirectMentions extends Fragment {
                                     // Get a value with 1 decimal point and use it for Firebase.
                                     double nearLeftPrecisionLat = Math.pow(10, 1);
                                     // Can't create a firebase path with '.', so get rid of decimal.
-                                    double nearLeftLatTemp = (int) (nearLeftPrecisionLat * mShapeLat.get(getAdapterPosition())) / nearLeftPrecisionLat;
+                                    double nearLeftLatTemp = (int) (nearLeftPrecisionLat * mShapeLat.get(getBindingAdapterPosition())) / nearLeftPrecisionLat;
                                     nearLeftLatTemp *= 10;
                                     int shapeLatInt = (int) nearLeftLatTemp;
 
                                     double nearLeftPrecisionLon = Math.pow(10, 1);
                                     // Can't create a firebase path with '.', so get rid of decimal.
-                                    double nearLeftLonTemp = (int) (nearLeftPrecisionLon * mShapeLon.get(getAdapterPosition())) / nearLeftPrecisionLon;
+                                    double nearLeftLonTemp = (int) (nearLeftPrecisionLon * mShapeLon.get(getBindingAdapterPosition())) / nearLeftPrecisionLon;
                                     nearLeftLonTemp *= 10;
                                     int shapeLonInt = (int) nearLeftLonTemp;
 
                                     DatabaseReference shape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child("Points");
-                                    Query shapeQuery = shape.orderByChild("shapeUUID").equalTo(mShapeUUID.get(getAdapterPosition()));
+                                    Query shapeQuery = shape.orderByChild("shapeUUID").equalTo(mShapeUUID.get(getBindingAdapterPosition()));
                                     shapeQuery.addListenerForSingleValueEvent(new ValueEventListener() {
 
                                         @Override
@@ -765,11 +765,11 @@ public class DirectMentions extends Fragment {
                                             cancelToasts();
 
                                             Intent Activity = new Intent(mContext, Navigation.class);
-                                            Activity.putExtra("shapeLat", mShapeLat.get(getAdapterPosition()));
-                                            Activity.putExtra("shapeLon", mShapeLon.get(getAdapterPosition()));
+                                            Activity.putExtra("shapeLat", mShapeLat.get(getBindingAdapterPosition()));
+                                            Activity.putExtra("shapeLon", mShapeLon.get(getBindingAdapterPosition()));
                                             Activity.putExtra("newShape", false);
-                                            Activity.putExtra("shapeUUID", mShapeUUID.get(getAdapterPosition()));
-                                            Activity.putExtra("UUIDToHighlight", mUser.get(getAdapterPosition()));
+                                            Activity.putExtra("shapeUUID", mShapeUUID.get(getBindingAdapterPosition()));
+                                            Activity.putExtra("UUIDToHighlight", mUser.get(getBindingAdapterPosition()));
                                             Activity.putExtra("circleUUIDsAL", circleUUIDsAL);
                                             Activity.putExtra("circleCentersAL", circleCentersAL);
 
@@ -808,7 +808,7 @@ public class DirectMentions extends Fragment {
                         cancelToasts();
 
                         Intent Activity = new Intent(mContext, PhotoView.class);
-                        Activity.putExtra("imgUrl", mImage.get(getAdapterPosition()));
+                        Activity.putExtra("imgUrl", mImage.get(getBindingAdapterPosition()));
 
                         mContext.startActivity(Activity);
                     });
@@ -821,7 +821,7 @@ public class DirectMentions extends Fragment {
                         cancelToasts();
 
                         Intent Activity = new Intent(mContext, PhotoView.class);
-                        Activity.putExtra("imgUrl", mImage.get(getAdapterPosition()));
+                        Activity.putExtra("imgUrl", mImage.get(getBindingAdapterPosition()));
 
                         mContext.startActivity(Activity);
                     });
@@ -834,7 +834,7 @@ public class DirectMentions extends Fragment {
                         cancelToasts();
 
                         Intent Activity = new Intent(mContext, VideoView.class);
-                        Activity.putExtra("videoUrl", mVideo.get(getAdapterPosition()));
+                        Activity.putExtra("videoUrl", mVideo.get(getBindingAdapterPosition()));
 
                         mContext.startActivity(Activity);
                     });
@@ -847,7 +847,7 @@ public class DirectMentions extends Fragment {
                         cancelToasts();
 
                         Intent Activity = new Intent(mContext, VideoView.class);
-                        Activity.putExtra("videoUrl", mVideo.get(getAdapterPosition()));
+                        Activity.putExtra("videoUrl", mVideo.get(getBindingAdapterPosition()));
 
                         mContext.startActivity(Activity);
                     });

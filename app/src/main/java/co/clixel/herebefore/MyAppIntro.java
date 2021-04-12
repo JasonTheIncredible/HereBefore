@@ -1,20 +1,20 @@
 package co.clixel.herebefore;
 
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 
 import androidx.fragment.app.Fragment;
-import androidx.preference.PreferenceManager;
 
 import com.github.appintro.AppIntro;
 import com.github.appintro.AppIntroFragment;
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.firebase.auth.FirebaseAuth;
 
 public class MyAppIntro extends AppIntro {
 
     private static final String TAG = "AppIntro";
-    private SharedPreferences sharedPreferences;
+    private boolean fromSettings = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -22,7 +22,12 @@ public class MyAppIntro extends AppIntro {
         super.onCreate(savedInstanceState);
         Log.i(TAG, "onCreate()");
 
-        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        // Check if the user entered MyAppIntro from Settings.
+        Bundle extras = getIntent().getExtras();
+        if (extras != null) {
+
+            fromSettings = extras.getBoolean("fromSettings");
+        }
 
         addSlide(AppIntroFragment.newInstance(
                 "Welcome!",
@@ -94,9 +99,17 @@ public class MyAppIntro extends AppIntro {
         super.onSkipPressed(currentFragment);
         Log.i(TAG, "onSkipPressed()");
 
-        sharedPreferences.edit().putBoolean(getString(R.string.prefShowIntro), false).apply();
+        Intent Activity;
+        if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(MyAppIntro.this) != null) {
 
-        Intent Activity = new Intent(this, Map.class);
+            // User signed in.
+            Activity = new Intent(MyAppIntro.this, Navigation.class);
+        } else {
+
+            // User NOT signed in.
+            Activity = new Intent(MyAppIntro.this, SignIn.class);
+        }
+
         startActivity(Activity);
         finish();
     }
@@ -107,9 +120,21 @@ public class MyAppIntro extends AppIntro {
         super.onDonePressed(currentFragment);
         Log.i(TAG, "onDonePressed()");
 
-        sharedPreferences.edit().putBoolean(getString(R.string.prefShowIntro), false).apply();
+        Intent Activity = null;
+        if (fromSettings) {
 
-        Intent Activity = new Intent(this, Map.class);
+            onBackPressed();
+            finish();
+        } else if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(MyAppIntro.this) != null) {
+
+            // User signed in.
+            Activity = new Intent(MyAppIntro.this, Map.class);
+        } else {
+
+            // User NOT signed in.
+            Activity = new Intent(MyAppIntro.this, SignIn.class);
+        }
+
         startActivity(Activity);
         finish();
     }

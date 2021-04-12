@@ -29,6 +29,8 @@ import com.google.android.gms.ads.AdSize;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.ads.FullScreenContentCallback;
 import com.google.android.gms.ads.LoadAdError;
+import com.google.android.gms.ads.MobileAds;
+import com.google.android.gms.ads.RequestConfiguration;
 import com.google.android.gms.ads.interstitial.InterstitialAd;
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback;
 import com.google.firebase.auth.FirebaseAuth;
@@ -40,6 +42,7 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 
+import java.util.Collections;
 import java.util.Objects;
 
 public class Navigation extends AppCompatActivity {
@@ -93,6 +96,9 @@ public class Navigation extends AppCompatActivity {
                 showInterstitialAd();
             }
         }
+
+        RequestConfiguration configuration = new RequestConfiguration.Builder().setTestDeviceIds(Collections.singletonList("814BF63877CBD71E91F9D7241907F4FF")).build();
+        MobileAds.setRequestConfiguration(configuration);
 
         FrameLayout bannerAdFrameLayout = findViewById(R.id.bannerAdFrameLayout);
         bannerAdView = new AdView(this);
@@ -163,7 +169,7 @@ public class Navigation extends AppCompatActivity {
                     }
 
                     @Override
-                    public void onAdFailedToShowFullScreenContent(AdError adError) {
+                    public void onAdFailedToShowFullScreenContent(@NonNull AdError adError) {
 
                         splashScreen.setZ(0);
                         progressIconIndeterminate.setZ(0);
@@ -201,9 +207,7 @@ public class Navigation extends AppCompatActivity {
 
     private void loadBanner() {
 
-        AdRequest adRequest =
-                new AdRequest.Builder().addTestDevice(AdRequest.DEVICE_ID_EMULATOR)
-                        .build();
+        AdRequest adRequest = new AdRequest.Builder().build();
 
         AdSize adSize = getAdSize();
 

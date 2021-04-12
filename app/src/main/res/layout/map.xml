@@ -32,8 +32,7 @@
         android:contentDescription="@string/settings_button_description"
         android:elevation="10dp"
         android:focusable="true"
-        android:src="@drawable/ic_more_vertical_black_24dp"
-        android:visibility="gone" />
+        android:src="@drawable/ic_more_vertical_black_24dp" />
 
     <ImageButton
         android:id="@+id/dmsButton"
@@ -47,8 +46,7 @@
         android:contentDescription="@string/dms_button_description"
         android:elevation="10dp"
         android:focusable="true"
-        android:src="@drawable/ic_dm"
-        android:visibility="gone" />
+        android:src="@drawable/ic_dm" />
 
     <Button
         android:id="@+id/recordButton"

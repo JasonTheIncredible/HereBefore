@@ -1631,7 +1631,7 @@ public class Chat extends Fragment implements
                 itemView.setOnCreateContextMenuListener((menu, v, menuInfo) -> {
 
                     // Get a unique identifier (the user's name) to search for in Firebase.
-                    reportedUser = mMessageUser.get(getAdapterPosition());
+                    reportedUser = mMessageUser.get(getBindingAdapterPosition());
                     menu.add(0, R.string.report_post, 0, R.string.report_post);
                 });
 
@@ -1662,7 +1662,7 @@ public class Chat extends Fragment implements
                     messageImageInside.setOnClickListener(v -> {
 
                         Intent Activity = new Intent(mContext, PhotoView.class);
-                        Activity.putExtra("imgUrl", mMessageImage.get(getAdapterPosition()));
+                        Activity.putExtra("imgUrl", mMessageImage.get(getBindingAdapterPosition()));
                         startActivityForResult(Activity, Media_Code);
                     });
                 }
@@ -1672,7 +1672,7 @@ public class Chat extends Fragment implements
                     messageImageOutside.setOnClickListener(v -> {
 
                         Intent Activity = new Intent(mContext, PhotoView.class);
-                        Activity.putExtra("imgUrl", mMessageImage.get(getAdapterPosition()));
+                        Activity.putExtra("imgUrl", mMessageImage.get(getBindingAdapterPosition()));
                         startActivityForResult(Activity, Media_Code);
                     });
                 }
@@ -1682,7 +1682,7 @@ public class Chat extends Fragment implements
                     messageImageVideoInside.setOnClickListener(v -> {
 
                         Intent Activity = new Intent(mContext, VideoView.class);
-                        Activity.putExtra("videoUrl", mMessageImageVideo.get(getAdapterPosition()));
+                        Activity.putExtra("videoUrl", mMessageImageVideo.get(getBindingAdapterPosition()));
                         startActivityForResult(Activity, Media_Code);
                     });
                 }
@@ -1692,7 +1692,7 @@ public class Chat extends Fragment implements
                     messageImageVideoOutside.setOnClickListener(v -> {
 
                         Intent Activity = new Intent(mContext, VideoView.class);
-                        Activity.putExtra("videoUrl", mMessageImageVideo.get(getAdapterPosition()));
+                        Activity.putExtra("videoUrl", mMessageImageVideo.get(getBindingAdapterPosition()));
                         startActivityForResult(Activity, Media_Code);
                     });
                 }
@@ -1702,7 +1702,7 @@ public class Chat extends Fragment implements
                     playButtonInside.setOnClickListener(v -> {
 
                         Intent Activity = new Intent(mContext, VideoView.class);
-                        Activity.putExtra("videoUrl", mMessageImageVideo.get(getAdapterPosition()));
+                        Activity.putExtra("videoUrl", mMessageImageVideo.get(getBindingAdapterPosition()));
                         mContext.startActivity(Activity);
                     });
                 }
@@ -1712,7 +1712,7 @@ public class Chat extends Fragment implements
                     playButtonOutside.setOnClickListener(v -> {
 
                         Intent Activity = new Intent(mContext, VideoView.class);
-                        Activity.putExtra("videoUrl", mMessageImageVideo.get(getAdapterPosition()));
+                        Activity.putExtra("videoUrl", mMessageImageVideo.get(getBindingAdapterPosition()));
                         mContext.startActivity(Activity);
                     });
                 }
