@@ -100,7 +100,12 @@ public class MyAppIntro extends AppIntro {
         Log.i(TAG, "onSkipPressed()");
 
         Intent Activity;
-        if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(MyAppIntro.this) != null) {
+        if (fromSettings) {
+
+            onBackPressed();
+            finish();
+            return;
+        } else if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(MyAppIntro.this) != null) {
 
             // User signed in.
             Activity = new Intent(MyAppIntro.this, Navigation.class);
@@ -120,11 +125,12 @@ public class MyAppIntro extends AppIntro {
         super.onDonePressed(currentFragment);
         Log.i(TAG, "onDonePressed()");
 
-        Intent Activity = null;
+        Intent Activity;
         if (fromSettings) {
 
             onBackPressed();
             finish();
+            return;
         } else if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(MyAppIntro.this) != null) {
 
             // User signed in.

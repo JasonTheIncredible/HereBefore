@@ -118,6 +118,7 @@ public class Map extends FragmentActivity implements
             Intent Activity = new Intent(Map.this, MyAppIntro.class);
             startActivity(Activity);
             finish();
+            return;
         }
 
         // Clear the cache.
