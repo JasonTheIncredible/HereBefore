@@ -59,6 +59,7 @@ public class Navigation extends AppCompatActivity {
     private ImageView splashScreen;
     private ProgressBar progressIconIndeterminate;
     private AdView bannerAdView;
+    private FrameLayout bannerAdFrameLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -100,7 +101,7 @@ public class Navigation extends AppCompatActivity {
         RequestConfiguration configuration = new RequestConfiguration.Builder().setTestDeviceIds(Collections.singletonList("814BF63877CBD71E91F9D7241907F4FF")).build();
         MobileAds.setRequestConfiguration(configuration);
 
-        FrameLayout bannerAdFrameLayout = findViewById(R.id.bannerAdFrameLayout);
+        bannerAdFrameLayout = findViewById(R.id.bannerAdFrameLayout);
         bannerAdView = new AdView(this);
         bannerAdView.setAdUnitId("ca-app-pub-3940256099942544/6300978111");
         bannerAdFrameLayout.addView(bannerAdView);
@@ -122,7 +123,10 @@ public class Navigation extends AppCompatActivity {
             AppCompatDelegate.setDefaultNightMode(
                     AppCompatDelegate.MODE_NIGHT_NO);
 
-            splashScreen.setImageResource(R.color.gray);
+            if (!noChat) {
+
+                splashScreen.setImageResource(R.color.gray);
+            }
         } else {
 
             // Set to dark mode.
@@ -213,6 +217,9 @@ public class Navigation extends AppCompatActivity {
 
         // Step 4 - Set the adaptive ad size on the ad view.
         bannerAdView.setAdSize(adSize);
+
+        // Adjust bannerAdFrameLayout size here so viewPager doesn't jump when ad loads.
+        bannerAdFrameLayout.getLayoutParams().height = adSize.getHeightInPixels(this);
 
         // Step 5 - Start loading the ad in the background.
         bannerAdView.loadAd(adRequest);
