@@ -76,6 +76,11 @@
             android:windowSoftInputMode="adjustResize" />
 
         <activity
+            android:name=".MyInterstitialAd"
+            android:label="@string/title_activity_maps"
+            android:theme="@style/AppTheme" />
+
+        <activity
             android:name=".Map"
             android:label="@string/title_activity_maps">
             <intent-filter>
@@ -114,8 +119,8 @@
         <activity
             android:name=".Navigation"
             android:configChanges="orientation|screenSize"
-            android:screenOrientation="portrait"
             android:label="@string/title_activity_maps"
+            android:screenOrientation="portrait"
             android:theme="@style/AppTheme" />
 
         <meta-data

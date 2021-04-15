@@ -798,6 +798,52 @@ public class DirectMentions extends Fragment {
                                 showMessageLong(error.getMessage());
                             }
                         });
+                    } else {
+
+                        // Get a value with 1 decimal point and use it for Firebase.
+                        double nearLeftPrecisionLat = Math.pow(10, 1);
+                        // Can't create a firebase path with '.', so get rid of decimal.
+                        double nearLeftLatTemp = (int) (nearLeftPrecisionLat * mShapeLat.get(getBindingAdapterPosition())) / nearLeftPrecisionLat;
+                        nearLeftLatTemp *= 10;
+                        int shapeLatInt = (int) nearLeftLatTemp;
+
+                        double nearLeftPrecisionLon = Math.pow(10, 1);
+                        // Can't create a firebase path with '.', so get rid of decimal.
+                        double nearLeftLonTemp = (int) (nearLeftPrecisionLon * mShapeLon.get(getBindingAdapterPosition())) / nearLeftPrecisionLon;
+                        nearLeftLonTemp *= 10;
+                        int shapeLonInt = (int) nearLeftLonTemp;
+
+                        DatabaseReference shape = FirebaseDatabase.getInstance().getReference().child("Shapes").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child("Points");
+                        Query shapeQuery = shape.orderByChild("shapeUUID").equalTo(mShapeUUID.get(getBindingAdapterPosition()));
+                        shapeQuery.addListenerForSingleValueEvent(new ValueEventListener() {
+
+                            @Override
+                            public void onDataChange(@NonNull DataSnapshot snapshot) {
+
+                                cancelToasts();
+
+                                Intent Activity = new Intent(mContext, Navigation.class);
+                                Activity.putExtra("shapeLat", mShapeLat.get(getBindingAdapterPosition()));
+                                Activity.putExtra("shapeLon", mShapeLon.get(getBindingAdapterPosition()));
+                                Activity.putExtra("newShape", false);
+                                Activity.putExtra("shapeUUID", mShapeUUID.get(getBindingAdapterPosition()));
+                                Activity.putExtra("UUIDToHighlight", mUser.get(getBindingAdapterPosition()));
+                                Activity.putExtra("circleUUIDsAL", circleUUIDsAL);
+                                Activity.putExtra("circleCentersAL", circleCentersAL);
+
+                                loadingIcon.setVisibility(View.GONE);
+
+                                mContext.startActivity(Activity);
+                                mActivity.finish();
+                            }
+
+                            @Override
+                            public void onCancelled(@NonNull DatabaseError error) {
+
+                                loadingIcon.setVisibility(View.GONE);
+                                showMessageLong(error.getMessage());
+                            }
+                        });
                     }
                 });
 

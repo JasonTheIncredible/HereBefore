@@ -1120,9 +1120,11 @@ public class Map extends FragmentActivity implements
 
         cancelToasts();
 
-        Intent Activity = new Intent(Map.this, Navigation.class);
+        Intent Activity = null;
 
         if (activity.equals("chat")) {
+
+            Activity = new Intent(Map.this, MyInterstitialAd.class);
 
             // Pass this boolean value to Chat.java.
             Activity.putExtra("newShape", newShape);
@@ -1143,12 +1145,20 @@ public class Map extends FragmentActivity implements
             Activity.putExtra("lastKnownKey", lastKnownKey);
         } else if (activity.equals("settings") || activity.equals("dms")) {
 
+            Activity = new Intent(Map.this, Navigation.class);
+
             Activity.putExtra("noChat", true);
 
             if (activity.equals("dms")) {
 
                 Activity.putExtra("fromDms", true);
             }
+        }
+
+        if (Activity == null) {
+
+            showMessageLong("An error occurred. Please try again.");
+            return;
         }
 
         // Prevent previous activities from being in the back stack.
@@ -1170,6 +1180,7 @@ public class Map extends FragmentActivity implements
             // Set "seenByUser" to true so it is not highlighted in the future.
             DatabaseReference Dms = FirebaseDatabase.getInstance().getReference().child("Users").child(firebaseUid).child("ReceivedDms");
             Query DmsQuery = Dms.orderByChild("senderUserUUID").equalTo(senderUserUUID);
+            Intent finalActivity = Activity;
             DmsQuery.addListenerForSingleValueEvent(new ValueEventListener() {
 
                 @Override
@@ -1186,7 +1197,7 @@ public class Map extends FragmentActivity implements
                         // .removeExtra prevents issues when user clicks on a mention, backs into Map, then tries to go to a new circle.
                         getIntent().removeExtra("senderUserUUID");
                         loadingIcon.setVisibility(View.GONE);
-                        startActivity(Activity);
+                        startActivity(finalActivity);
                         // "return" is not strictly necessary (as there should only be one child), but it keeps the data usage and processing to a minimum in the event of strange behavior.
                         return;
                     }

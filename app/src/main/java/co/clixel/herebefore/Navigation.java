@@ -5,11 +5,8 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.view.Display;
-import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.FrameLayout;
-import android.widget.ImageView;
-import android.widget.ProgressBar;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -23,16 +20,11 @@ import androidx.viewpager.widget.ViewPager;
 
 import com.gauravk.bubblenavigation.BubbleNavigationConstraintView;
 import com.gauravk.bubblenavigation.listener.BubbleNavigationChangeListener;
-import com.google.android.gms.ads.AdError;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdSize;
 import com.google.android.gms.ads.AdView;
-import com.google.android.gms.ads.FullScreenContentCallback;
-import com.google.android.gms.ads.LoadAdError;
 import com.google.android.gms.ads.MobileAds;
 import com.google.android.gms.ads.RequestConfiguration;
-import com.google.android.gms.ads.interstitial.InterstitialAd;
-import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
@@ -43,8 +35,6 @@ import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 
 import java.util.Collections;
-import java.util.Objects;
-
 public class Navigation extends AppCompatActivity {
 
     private ViewPager viewPager;
@@ -55,9 +45,6 @@ public class Navigation extends AppCompatActivity {
     private Query mQuery;
     private ChildEventListener childEventListener;
     private boolean onStartJustCalled, noChat = false, fromDms = false, needToLoadCorrectTab = true, dmExists = false;
-    private InterstitialAd mInterstitialAd;
-    private ImageView splashScreen;
-    private ProgressBar progressIconIndeterminate;
     private AdView bannerAdView;
     private FrameLayout bannerAdFrameLayout;
 
@@ -73,30 +60,16 @@ public class Navigation extends AppCompatActivity {
             noChat = extras.getBoolean("noChat");
             fromDms = extras.getBoolean("fromDms");
 
-            // The order is a bit awkward, but in order to change the interstitial ad splash screen color depending on the theme,
-            // setContentView needs to be called, then findViewById, then updatePreferences.
             if (noChat) {
 
                 setContentView(R.layout.navigationnochat);
-
-                splashScreen = findViewById(R.id.splashScreen);
-                progressIconIndeterminate = findViewById(R.id.progressIconIndeterminate);
-
-                // Update to the user's preferences.
-                updatePreferences();
             } else {
 
                 setContentView(R.layout.navigation);
-
-                splashScreen = findViewById(R.id.splashScreen);
-                progressIconIndeterminate = findViewById(R.id.progressIconIndeterminate);
-
-                // Update to the user's preferences.
-                updatePreferences();
-
-                showInterstitialAd();
             }
         }
+
+        updatePreferences();
 
         RequestConfiguration configuration = new RequestConfiguration.Builder().setTestDeviceIds(Collections.singletonList("814BF63877CBD71E91F9D7241907F4FF")).build();
         MobileAds.setRequestConfiguration(configuration);
@@ -122,91 +95,12 @@ public class Navigation extends AppCompatActivity {
             // Set to light mode.
             AppCompatDelegate.setDefaultNightMode(
                     AppCompatDelegate.MODE_NIGHT_NO);
-
-            if (!noChat) {
-
-                splashScreen.setImageResource(R.color.gray);
-            }
         } else {
 
             // Set to dark mode.
             AppCompatDelegate.setDefaultNightMode(
                     AppCompatDelegate.MODE_NIGHT_YES);
         }
-
-        // This will allow the settings button to appear in Map.java.
-        sharedPreferences.edit().putBoolean(getString(R.string.prefSignOut), true).apply();
-    }
-
-    protected void showInterstitialAd() {
-
-        // Hide the top bar while the ad loads. Remember to show the top bar after the ad goes away.
-        Objects.requireNonNull(getSupportActionBar()).hide();
-
-        splashScreen.setVisibility(View.VISIBLE);
-        progressIconIndeterminate.setVisibility(View.VISIBLE);
-        splashScreen.setZ(1000);
-        progressIconIndeterminate.setZ(1000);
-
-        AdRequest adRequest = new AdRequest.Builder().build();
-
-        InterstitialAd.load(this, "ca-app-pub-3940256099942544/1033173712", adRequest, new InterstitialAdLoadCallback() {
-
-            @Override
-            public void onAdLoaded(@NonNull InterstitialAd interstitialAd) {
-
-                // The mInterstitialAd reference will be null until an ad is loaded.
-                mInterstitialAd = interstitialAd;
-
-                mInterstitialAd.setFullScreenContentCallback(new FullScreenContentCallback() {
-
-                    @Override
-                    public void onAdDismissedFullScreenContent() {
-
-                        splashScreen.setZ(0);
-                        progressIconIndeterminate.setZ(0);
-                        splashScreen.setVisibility(View.GONE);
-                        progressIconIndeterminate.setVisibility(View.GONE);
-                        Objects.requireNonNull(getSupportActionBar()).show();
-                        // Make sure to set your reference to null so you don't show it a second time.
-                        mInterstitialAd = null;
-                    }
-
-                    @Override
-                    public void onAdFailedToShowFullScreenContent(@NonNull AdError adError) {
-
-                        splashScreen.setZ(0);
-                        progressIconIndeterminate.setZ(0);
-                        splashScreen.setVisibility(View.GONE);
-                        progressIconIndeterminate.setVisibility(View.GONE);
-                        Objects.requireNonNull(getSupportActionBar()).show();
-                        // Make sure to set your reference to null so you don't show it a second time.
-                        mInterstitialAd = null;
-                    }
-
-                    @Override
-                    public void onAdShowedFullScreenContent() {
-
-                        // Make sure to set your reference to null so you don't show it a second time.
-                        mInterstitialAd = null;
-                    }
-                });
-
-                mInterstitialAd.show(Navigation.this);
-            }
-
-            @Override
-            public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
-
-                // Make sure to set your reference to null so you don't show it a second time.
-                mInterstitialAd = null;
-                splashScreen.setZ(0);
-                progressIconIndeterminate.setZ(0);
-                splashScreen.setVisibility(View.GONE);
-                progressIconIndeterminate.setVisibility(View.GONE);
-                Objects.requireNonNull(getSupportActionBar()).show();
-            }
-        });
     }
 
     private void loadBanner() {

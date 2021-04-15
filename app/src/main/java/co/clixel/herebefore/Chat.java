@@ -141,8 +141,8 @@ public class Chat extends Fragment implements
     private Integer index, top, UUIDDatesPairsSize;
     private ChildEventListener childEventListener;
     private FloatingActionButton sendButton, mediaButton;
-    private boolean theme, onStartJustCalled, continueWithODC = true, loadingOlderMessages = false, clickedOnMention = false, fromDms = false, noMoreMessages = false, showProgressIndeterminate = true, reachedEndOfRecyclerView = true, messageSent = false, fileIsImage,
-            checkPermissionsPicture, newShape, uploadNeeded = false, imageCompressionProcessComplete = false, videoCompressionProcessComplete = false;
+    private boolean theme, onStartJustCalled, continueWithODC = true, loadingOlderMessages = false, clickedOnMention = false, fromDms = false, noMoreMessages = false, showProgressIndeterminate = true, reachedEndOfRecyclerView = false, messageSent = false, fileIsImage,
+            checkPermissionsPicture, newShape, uploadNeeded = false, imageCompressionProcessComplete = false, videoCompressionProcessComplete = false, recyclerViewScrolledToHighlightedMessage = false;
     private Boolean userIsWithinShape;
     private View.OnLayoutChangeListener onLayoutChangeListener;
     private String shapeUUID, reportedUser, UUIDToHighlight, imageFile, videoFile, lastKnownKey;
@@ -781,7 +781,10 @@ public class Chat extends Fragment implements
 
                                             showInterstitialAdCounterText = 0;
                                             showInterstitialAdCounterMedia = 0;
-                                            ((Navigation) requireActivity()).showInterstitialAd();
+
+                                            Intent Activity = new Intent(getActivity(), MyInterstitialAd.class);
+                                            Activity.putExtra("fromChat", true);
+                                            startActivity(Activity);
                                         }
 
                                         // Change boolean to true - scrolls to the bottom of the recyclerView (in initChatAdapter).
@@ -1059,6 +1062,7 @@ public class Chat extends Fragment implements
                     int scrollPosition = mUser.indexOf(UUIDToHighlight) - 5;
                     if (scrollPosition < 0 && !noMoreMessages) {
 
+                        loadingOlderMessages = true;
                         getFirebaseMessages(UUIDToHighlight);
                         return;
                     } else {
@@ -1087,7 +1091,7 @@ public class Chat extends Fragment implements
                     }
                 }
 
-                if (!loadingOlderMessages && !newShape) {
+                if (!newShape) {
 
                     addQuery();
                 }
@@ -1558,7 +1562,7 @@ public class Chat extends Fragment implements
         chatRecyclerView.setHasFixedSize(true);
         chatRecyclerView.setLayoutManager(chatRecyclerViewLinearLayoutManager);
 
-        if (UUIDToHighlight != null && !reachedEndOfRecyclerView && (clickedOnMention || fromDms)) {
+        if (UUIDToHighlight != null && !recyclerViewScrolledToHighlightedMessage || clickedOnMention) {
 
             // Show a couple messages above the position, as this seems to be better visually.
             int scrollPosition = mUser.indexOf(UUIDToHighlight) - 5;
@@ -1567,6 +1571,7 @@ public class Chat extends Fragment implements
                 scrollPosition = 0;
             }
             chatRecyclerView.scrollToPosition(scrollPosition);
+            recyclerViewScrolledToHighlightedMessage = true;
             clickedOnMention = false;
             fromDms = false;
             if (index != null && top != null) {
@@ -1590,7 +1595,7 @@ public class Chat extends Fragment implements
         UUIDDatesPairsSize = null;
         continueWithODC = true;
 
-        // After the initial load, make the progressIconIndeterminate invisible.
+        // After the initial load, make the progressIconIndeterminate gone.
         if (!newShape && progressIconIndeterminate != null && !showProgressIndeterminate) {
 
             progressIconIndeterminate.setVisibility(View.GONE);
@@ -2706,7 +2711,10 @@ public class Chat extends Fragment implements
                 if (fromMediaCounter == 3) {
 
                     fromMediaCounter = 0;
-                    ((Navigation) requireActivity()).showInterstitialAd();
+
+                    Intent Activity = new Intent(getActivity(), MyInterstitialAd.class);
+                    Activity.putExtra("fromChat", true);
+                    startActivity(Activity);
                 }
             }
 
@@ -3182,7 +3190,10 @@ public class Chat extends Fragment implements
 
             showInterstitialAdCounterMedia = 0;
             showInterstitialAdCounterText = 0;
-            ((Navigation) requireActivity()).showInterstitialAd();
+
+            Intent Activity = new Intent(getActivity(), MyInterstitialAd.class);
+            Activity.putExtra("fromChat", true);
+            startActivity(Activity);
         }
 
         progressIcon.setProgress(0);
