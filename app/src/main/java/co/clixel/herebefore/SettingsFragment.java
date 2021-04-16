@@ -223,7 +223,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
                     signedOutToast.setGravity(Gravity.CENTER, 0, 250);
                     signedOutToast.show();
 
-                    Intent Activity = new Intent(getActivity(), Map.class);
+                    Intent Activity = new Intent(getActivity(), MyAppIntro.class);
 
                     requireActivity().finishAffinity();
 
@@ -282,7 +282,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
                                 }
 
                                 @Override
-                                public void onAdFailedToShowFullScreenContent(AdError adError) {
+                                public void onAdFailedToShowFullScreenContent(@NonNull AdError adError) {
 
                                     showMessageLong("An error occurred: " + adError);
 

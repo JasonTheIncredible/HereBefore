@@ -36,10 +36,9 @@ public class Feedback extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
-        super.onCreate(savedInstanceState);
-
-        // Update to the user's preferences.
         updatePreferences();
+
+        super.onCreate(savedInstanceState);
 
         setContentView(R.layout.feedback);
 

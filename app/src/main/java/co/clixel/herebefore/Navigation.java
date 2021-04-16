@@ -51,6 +51,8 @@ public class Navigation extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
+        updatePreferences();
+
         super.onCreate(savedInstanceState);
 
         Bundle extras = getIntent().getExtras();
@@ -68,8 +70,6 @@ public class Navigation extends AppCompatActivity {
                 setContentView(R.layout.navigation);
             }
         }
-
-        updatePreferences();
 
         RequestConfiguration configuration = new RequestConfiguration.Builder().setTestDeviceIds(Collections.singletonList("814BF63877CBD71E91F9D7241907F4FF")).build();
         MobileAds.setRequestConfiguration(configuration);

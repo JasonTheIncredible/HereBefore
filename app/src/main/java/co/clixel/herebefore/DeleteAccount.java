@@ -47,12 +47,11 @@ public class DeleteAccount extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
-        super.onCreate(savedInstanceState);
-
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(DeleteAccount.this);
 
-        // Update to the user's preferences.
         updatePreferences();
+
+        super.onCreate(savedInstanceState);
 
         setContentView(R.layout.deleteaccount);
 
@@ -241,7 +240,7 @@ public class DeleteAccount extends AppCompatActivity {
                                                         Toast accountDeletedToast = Toast.makeText(DeleteAccount.this, "Account Deleted", Toast.LENGTH_LONG);
                                                         accountDeletedToast.show();
 
-                                                        Intent Activity = new Intent(DeleteAccount.this, Map.class);
+                                                        Intent Activity = new Intent(DeleteAccount.this, MyAppIntro.class);
 
                                                         finishAffinity();
 

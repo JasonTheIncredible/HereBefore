@@ -25,12 +25,14 @@ public class MyInterstitialAd extends AppCompatActivity {
 
     private ArrayList<String> circleUUIDsAL = new ArrayList<>();
     private ArrayList<LatLng> circleCentersAL = new ArrayList<>();
-    private boolean fromDms = false, newShape, fromChat = false;
+    private boolean theme, fromDms = false, newShape, fromChat = false;
     private String shapeUUID, UUIDToHighlight, imageFile, videoFile, lastKnownKey;
     private Double shapeLat, shapeLon;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
+        updatePreferences();
 
         super.onCreate(savedInstanceState);
 
@@ -60,8 +62,12 @@ public class MyInterstitialAd extends AppCompatActivity {
 
         setContentView(R.layout.myinterstitialad);
 
-        // Update to the user's preferences.
-        updatePreferences();
+        ImageView splashScreen = findViewById(R.id.splashScreen);
+        // theme == true is light mode.
+        if (theme) {
+
+            splashScreen.setImageResource(R.color.gray);
+        }
 
         showInterstitialAd();
     }
@@ -70,16 +76,13 @@ public class MyInterstitialAd extends AppCompatActivity {
 
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         // theme == true is light mode.
-        boolean theme = sharedPreferences.getBoolean(getString(R.string.prefTheme), false);
+        theme = sharedPreferences.getBoolean(getString(R.string.prefTheme), false);
 
         if (theme) {
 
             // Set to light mode.
             AppCompatDelegate.setDefaultNightMode(
                     AppCompatDelegate.MODE_NIGHT_NO);
-
-            ImageView splashScreen = findViewById(R.id.splashScreen);
-            splashScreen.setImageResource(R.color.gray);
         } else {
 
             // Set to dark mode.
