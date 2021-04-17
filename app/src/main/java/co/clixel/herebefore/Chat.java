@@ -163,7 +163,7 @@ public class Chat extends Fragment implements
     private Activity mActivity;
     private Query mQuery;
     private Drawable imageDrawable, videoDrawable;
-    private int shapeLatInt, shapeLonInt, showInterstitialAdCounterMedia = 0, showInterstitialAdCounterText = 0, fromMediaCounter = 0;
+    private int shapeLatInt, shapeLonInt, showInterstitialAdCounterUploadedMedia = 0, showInterstitialAdCounterUploadedText = 0, showInterstitialAdCounterRestarted = 0, showInterstitialAdCounterViewedMedia = 0;
     private Integer previouslyHighlightedPosition;
     private LocationManager locationManager;
     private FusedLocationProviderClient mFusedLocationClient;
@@ -343,6 +343,19 @@ public class Chat extends Fragment implements
 
         // Set to true to scroll to the bottom of chatRecyclerView. Also prevents duplicates in addQuery.
         onStartJustCalled = true;
+
+        showInterstitialAdCounterRestarted++;
+        if (showInterstitialAdCounterRestarted == 20) {
+
+            showInterstitialAdCounterViewedMedia = 0;
+            showInterstitialAdCounterUploadedMedia = 0;
+            showInterstitialAdCounterUploadedText = 0;
+            showInterstitialAdCounterRestarted = 0;
+
+            Intent Activity = new Intent(getActivity(), MyInterstitialAd.class);
+            Activity.putExtra("fromChat", true);
+            startActivity(Activity);
+        }
 
         // Clear text and prevent keyboard from opening.
         if (mInput != null) {
@@ -776,11 +789,13 @@ public class Chat extends Fragment implements
                                         firebaseUpload();
                                     } else {
 
-                                        showInterstitialAdCounterText++;
-                                        if (showInterstitialAdCounterText == 10) {
+                                        showInterstitialAdCounterUploadedText++;
+                                        if (showInterstitialAdCounterUploadedText == 10) {
 
-                                            showInterstitialAdCounterText = 0;
-                                            showInterstitialAdCounterMedia = 0;
+                                            showInterstitialAdCounterViewedMedia = 0;
+                                            showInterstitialAdCounterUploadedMedia = 0;
+                                            showInterstitialAdCounterUploadedText = 0;
+                                            showInterstitialAdCounterRestarted = 0;
 
                                             Intent Activity = new Intent(getActivity(), MyInterstitialAd.class);
                                             Activity.putExtra("fromChat", true);
@@ -2707,10 +2722,13 @@ public class Chat extends Fragment implements
 
                 Log.i(TAG, "onActivityResult() -> Returned from viewing media");
 
-                fromMediaCounter++;
-                if (fromMediaCounter == 3) {
+                showInterstitialAdCounterViewedMedia++;
+                if (showInterstitialAdCounterViewedMedia == 5) {
 
-                    fromMediaCounter = 0;
+                    showInterstitialAdCounterViewedMedia = 0;
+                    showInterstitialAdCounterUploadedMedia = 0;
+                    showInterstitialAdCounterUploadedText = 0;
+                    showInterstitialAdCounterRestarted = 0;
 
                     Intent Activity = new Intent(getActivity(), MyInterstitialAd.class);
                     Activity.putExtra("fromChat", true);
@@ -3183,13 +3201,15 @@ public class Chat extends Fragment implements
 
         Log.i(TAG, "firebaseUpload()");
 
-        showInterstitialAdCounterMedia++;
+        showInterstitialAdCounterUploadedMedia++;
 
         // If user is uploading multiple media to Firebase, show an ad to pay for the bandwidth.
-        if (showInterstitialAdCounterMedia == 3) {
+        if (showInterstitialAdCounterUploadedMedia == 3) {
 
-            showInterstitialAdCounterMedia = 0;
-            showInterstitialAdCounterText = 0;
+            showInterstitialAdCounterViewedMedia = 0;
+            showInterstitialAdCounterUploadedMedia = 0;
+            showInterstitialAdCounterUploadedText = 0;
+            showInterstitialAdCounterRestarted = 0;
 
             Intent Activity = new Intent(getActivity(), MyInterstitialAd.class);
             Activity.putExtra("fromChat", true);
