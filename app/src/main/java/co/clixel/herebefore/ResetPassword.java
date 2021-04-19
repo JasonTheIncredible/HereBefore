@@ -42,19 +42,6 @@ public class ResetPassword extends AppCompatActivity {
 
         rootView = findViewById(R.id.rootViewResetPassword);
 
-        AdView bannerAd = findViewById(R.id.chatBanner);
-
-        // Search I/Ads: in Logcat to find ID and/or W/Ads for other info.
-        // List<String> testDeviceIds = Collections.singletonList("814BF63877CBD71E91F9D7241907F4FF");
-        RequestConfiguration requestConfiguration
-                = new RequestConfiguration.Builder()
-                //.setTestDeviceIds(testDeviceIds)
-                .build();
-        MobileAds.setRequestConfiguration(requestConfiguration);
-
-        AdRequest adRequest = new AdRequest.Builder().build();
-        bannerAd.loadAd(adRequest);
-
         mEmailAddress = findViewById(R.id.emailAddress);
         sendEmail = findViewById(R.id.sendEmailButton);
         goBack = findViewById(R.id.goBack);
@@ -136,6 +123,8 @@ public class ResetPassword extends AppCompatActivity {
                     showMessageLong("An unknown error occurred. Please try again.");
                 }
             });
+
+            sendEmail.setEnabled(false);
         });
 
         goBack.setOnClickListener(v -> onBackPressed());

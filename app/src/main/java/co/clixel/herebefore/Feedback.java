@@ -44,19 +44,6 @@ public class Feedback extends AppCompatActivity {
 
         rootView = findViewById(R.id.rootViewFeedback);
 
-        AdView bannerAd = findViewById(R.id.chatBanner);
-
-        // Search I/Ads: in Logcat to find ID and/or W/Ads for other info.
-        // List<String> testDeviceIds = Collections.singletonList("814BF63877CBD71E91F9D7241907F4FF");
-        RequestConfiguration requestConfiguration
-                = new RequestConfiguration.Builder()
-                //.setTestDeviceIds(testDeviceIds)
-                .build();
-        MobileAds.setRequestConfiguration(requestConfiguration);
-
-        AdRequest adRequest = new AdRequest.Builder().build();
-        bannerAd.loadAd(adRequest);
-
         mFeedback = findViewById(R.id.feedbackEditText);
         sendFeedback = findViewById(R.id.sendFeedbackButton);
         goBack = findViewById(R.id.goBack);
@@ -122,6 +109,7 @@ public class Feedback extends AppCompatActivity {
             layout.requestFocus();
             loadingIcon.setVisibility(View.GONE);
             showMessageShort("Feedback sent. Thank you!");
+            sendFeedback.setEnabled(false);
         });
 
         goBack.setOnClickListener(v -> onBackPressed());

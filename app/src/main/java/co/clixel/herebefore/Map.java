@@ -112,7 +112,7 @@ public class Map extends FragmentActivity implements
         Log.i(TAG, "onCreate()");
 
         // If user is not signed in, go to MyAppIntro.
-        if (FirebaseAuth.getInstance().getCurrentUser() == null || GoogleSignIn.getLastSignedInAccount(Map.this) == null) {
+        if (FirebaseAuth.getInstance().getCurrentUser() == null && GoogleSignIn.getLastSignedInAccount(Map.this) == null) {
 
             // User NOT signed in.
             Intent Activity = new Intent(Map.this, MyAppIntro.class);

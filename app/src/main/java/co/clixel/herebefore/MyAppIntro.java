@@ -13,7 +13,7 @@ import com.google.firebase.auth.FirebaseAuth;
 
 public class MyAppIntro extends AppIntro {
 
-    private static final String TAG = "AppIntro";
+    private static final String TAG = "MyAppIntro";
     private boolean fromSettings = false;
 
     @Override
@@ -108,7 +108,7 @@ public class MyAppIntro extends AppIntro {
         } else if (FirebaseAuth.getInstance().getCurrentUser() != null || GoogleSignIn.getLastSignedInAccount(MyAppIntro.this) != null) {
 
             // User signed in.
-            Activity = new Intent(MyAppIntro.this, Navigation.class);
+            Activity = new Intent(MyAppIntro.this, Map.class);
         } else {
 
             // User NOT signed in.
