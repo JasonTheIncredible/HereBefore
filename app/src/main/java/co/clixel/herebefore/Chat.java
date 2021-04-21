@@ -163,7 +163,7 @@ public class Chat extends Fragment implements
     private Activity mActivity;
     private Query mQuery;
     private Drawable imageDrawable, videoDrawable;
-    private int shapeLatInt, shapeLonInt, showInterstitialAdCounterUploadedMedia = 0, showInterstitialAdCounterUploadedText = 0, showInterstitialAdCounterRestarted = 0, showInterstitialAdCounterViewedMedia = 0;
+    private int shapeLatInt, shapeLonInt, showInterstitialAdCounterUploadedMedia = 0, showInterstitialAdCounterUploadedText = 0, showInterstitialAdCounterViewedMedia = 0;
     private Integer previouslyHighlightedPosition;
     private LocationManager locationManager;
     private FusedLocationProviderClient mFusedLocationClient;
@@ -343,19 +343,6 @@ public class Chat extends Fragment implements
 
         // Set to true to scroll to the bottom of chatRecyclerView. Also prevents duplicates in addQuery.
         onStartJustCalled = true;
-
-        showInterstitialAdCounterRestarted++;
-        if (showInterstitialAdCounterRestarted == 20) {
-
-            showInterstitialAdCounterViewedMedia = 0;
-            showInterstitialAdCounterUploadedMedia = 0;
-            showInterstitialAdCounterUploadedText = 0;
-            showInterstitialAdCounterRestarted = 0;
-
-            Intent Activity = new Intent(getActivity(), MyInterstitialAd.class);
-            Activity.putExtra("fromChat", true);
-            startActivity(Activity);
-        }
 
         // Clear text and prevent keyboard from opening.
         if (mInput != null) {
@@ -795,7 +782,6 @@ public class Chat extends Fragment implements
                                             showInterstitialAdCounterViewedMedia = 0;
                                             showInterstitialAdCounterUploadedMedia = 0;
                                             showInterstitialAdCounterUploadedText = 0;
-                                            showInterstitialAdCounterRestarted = 0;
 
                                             Intent Activity = new Intent(getActivity(), MyInterstitialAd.class);
                                             Activity.putExtra("fromChat", true);
@@ -1390,6 +1376,13 @@ public class Chat extends Fragment implements
         } else {
 
             checkLocationPermissions();
+        }
+
+        if (((Navigation) requireActivity()).showInterstitialAdCounterRestarted == 0) {
+
+            showInterstitialAdCounterViewedMedia = 0;
+            showInterstitialAdCounterUploadedMedia = 0;
+            showInterstitialAdCounterUploadedText = 0;
         }
     }
 
@@ -2728,7 +2721,6 @@ public class Chat extends Fragment implements
                     showInterstitialAdCounterViewedMedia = 0;
                     showInterstitialAdCounterUploadedMedia = 0;
                     showInterstitialAdCounterUploadedText = 0;
-                    showInterstitialAdCounterRestarted = 0;
 
                     Intent Activity = new Intent(getActivity(), MyInterstitialAd.class);
                     Activity.putExtra("fromChat", true);
@@ -3209,7 +3201,6 @@ public class Chat extends Fragment implements
             showInterstitialAdCounterViewedMedia = 0;
             showInterstitialAdCounterUploadedMedia = 0;
             showInterstitialAdCounterUploadedText = 0;
-            showInterstitialAdCounterRestarted = 0;
 
             Intent Activity = new Intent(getActivity(), MyInterstitialAd.class);
             Activity.putExtra("fromChat", true);

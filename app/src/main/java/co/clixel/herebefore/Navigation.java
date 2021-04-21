@@ -1,6 +1,7 @@
 package co.clixel.herebefore;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
@@ -35,12 +36,14 @@ import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 
 import java.util.Collections;
+
 public class Navigation extends AppCompatActivity {
 
     private ViewPager viewPager;
     private BubbleNavigationConstraintView bubbleNavigationConstraintView;
     private ViewPager.OnPageChangeListener pagerListener;
     private int currentItem = -1, dmCounter = 0;
+    protected int showInterstitialAdCounterRestarted = 0;
     private String firebaseUid;
     private Query mQuery;
     private ChildEventListener childEventListener;
@@ -141,6 +144,16 @@ public class Navigation extends AppCompatActivity {
         super.onRestart();
 
         dmCounter = 0;
+
+        showInterstitialAdCounterRestarted++;
+        if (showInterstitialAdCounterRestarted == 20) {
+
+            showInterstitialAdCounterRestarted = 0;
+
+            Intent Activity = new Intent(this, MyInterstitialAd.class);
+            Activity.putExtra("fromNavigation", true);
+            startActivity(Activity);
+        }
     }
 
     @Override

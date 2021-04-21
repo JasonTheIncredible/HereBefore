@@ -25,7 +25,7 @@ public class MyInterstitialAd extends AppCompatActivity {
 
     private ArrayList<String> circleUUIDsAL = new ArrayList<>();
     private ArrayList<LatLng> circleCentersAL = new ArrayList<>();
-    private boolean theme, fromDms = false, newShape, fromChat = false;
+    private boolean theme, fromDms = false, newShape, fromNavigation = false;
     private String shapeUUID, UUIDToHighlight, imageFile, videoFile, lastKnownKey;
     private Double shapeLat, shapeLon;
 
@@ -57,7 +57,7 @@ public class MyInterstitialAd extends AppCompatActivity {
             imageFile = extras.getString("imageFile");
             videoFile = extras.getString("videoFile");
             lastKnownKey = extras.getString("lastKnownKey");
-            fromChat = extras.getBoolean("fromChat");
+            fromNavigation = extras.getBoolean("fromNavigation");
         }
 
         setContentView(R.layout.myinterstitialad);
@@ -135,7 +135,7 @@ public class MyInterstitialAd extends AppCompatActivity {
     private void goToNextActivity() {
 
         // If an interstitial ad is being loaded while user is in Chat (eg they uploaded multiple photos), then go back to Chat.
-        if (fromChat) {
+        if (fromNavigation) {
 
             onBackPressed();
             finish();
