@@ -1,6 +1,7 @@
 package co.clixel.herebefore;
 
 import android.content.Context;
+import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Patterns;
@@ -16,10 +17,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.preference.PreferenceManager;
 
-import com.google.android.gms.ads.AdRequest;
-import com.google.android.gms.ads.AdView;
-import com.google.android.gms.ads.MobileAds;
-import com.google.android.gms.ads.RequestConfiguration;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
 
@@ -30,6 +27,7 @@ public class ResetPassword extends AppCompatActivity {
     private Button sendEmail, goBack;
     private View loadingIcon, rootView;
     private Toast shortToast, longToast;
+    private int showInterstitialAdCounter = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -105,10 +103,22 @@ public class ResetPassword extends AppCompatActivity {
 
             firebaseAuth.sendPasswordResetEmail(emailAddress).addOnCompleteListener(task -> {
 
+                showInterstitialAdCounter++;
+
                 if (task.isSuccessful()) {
 
                     showMessageLong("Password reset instructions sent to your email");
                     loadingIcon.setVisibility(View.GONE);
+                }
+
+                // If user tries resetting password multiple times, pay for the bandwidth by showing an ad.
+                if (showInterstitialAdCounter >= 20) {
+
+                    showInterstitialAdCounter = 0;
+
+                    Intent Activity = new Intent(this, MyInterstitialAd.class);
+                    startActivity(Activity);
+                    return;
                 }
 
                 if (!task.isSuccessful() && task.getException() != null) {

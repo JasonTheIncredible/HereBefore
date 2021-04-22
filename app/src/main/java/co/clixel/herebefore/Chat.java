@@ -163,7 +163,7 @@ public class Chat extends Fragment implements
     private Activity mActivity;
     private Query mQuery;
     private Drawable imageDrawable, videoDrawable;
-    private int shapeLatInt, shapeLonInt, showInterstitialAdCounterUploadedMedia = 0, showInterstitialAdCounterUploadedText = 0, showInterstitialAdCounterViewedMedia = 0;
+    private int shapeLatInt, shapeLonInt, showInterstitialAdCounterUploadedMedia = 0, showInterstitialAdCounterUploadedText = 0, showInterstitialAdCounterViewedMedia = 0, showInterstitialAdCounterReportedPost = 0;
     private Integer previouslyHighlightedPosition;
     private LocationManager locationManager;
     private FusedLocationProviderClient mFusedLocationClient;
@@ -777,11 +777,12 @@ public class Chat extends Fragment implements
                                     } else {
 
                                         showInterstitialAdCounterUploadedText++;
-                                        if (showInterstitialAdCounterUploadedText == 10) {
+                                        if (showInterstitialAdCounterUploadedText >= 10) {
 
                                             showInterstitialAdCounterViewedMedia = 0;
                                             showInterstitialAdCounterUploadedMedia = 0;
                                             showInterstitialAdCounterUploadedText = 0;
+                                            showInterstitialAdCounterReportedPost = 0;
 
                                             Intent Activity = new Intent(getActivity(), MyInterstitialAd.class);
                                             Activity.putExtra("fromChat", true);
@@ -1378,11 +1379,12 @@ public class Chat extends Fragment implements
             checkLocationPermissions();
         }
 
-        if (((Navigation) requireActivity()).showInterstitialAdCounterRestarted == 0) {
+        if (((Navigation) requireActivity()).showInterstitialAdCounterRestarted >= 0) {
 
             showInterstitialAdCounterViewedMedia = 0;
             showInterstitialAdCounterUploadedMedia = 0;
             showInterstitialAdCounterUploadedText = 0;
+            showInterstitialAdCounterReportedPost = 0;
         }
     }
 
@@ -2150,12 +2152,26 @@ public class Chat extends Fragment implements
 
             progressIconIndeterminate.setVisibility(View.VISIBLE);
 
+            showInterstitialAdCounterReportedPost++;
+
             DatabaseReference firebaseMessages = FirebaseDatabase.getInstance().getReference().child("MessageThreads").child("(" + shapeLatInt + ", " + shapeLonInt + ")").child(shapeUUID);
             Query firebaseMessagesQuery = firebaseMessages.orderByChild("userUUID").equalTo(reportedUser);
             firebaseMessagesQuery.addListenerForSingleValueEvent(new ValueEventListener() {
 
                 @Override
                 public void onDataChange(@NonNull DataSnapshot snapshot) {
+
+                    if (showInterstitialAdCounterReportedPost >= 20) {
+
+                        showInterstitialAdCounterViewedMedia = 0;
+                        showInterstitialAdCounterUploadedMedia = 0;
+                        showInterstitialAdCounterUploadedText = 0;
+                        showInterstitialAdCounterReportedPost = 0;
+
+                        Intent Activity = new Intent(getActivity(), MyInterstitialAd.class);
+                        Activity.putExtra("fromChat", true);
+                        startActivity(Activity);
+                    }
 
                     for (DataSnapshot ds : snapshot.getChildren()) {
 
@@ -2716,11 +2732,12 @@ public class Chat extends Fragment implements
                 Log.i(TAG, "onActivityResult() -> Returned from viewing media");
 
                 showInterstitialAdCounterViewedMedia++;
-                if (showInterstitialAdCounterViewedMedia == 5) {
+                if (showInterstitialAdCounterViewedMedia >= 5) {
 
                     showInterstitialAdCounterViewedMedia = 0;
                     showInterstitialAdCounterUploadedMedia = 0;
                     showInterstitialAdCounterUploadedText = 0;
+                    showInterstitialAdCounterReportedPost = 0;
 
                     Intent Activity = new Intent(getActivity(), MyInterstitialAd.class);
                     Activity.putExtra("fromChat", true);
@@ -3196,11 +3213,12 @@ public class Chat extends Fragment implements
         showInterstitialAdCounterUploadedMedia++;
 
         // If user is uploading multiple media to Firebase, show an ad to pay for the bandwidth.
-        if (showInterstitialAdCounterUploadedMedia == 3) {
+        if (showInterstitialAdCounterUploadedMedia >= 3) {
 
             showInterstitialAdCounterViewedMedia = 0;
             showInterstitialAdCounterUploadedMedia = 0;
             showInterstitialAdCounterUploadedText = 0;
+            showInterstitialAdCounterReportedPost = 0;
 
             Intent Activity = new Intent(getActivity(), MyInterstitialAd.class);
             Activity.putExtra("fromChat", true);

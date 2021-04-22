@@ -19,10 +19,6 @@ import androidx.appcompat.app.AppCompatDelegate;
 import androidx.preference.PreferenceManager;
 
 import com.firebase.ui.auth.AuthUI;
-import com.google.android.gms.ads.AdRequest;
-import com.google.android.gms.ads.AdView;
-import com.google.android.gms.ads.MobileAds;
-import com.google.android.gms.ads.RequestConfiguration;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.AuthCredential;
@@ -43,6 +39,7 @@ public class DeleteAccount extends AppCompatActivity {
     private SharedPreferences sharedPreferences;
     private String googleIdToken;
     private Toast longToast;
+    private int showInterstitialAdCounter = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -205,6 +202,8 @@ public class DeleteAccount extends AppCompatActivity {
                 user.reauthenticate(credential)
                         .addOnCompleteListener(task -> {
 
+                            showInterstitialAdCounter++;
+
                             if (task.isSuccessful()) {
 
                                 sharedPreferences.edit().clear().apply();
@@ -232,7 +231,19 @@ public class DeleteAccount extends AppCompatActivity {
                                                         finishAffinity();
 
                                                         startActivity(Activity);
-                                                    } else if (task1.getException() != null) {
+                                                    }
+
+                                                    // If user tries deleting account multiple times without success, pay for the bandwidth by showing an ad.
+                                                    if (showInterstitialAdCounter >= 20) {
+
+                                                        showInterstitialAdCounter = 0;
+
+                                                        Intent Activity = new Intent(this, MyInterstitialAd.class);
+                                                        startActivity(Activity);
+                                                        return;
+                                                    }
+
+                                                    if (task1.getException() != null) {
 
                                                         // Tell the user what happened.
                                                         loadingIcon.setVisibility(View.GONE);
@@ -251,7 +262,19 @@ public class DeleteAccount extends AppCompatActivity {
                                                 showMessageLong("Account Deletion Failed: " + error.getMessage());
                                             }
                                         });
-                            } else if (task.getException() != null) {
+                            }
+
+                            // If user tries deleting account multiple times without success, pay for the bandwidth by showing an ad.
+                            if (showInterstitialAdCounter >= 20) {
+
+                                showInterstitialAdCounter = 0;
+
+                                Intent Activity = new Intent(this, MyInterstitialAd.class);
+                                startActivity(Activity);
+                                return;
+                            }
+
+                            if (task.getException() != null) {
 
                                 // Tell the user what happened.
                                 loadingIcon.setVisibility(View.GONE);
@@ -263,8 +286,6 @@ public class DeleteAccount extends AppCompatActivity {
                                 showMessageLong("An unknown error occurred. Please try again.");
                             }
                         });
-
-                deleteAccount.setEnabled(false);
             }
         });
 

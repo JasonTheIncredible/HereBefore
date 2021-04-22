@@ -44,6 +44,7 @@ public class SignIn extends AppCompatActivity {
     private FirebaseAuth mAuth;
     private View loadingIcon, rootView;
     private Toast shortToast, longToast;
+    private int showInterstitialAdCounter = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -138,6 +139,8 @@ public class SignIn extends AppCompatActivity {
             // Check if the account exists in Firebase.
             FirebaseAuth.getInstance().signInWithEmailAndPassword(email, pass).addOnCompleteListener(task -> {
 
+                showInterstitialAdCounter++;
+
                 if (task.isSuccessful()) {
 
                     FirebaseMessaging.getInstance().getToken().addOnCompleteListener(task1 -> {
@@ -159,6 +162,17 @@ public class SignIn extends AppCompatActivity {
                             loadingIcon.setVisibility(View.GONE);
                             startActivity(Activity);
                             finish();
+                            return;
+                        }
+
+                        // If user tries signing in multiple times without success, pay for the bandwidth by showing an ad.
+                        if (showInterstitialAdCounter >= 20) {
+
+                            showInterstitialAdCounter = 0;
+
+                            Intent Activity = new Intent(this, MyInterstitialAd.class);
+                            startActivity(Activity);
+                            return;
                         }
 
                         if (!task1.isSuccessful() && task1.getException() != null) {
@@ -174,6 +188,16 @@ public class SignIn extends AppCompatActivity {
                             Log.e(TAG, "onStart() -> signInButton -> OnClick -> FirebaseAuth -> task1.getException == null");
                         }
                     });
+                }
+
+                // If user tries signing in multiple times without success, pay for the bandwidth by showing an ad.
+                if (showInterstitialAdCounter >= 20) {
+
+                    showInterstitialAdCounter = 0;
+
+                    Intent Activity = new Intent(this, MyInterstitialAd.class);
+                    startActivity(Activity);
+                    return;
                 }
 
                 if (!task.isSuccessful() && task.getException() != null) {
@@ -312,6 +336,8 @@ public class SignIn extends AppCompatActivity {
         mAuth.signInWithCredential(credential)
                 .addOnCompleteListener(this, task -> {
 
+                    showInterstitialAdCounter++;
+
                     if (task.isSuccessful()) {
 
                         FirebaseMessaging.getInstance().getToken().addOnCompleteListener(task1 -> {
@@ -333,6 +359,17 @@ public class SignIn extends AppCompatActivity {
                                 loadingIcon.setVisibility(View.GONE);
                                 startActivity(Activity);
                                 finish();
+                                return;
+                            }
+
+                            // If user tries signing in multiple times without success, pay for the bandwidth by showing an ad.
+                            if (showInterstitialAdCounter >= 20) {
+
+                                showInterstitialAdCounter = 0;
+
+                                Intent Activity = new Intent(this, MyInterstitialAd.class);
+                                startActivity(Activity);
+                                return;
                             }
 
                             if (!task1.isSuccessful() && task1.getException() != null) {
@@ -348,6 +385,16 @@ public class SignIn extends AppCompatActivity {
                                 Log.e(TAG, "firebaseAuthWithGoogle() -> task.getException == null");
                             }
                         });
+                    }
+
+                    // If user tries signing in multiple times without success, pay for the bandwidth by showing an ad.
+                    if (showInterstitialAdCounter >= 20) {
+
+                        showInterstitialAdCounter = 0;
+
+                        Intent Activity = new Intent(this, MyInterstitialAd.class);
+                        startActivity(Activity);
+                        return;
                     }
 
                     if (!task.isSuccessful() && task.getException() != null) {
