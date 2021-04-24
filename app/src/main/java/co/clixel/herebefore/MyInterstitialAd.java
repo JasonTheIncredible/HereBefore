@@ -134,7 +134,7 @@ public class MyInterstitialAd extends AppCompatActivity {
 
     private void goToNextActivity() {
 
-        // If an interstitial ad is being loaded while user is in Chat (eg they uploaded multiple photos), then go back to Chat.
+        // If an interstitial ad is being loaded while user is in Navigation (eg they uploaded multiple photos), then just go back.
         if (fromNavigation) {
 
             onBackPressed();

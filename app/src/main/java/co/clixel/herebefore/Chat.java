@@ -785,7 +785,7 @@ public class Chat extends Fragment implements
                                             showInterstitialAdCounterReportedPost = 0;
 
                                             Intent Activity = new Intent(getActivity(), MyInterstitialAd.class);
-                                            Activity.putExtra("fromChat", true);
+                                            Activity.putExtra("fromNavigation", true);
                                             startActivity(Activity);
                                         }
 
@@ -2169,7 +2169,7 @@ public class Chat extends Fragment implements
                         showInterstitialAdCounterReportedPost = 0;
 
                         Intent Activity = new Intent(getActivity(), MyInterstitialAd.class);
-                        Activity.putExtra("fromChat", true);
+                        Activity.putExtra("fromNavigation", true);
                         startActivity(Activity);
                     }
 
@@ -2740,7 +2740,7 @@ public class Chat extends Fragment implements
                     showInterstitialAdCounterReportedPost = 0;
 
                     Intent Activity = new Intent(getActivity(), MyInterstitialAd.class);
-                    Activity.putExtra("fromChat", true);
+                    Activity.putExtra("fromNavigation", true);
                     startActivity(Activity);
                 }
             }
@@ -3221,7 +3221,7 @@ public class Chat extends Fragment implements
             showInterstitialAdCounterReportedPost = 0;
 
             Intent Activity = new Intent(getActivity(), MyInterstitialAd.class);
-            Activity.putExtra("fromChat", true);
+            Activity.putExtra("fromNavigation", true);
             startActivity(Activity);
         }
 
