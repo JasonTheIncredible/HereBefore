@@ -61,7 +61,7 @@ dependencies {
     //androidTestImplementation 'androidx.test:runner:1.3.0'
     //androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
 
-    implementation platform('com.google.firebase:firebase-bom:26.8.0')
+    implementation platform('com.google.firebase:firebase-bom:27.1.0')
     implementation 'com.google.firebase:firebase-core'
     implementation 'com.google.firebase:firebase-auth'
     implementation 'com.google.firebase:firebase-messaging'
@@ -79,8 +79,8 @@ dependencies {
 
     implementation 'com.github.chrisbanes:PhotoView:2.3.0'
 
-    // Can't be upgraded to 3.0.0 because 3.x only works with kt.
-    implementation 'id.zelory:compressor:2.1.0'
+    // Can't be upgraded to 3.0.0 because 3.x only works with kt. Use https://github.com/zetbaitsu/Compressor/blob/master/README_v2.md.
+    implementation 'id.zelory:compressor:2.1.1'
 
     implementation 'com.otaliastudios:transcoder:0.10.3'
 
