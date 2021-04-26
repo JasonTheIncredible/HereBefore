@@ -28,7 +28,6 @@ public class PhotoView extends AppCompatActivity {
         if (measuredWidth > 0) {
 
             usableWidth = measuredWidth;
-
         } else {
 
             // If measured width does not get measured for some reason (and is 0), set usableWidth to a number to prevent crashes.
@@ -36,8 +35,11 @@ public class PhotoView extends AppCompatActivity {
         }
 
         myImage = findViewById(R.id.myImage);
+
+        // Image will already be cached from Navigation, so avoid using bandwidth by only retrieving cached image.
         Glide.with(this)
                 .load(url)
+                .onlyRetrieveFromCache(true)
                 .apply(new RequestOptions().override(usableWidth, 0))
                 .into(myImage);
     }

@@ -27,6 +27,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.request.RequestOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.material.snackbar.Snackbar;
@@ -958,6 +959,7 @@ public class DirectMentions extends Fragment {
 
                     Glide.with(mContext)
                             .load(mMessageImage.get(position))
+                            .diskCacheStrategy(DiskCacheStrategy.DATA)
                             .apply(new RequestOptions().override(5000, 640).placeholder(R.drawable.ic_recyclerview_image_placeholder))
                             .into(holder.messageImageInside);
 
@@ -971,6 +973,7 @@ public class DirectMentions extends Fragment {
 
                     Glide.with(mContext)
                             .load(mMessageImageVideo.get(position))
+                            .diskCacheStrategy(DiskCacheStrategy.DATA)
                             .apply(new RequestOptions().override(5000, 640).placeholder(R.drawable.ic_recyclerview_image_placeholder))
                             .into(holder.messageImageVideoInside);
 
@@ -1020,6 +1023,7 @@ public class DirectMentions extends Fragment {
 
                     Glide.with(mContext)
                             .load(mMessageImage.get(position))
+                            .diskCacheStrategy(DiskCacheStrategy.DATA)
                             .apply(new RequestOptions().override(5000, 640).placeholder(R.drawable.ic_recyclerview_image_placeholder).centerInside())
                             .into(holder.messageImageOutside);
 
@@ -1033,6 +1037,7 @@ public class DirectMentions extends Fragment {
 
                     Glide.with(mContext)
                             .load(mMessageImageVideo.get(position))
+                            .diskCacheStrategy(DiskCacheStrategy.DATA)
                             .apply(new RequestOptions().override(5000, 640).placeholder(R.drawable.ic_recyclerview_image_placeholder).centerInside())
                             .into(holder.messageImageVideoOutside);
 

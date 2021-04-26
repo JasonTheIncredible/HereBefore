@@ -1,22 +1,18 @@
 package co.clixel.herebefore;
 
 import android.content.Context;
-import android.os.Build;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.RelativeLayout;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.preference.PreferenceManager;
 
-import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ServerValue;
@@ -26,8 +22,7 @@ public class Feedback extends AppCompatActivity {
     private EditText mFeedback;
     private String feedback;
     private Button sendFeedback, goBack;
-    private View loadingIcon, rootView;
-    private Toast shortToast;
+    private View loadingIcon;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,8 +32,6 @@ public class Feedback extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.feedback);
-
-        rootView = findViewById(R.id.rootViewFeedback);
 
         mFeedback = findViewById(R.id.feedbackEditText);
         sendFeedback = findViewById(R.id.sendFeedbackButton);
@@ -100,12 +93,8 @@ public class Feedback extends AppCompatActivity {
             feedbackInformation.setDate(ServerValue.TIMESTAMP);
             DatabaseReference newFeedback = FirebaseDatabase.getInstance().getReference().child("Feedback").push();
             newFeedback.setValue(feedbackInformation);
-            mFeedback.getText().clear();
-            RelativeLayout layout = findViewById(R.id.layout);
-            layout.requestFocus();
-            loadingIcon.setVisibility(View.GONE);
             showMessageShort("Feedback sent. Thank you!");
-            sendFeedback.setEnabled(false);
+            finish();
         });
 
         goBack.setOnClickListener(v -> onBackPressed());
@@ -132,34 +121,13 @@ public class Feedback extends AppCompatActivity {
             goBack.setOnClickListener(null);
         }
 
-        cancelToasts();
-
         super.onStop();
-    }
-
-    private void cancelToasts() {
-
-        if (shortToast != null) {
-
-            shortToast.cancel();
-        }
     }
 
     private void showMessageShort(String message) {
 
-        if (android.os.Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
-
-            Snackbar snackBar = Snackbar.make(rootView, message, Snackbar.LENGTH_SHORT);
-            View snackBarView = snackBar.getView();
-            TextView snackTextView = snackBarView.findViewById(com.google.android.material.R.id.snackbar_text);
-            snackTextView.setMaxLines(10);
-            snackBar.show();
-        } else {
-
-            cancelToasts();
-            shortToast = Toast.makeText(this, message, Toast.LENGTH_SHORT);
-            shortToast.setGravity(Gravity.CENTER, 0, 0);
-            shortToast.show();
-        }
+        Toast shortToast = Toast.makeText(this, message, Toast.LENGTH_SHORT);
+        shortToast.setGravity(Gravity.CENTER, 0, 0);
+        shortToast.show();
     }
 }

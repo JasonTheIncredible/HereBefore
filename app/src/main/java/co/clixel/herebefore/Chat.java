@@ -50,6 +50,7 @@ import android.view.MenuItem;
 import android.view.View;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.request.RequestOptions;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
@@ -1781,6 +1782,7 @@ public class Chat extends Fragment implements
 
                     Glide.with(mContext)
                             .load(mMessageImage.get(position))
+                            .diskCacheStrategy(DiskCacheStrategy.DATA)
                             .apply(new RequestOptions().override(5000, 640).placeholder(R.drawable.ic_recyclerview_image_placeholder))
                             .into(holder.messageImageInside);
 
@@ -1794,6 +1796,7 @@ public class Chat extends Fragment implements
 
                     Glide.with(mContext)
                             .load(mMessageImageVideo.get(position))
+                            .diskCacheStrategy(DiskCacheStrategy.DATA)
                             .apply(new RequestOptions().override(5000, 640).placeholder(R.drawable.ic_recyclerview_image_placeholder))
                             .into(holder.messageImageVideoInside);
 
@@ -1849,6 +1852,7 @@ public class Chat extends Fragment implements
 
                     Glide.with(mContext)
                             .load(mMessageImage.get(position))
+                            .diskCacheStrategy(DiskCacheStrategy.DATA)
                             .apply(new RequestOptions().override(5000, 640).placeholder(R.drawable.ic_recyclerview_image_placeholder).centerInside())
                             .into(holder.messageImageOutside);
 
@@ -1862,6 +1866,7 @@ public class Chat extends Fragment implements
 
                     Glide.with(mContext)
                             .load(mMessageImageVideo.get(position))
+                            .diskCacheStrategy(DiskCacheStrategy.DATA)
                             .apply(new RequestOptions().override(5000, 640).placeholder(R.drawable.ic_recyclerview_image_placeholder).centerInside())
                             .into(holder.messageImageVideoOutside);
 
@@ -2912,6 +2917,7 @@ public class Chat extends Fragment implements
 
                     Glide.with(mContext)
                             .load(byteArray)
+                            .diskCacheStrategy(DiskCacheStrategy.DATA)
                             .apply(new RequestOptions().override(480, 5000).placeholder(R.drawable.ic_recyclerview_image_placeholder))
                             .into(imageView);
 
