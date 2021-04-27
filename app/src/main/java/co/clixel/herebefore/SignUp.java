@@ -101,54 +101,47 @@ public class SignUp extends AppCompatActivity {
             if (email.isEmpty()) {
 
                 showMessageShort("Email address required");
-                mEmail.requestFocus();
+                requestFocusAndOpenKeyboard(mEmail);
                 return;
             }
             if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
 
                 showMessageShort("Please enter a valid email address");
-                mEmail.requestFocus();
+                requestFocusAndOpenKeyboard(mEmail);
                 return;
             }
             if (pass.isEmpty()) {
 
                 showMessageShort("Password required");
-                mPassword.requestFocus();
+                requestFocusAndOpenKeyboard(mPassword);
                 return;
             }
             if (pass.length() < 6) {
 
                 showMessageShort("Password must be at least 6 characters long");
-                mPassword.requestFocus();
+                requestFocusAndOpenKeyboard(mPassword);
                 return;
             }
             if (!pass.equals(pass.trim())) {
 
                 showMessageShort("Password cannot contain spaces");
-                mPassword.requestFocus();
+                requestFocusAndOpenKeyboard(mPassword);
                 return;
             }
             if (confirmPass.isEmpty()) {
 
                 showMessageShort("Please enter password again");
-                mConfirmPassword.requestFocus();
+                requestFocusAndOpenKeyboard(mConfirmPassword);
                 return;
             }
             if (!confirmPass.equals(pass)) {
 
                 showMessageShort("Passwords must match");
+                requestFocusAndOpenKeyboard(mConfirmPassword);
                 return;
             }
 
-            // Close the keyboard.
-            if (SignUp.this.getCurrentFocus() != null) {
-
-                InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-                if (imm != null) {
-
-                    imm.hideSoftInputFromWindow(SignUp.this.getCurrentFocus().getWindowToken(), 0);
-                }
-            }
+            closeKeyboard();
 
             loadingIcon.bringToFront();
             loadingIcon.setVisibility(View.VISIBLE);
@@ -238,6 +231,24 @@ public class SignUp extends AppCompatActivity {
             Intent signInIntent = mGoogleSignInClient.getSignInIntent();
             startActivityForResult(signInIntent, RC_SIGN_IN);
         });
+    }
+
+    private void requestFocusAndOpenKeyboard(EditText editText) {
+
+        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        if (imm != null) {
+
+            imm.showSoftInput(editText, InputMethodManager.SHOW_IMPLICIT);
+        }
+    }
+
+    private void closeKeyboard() {
+
+        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        if (imm != null) {
+
+            imm.hideSoftInputFromWindow(rootView.getApplicationWindowToken(), 0);
+        }
     }
 
     @Override

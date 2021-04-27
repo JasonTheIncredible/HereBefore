@@ -101,37 +101,29 @@ public class SignIn extends AppCompatActivity {
             if (email.equals("") && !pass.equals("")) {
 
                 showMessageShort("Email address required");
-                mEmail.requestFocus();
+                requestFocusAndOpenKeyboard(mEmail);
                 return;
             }
             if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
 
                 showMessageShort("Please enter a valid email address");
-                mEmail.requestFocus();
+                requestFocusAndOpenKeyboard(mEmail);
                 return;
             }
             if (pass.equals("") && !email.equals("")) {
 
                 showMessageShort("Password required");
-                mPassword.requestFocus();
+                requestFocusAndOpenKeyboard(mPassword);
                 return;
             }
             if (pass.length() < 6) {
 
                 showMessageShort("Password must be at least 6 characters long");
-                mPassword.requestFocus();
+                requestFocusAndOpenKeyboard(mPassword);
                 return;
             }
 
-            // Close the keyboard.
-            if (SignIn.this.getCurrentFocus() != null) {
-
-                InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-                if (imm != null) {
-
-                    imm.hideSoftInputFromWindow(SignIn.this.getCurrentFocus().getWindowToken(), 0);
-                }
-            }
+            closeKeyboard();
 
             loadingIcon.bringToFront();
             loadingIcon.setVisibility(View.VISIBLE);
@@ -225,31 +217,33 @@ public class SignIn extends AppCompatActivity {
         // Go to ResetPassword.java.
         resetPasswordButton.setOnClickListener(v -> {
 
-            loadingIcon.bringToFront();
-            loadingIcon.setVisibility(View.VISIBLE);
-
             String email = mEmail.getText().toString().trim();
             if (email.equals("")) {
 
                 loadingIcon.setVisibility(View.GONE);
                 showMessageLong("Please add your account's email address to the \"Email Address\" field, then click \"Reset Password\" again");
-                mEmail.requestFocus();
+                requestFocusAndOpenKeyboard(mEmail);
                 return;
             }
             if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
 
                 loadingIcon.setVisibility(View.GONE);
                 showMessageShort("Please enter a valid email address");
-                mEmail.requestFocus();
+                requestFocusAndOpenKeyboard(mEmail);
                 return;
             }
+
+            closeKeyboard();
+
+            loadingIcon.bringToFront();
+            loadingIcon.setVisibility(View.VISIBLE);
 
             FirebaseAuth firebaseAuth = FirebaseAuth.getInstance();
             firebaseAuth.sendPasswordResetEmail(email).addOnCompleteListener(task -> {
 
                 if (task.isSuccessful()) {
 
-                    showMessageLong("Password reset instructions sent " + email);
+                    showMessageLong("Password reset instructions sent to " + email);
                 } else if (!task.isSuccessful() && task.getException() != null) {
 
                     // Tell the user what happened.
@@ -272,6 +266,26 @@ public class SignIn extends AppCompatActivity {
             startActivity(Activity);
             finish();
         });
+    }
+
+    private void requestFocusAndOpenKeyboard(EditText editText) {
+
+        editText.requestFocus();
+
+        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        if (imm != null) {
+
+            imm.showSoftInput(editText, InputMethodManager.SHOW_IMPLICIT);
+        }
+    }
+
+    private void closeKeyboard() {
+
+        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        if (imm != null) {
+
+            imm.hideSoftInputFromWindow(rootView.getApplicationWindowToken(), 0);
+        }
     }
 
     @Override
