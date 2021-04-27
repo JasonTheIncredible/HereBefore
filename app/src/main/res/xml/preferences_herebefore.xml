@@ -30,8 +30,23 @@
         app:title="Set preferred map type" />
 
     <Preference
+        android:widgetLayout="@layout/progressiconindeterminatelayout"
+        app:isPreferenceVisible="false"
+        app:key="progressIconIndeterminateLayoutResetPassword" />
+
+    <Preference
         app:key="resetPassword"
         app:title="Reset Password" />
+
+    <Preference
+        app:key="successResetPasswordInformation"
+        app:isPreferenceVisible="false"
+        app:title="Password reset email sent!" />
+
+    <Preference
+        app:key="errorResetPasswordInformation"
+        app:isPreferenceVisible="false"
+        app:title="An error occurred" />
 
     <Preference
         app:key="feedback"
@@ -50,7 +65,7 @@
     <Preference
         android:widgetLayout="@layout/progressiconindeterminatelayout"
         app:isPreferenceVisible="false"
-        app:key="progressIconIndeterminateLayout" />
+        app:key="progressIconIndeterminateLayoutRewardAd" />
 
     <Preference
         app:key="rewardAd"

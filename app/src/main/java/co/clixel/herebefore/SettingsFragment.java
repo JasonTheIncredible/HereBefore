@@ -37,7 +37,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
         PreferenceManager.OnPreferenceTreeClickListener {
 
     private SwitchPreferenceCompat toggleTheme, toggleNotifications;
-    private Preference mapTypePreference, progressIconIndeterminate, rewardAd;
+    private Preference mapTypePreference, progressIconIndeterminateResetPassword, resetPassword, successResetPasswordInformation, errorResetPasswordInformation, progressIconIndeterminateRewardAd, rewardAd;
     private RewardedAd mRewardAd;
     private Toast longToast;
     // "FIREBASE_TOKEN" to find Firebase token for messaging.
@@ -57,7 +57,11 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
         mapTypePreference = findPreference("mapTypePreference");
         toggleNotifications = findPreference("toggleNotifications");
         toggleTheme = findPreference("toggleTheme");
-        progressIconIndeterminate = findPreference("progressIconIndeterminateLayout");
+        progressIconIndeterminateResetPassword = findPreference("progressIconIndeterminateLayoutResetPassword");
+        resetPassword = findPreference("resetPassword");
+        successResetPasswordInformation = findPreference("successResetPasswordInformation");
+        errorResetPasswordInformation = findPreference("errorResetPasswordInformation");
+        progressIconIndeterminateRewardAd = findPreference("progressIconIndeterminateLayoutRewardAd");
         rewardAd = findPreference("rewardAd");
 
         if (mapTypePreference != null) {
@@ -189,9 +193,47 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
 
                 case "resetPassword": {
 
-                    Intent Activity = new Intent(getActivity(), ResetPassword.class);
+                    progressIconIndeterminateResetPassword.setVisible(true);
+                    resetPassword.setVisible(false);
 
-                    startActivity(Activity);
+                    String email = null;
+                    if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+
+                        if (FirebaseAuth.getInstance().getCurrentUser().getEmail() != null) {
+
+                            email = FirebaseAuth.getInstance().getCurrentUser().getEmail();
+                        }
+                    }
+
+                    if (email == null) {
+
+                        showMessageLong("Your email address could not be retrieved. Please try again later.");
+                        progressIconIndeterminateResetPassword.setVisible(false);
+                        errorResetPasswordInformation.setVisible(true);
+                    }
+
+                    String finalEmail = email;
+                    FirebaseAuth firebaseAuth = FirebaseAuth.getInstance();
+                    firebaseAuth.sendPasswordResetEmail(email).addOnCompleteListener(task -> {
+
+                        progressIconIndeterminateResetPassword.setVisible(false);
+
+                        if (task.isSuccessful()) {
+
+                            showMessageLong("Password reset instructions sent to " + finalEmail);
+                            successResetPasswordInformation.setVisible(true);
+                        } else if (!task.isSuccessful() && task.getException() != null) {
+
+                            // Tell the user what happened.
+                            showMessageLong("Error: " + task.getException().getMessage());
+                            errorResetPasswordInformation.setVisible(true);
+                        } else if (!task.isSuccessful() && task.getException() == null) {
+
+                            // Tell the user something happened.
+                            showMessageLong("An unknown error occurred. Please try again later.");
+                            errorResetPasswordInformation.setVisible(true);
+                        }
+                    });
 
                     break;
                 }
@@ -244,7 +286,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
                 case "rewardAd": {
 
                     // Show loading icon and get rid of rewardAd.
-                    progressIconIndeterminate.setVisible(true);
+                    progressIconIndeterminateRewardAd.setVisible(true);
                     rewardAd.setVisible(false);
 
                     AdRequest adRequest = new AdRequest.Builder().build();
@@ -254,7 +296,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
                         @Override
                         public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
 
-                            progressIconIndeterminate.setVisible(false);
+                            progressIconIndeterminateRewardAd.setVisible(false);
                             rewardAd.setVisible(true);
 
                             // Make sure to set your reference to null so you don't show it a second time.
@@ -274,7 +316,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
 
                                     // For interstitial ads in Navigation, the visible logic shouldn't appear in onAdShowedFullScreenContent because the user can see it.
                                     // However, since the visible logic takes a while to occur in preferences, it can happen here so the user doesn't see it occur after the ad is dismissed.
-                                    progressIconIndeterminate.setVisible(false);
+                                    progressIconIndeterminateRewardAd.setVisible(false);
                                     rewardAd.setVisible(true);
 
                                     // Make sure to set your reference to null so you don't show it a second time.
@@ -286,7 +328,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
 
                                     showMessageLong("An error occurred: " + adError);
 
-                                    progressIconIndeterminate.setVisible(false);
+                                    progressIconIndeterminateRewardAd.setVisible(false);
                                     rewardAd.setVisible(true);
 
                                     // Make sure to set your reference to null so you don't show it a second time.
@@ -296,7 +338,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
                                 @Override
                                 public void onAdDismissedFullScreenContent() {
 
-                                    progressIconIndeterminate.setVisible(false);
+                                    progressIconIndeterminateRewardAd.setVisible(false);
                                     rewardAd.setVisible(true);
 
                                     // Make sure to set your reference to null so you don't show it a second time.

@@ -46,7 +46,7 @@
     <Preference
         android:widgetLayout="@layout/progressiconindeterminatelayout"
         app:isPreferenceVisible="false"
-        app:key="progressIconIndeterminateLayout" />
+        app:key="progressIconIndeterminateLayoutRewardAd" />
 
     <Preference
         app:key="rewardAd"

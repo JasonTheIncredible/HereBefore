@@ -225,8 +225,43 @@ public class SignIn extends AppCompatActivity {
         // Go to ResetPassword.java.
         resetPasswordButton.setOnClickListener(v -> {
 
-            Intent Activity = new Intent(SignIn.this, ResetPassword.class);
-            startActivity(Activity);
+            loadingIcon.bringToFront();
+            loadingIcon.setVisibility(View.VISIBLE);
+
+            String email = mEmail.getText().toString().trim();
+            if (email.equals("")) {
+
+                loadingIcon.setVisibility(View.GONE);
+                showMessageLong("Please add your account's email address to the \"Email Address\" field, then click \"Reset Password\" again");
+                mEmail.requestFocus();
+                return;
+            }
+            if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+
+                loadingIcon.setVisibility(View.GONE);
+                showMessageShort("Please enter a valid email address");
+                mEmail.requestFocus();
+                return;
+            }
+
+            FirebaseAuth firebaseAuth = FirebaseAuth.getInstance();
+            firebaseAuth.sendPasswordResetEmail(email).addOnCompleteListener(task -> {
+
+                if (task.isSuccessful()) {
+
+                    showMessageLong("Password reset instructions sent " + email);
+                } else if (!task.isSuccessful() && task.getException() != null) {
+
+                    // Tell the user what happened.
+                    showMessageLong("Error: " + task.getException().getMessage());
+                } else if (!task.isSuccessful() && task.getException() == null) {
+
+                    // Tell the user something happened.
+                    showMessageLong("An unknown error occurred. Please try again later.");
+                }
+
+                loadingIcon.setVisibility(View.GONE);
+            });
         });
 
         // Go to the SignUp.java with the extras.
