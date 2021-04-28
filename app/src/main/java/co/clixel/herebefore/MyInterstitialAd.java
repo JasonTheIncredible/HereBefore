@@ -30,6 +30,7 @@ public class MyInterstitialAd extends AppCompatActivity {
     private Double shapeLat, shapeLon;
 
     @Override
+    @SuppressWarnings("unchecked")
     protected void onCreate(Bundle savedInstanceState) {
 
         updatePreferences();

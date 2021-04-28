@@ -180,6 +180,7 @@ public class Chat extends Fragment implements
             .build();
 
     @Override
+    @SuppressWarnings("unchecked")
     public void onAttach(@NonNull Context context) {
 
         super.onAttach(context);
@@ -214,9 +215,6 @@ public class Chat extends Fragment implements
                 imageFile = extras.getString("imageFile");
                 videoFile = extras.getString("videoFile");
                 lastKnownKey = extras.getString("lastKnownKey");
-            } else {
-
-                Log.e(TAG, "onCreateView() -> extras == null");
             }
         }
     }
@@ -243,7 +241,6 @@ public class Chat extends Fragment implements
 
         chatRecyclerViewLinearLayoutManager = new LinearLayoutManager(mActivity);
         mentionsRecyclerViewLinearLayoutManager = new LinearLayoutManager(mActivity);
-
 
         // If user takes a picture while in Chat, the fragment's lifecycle restarts, so make progressIcon visible. Else, user restarted the app while the shape was still new (and once again, restarted the lifecycle) so set the newShapeTextView to visible.
         if (image != null && !imageCompressionProcessComplete) {

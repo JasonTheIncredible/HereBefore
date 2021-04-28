@@ -76,6 +76,7 @@ public class DirectMentions extends Fragment {
     private List<Pair<String, Long>> UUIDDatesPairs;
 
     @Override
+    @SuppressWarnings("unchecked")
     public void onAttach(@NonNull Context context) {
 
         super.onAttach(context);
@@ -86,6 +87,24 @@ public class DirectMentions extends Fragment {
 
         // theme == true is light mode.
         theme = PreferenceManager.getDefaultSharedPreferences(mContext).getBoolean(getString(R.string.prefTheme), false);
+
+        if (mActivity != null) {
+
+            Bundle extras = mActivity.getIntent().getExtras();
+            if (extras != null) {
+
+                //noinspection unchecked
+                circleUUIDsAL = (ArrayList<String>) extras.getSerializable("circleUUIDsAL");
+                //noinspection unchecked
+                circleCentersAL = (ArrayList<LatLng>) extras.getSerializable("circleCentersAL");
+            }
+
+            // Make the loadingIcon visible upon the first load, as it can sometimes take a while to show anything. It should be made invisible in initDirectMentionsAdapter.
+            if (loadingIcon != null) {
+
+                loadingIcon.setVisibility(View.VISIBLE);
+            }
+        }
     }
 
     @NonNull
@@ -117,30 +136,6 @@ public class DirectMentions extends Fragment {
             mSeenByUser = new ArrayList<>();
 
             UUIDDatesPairs = new ArrayList<>();
-        }
-
-        if (mActivity != null) {
-
-            Bundle extras = mActivity.getIntent().getExtras();
-            if (extras != null) {
-
-                //noinspection unchecked
-                circleUUIDsAL = (ArrayList<String>) extras.getSerializable("circleUUIDsAL");
-                //noinspection unchecked
-                circleCentersAL = (ArrayList<LatLng>) extras.getSerializable("circleCentersAL");
-            } else {
-
-                Log.e(TAG, "onCreateView() -> extras == null");
-            }
-
-            // Make the loadingIcon visible upon the first load, as it can sometimes take a while to show anything. It should be made invisible in initDirectMentionsAdapter.
-            if (loadingIcon != null) {
-
-                loadingIcon.setVisibility(View.VISIBLE);
-            }
-        } else {
-
-            Log.e(TAG, "onCreateView() -> activity == null");
         }
 
         return rootView;
